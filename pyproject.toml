@@ -1,0 +1,15 @@
+[project]
+name = "ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gradio>=5.49.1",
+    "langchain-chroma>=0.2.6",
+    "langchain-community>=0.3.31",
+    "langchain-ollama>=0.3.10",
+    "langchain-text-splitters>=0.3.11",
+    "pypdf>=6.1.1",
+    "python-dotenv>=1.1.1",
+]
