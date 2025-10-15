@@ -5,6 +5,7 @@ to answer questions based on ingested documents.
 """
 
 import gradio as gr
+import os
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 from langchain.chat_models import init_chat_model
@@ -12,6 +13,11 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 
+
+# Get absolute paths based on script location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+PERSIST_DIRECTORY = os.path.join(project_root, "chromadb")
 
 # Initialize embeddings and LLM
 embedding_model = OllamaEmbeddings(model="llama3.1:8b")
@@ -21,7 +27,7 @@ llm = init_chat_model("llama3.1:8b", model_provider="ollama", temperature=0.5)
 vector_store = Chroma(
     collection_name="my_docs",
     embedding_function=embedding_model,
-    persist_directory=r"../chromadb"
+    persist_directory=PERSIST_DIRECTORY
 )
 
 # Create retriever

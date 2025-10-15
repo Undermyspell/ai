@@ -1,22 +1,26 @@
 
 
 import gradio as gr
+import os
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 
+# Get absolute paths based on script location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+PERSIST_DIRECTORY = os.path.join(project_root, "chromadb")
 
 embedding_model = OllamaEmbeddings(model="llama3.1:8b")
 llm = OllamaLLM(model="llama3.1:8b", temperature=0.5)    
 
-vector_store=Chroma(
+vector_store = Chroma(
     collection_name="my_docs", 
     embedding_function=embedding_model, 
-    persist_directory=r"../chromadb")
-
+    persist_directory=PERSIST_DIRECTORY
+)
 
 num_results = 5
 retriever = vector_store.as_retriever(search_kwargs={"k": num_results})
-
 
 def stream_response(message, history):
     docs = retriever.invoke(message) 

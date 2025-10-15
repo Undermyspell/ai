@@ -4,8 +4,19 @@ from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from uuid import uuid4
+import os
 
 print("Hello from ai!")
+
+# Get the directory where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Go up one level to the project root
+project_root = os.path.dirname(script_dir)
+
+# Use absolute paths
+DATA_PATH = os.path.join(project_root, "data")
+PERSIST_DIRECTORY = os.path.join(project_root, "chromadb")
+
 embeddings = OllamaEmbeddings(model="llama3.1:8b")
 # try:
 #     result = embeddings.embed_query("What is the meaning of life?")
@@ -21,11 +32,10 @@ embeddings = OllamaEmbeddings(model="llama3.1:8b")
 #     print(result2)
 # except Exception as e:
 #     print(f"Error generating llm chat result: {e}")
-DATA_PATH = r"../data"
 vector_store = Chroma(
     collection_name="my_docs",
     embedding_function=embeddings,
-    persist_directory=r"../chromadb"
+    persist_directory=PERSIST_DIRECTORY
 )
 
 loader = PyPDFDirectoryLoader(DATA_PATH)

@@ -9,17 +9,25 @@ from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from uuid import uuid4
+import os
 
 def ingest_documents():
     """Ingest PDF documents into the vector database."""
     print("Starting document ingestion...")
     
+    # Get absolute paths based on script location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    
     # Initialize embeddings model
     embeddings = OllamaEmbeddings(model="llama3.1:8b")
     
-    # Configuration
-    DATA_PATH = r"../data"
-    PERSIST_DIRECTORY = r"../chromadb"
+    # Configuration with absolute paths
+    DATA_PATH = os.path.join(project_root, "data")
+    PERSIST_DIRECTORY = os.path.join(project_root, "chromadb")
+    
+    print(f"Data path: {DATA_PATH}")
+    print(f"ChromaDB path: {PERSIST_DIRECTORY}")
     
     # Initialize vector store
     vector_store = Chroma(
