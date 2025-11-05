@@ -91,7 +91,7 @@ services:
       - ollama
 
   evolution-api:
-    image: atendai/evolution-api:v2.2.3
+    image: evoapicloud/evolution-api:v2.3.6
     depends_on:
       - postgres
     restart: always
