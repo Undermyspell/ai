@@ -17,7 +17,7 @@ services:
       retries: 5
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.117.1
+    image: docker.n8n.io/n8nio/n8n:1.120.1
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -70,9 +70,9 @@ services:
       - |
         echo "Waiting for Ollama server to be ready..."
         sleep 15
-        echo "Downloading model phi4-mini:3.8b..."
-        OLLAMA_HOST=http://ollama:11434 ollama pull phi4-mini:3.8b
-        echo "Model phi4-mini:3.8b downloaded successfully"
+        echo "Downloading model llama3.2.."
+        OLLAMA_HOST=http://ollama:11434 ollama pull llama3.2
+        echo "Model llama3.2 downloaded successfully"
         echo "Verifying model is available..."
         OLLAMA_HOST=http://ollama:11434 ollama list
     restart: "no"
