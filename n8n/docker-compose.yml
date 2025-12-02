@@ -1,3 +1,5 @@
+name: n8n
+
 services:
   postgres:
     image: postgres:16
@@ -17,7 +19,7 @@ services:
       retries: 5
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.120.1
+    image: docker.n8n.io/n8nio/n8n:1.121.3
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -40,7 +42,7 @@ services:
         condition: service_healthy
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.13.0
     restart: unless-stopped
     ports:
       - "11434:11434"
@@ -48,16 +50,9 @@ services:
       - ollama_data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 
   ollama-setup:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.13.0
     depends_on:
       - ollama
     volumes:
@@ -117,7 +112,17 @@ services:
 
 volumes:
   n8n_data:
+    external: true
+    name: n8n_n8n_data
   postgres_data:
+    external: true
+    name: n8n_postgres_data
   ollama_data:
+    external: true
+    name: n8n_ollama_data
   open_webui_data:
+    external: true
+    name: n8n_open_webui_data
   evolution_instances:
+    external: true
+    name: n8n_evolution_instances
