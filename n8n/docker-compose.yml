@@ -19,7 +19,7 @@ services:
       retries: 5
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.121.3
+    image: docker.n8n.io/n8nio/n8n:1.123.2
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -28,6 +28,7 @@ services:
       - TZ=Europe/Berlin
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_RUNNERS_ENABLED=true
+      - N8N_SECURE_COOKIE=false
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=n8n
       - DB_POSTGRESDB_HOST=postgres
