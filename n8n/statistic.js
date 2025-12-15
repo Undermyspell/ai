@@ -36,27 +36,25 @@ function streakText(streak) {
 const medals = ["🥇", "🥈", "🥉"];
 let lastAttendance = null;
 let lastPercent = null;
-let currentMedalIndex = 0;
+let rank = 0;
 
 const userMedals = users.map(u => {
     let medal = "";
 
-    if (currentMedalIndex < medals.length) {
-        if (lastAttendance === u.attendance && lastPercent === u.percent) {
-            // Gleichstand → gleiche Medaille
-            medal = medals[currentMedalIndex - 1];
-        } else {
-            // Neue Platzierung → nächste Medaille
-            medal = medals[currentMedalIndex];
-            currentMedalIndex++;
-        }
+    // Neuer Rang nur wenn kein Gleichstand
+    if (lastAttendance !== u.attendance || lastPercent !== u.percent) {
+        rank++;
+    }
+
+    if (rank <= medals.length) {
+        medal = medals[rank - 1];
     } else {
-        // Für alle anderen → Emoji nach Prozent
         medal = emojiForPercent(u.percent);
     }
 
     lastAttendance = u.attendance;
     lastPercent = u.percent;
+
     return { ...u, medal };
 });
 

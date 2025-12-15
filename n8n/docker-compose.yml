@@ -19,7 +19,7 @@ services:
       retries: 5
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.123.2
+    image: docker.n8n.io/n8nio/n8n:1.123.5
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -100,12 +100,12 @@ services:
       - DATABASE_CONNECTION_URI=postgresql://n8n:n8n_password@postgres:5432/evolution?schema=public
       - DATABASE_CONNECTION_CLIENT_NAME=evolution_exchange
       - DATABASE_SAVE_DATA_INSTANCE=true
-      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
-      - DATABASE_SAVE_MESSAGE_UPDATE=true
-      - DATABASE_SAVE_DATA_CONTACTS=true
-      - DATABASE_SAVE_DATA_CHATS=true
-      - DATABASE_SAVE_DATA_LABELS=true
-      - DATABASE_SAVE_DATA_HISTORIC=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=false
+      - DATABASE_SAVE_MESSAGE_UPDATE=false
+      - DATABASE_SAVE_DATA_CONTACTS=false
+      - DATABASE_SAVE_DATA_CHATS=false
+      - DATABASE_SAVE_DATA_LABELS=false
+      - DATABASE_SAVE_DATA_HISTORIC=false
       - CACHE_REDIS_ENABLED=false
       - CONFIG_SESSION_PHONE_VERSION=2.3000.1028395461
     volumes:
