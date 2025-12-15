@@ -8,7 +8,7 @@ WITH startdates AS (
     FROM public.users u
 ),
 
--- Count all Thursdays for each user
+-- Count all valid Thursdays for each user (excluding excluded_days)
 user_thursdays AS (
     SELECT 
         s."userId",
@@ -20,7 +20,10 @@ user_thursdays AS (
         current_date,
         interval '1 day'
     ) d(day)
+    LEFT JOIN excluded_days ed
+        ON ed.date = d.day
     WHERE EXTRACT(ISODOW FROM d.day) = 4
+      AND ed.date IS NULL
     GROUP BY s."userId", s.effective_start_date
 ),
 
@@ -38,7 +41,10 @@ per_thursday AS (
             current_date,
             interval '1 day'
         ) day
+        LEFT JOIN excluded_days ed
+            ON ed.date = day
         WHERE EXTRACT(ISODOW FROM day) = 4
+          AND ed.date IS NULL
     ) d
     LEFT JOIN public.stammtisch_abwesenheit a
         ON a."userId" = s."userId"
@@ -64,12 +70,10 @@ streak_calc AS (
 user_streak AS (
     SELECT
         "userId",
-        (
-            CASE
-                WHEN is_absent = 1 THEN -COUNT(*)   -- negative streak
-                ELSE COUNT(*)                      -- positive streak
-            END
-        ) AS streak
+        CASE
+            WHEN is_absent = 1 THEN -COUNT(*)
+            ELSE COUNT(*)
+        END AS streak
     FROM (
         SELECT
             sc.*,
@@ -98,11 +102,16 @@ SELECT
     ut.effective_start_date,
     us.streak
 FROM public.users u
-JOIN user_thursdays ut ON ut."userId" = u."userId"
+JOIN user_thursdays ut 
+    ON ut."userId" = u."userId"
 LEFT JOIN public.stammtisch_abwesenheit a 
     ON a."userId" = u."userId"
     AND a.date >= ut.effective_start_date
-LEFT JOIN user_streak us ON us."userId" = u."userId"
+LEFT JOIN excluded_days ed
+    ON ed.date = a.date
+LEFT JOIN user_streak us 
+    ON us."userId" = u."userId"
+WHERE ed.date IS NULL
 GROUP BY 
     u."userId", 
     u."userName", 
