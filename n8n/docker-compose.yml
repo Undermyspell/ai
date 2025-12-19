@@ -2,14 +2,14 @@ name: n8n
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     restart: unless-stopped
     environment:
       POSTGRES_DB: n8n
       POSTGRES_USER: n8n
       POSTGRES_PASSWORD: n8n_password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     ports:
       - "5432:5432"
     healthcheck:
@@ -19,7 +19,7 @@ services:
       retries: 5
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.123.5
+    image: docker.n8n.io/n8nio/n8n:2.1.0
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -116,7 +116,6 @@ volumes:
     external: true
     name: n8n_n8n_data
   postgres_data:
-    external: true
     name: n8n_postgres_data
   ollama_data:
     external: true
