@@ -1,0 +1,1 @@
+# Iteration 002: Refactoring zu Go + templ

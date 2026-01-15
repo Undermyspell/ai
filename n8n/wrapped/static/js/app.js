@@ -784,47 +784,8 @@ function generateAwards() {
 	const container = document.getElementById("awards-container");
 	if (!container) return;
 
-	const awardsList = [
-		{
-			emoji: "👑",
-			title: "Stammtisch-König",
-			subtitle: "Höchste Teilnahme 2025",
-			winner: AWARDS.koenig,
-			color: "from-yellow-500/30 to-amber-600/20",
-		},
-		{
-			emoji: "🥈",
-			title: "Fast immer da",
-			subtitle: "Zweithöchste Teilnahme",
-			winner: AWARDS.fastImmerDa,
-			color: "from-gray-400/30 to-gray-500/20",
-		},
-		{
-			emoji: "🔥",
-			title: "Streak-Master",
-			subtitle: "Längste Anwesenheits-Serie",
-			winner: [...USER_STATS].sort(
-				(a, b) => b.maxAttendanceStreak - a.maxAttendanceStreak,
-			)[0],
-			color: "from-orange-500/30 to-red-500/20",
-		},
-		{
-			emoji: "🎨",
-			title: "Ausreden-Künstler",
-			subtitle: "Kreativste Entschuldigungen",
-			winner: AWARDS.ausredenLegende,
-			color: "from-purple-500/30 to-pink-500/20",
-		},
-		{
-			emoji: "🚀",
-			title: "Potenzial 2026",
-			subtitle: "Raum nach oben",
-			winner: AWARDS.potenzial,
-			color: "from-blue-500/30 to-cyan-500/20",
-		},
-	];
-
-	container.innerHTML = awardsList
+	// AWARDS is already an array from the backend with all the data we need
+	container.innerHTML = AWARDS
 		.map(
 			(award, i) => `
 		<div class="animate-on-enter animate-scale-in delay-${i * 200 + 200} bg-gradient-to-r ${award.color} rounded-xl p-4">
