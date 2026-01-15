@@ -572,8 +572,24 @@
 
     </div>
 
+    <!-- Data injected from Go backend -->
+    <script>
+        // Primary data structures
+        window.USER_STATS = {{.UserStatsJSON}};
+        window.USER_RANKING = {{.UserStatsJSON}}; // Same as USER_STATS (already sorted by rank)
+        window.GLOBAL_STATS = {{.GlobalStatsJSON}};
+        window.AWARDS = {{.AwardsJSON}};
+        window.CATEGORY_STATS = {{.CategoryStatsJSON}};
+        window.CATEGORY_LABELS = {{.CategoryLabelsJSON}};
+        window.MONTH_STATS = {{.MonthStatsJSON}};
+        window.CANCELLATIONS = {{.CancellationsJSON}};
+        
+        // Derived data for compatibility
+        window.CANCELLATIONS_BY_MONTH = window.MONTH_STATS;
+        window.TOTAL_THURSDAYS = window.GLOBAL_STATS.totalThursdays;
+    </script>
+
     <!-- Scripts -->
-    <script src="data.js"></script>
-    <script src="app.js"></script>
+    <script src="/static/js/app.js"></script>
 </body>
 </html>
