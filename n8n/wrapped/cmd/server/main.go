@@ -17,6 +17,7 @@ func main() {
 
 	// Routes
 	http.HandleFunc("/", handlers.HandleIndex)
+	http.HandleFunc("/2025", handlers.Handle2025)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	addr := fmt.Sprintf(":%s", port)

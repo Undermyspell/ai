@@ -1,0 +1,61 @@
+package slides
+
+// AwardsIntro slide
+templ AwardsIntro() {
+	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
+		<div class="animate-on-enter animate-scale-in">
+			<span class="text-8xl mb-4 block animate-glow">🏆</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-300 text-3xl md:text-4xl font-bold text-biergold text-glow mb-4">
+			Die Stammtisch-Awards
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-500 text-xl text-schaum/70">
+			Und der Gewinner ist...
+		</p>
+	</div>
+}
+
+// Awards slide
+templ Awards() {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-10 pb-6 overflow-y-auto" data-duration="10000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-6">
+			🏅 Die Awards 2025
+		</h2>
+		<div id="awards-container" class="w-full max-w-md space-y-4">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+	</div>
+}
+
+// Finale slide - Der große Abschluss
+templ Finale() {
+	<div class="slide flex-col items-center justify-center h-screen px-6 text-center relative overflow-hidden" data-duration="10000">
+		<div id="confetti-container" class="absolute inset-0 pointer-events-none">
+			<!-- Konfetti wird dynamisch generiert -->
+		</div>
+		<div class="animate-on-enter animate-scale-in z-10">
+			<span class="text-8xl mb-6 block">🍻</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-300 text-2xl md:text-3xl font-bold text-schaum mb-4 z-10">
+			Danke für ein legendäres
+		</h2>
+		<h1 class="animate-on-enter animate-fade-in-up delay-500 text-4xl md:text-6xl font-bold text-biergold text-glow mb-6 z-10">
+			Stammtisch-Jahr 2025!
+		</h1>
+		<p class="animate-on-enter animate-fade-in delay-700 text-xl text-schaum/70 mb-8 z-10">
+			🍺 2026 wird noch stärker – donnerstags! 🍺
+		</p>
+		<div class="animate-on-enter animate-fade-in-up delay-1000 z-10">
+			<div class="flex gap-4 text-4xl">
+				<span class="animate-bounce delay-100">🎉</span>
+				<span class="animate-bounce delay-200">🍺</span>
+				<span class="animate-bounce delay-300">🏆</span>
+				<span class="animate-bounce delay-400">🎊</span>
+				<span class="animate-bounce delay-500">🍻</span>
+			</div>
+		</div>
+		<p class="animate-on-enter animate-fade-in delay-1500 text-schaum/50 text-sm mt-8 z-10">
+			Prost auf euch alle! 🍺
+		</p>
+	</div>
+}

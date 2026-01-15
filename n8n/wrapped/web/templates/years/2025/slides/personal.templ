@@ -1,0 +1,58 @@
+package slides
+
+// PersonalTop slide - Top Performer Platz 1-5
+templ PersonalTop() {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-8 pb-6 overflow-y-auto" data-duration="8000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
+			🏆 Die Top-Performer
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-4">Platz 1-5</p>
+		<div id="personal-top5" class="w-full max-w-md space-y-2">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+	</div>
+}
+
+// PersonalMid slide - Mittleres Feld Platz 6-10
+templ PersonalMid() {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-8 pb-6 overflow-y-auto" data-duration="7000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
+			💪 Das Mittelfeld
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-4">Platz 6-10</p>
+		<div id="personal-mid5" class="w-full max-w-md space-y-2">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+	</div>
+}
+
+// PersonalBottom slide - Potenzial 2026 Platz 11-15
+templ PersonalBottom() {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-8 pb-6 overflow-y-auto" data-duration="7000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
+			🚀 Potenzial 2026
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-4">Platz 11-15</p>
+		<div id="personal-bottom5" class="w-full max-w-md space-y-2">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+	</div>
+}
+
+// PersonalityTypes slide - Stammtisch-Persönlichkeitstypen
+templ PersonalityTypes() {
+	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="6000">
+		<div class="animate-on-enter animate-scale-in">
+			<span class="text-6xl mb-4 block">🎭</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-200 text-2xl font-bold text-biergold mb-4">
+			Die Stammtisch-Typen
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-300 text-schaum/70 text-sm mb-6">
+			Welcher Typ bist du?
+		</p>
+		<div id="personality-types" class="animate-on-enter animate-fade-in-up delay-500 w-full max-w-md space-y-3">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+	</div>
+}

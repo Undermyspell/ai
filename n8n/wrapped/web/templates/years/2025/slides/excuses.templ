@@ -1,0 +1,77 @@
+package slides
+
+// ExcusesIntro slide
+templ ExcusesIntro() {
+	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
+		<div class="animate-on-enter animate-scale-in">
+			<span class="text-7xl mb-4 block">🤡</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-300 text-3xl md:text-4xl font-bold text-biergold text-glow mb-4">
+			Ausreden Wrapped
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-500 text-xl text-schaum/70">
+			Die kreativsten Absagen 2025
+		</p>
+	</div>
+}
+
+// ExcuseCategories slide
+templ ExcuseCategories() {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="7000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
+			📊 Ausreden nach Kategorie
+		</h2>
+		<div id="excuse-categories" class="w-full max-w-md space-y-3">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+	</div>
+}
+
+// BestExcuses slide
+templ BestExcuses() {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-10 pb-6 overflow-y-auto" data-duration="8000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
+			🏆 Kreativste Ausreden 2025
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-6">Die besten Klassiker</p>
+		<div id="best-excuses" class="w-full max-w-md space-y-3">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+	</div>
+}
+
+// Heatmap slide
+templ Heatmap() {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6" data-duration="6000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-2">
+			🗓️ Absage-Heatmap 2025
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-6">Wann wurde am meisten abgesagt?</p>
+		<div id="heatmap" class="w-full max-w-md">
+			<!-- Wird dynamisch gefüllt -->
+		</div>
+		<div id="heatmap-insight" class="animate-on-enter animate-fade-in-up delay-700 mt-6 text-center">
+			<!-- Insight wird dynamisch gefüllt -->
+		</div>
+	</div>
+}
+
+// AISummary slide - Der typische Stammtisch
+templ AISummary() {
+	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="7000">
+		<div class="animate-on-enter animate-scale-in">
+			<span class="text-6xl mb-4 block">🧠</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-200 text-2xl md:text-3xl font-bold text-biergold text-glow mb-6">
+			Der typische Stammtisch 2025
+		</h2>
+		<div class="animate-on-enter animate-fade-in delay-400 bg-holz-light/40 rounded-2xl p-6 max-w-md">
+			<p class="text-schaum text-lg leading-relaxed" id="ai-summary">
+				<!-- Wird dynamisch gefüllt -->
+			</p>
+		</div>
+		<div class="animate-on-enter animate-fade-in-up delay-700 mt-6 text-schaum/50 text-sm">
+			<span class="animate-pulse-slow">✨ AI-generierte Zusammenfassung</span>
+		</div>
+	</div>
+}
