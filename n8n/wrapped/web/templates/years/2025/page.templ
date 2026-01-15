@@ -1,0 +1,33 @@
+package year2025
+
+import (
+	"github.com/michael/stammtisch-wrapped/web/templates"
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2025/slides"
+)
+
+// Page renders the complete 2025 Wrapped experience
+templ Page(data templates.PageData) {
+	@templates.Layout("Stammtisch Wrapped 2025 🍺", "2025") {
+		@slides.Intro()
+		@slides.YearStats()
+		@slides.RankingIntro()
+		@slides.Top5()
+		@slides.MidRanking()
+		@slides.BottomRanking()
+		@slides.StreaksIntro()
+		@slides.Streaks()
+		@slides.ExcusesIntro()
+		@slides.ExcuseCategories()
+		@slides.BestExcuses()
+		@slides.Heatmap()
+		@slides.AISummary()
+		@slides.PersonalTop()
+		@slides.PersonalMid()
+		@slides.PersonalBottom()
+		@slides.PersonalityTypes()
+		@slides.AwardsIntro()
+		@slides.Awards()
+		@slides.Finale()
+		@templates.DataScript(data)
+	}
+}

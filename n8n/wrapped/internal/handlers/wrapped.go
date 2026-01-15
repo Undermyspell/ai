@@ -2,24 +2,21 @@ package handlers
 
 import (
 	"encoding/json"
-	"html/template"
 	"net/http"
 
 	"github.com/michael/stammtisch-wrapped/data"
 	"github.com/michael/stammtisch-wrapped/pkg/models"
+	"github.com/michael/stammtisch-wrapped/web/templates"
+	year2025 "github.com/michael/stammtisch-wrapped/web/templates/years/2025"
 )
 
-type PageData struct {
-	UserStatsJSON      template.JS
-	GlobalStatsJSON    template.JS
-	AwardsJSON         template.JS
-	CategoryStatsJSON  template.JS
-	MonthStatsJSON     template.JS
-	CancellationsJSON  template.JS
-	CategoryLabelsJSON template.JS
+// HandleIndex redirects to the current year
+func HandleIndex(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/2025", http.StatusTemporaryRedirect)
 }
 
-func HandleIndex(w http.ResponseWriter, r *http.Request) {
+// Handle2025 renders the 2025 Wrapped page
+func Handle2025(w http.ResponseWriter, r *http.Request) {
 	// Load data from mock generator
 	userStats := data.CalculateUserStats()
 	globalStats := data.GetGlobalStats()
@@ -38,68 +35,30 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Serialize data to JSON for JavaScript
-	userStatsJSON, err := json.Marshal(userStats)
+	// Prepare template data - using any type for JSON serialization by templ
+	pageData := templates.PageData{
+		UserStatsJSON:      userStats,
+		GlobalStatsJSON:    globalStats,
+		AwardsJSON:         awards,
+		CategoryStatsJSON:  categoryStats,
+		CategoryLabelsJSON: categoryLabels,
+		MonthStatsJSON:     monthStats,
+		CancellationsJSON:  allCancellations,
+		Year:               "2025",
+	}
+
+	// Render the templ component
+	err := year2025.Page(pageData).Render(r.Context(), w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
+}
 
-	globalStatsJSON, err := json.Marshal(globalStats)
+// Helper function to serialize data to JSON (kept for reference)
+func mustMarshal(v any) string {
+	data, err := json.Marshal(v)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return "{}"
 	}
-
-	awardsJSON, err := json.Marshal(awards)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	categoryStatsJSON, err := json.Marshal(categoryStats)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	monthStatsJSON, err := json.Marshal(monthStats)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	cancellationsJSON, err := json.Marshal(allCancellations)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	categoryLabelsJSON, err := json.Marshal(categoryLabels)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Prepare template data
-	pageData := PageData{
-		UserStatsJSON:      template.JS(userStatsJSON),
-		GlobalStatsJSON:    template.JS(globalStatsJSON),
-		AwardsJSON:         template.JS(awardsJSON),
-		CategoryStatsJSON:  template.JS(categoryStatsJSON),
-		MonthStatsJSON:     template.JS(monthStatsJSON),
-		CancellationsJSON:  template.JS(cancellationsJSON),
-		CategoryLabelsJSON: template.JS(categoryLabelsJSON),
-	}
-
-	// Parse and execute template
-	tmpl, err := template.ParseFiles("web/templates/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	return string(data)
 }

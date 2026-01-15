@@ -1,0 +1,94 @@
+package templates
+
+// PageData contains the JSON data for the frontend
+type PageData struct {
+	UserStatsJSON      any
+	GlobalStatsJSON    any
+	AwardsJSON         any
+	CategoryStatsJSON  any
+	CategoryLabelsJSON any
+	MonthStatsJSON     any
+	CancellationsJSON  any
+	Year               string
+}
+
+// Layout is the base HTML template for all pages
+templ Layout(title string, year string) {
+	<!DOCTYPE html>
+	<html lang="de">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					theme: {
+						extend: {
+							colors: {
+								'holz': '#3D2314',
+								'holz-light': '#5D3A2A',
+								'biergold': '#F59E0B',
+								'biergold-dark': '#D97706',
+								'bernstein': '#B45309',
+								'schaum': '#FEF3C7',
+								'kupfer': '#92400E',
+								'tafel': '#1C1917',
+							},
+							fontFamily: {
+								'display': ['Georgia', 'serif'],
+							}
+						}
+					}
+				}
+			</script>
+			<link rel="stylesheet" href="/static/css/styles.css"/>
+		</head>
+		<body class="bg-stammtisch min-h-screen overflow-hidden font-display">
+			<!-- Progress Bar -->
+			<div class="fixed top-0 left-0 right-0 z-50 h-1 bg-holz-light">
+				<div id="progress-bar" class="progress-bar h-full bg-biergold" style="width: 0%"></div>
+			</div>
+			<!-- Navigation Dots -->
+			<div id="nav-dots" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex gap-2">
+				<!-- Dots werden dynamisch generiert -->
+			</div>
+			<!-- Skip/Tap Hint -->
+			<div class="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 text-schaum/50 text-xs">
+				Tippen zum Weiter
+			</div>
+			<!-- Slides Container -->
+			<div id="slides-container" class="w-full h-screen">
+				{ children... }
+			</div>
+			<!-- Scripts -->
+			<script src="/static/js/app.js"></script>
+		</body>
+	</html>
+}
+
+// DataScript injects the JSON data into the page using script tags
+templ DataScript(data PageData) {
+	@templ.JSONScript("data-user-stats", data.UserStatsJSON)
+	@templ.JSONScript("data-global-stats", data.GlobalStatsJSON)
+	@templ.JSONScript("data-awards", data.AwardsJSON)
+	@templ.JSONScript("data-category-stats", data.CategoryStatsJSON)
+	@templ.JSONScript("data-category-labels", data.CategoryLabelsJSON)
+	@templ.JSONScript("data-month-stats", data.MonthStatsJSON)
+	@templ.JSONScript("data-cancellations", data.CancellationsJSON)
+	<script>
+		// Initialize global data from JSON script tags
+		window.USER_STATS = JSON.parse(document.getElementById('data-user-stats').textContent);
+		window.USER_RANKING = window.USER_STATS;
+		window.GLOBAL_STATS = JSON.parse(document.getElementById('data-global-stats').textContent);
+		window.AWARDS = JSON.parse(document.getElementById('data-awards').textContent);
+		window.CATEGORY_STATS = JSON.parse(document.getElementById('data-category-stats').textContent);
+		window.CATEGORY_LABELS = JSON.parse(document.getElementById('data-category-labels').textContent);
+		window.MONTH_STATS = JSON.parse(document.getElementById('data-month-stats').textContent);
+		window.CANCELLATIONS = JSON.parse(document.getElementById('data-cancellations').textContent);
+		
+		// Derived data for compatibility
+		window.CANCELLATIONS_BY_MONTH = window.MONTH_STATS;
+		window.TOTAL_THURSDAYS = window.GLOBAL_STATS.totalThursdays;
+	</script>
+}
