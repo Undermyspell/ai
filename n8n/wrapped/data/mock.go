@@ -30,27 +30,23 @@ func GetUsers() []models.User {
 	}
 }
 
-// GetThursdays2025 returns all Thursdays in 2025 (up to Dec 18)
-func GetThursdays2025() []time.Time {
-	dates := []string{
-		"2025-01-02", "2025-01-09", "2025-01-16", "2025-01-23", "2025-01-30",
-		"2025-02-06", "2025-02-13", "2025-02-20", "2025-02-27",
-		"2025-03-06", "2025-03-13", "2025-03-20", "2025-03-27",
-		"2025-04-03", "2025-04-10", "2025-04-17", "2025-04-24",
-		"2025-05-01", "2025-05-08", "2025-05-15", "2025-05-22", "2025-05-29",
-		"2025-06-05", "2025-06-12", "2025-06-19", "2025-06-26",
-		"2025-07-03", "2025-07-10", "2025-07-17", "2025-07-24", "2025-07-31",
-		"2025-08-07", "2025-08-14", "2025-08-21", "2025-08-28",
-		"2025-09-04", "2025-09-11", "2025-09-18", "2025-09-25",
-		"2025-10-02", "2025-10-09", "2025-10-16", "2025-10-23", "2025-10-30",
-		"2025-11-06", "2025-11-13", "2025-11-20", "2025-11-27",
-		"2025-12-04", "2025-12-11", "2025-12-18",
+// GetThursdays2026 returns all Thursdays in the 2026 evaluation period (01.12.2025 - 30.11.2026)
+// Limited to today's date to exclude future Thursdays
+func GetThursdays2026() []time.Time {
+	start := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 11, 30, 0, 0, 0, 0, time.UTC)
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// Cap end date at today
+	if end.After(today) {
+		end = today
 	}
 
-	thursdays := make([]time.Time, len(dates))
-	for i, dateStr := range dates {
-		t, _ := time.Parse("2006-01-02", dateStr)
-		thursdays[i] = t
+	var thursdays []time.Time
+	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+		if d.Weekday() == time.Thursday {
+			thursdays = append(thursdays, d)
+		}
 	}
 	return thursdays
 }
@@ -58,7 +54,7 @@ func GetThursdays2025() []time.Time {
 // GenerateCancellations creates mock cancellations for all users
 func GenerateCancellations() []models.Cancellation {
 	users := GetUsers()
-	thursdays := GetThursdays2025()
+	thursdays := GetThursdays2026()
 	categories := models.GetAllExcuseCategories()
 
 	// Cancellation rates per user
@@ -117,7 +113,7 @@ func GenerateCancellations() []models.Cancellation {
 // CalculateUserStats computes statistics for all users
 func CalculateUserStats() []models.UserStats {
 	users := GetUsers()
-	thursdays := GetThursdays2025()
+	thursdays := GetThursdays2026()
 	cancellations := GenerateCancellations()
 	totalThursdays := len(thursdays)
 
@@ -166,7 +162,7 @@ func CalculateUserStats() []models.UserStats {
 // GetGlobalStats calculates overall statistics
 func GetGlobalStats() models.GlobalStats {
 	users := GetUsers()
-	thursdays := GetThursdays2025()
+	thursdays := GetThursdays2026()
 	cancellations := GenerateCancellations()
 	userStats := CalculateUserStats()
 
@@ -336,7 +332,7 @@ func GetAwards() []models.Award {
 		{
 			Emoji:    "👑",
 			Title:    "Stammtisch-König",
-			Subtitle: "Höchste Teilnahme 2025",
+			Subtitle: "Höchste Teilnahme 2026",
 			Winner:   userStats[0],
 			Color:    "from-yellow-500/30 to-amber-600/20",
 		},
@@ -363,7 +359,7 @@ func GetAwards() []models.Award {
 		},
 		{
 			Emoji:    "🚀",
-			Title:    "Potenzial 2026",
+			Title:    "Potenzial 2027",
 			Subtitle: "Raum nach oben",
 			Winner:   userStats[len(userStats)-1],
 			Color:    "from-blue-500/30 to-cyan-500/20",

@@ -287,10 +287,16 @@ class StammtischWrapped {
 
 function populateDynamicContent() {
 	// Globale Statistiken einfügen
+	const totalThursdays = document.getElementById("total-thursdays");
+	const totalUsers = document.getElementById("total-users");
 	const totalAttendances = document.getElementById("total-attendances");
 	const totalCancellations = document.getElementById("total-cancellations");
 	const avgRate = document.getElementById("avg-rate");
 
+	if (totalThursdays)
+		totalThursdays.dataset.countTo = GLOBAL_STATS.totalThursdays;
+	if (totalUsers)
+		totalUsers.dataset.countTo = GLOBAL_STATS.totalUsers;
 	if (totalAttendances)
 		totalAttendances.dataset.countTo = GLOBAL_STATS.totalAttendances;
 	if (totalCancellations)
