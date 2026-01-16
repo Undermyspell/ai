@@ -23,10 +23,10 @@ type Config struct {
 // ConfigFromEnv creates a Config from environment variables
 func ConfigFromEnv() Config {
 	return Config{
-		Host:     getEnvOrDefault("DB_HOST", "localhost"),
+		Host:     getEnvOrDefault("DB_HOST", "192.168.178.46"),
 		Port:     getEnvOrDefault("DB_PORT", "5432"),
-		User:     getEnvOrDefault("DB_USER", "postgres"),
-		Password: getEnvOrDefault("DB_PASSWORD", ""),
+		User:     getEnvOrDefault("DB_USER", "n8n"),
+		Password: getEnvOrDefault("DB_PASSWORD", "n8n_password"),
 		DBName:   getEnvOrDefault("DB_NAME", "zumba"),
 		SSLMode:  getEnvOrDefault("DB_SSLMODE", "disable"),
 	}

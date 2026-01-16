@@ -15,9 +15,9 @@ import (
 	year2026 "github.com/michael/stammtisch-wrapped/web/templates/years/2026"
 )
 
-// Date range for 2026 Wrapped: 01.01.2025 - 30.11.2026
+// Date range for 2026 Wrapped: 01.12.2025 - 30.11.2026
 var dateRange2026 = repository.DateRange{
-	Start: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+	Start: time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC),
 	End:   time.Date(2026, 11, 30, 23, 59, 59, 0, time.UTC),
 }
 

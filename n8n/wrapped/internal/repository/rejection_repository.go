@@ -14,6 +14,16 @@ type DateRange struct {
 	End   time.Time
 }
 
+// EffectiveEnd returns the end date capped at today's date
+// This ensures we don't consider future Thursdays in evaluations
+func (d DateRange) EffectiveEnd() time.Time {
+	today := time.Now().Truncate(24 * time.Hour)
+	if d.End.After(today) {
+		return today
+	}
+	return d.End
+}
+
 // RejectionRepository handles data access for rejection/absence data
 type RejectionRepository struct {
 	db *database.PostgresDB
@@ -55,7 +65,9 @@ func (r *RejectionRepository) GetAllUsers(ctx context.Context) ([]RawUser, error
 }
 
 // GetRejectionsByDateRange fetches all rejections within a date range (only Thursdays, excluding excluded_days)
+// The end date is capped at today to exclude future dates
 func (r *RejectionRepository) GetRejectionsByDateRange(ctx context.Context, dateRange DateRange) ([]RawRejection, error) {
+	effectiveEnd := dateRange.EffectiveEnd()
 	query := `
 		SELECT "userId", date, message
 		FROM stammtisch_abwesenheit
@@ -65,7 +77,7 @@ func (r *RejectionRepository) GetRejectionsByDateRange(ctx context.Context, date
 		ORDER BY date, "userId"
 	`
 
-	rows, err := r.db.Query(ctx, query, dateRange.Start, dateRange.End)
+	rows, err := r.db.Query(ctx, query, dateRange.Start, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query rejections: %w", err)
 	}
@@ -88,7 +100,9 @@ func (r *RejectionRepository) GetRejectionsByDateRange(ctx context.Context, date
 }
 
 // GetExcludedDaysByDateRange fetches all excluded days within a date range
+// The end date is capped at today to exclude future dates
 func (r *RejectionRepository) GetExcludedDaysByDateRange(ctx context.Context, dateRange DateRange) ([]ExcludedDay, error) {
+	effectiveEnd := dateRange.EffectiveEnd()
 	query := `
 		SELECT date
 		FROM excluded_days
@@ -96,7 +110,7 @@ func (r *RejectionRepository) GetExcludedDaysByDateRange(ctx context.Context, da
 		ORDER BY date
 	`
 
-	rows, err := r.db.Query(ctx, query, dateRange.Start, dateRange.End)
+	rows, err := r.db.Query(ctx, query, dateRange.Start, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query excluded days: %w", err)
 	}
@@ -119,7 +133,9 @@ func (r *RejectionRepository) GetExcludedDaysByDateRange(ctx context.Context, da
 }
 
 // GetThursdaysByDateRange returns all Thursdays within a date range, excluding excluded_days
+// The end date is capped at today to exclude future Thursdays
 func (r *RejectionRepository) GetThursdaysByDateRange(ctx context.Context, dateRange DateRange) ([]time.Time, error) {
+	effectiveEnd := dateRange.EffectiveEnd()
 	query := `
 		WITH all_thursdays AS (
 			SELECT d::date AS thursday
@@ -132,7 +148,7 @@ func (r *RejectionRepository) GetThursdaysByDateRange(ctx context.Context, dateR
 		ORDER BY thursday
 	`
 
-	rows, err := r.db.Query(ctx, query, dateRange.Start, dateRange.End)
+	rows, err := r.db.Query(ctx, query, dateRange.Start, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query thursdays: %w", err)
 	}
