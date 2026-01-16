@@ -3,31 +3,31 @@ package year2026
 import (
 	"github.com/michael/stammtisch-wrapped/web/templates"
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/slides"
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
 // Page renders the complete 2026 Wrapped experience
-templ Page(data templates.PageData) {
+templ Page(vm viewmodels.PageViewModel) {
 	@templates.Layout("Stammtisch Wrapped 2026 🍺", "2026") {
 		@slides.Intro()
-		@slides.YearStats()
+		@slides.YearStats(vm.YearStats)
 		@slides.RankingIntro()
-		@slides.Top5()
-		@slides.MidRanking()
-		@slides.BottomRanking()
+		@slides.Top5(vm.Top5Rankings)
+		@slides.MidRanking(vm.MidRankings)
+		@slides.BottomRanking(vm.BottomRankings)
 		@slides.StreaksIntro()
-		@slides.Streaks()
+		@slides.Streaks(vm.AttendanceStreaks, vm.CancellationStreaks)
 		@slides.ExcusesIntro()
-		@slides.ExcuseCategories()
-		@slides.BestExcuses()
-		@slides.Heatmap()
-		@slides.AISummary()
-		@slides.PersonalTop()
-		@slides.PersonalMid()
-		@slides.PersonalBottom()
-		@slides.PersonalityTypes()
+		@slides.ExcuseCategories(vm.CategoryStats)
+		@slides.BestExcuses(vm.BestExcuses)
+		@slides.Heatmap(vm.HeatmapMonths, vm.HeatmapInsight)
+		@slides.AISummary(vm.AIStats)
+		@slides.PersonalTop(vm.PersonalTop5)
+		@slides.PersonalMid(vm.PersonalMid5)
+		@slides.PersonalBottom(vm.PersonalBottom5)
+		@slides.PersonalityTypes(vm.PersonalityTypes)
 		@slides.AwardsIntro()
-		@slides.Awards()
-		@slides.Finale()
-		@templates.DataScript(data)
+		@slides.Awards(vm.Awards)
+		@slides.Finale(vm.Confetti)
 	}
 }

@@ -1,5 +1,11 @@
 package slides
 
+import (
+	"fmt"
+
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+)
+
 // StreaksIntro slide
 templ StreaksIntro() {
 	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
@@ -15,20 +21,48 @@ templ StreaksIntro() {
 	</div>
 }
 
+// AttendanceStreakCard renders a single attendance streak card
+templ AttendanceStreakCard(user viewmodels.StreakUser) {
+	<div class={ "animate-on-enter animate-scale-in " + user.DelayClass + " bg-gradient-to-r from-orange-500/30 to-red-500/20 rounded-xl p-4 flex items-center gap-4" }>
+		<div class="text-3xl animate-fire">🔥</div>
+		<div class="flex-1">
+			<div class="font-bold text-schaum">{ user.Emoji } { user.Name }</div>
+			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d", user.MaxAttendanceStreak) } Wochen am Stück da!</div>
+		</div>
+		<div class="text-3xl font-bold text-orange-400">{ fmt.Sprintf("%d", user.MaxAttendanceStreak) }</div>
+	</div>
+}
+
+// CancellationStreakCard renders a single cancellation streak card
+templ CancellationStreakCard(user viewmodels.StreakUser) {
+	<div class={ "animate-on-enter animate-scale-in " + user.DelayClass + " bg-gradient-to-r from-blue-500/30 to-cyan-500/20 rounded-xl p-4 flex items-center gap-4" }>
+		<div class="text-3xl">🧊</div>
+		<div class="flex-1">
+			<div class="font-bold text-schaum">{ user.Emoji } { user.Name }</div>
+			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d", user.MaxCancellationStreak) } Wochen gefehlt</div>
+		</div>
+		<div class="text-3xl font-bold text-blue-400">{ fmt.Sprintf("%d", user.MaxCancellationStreak) }</div>
+	</div>
+}
+
 // Streaks slide - Beste Streaks
-templ Streaks() {
+templ Streaks(attendanceStreaks []viewmodels.StreakUser, cancellationStreaks []viewmodels.StreakUser) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6" data-duration="7000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
 			🔥 Längste Anwesenheits-Streaks
 		</h2>
-		<div id="attendance-streaks" class="w-full max-w-md space-y-4">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-4">
+			for _, user := range attendanceStreaks {
+				@AttendanceStreakCard(user)
+			}
 		</div>
 		<h2 class="animate-on-enter animate-fade-in delay-500 text-xl font-bold text-schaum mb-6 mt-8">
 			🧊 Längste Absage-Streaks
 		</h2>
-		<div id="cancellation-streaks" class="w-full max-w-md space-y-4">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-4">
+			for _, user := range cancellationStreaks {
+				@CancellationStreakCard(user)
+			}
 		</div>
 	</div>
 }

@@ -10,8 +10,7 @@ import (
 	"github.com/michael/stammtisch-wrapped/internal/database"
 	eval2026 "github.com/michael/stammtisch-wrapped/internal/evaluations/2026"
 	"github.com/michael/stammtisch-wrapped/internal/repository"
-	"github.com/michael/stammtisch-wrapped/pkg/models"
-	"github.com/michael/stammtisch-wrapped/web/templates"
+	"github.com/michael/stammtisch-wrapped/internal/viewbuilder"
 	year2026 "github.com/michael/stammtisch-wrapped/web/templates/years/2026"
 )
 
@@ -45,23 +44,26 @@ func (h *WrappedHandler) HandleIndex(w http.ResponseWriter, r *http.Request) {
 
 // Handle2026 renders the 2026 Wrapped page
 func (h *WrappedHandler) Handle2026(w http.ResponseWriter, r *http.Request) {
-	var pageData templates.PageData
+	var evalData *viewbuilder.EvalData
 
 	if h.useDB {
-		pageData = h.loadFromDatabase(r.Context())
+		evalData = h.loadFromDatabase(r.Context())
 	} else {
-		pageData = h.loadFromMock()
+		evalData = h.loadFromMock()
 	}
 
+	// Build view model using the viewbuilder
+	vm := viewbuilder.Build(evalData, "2026")
+
 	// Render the templ component
-	err := year2026.Page(pageData).Render(r.Context(), w)
+	err := year2026.Page(vm).Render(r.Context(), w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 // loadFromDatabase loads data from PostgreSQL and evaluates it
-func (h *WrappedHandler) loadFromDatabase(ctx context.Context) templates.PageData {
+func (h *WrappedHandler) loadFromDatabase(ctx context.Context) *viewbuilder.EvalData {
 	rawData, err := h.repo.GetRawDataByDateRange(ctx, dateRange2026)
 	if err != nil {
 		log.Printf("Error loading data from database: %v, falling back to mock data", err)
@@ -72,23 +74,18 @@ func (h *WrappedHandler) loadFromDatabase(ctx context.Context) templates.PageDat
 	evaluator := eval2026.NewEvaluator(rawData)
 	result := evaluator.Evaluate()
 
-	// Prepare category labels for frontend
-	categoryLabels := buildCategoryLabels()
-
-	return templates.PageData{
-		UserStatsJSON:      result.UserStats,
-		GlobalStatsJSON:    result.GlobalStats,
-		AwardsJSON:         result.Awards,
-		CategoryStatsJSON:  result.CategoryStats,
-		CategoryLabelsJSON: categoryLabels,
-		MonthStatsJSON:     result.MonthStats,
-		CancellationsJSON:  result.Cancellations,
-		Year:               "2026",
+	return &viewbuilder.EvalData{
+		UserStats:     result.UserStats,
+		GlobalStats:   result.GlobalStats,
+		CategoryStats: result.CategoryStats,
+		MonthStats:    result.MonthStats,
+		Awards:        result.Awards,
+		Cancellations: result.Cancellations,
 	}
 }
 
 // loadFromMock loads data from the mock generator (fallback)
-func (h *WrappedHandler) loadFromMock() templates.PageData {
+func (h *WrappedHandler) loadFromMock() *viewbuilder.EvalData {
 	userStats := data.CalculateUserStats()
 	globalStats := data.GetGlobalStats()
 	awards := data.GetAwards()
@@ -96,29 +93,12 @@ func (h *WrappedHandler) loadFromMock() templates.PageData {
 	monthStats := data.GetMonthStats()
 	allCancellations := data.GenerateCancellations()
 
-	categoryLabels := buildCategoryLabels()
-
-	return templates.PageData{
-		UserStatsJSON:      userStats,
-		GlobalStatsJSON:    globalStats,
-		AwardsJSON:         awards,
-		CategoryStatsJSON:  categoryStats,
-		CategoryLabelsJSON: categoryLabels,
-		MonthStatsJSON:     monthStats,
-		CancellationsJSON:  allCancellations,
-		Year:               "2026",
+	return &viewbuilder.EvalData{
+		UserStats:     userStats,
+		GlobalStats:   globalStats,
+		CategoryStats: categoryStats,
+		MonthStats:    monthStats,
+		Awards:        awards,
+		Cancellations: allCancellations,
 	}
-}
-
-// buildCategoryLabels creates category label map for frontend
-func buildCategoryLabels() map[string]map[string]string {
-	categoryLabels := make(map[string]map[string]string)
-	allCategories := models.GetAllExcuseCategories()
-	for key, cat := range allCategories {
-		categoryLabels[key] = map[string]string{
-			"label": cat.Label,
-			"emoji": cat.Emoji,
-		}
-	}
-	return categoryLabels
 }

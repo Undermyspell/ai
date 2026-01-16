@@ -1,5 +1,11 @@
 package slides
 
+import (
+	"fmt"
+
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+)
+
 // Intro slide - the first welcome slide
 templ Intro() {
 	<div class="slide active flex-col items-center justify-center h-screen px-6 text-center" data-duration="5000">
@@ -25,7 +31,7 @@ templ Intro() {
 }
 
 // YearStats slide - Das große Jahr in Zahlen
-templ YearStats() {
+templ YearStats(stats viewmodels.YearStatsView) {
 	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="7000">
 		<h2 class="animate-on-enter animate-fade-in-up text-2xl md:text-3xl font-bold text-schaum mb-8">
 			Das große Stammtisch-Jahr
@@ -34,32 +40,53 @@ templ YearStats() {
 			<!-- Donnerstage -->
 			<div class="animate-on-enter animate-scale-in delay-200 bg-holz-light/50 rounded-2xl p-4 md:p-6">
 				<span class="text-3xl mb-2 block">📅</span>
-				<span class="text-4xl md:text-5xl font-bold text-biergold block" id="total-thursdays" data-count-to="0" data-count-duration="2000">0</span>
+				<span
+					class="text-4xl md:text-5xl font-bold text-biergold block"
+					data-count-to={ fmt.Sprintf("%d", stats.TotalThursdays) }
+					data-count-duration="2000"
+				>0</span>
 				<span class="text-schaum/70 text-sm">Donnerstage</span>
 			</div>
 			<!-- Stammtischler -->
 			<div class="animate-on-enter animate-scale-in delay-300 bg-holz-light/50 rounded-2xl p-4 md:p-6">
 				<span class="text-3xl mb-2 block">👥</span>
-				<span class="text-4xl md:text-5xl font-bold text-biergold block" id="total-users" data-count-to="0" data-count-duration="1500">0</span>
+				<span
+					class="text-4xl md:text-5xl font-bold text-biergold block"
+					data-count-to={ fmt.Sprintf("%d", stats.TotalUsers) }
+					data-count-duration="1500"
+				>0</span>
 				<span class="text-schaum/70 text-sm">Stammtischler</span>
 			</div>
 			<!-- Zusagen -->
 			<div class="animate-on-enter animate-scale-in delay-400 bg-holz-light/50 rounded-2xl p-4 md:p-6">
 				<span class="text-3xl mb-2 block">✅</span>
-				<span class="text-4xl md:text-5xl font-bold text-green-500 block" id="total-attendances" data-count-to="0" data-count-duration="2500">0</span>
+				<span
+					class="text-4xl md:text-5xl font-bold text-green-500 block"
+					data-count-to={ fmt.Sprintf("%d", stats.TotalAttendances) }
+					data-count-duration="2500"
+				>0</span>
 				<span class="text-schaum/70 text-sm">Zusagen</span>
 			</div>
 			<!-- Absagen -->
 			<div class="animate-on-enter animate-scale-in delay-500 bg-holz-light/50 rounded-2xl p-4 md:p-6">
 				<span class="text-3xl mb-2 block">❌</span>
-				<span class="text-4xl md:text-5xl font-bold text-red-400 block" id="total-cancellations" data-count-to="0" data-count-duration="2500">0</span>
+				<span
+					class="text-4xl md:text-5xl font-bold text-red-400 block"
+					data-count-to={ fmt.Sprintf("%d", stats.TotalCancellations) }
+					data-count-duration="2500"
+				>0</span>
 				<span class="text-schaum/70 text-sm">Absagen</span>
 			</div>
 		</div>
 		<!-- Durchschnittliche Teilnahmequote -->
 		<div class="animate-on-enter animate-fade-in-up delay-700 mt-8 bg-biergold/20 rounded-2xl p-6 max-w-md w-full">
 			<span class="text-xl text-schaum/70 block mb-2">📈 Durchschnittliche Teilnahme</span>
-			<span class="text-5xl md:text-6xl font-bold text-biergold text-glow" id="avg-rate" data-count-to="0" data-count-suffix="%" data-count-duration="2000">0%</span>
+			<span
+				class="text-5xl md:text-6xl font-bold text-biergold text-glow"
+				data-count-to={ fmt.Sprintf("%d", stats.AverageAttendanceRate) }
+				data-count-suffix="%"
+				data-count-duration="2000"
+			>0%</span>
 		</div>
 	</div>
 }
@@ -79,38 +106,73 @@ templ RankingIntro() {
 	</div>
 }
 
+// RankingCard renders a single ranking card
+templ RankingCard(user viewmodels.RankedUser) {
+	<div class={ "animate-on-enter animate-slide-left " + user.DelayClass + " " + user.TierBgColor + " rounded-xl p-4 flex items-center gap-4" }>
+		<div class="text-2xl w-10 text-center">
+			if user.Rank <= 3 {
+				{ user.RankDisplay }
+			} else {
+				<span class="text-schaum/50">{ user.RankDisplay }</span>
+			}
+		</div>
+		<div class="flex-1">
+			<div class="flex items-center gap-2 mb-1">
+				<span class="text-xl">{ user.Emoji }</span>
+				<span class="font-bold text-schaum">{ user.Name }</span>
+			</div>
+			<div class="text-xs text-schaum/60 mb-2">{ user.TitleEmoji } { user.Title }</div>
+			<div class="w-full bg-holz rounded-full h-2">
+				<div
+					class={ user.BarColor + " h-2 rounded-full transition-all duration-1000" }
+					style={ fmt.Sprintf("width: %d%%", user.AttendanceRate) }
+				></div>
+			</div>
+		</div>
+		<div class="text-right">
+			<span class="text-2xl font-bold text-biergold">{ fmt.Sprintf("%d", user.AttendanceRate) }%</span>
+		</div>
+	</div>
+}
+
 // Top5 slide - Top 5 Ranking
-templ Top5() {
+templ Top5(users []viewmodels.RankedUser) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="8000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
 			🥇 Top 5 – Die Zuverlässigsten
 		</h2>
-		<div id="top5-ranking" class="w-full max-w-md space-y-3">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-3">
+			for _, user := range users {
+				@RankingCard(user)
+			}
 		</div>
 	</div>
 }
 
 // MidRanking slide - Plätze 6-10
-templ MidRanking() {
+templ MidRanking(users []viewmodels.RankedUser) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="6000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
 			📊 Plätze 6-10
 		</h2>
-		<div id="mid-ranking" class="w-full max-w-md space-y-3">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-3">
+			for _, user := range users {
+				@RankingCard(user)
+			}
 		</div>
 	</div>
 }
 
 // BottomRanking slide - Plätze 11-15
-templ BottomRanking() {
+templ BottomRanking(users []viewmodels.RankedUser) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="6000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
 			📉 Plätze 11-15 – Raum nach oben
 		</h2>
-		<div id="bottom-ranking" class="w-full max-w-md space-y-3">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-3">
+			for _, user := range users {
+				@RankingCard(user)
+			}
 		</div>
 	</div>
 }

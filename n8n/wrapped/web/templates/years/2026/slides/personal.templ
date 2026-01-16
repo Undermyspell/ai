@@ -1,46 +1,105 @@
 package slides
 
+import (
+	"fmt"
+
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+)
+
+// PersonalCard renders a compact user card for personal slides
+templ PersonalCardComponent(card viewmodels.PersonalCard) {
+	<div class={ "animate-on-enter animate-slide-left " + card.DelayClass + " " + card.TierBgColor + " rounded-xl p-3 flex items-center gap-3" }>
+		<span class="text-3xl">{ card.Emoji }</span>
+		<div class="flex-1 min-w-0">
+			<div class="flex items-center gap-2">
+				<span class="font-bold text-schaum truncate">{ card.Name }</span>
+				<span class="text-xs text-schaum/50">{ card.TitleEmoji }</span>
+			</div>
+			<div class="flex items-center gap-2 mt-1">
+				<div class="flex-1 bg-holz rounded-full h-1.5">
+					<div
+						class={ card.BarColor + " h-1.5 rounded-full" }
+						style={ fmt.Sprintf("width: %d%%", card.AttendanceRate) }
+					></div>
+				</div>
+				<span class="text-xs text-schaum/60">{ card.FunFact }</span>
+			</div>
+		</div>
+		<div class="text-right">
+			<span class="text-xl font-bold text-biergold">{ fmt.Sprintf("%d", card.AttendanceRate) }%</span>
+			<p class="text-xs text-schaum/50">{ card.PersonalMessage }</p>
+		</div>
+	</div>
+}
+
 // PersonalTop slide - Top Performer Platz 1-5
-templ PersonalTop() {
+templ PersonalTop(cards []viewmodels.PersonalCard) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-8 pb-6 overflow-y-auto" data-duration="8000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
 			🏆 Die Top-Performer
 		</h2>
 		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-4">Platz 1-5</p>
-		<div id="personal-top5" class="w-full max-w-md space-y-2">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-2">
+			for _, card := range cards {
+				@PersonalCardComponent(card)
+			}
 		</div>
 	</div>
 }
 
 // PersonalMid slide - Mittleres Feld Platz 6-10
-templ PersonalMid() {
+templ PersonalMid(cards []viewmodels.PersonalCard) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-8 pb-6 overflow-y-auto" data-duration="7000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
 			💪 Das Mittelfeld
 		</h2>
 		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-4">Platz 6-10</p>
-		<div id="personal-mid5" class="w-full max-w-md space-y-2">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-2">
+			for _, card := range cards {
+				@PersonalCardComponent(card)
+			}
 		</div>
 	</div>
 }
 
 // PersonalBottom slide - Potenzial 2026 Platz 11-15
-templ PersonalBottom() {
+templ PersonalBottom(cards []viewmodels.PersonalCard) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-8 pb-6 overflow-y-auto" data-duration="7000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
 			🚀 Potenzial 2026
 		</h2>
 		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-4">Platz 11-15</p>
-		<div id="personal-bottom5" class="w-full max-w-md space-y-2">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-2">
+			for _, card := range cards {
+				@PersonalCardComponent(card)
+			}
+		</div>
+	</div>
+}
+
+// PersonalityTypeCard renders a personality type card
+templ PersonalityTypeCard(pt viewmodels.PersonalityType) {
+	<div class={ "animate-on-enter animate-slide-left " + pt.DelayClass + " bg-holz-light/40 rounded-xl p-4" }>
+		<div class="flex items-center gap-3 mb-2">
+			<span class="text-3xl">{ pt.Emoji }</span>
+			<div>
+				<h3 class="font-bold text-biergold">{ pt.Name }</h3>
+				<p class="text-xs text-schaum/50">{ pt.Description }</p>
+			</div>
+		</div>
+		<div class="flex flex-wrap gap-2 mt-2">
+			for _, user := range pt.Users {
+				<span class="bg-holz/50 rounded-full px-2 py-1 text-xs text-schaum">{ user.Emoji } { user.Name }</span>
+			}
+			if pt.HasMore {
+				<span class="text-schaum/50 text-xs">+{ fmt.Sprintf("%d", pt.MoreCount) }</span>
+			}
 		</div>
 	</div>
 }
 
 // PersonalityTypes slide - Stammtisch-Persönlichkeitstypen
-templ PersonalityTypes() {
+templ PersonalityTypes(types []viewmodels.PersonalityType) {
 	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="6000">
 		<div class="animate-on-enter animate-scale-in">
 			<span class="text-6xl mb-4 block">🎭</span>
@@ -51,8 +110,10 @@ templ PersonalityTypes() {
 		<p class="animate-on-enter animate-fade-in delay-300 text-schaum/70 text-sm mb-6">
 			Welcher Typ bist du?
 		</p>
-		<div id="personality-types" class="animate-on-enter animate-fade-in-up delay-500 w-full max-w-md space-y-3">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="animate-on-enter animate-fade-in-up delay-500 w-full max-w-md space-y-3">
+			for _, pt := range types {
+				@PersonalityTypeCard(pt)
+			}
 		</div>
 	</div>
 }

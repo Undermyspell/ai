@@ -1,15 +1,238 @@
 package templates
 
-// PageData contains the JSON data for the frontend
-type PageData struct {
-	UserStatsJSON      any
-	GlobalStatsJSON    any
-	AwardsJSON         any
-	CategoryStatsJSON  any
-	CategoryLabelsJSON any
-	MonthStatsJSON     any
-	CancellationsJSON  any
-	Year               string
+// SlideNavigation provides the core slide navigation functionality
+// This is rendered once per page and handles all slide transitions
+templ SlideNavigation() {
+	<script>
+		// Stammtisch Wrapped - Core Slide Navigation
+		// ============================================
+		class StammtischWrapped {
+			constructor() {
+				this.currentSlide = 0;
+				this.slides = [];
+				this.timer = null;
+				this.progressInterval = null;
+				this.isPaused = false;
+				this.slideDuration = 5000;
+				this.init();
+			}
+
+			init() {
+				this.slides = document.querySelectorAll(".slide");
+				this.totalSlides = this.slides.length;
+				this.generateNavDots();
+				this.setupEventListeners();
+				this.showSlide(0);
+				this.startAutoNavigation();
+				console.log(`🍺 Stammtisch Wrapped gestartet mit ${this.totalSlides} Slides`);
+			}
+
+			generateNavDots() {
+				const container = document.getElementById("nav-dots");
+				container.innerHTML = "";
+				for (let i = 0; i < this.totalSlides; i++) {
+					const dot = document.createElement("button");
+					dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${i === 0 ? "bg-biergold w-6" : "bg-schaum/30"}`;
+					dot.setAttribute("data-slide", i);
+					dot.addEventListener("click", () => this.goToSlide(i));
+					container.appendChild(dot);
+				}
+			}
+
+			updateNavDots() {
+				const dots = document.querySelectorAll("#nav-dots button");
+				dots.forEach((dot, index) => {
+					if (index === this.currentSlide) {
+						dot.className = "w-6 h-2 rounded-full bg-biergold transition-all duration-300";
+					} else if (index < this.currentSlide) {
+						dot.className = "w-2 h-2 rounded-full bg-biergold/50 transition-all duration-300";
+					} else {
+						dot.className = "w-2 h-2 rounded-full bg-schaum/30 transition-all duration-300";
+					}
+				});
+			}
+
+			setupEventListeners() {
+				document.addEventListener("click", (e) => {
+					if (e.target.closest("#nav-dots")) return;
+					this.nextSlide();
+				});
+
+				document.addEventListener("keydown", (e) => {
+					switch (e.key) {
+						case "ArrowRight":
+						case " ":
+							this.nextSlide();
+							break;
+						case "ArrowLeft":
+							this.prevSlide();
+							break;
+						case "Escape":
+							this.togglePause();
+							break;
+					}
+				});
+
+				let touchStartX = 0;
+				let touchEndX = 0;
+
+				document.addEventListener("touchstart", (e) => {
+					touchStartX = e.changedTouches[0].screenX;
+				}, { passive: true });
+
+				document.addEventListener("touchend", (e) => {
+					touchEndX = e.changedTouches[0].screenX;
+					this.handleSwipe(touchStartX, touchEndX);
+				}, { passive: true });
+			}
+
+			handleSwipe(startX, endX) {
+				const threshold = 50;
+				const diff = startX - endX;
+				if (Math.abs(diff) > threshold) {
+					if (diff > 0) {
+						this.nextSlide();
+					} else {
+						this.prevSlide();
+					}
+				}
+			}
+
+			showSlide(index) {
+				if (index < 0 || index >= this.totalSlides) return;
+
+				this.slides.forEach((slide) => {
+					slide.classList.remove("active");
+				});
+
+				this.currentSlide = index;
+				const currentSlideEl = this.slides[index];
+				currentSlideEl.classList.add("active");
+
+				this.triggerAnimations(currentSlideEl);
+				this.updateNavDots();
+				this.slideDuration = parseInt(currentSlideEl.dataset.duration, 10) || 5000;
+			}
+
+			triggerAnimations(slideEl) {
+				const animatedElements = slideEl.querySelectorAll(".animate-on-enter");
+				animatedElements.forEach((el) => {
+					el.style.animation = "none";
+					el.offsetHeight;
+					el.style.animation = "";
+					setTimeout(() => {
+						el.style.opacity = "1";
+					}, 2000);
+				});
+
+				const counters = slideEl.querySelectorAll("[data-count-to]");
+				counters.forEach((counter) => {
+					this.animateCounter(counter);
+				});
+			}
+
+			animateCounter(element) {
+				const target = parseInt(element.dataset.countTo, 10);
+				const duration = parseInt(element.dataset.countDuration, 10) || 2000;
+				const suffix = element.dataset.countSuffix || "";
+				const start = 0;
+				const startTime = performance.now();
+
+				const updateCounter = (currentTime) => {
+					const elapsed = currentTime - startTime;
+					const progress = Math.min(elapsed / duration, 1);
+					const easeOutQuart = 1 - (1 - progress) ** 4;
+					const current = Math.floor(start + (target - start) * easeOutQuart);
+					element.textContent = current + suffix;
+					if (progress < 1) {
+						requestAnimationFrame(updateCounter);
+					} else {
+						element.textContent = target + suffix;
+					}
+				};
+
+				requestAnimationFrame(updateCounter);
+			}
+
+			nextSlide() {
+				this.resetTimer();
+				if (this.currentSlide < this.totalSlides - 1) {
+					this.showSlide(this.currentSlide + 1);
+					this.startAutoNavigation();
+				} else {
+					console.log("🎉 Wrapped fertig!");
+					this.stopAutoNavigation();
+				}
+			}
+
+			prevSlide() {
+				this.resetTimer();
+				if (this.currentSlide > 0) {
+					this.showSlide(this.currentSlide - 1);
+					this.startAutoNavigation();
+				}
+			}
+
+			goToSlide(index) {
+				this.resetTimer();
+				this.showSlide(index);
+				this.startAutoNavigation();
+			}
+
+			startAutoNavigation() {
+				if (this.isPaused) return;
+
+				this.resetTimer();
+				let elapsed = 0;
+				const progressBar = document.getElementById("progress-bar");
+
+				this.progressInterval = setInterval(() => {
+					elapsed += 100;
+					const progress = (elapsed / this.slideDuration) * 100;
+					progressBar.style.width = `${progress}%`;
+				}, 100);
+
+				this.timer = setTimeout(() => {
+					this.nextSlide();
+				}, this.slideDuration);
+			}
+
+			stopAutoNavigation() {
+				this.resetTimer();
+				const progressBar = document.getElementById("progress-bar");
+				progressBar.style.width = "100%";
+			}
+
+			resetTimer() {
+				if (this.timer) {
+					clearTimeout(this.timer);
+					this.timer = null;
+				}
+				if (this.progressInterval) {
+					clearInterval(this.progressInterval);
+					this.progressInterval = null;
+				}
+				const progressBar = document.getElementById("progress-bar");
+				progressBar.style.width = "0%";
+			}
+
+			togglePause() {
+				this.isPaused = !this.isPaused;
+				if (this.isPaused) {
+					this.resetTimer();
+					console.log("⏸️ Pausiert");
+				} else {
+					this.startAutoNavigation();
+					console.log("▶️ Fortgesetzt");
+				}
+			}
+		}
+
+		// Start app when DOM is ready
+		document.addEventListener("DOMContentLoaded", () => {
+			window.app = new StammtischWrapped();
+		});
+	</script>
 }
 
 // Layout is the base HTML template for all pages
@@ -61,34 +284,8 @@ templ Layout(title string, year string) {
 			<div id="slides-container" class="w-full h-screen">
 				{ children... }
 			</div>
-			<!-- Scripts -->
-			<script src="/static/js/app.js"></script>
-		</body>
-	</html>
-}
-
-// DataScript injects the JSON data into the page using script tags
-templ DataScript(data PageData) {
-	@templ.JSONScript("data-user-stats", data.UserStatsJSON)
-	@templ.JSONScript("data-global-stats", data.GlobalStatsJSON)
-	@templ.JSONScript("data-awards", data.AwardsJSON)
-	@templ.JSONScript("data-category-stats", data.CategoryStatsJSON)
-	@templ.JSONScript("data-category-labels", data.CategoryLabelsJSON)
-	@templ.JSONScript("data-month-stats", data.MonthStatsJSON)
-	@templ.JSONScript("data-cancellations", data.CancellationsJSON)
-	<script>
-		// Initialize global data from JSON script tags
-		window.USER_STATS = JSON.parse(document.getElementById('data-user-stats').textContent);
-		window.USER_RANKING = window.USER_STATS;
-		window.GLOBAL_STATS = JSON.parse(document.getElementById('data-global-stats').textContent);
-		window.AWARDS = JSON.parse(document.getElementById('data-awards').textContent);
-		window.CATEGORY_STATS = JSON.parse(document.getElementById('data-category-stats').textContent);
-		window.CATEGORY_LABELS = JSON.parse(document.getElementById('data-category-labels').textContent);
-		window.MONTH_STATS = JSON.parse(document.getElementById('data-month-stats').textContent);
-		window.CANCELLATIONS = JSON.parse(document.getElementById('data-cancellations').textContent);
-		
-		// Derived data for compatibility
-		window.CANCELLATIONS_BY_MONTH = window.MONTH_STATS;
-		window.TOTAL_THURSDAYS = window.GLOBAL_STATS.totalThursdays;
-	</script>
+		<!-- Core Slide Navigation -->
+		@SlideNavigation()
+	</body>
+</html>
 }
