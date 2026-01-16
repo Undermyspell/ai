@@ -56,7 +56,7 @@ func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations 
 		}
 
 		// Calculate streaks
-		maxAttendanceStreak, maxCancellationStreak := e.calculateStreaks(userID, cancellationDates)
+		attendanceStreak, cancellationStreak := e.calculateStreaks(userID, cancellationDates)
 
 		// Find favorite excuse category
 		favoriteCategory := findFavoriteCategory(userCancellationMessages[userID])
@@ -73,16 +73,20 @@ func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations 
 				Name:  user.UserName,
 				Emoji: emoji,
 			},
-			CancellationCount:      cancellationCount,
-			AttendanceCount:        attendanceCount,
-			AttendanceRate:         attendanceRate,
-			MaxAttendanceStreak:    maxAttendanceStreak,
-			MaxCancellationStreak:  maxCancellationStreak,
-			NeverCancelled:         cancellationCount == 0,
-			FavoriteExcuseCategory: favoriteCategory,
-			Title:                  title,
-			TitleEmoji:             titleEmoji,
-			Cancellations:          userCancellationMessages[userID],
+			CancellationCount:          cancellationCount,
+			AttendanceCount:            attendanceCount,
+			AttendanceRate:             attendanceRate,
+			MaxAttendanceStreak:        attendanceStreak.Count,
+			MaxAttendanceStreakStart:   attendanceStreak.Start,
+			MaxAttendanceStreakEnd:     attendanceStreak.End,
+			MaxCancellationStreak:      cancellationStreak.Count,
+			MaxCancellationStreakStart: cancellationStreak.Start,
+			MaxCancellationStreakEnd:   cancellationStreak.End,
+			NeverCancelled:             cancellationCount == 0,
+			FavoriteExcuseCategory:     favoriteCategory,
+			Title:                      title,
+			TitleEmoji:                 titleEmoji,
+			Cancellations:              userCancellationMessages[userID],
 		}
 
 		userStats = append(userStats, stats)

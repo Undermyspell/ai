@@ -25,9 +25,12 @@ templ StreaksIntro() {
 templ AttendanceStreakCard(user viewmodels.StreakUser) {
 	<div class={ "animate-on-enter animate-scale-in " + user.DelayClass + " bg-gradient-to-r from-orange-500/30 to-red-500/20 rounded-xl p-4 flex items-center gap-4" }>
 		<div class="text-3xl animate-fire">🔥</div>
-		<div class="flex-1">
+		<div class="flex-1 min-w-0">
 			<div class="font-bold text-schaum">{ user.Emoji } { user.Name }</div>
 			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d", user.MaxAttendanceStreak) } Wochen am Stück da!</div>
+			if user.DateRange != "" {
+				<div class="text-xs text-schaum/40 mt-1">📅 { user.DateRange }</div>
+			}
 		</div>
 		<div class="text-3xl font-bold text-orange-400">{ fmt.Sprintf("%d", user.MaxAttendanceStreak) }</div>
 	</div>
@@ -37,9 +40,12 @@ templ AttendanceStreakCard(user viewmodels.StreakUser) {
 templ CancellationStreakCard(user viewmodels.StreakUser) {
 	<div class={ "animate-on-enter animate-scale-in " + user.DelayClass + " bg-gradient-to-r from-blue-500/30 to-cyan-500/20 rounded-xl p-4 flex items-center gap-4" }>
 		<div class="text-3xl">🧊</div>
-		<div class="flex-1">
+		<div class="flex-1 min-w-0">
 			<div class="font-bold text-schaum">{ user.Emoji } { user.Name }</div>
 			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d", user.MaxCancellationStreak) } Wochen gefehlt</div>
+			if user.DateRange != "" {
+				<div class="text-xs text-schaum/40 mt-1">📅 { user.DateRange }</div>
+			}
 		</div>
 		<div class="text-3xl font-bold text-blue-400">{ fmt.Sprintf("%d", user.MaxCancellationStreak) }</div>
 	</div>

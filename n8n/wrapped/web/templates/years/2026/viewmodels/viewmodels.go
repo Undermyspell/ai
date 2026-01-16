@@ -74,6 +74,7 @@ type StreakUser struct {
 	Emoji                 string
 	MaxAttendanceStreak   int
 	MaxCancellationStreak int
+	DateRange             string // Formatted date range like "12. Jan - 9. Feb"
 	DelayClass            string
 }
 
