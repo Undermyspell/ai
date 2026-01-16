@@ -13,12 +13,13 @@ import (
 
 // EvalData contains the raw evaluation data to transform
 type EvalData struct {
-	UserStats     []models.UserStats
-	GlobalStats   models.GlobalStats
-	CategoryStats models.CategoryStats
-	MonthStats    models.MonthStats
-	Awards        []models.Award
-	Cancellations []models.Cancellation
+	UserStats              []models.UserStats
+	GlobalStats            models.GlobalStats
+	CategoryStats          models.CategoryStats
+	MonthStats             models.MonthStats
+	MonthlyAttendanceStats models.MonthlyAttendanceStats
+	Awards                 []models.Award
+	Cancellations          []models.Cancellation
 }
 
 // Build transforms evaluation data into a PageViewModel ready for templ rendering
@@ -46,6 +47,9 @@ func Build(data *EvalData, year string) viewmodels.PageViewModel {
 
 	// Build Heatmap
 	vm.HeatmapMonths, vm.HeatmapInsight = buildHeatmap(data.MonthStats)
+
+	// Build Attendance Heatmap
+	vm.AttendanceHeatmapMonths, vm.AttendanceHeatmapInsight = buildAttendanceHeatmap(data.MonthlyAttendanceStats)
 
 	// Build AI Stats for client-side randomization
 	vm.AIStats = buildAIStats(data.UserStats, data.GlobalStats, data.MonthStats)
@@ -282,6 +286,71 @@ func buildHeatmap(ms models.MonthStats) ([]viewmodels.HeatmapMonth, viewmodels.H
 		WorstCount: worst.count,
 		BestMonth:  best.label,
 		BestCount:  best.count,
+	}
+
+	return heatmapMonths, insight
+}
+
+// buildAttendanceHeatmap creates monthly attendance rate heatmap data
+func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats) ([]viewmodels.AttendanceHeatmapMonth, viewmodels.AttendanceHeatmapInsight) {
+	months := []string{"Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
+
+	// Collect month data
+	type monthData struct {
+		label string
+		key   string
+		rate  int
+	}
+	data := make([]monthData, 12)
+	for i := 0; i < 12; i++ {
+		monthKey := fmt.Sprintf("2025-%02d", i+1)
+		data[i] = monthData{
+			label: months[i],
+			key:   monthKey,
+			rate:  mas[monthKey],
+		}
+	}
+
+	// Build heatmap months
+	heatmapMonths := make([]viewmodels.AttendanceHeatmapMonth, 12)
+	for i, d := range data {
+		heatmapMonths[i] = viewmodels.AttendanceHeatmapMonth{
+			Label:      d.label,
+			Rate:       d.rate,
+			BgColor:    getAttendanceHeatmapColor(d.rate),
+			DelayClass: fmt.Sprintf("delay-%d", i*50+200),
+		}
+	}
+
+	// Find best and worst months (only consider months with data)
+	var best, worst monthData
+	best.rate = -1
+	worst.rate = 101
+
+	for _, d := range data {
+		if d.rate > 0 { // Only consider months with data
+			if d.rate > best.rate {
+				best = d
+			}
+			if d.rate < worst.rate {
+				worst = d
+			}
+		}
+	}
+
+	// Handle case where no months have data
+	if best.rate == -1 {
+		best = data[0]
+	}
+	if worst.rate == 101 {
+		worst = data[0]
+	}
+
+	insight := viewmodels.AttendanceHeatmapInsight{
+		BestMonth:  best.label,
+		BestRate:   best.rate,
+		WorstMonth: worst.label,
+		WorstRate:  worst.rate,
 	}
 
 	return heatmapMonths, insight
@@ -542,6 +611,27 @@ func getHeatmapColor(count, maxCount int) string {
 		return "bg-yellow-500"
 	default:
 		return "bg-green-500/50"
+	}
+}
+
+// getAttendanceHeatmapColor returns the background color class based on attendance rate
+// Higher attendance = greener (good), lower attendance = redder (bad)
+func getAttendanceHeatmapColor(rate int) string {
+	if rate == 0 {
+		return "bg-holz-light/30"
+	}
+
+	switch {
+	case rate >= 80:
+		return "bg-green-500"
+	case rate >= 65:
+		return "bg-green-500/50"
+	case rate >= 50:
+		return "bg-yellow-500"
+	case rate >= 35:
+		return "bg-orange-500"
+	default:
+		return "bg-red-500"
 	}
 }
 

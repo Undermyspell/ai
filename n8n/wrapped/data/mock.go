@@ -208,6 +208,59 @@ func GetMonthStats() models.MonthStats {
 	return stats
 }
 
+// GetMonthlyAttendanceStats returns average attendance rate per month
+func GetMonthlyAttendanceStats() models.MonthlyAttendanceStats {
+	users := GetUsers()
+	thursdays := GetThursdays2026()
+	cancellations := GenerateCancellations()
+	totalUsers := len(users)
+
+	if totalUsers == 0 {
+		return make(models.MonthlyAttendanceStats)
+	}
+
+	// Build a map of cancellations per Thursday
+	cancellationsPerDay := make(map[string]int)
+	for _, c := range cancellations {
+		dateKey := c.Date.Format("2006-01-02")
+		cancellationsPerDay[dateKey]++
+	}
+
+	// Group Thursdays by month and calculate attendance for each
+	type monthData struct {
+		totalAttendance int
+		thursdayCount   int
+	}
+	monthlyData := make(map[string]*monthData)
+
+	for _, thursday := range thursdays {
+		monthKey := thursday.Format("2006-01")
+		dateKey := thursday.Format("2006-01-02")
+
+		if monthlyData[monthKey] == nil {
+			monthlyData[monthKey] = &monthData{}
+		}
+
+		// Calculate attendance rate for this Thursday
+		cancellationsOnDay := cancellationsPerDay[dateKey]
+		attendees := totalUsers - cancellationsOnDay
+		attendanceRate := (attendees * 100) / totalUsers
+
+		monthlyData[monthKey].totalAttendance += attendanceRate
+		monthlyData[monthKey].thursdayCount++
+	}
+
+	// Calculate average attendance rate per month
+	stats := make(models.MonthlyAttendanceStats)
+	for monthKey, data := range monthlyData {
+		if data.thursdayCount > 0 {
+			stats[monthKey] = data.totalAttendance / data.thursdayCount
+		}
+	}
+
+	return stats
+}
+
 // Helper functions
 
 func filterCancellationsByUser(cancellations []models.Cancellation, userID int) []models.Cancellation {

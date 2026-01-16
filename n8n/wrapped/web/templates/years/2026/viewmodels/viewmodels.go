@@ -27,6 +27,10 @@ type PageViewModel struct {
 	HeatmapMonths  []HeatmapMonth
 	HeatmapInsight HeatmapInsight
 
+	// Attendance Heatmap (average attendance rate per month)
+	AttendanceHeatmapMonths  []AttendanceHeatmapMonth
+	AttendanceHeatmapInsight AttendanceHeatmapInsight
+
 	// AI Summary (data for client-side randomization)
 	AIStats AIStats
 
@@ -109,6 +113,22 @@ type HeatmapInsight struct {
 	WorstCount int
 	BestMonth  string
 	BestCount  int
+}
+
+// AttendanceHeatmapMonth contains pre-calculated attendance rate heatmap cell data
+type AttendanceHeatmapMonth struct {
+	Label      string // "Jan", "Feb", etc.
+	Rate       int    // Average attendance rate 0-100
+	BgColor    string // color class based on rate
+	DelayClass string
+}
+
+// AttendanceHeatmapInsight contains best/worst month data for attendance
+type AttendanceHeatmapInsight struct {
+	BestMonth  string
+	BestRate   int
+	WorstMonth string
+	WorstRate  int
 }
 
 // AIStats contains pre-rendered AI summary (server-side selected)

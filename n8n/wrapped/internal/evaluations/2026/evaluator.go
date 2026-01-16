@@ -17,12 +17,13 @@ func NewEvaluator(rawData *repository.RawData) *Evaluator {
 
 // EvaluationResult contains all computed statistics for 2025
 type EvaluationResult struct {
-	UserStats     []models.UserStats
-	GlobalStats   models.GlobalStats
-	CategoryStats models.CategoryStats
-	MonthStats    models.MonthStats
-	Awards        []models.Award
-	Cancellations []models.Cancellation
+	UserStats              []models.UserStats
+	GlobalStats            models.GlobalStats
+	CategoryStats          models.CategoryStats
+	MonthStats             models.MonthStats
+	MonthlyAttendanceStats models.MonthlyAttendanceStats
+	Awards                 []models.Award
+	Cancellations          []models.Cancellation
 }
 
 // Evaluate computes all statistics from raw data
@@ -45,16 +46,20 @@ func (e *Evaluator) Evaluate() *EvaluationResult {
 	// Step 6: Calculate monthly statistics
 	monthStats := e.calculateMonthStats(cancellations)
 
-	// Step 7: Determine awards
+	// Step 7: Calculate monthly attendance rates
+	monthlyAttendanceStats := e.calculateMonthlyAttendanceStats(cancellations)
+
+	// Step 8: Determine awards
 	awards := e.calculateAwards(userStats)
 
 	return &EvaluationResult{
-		UserStats:     userStats,
-		GlobalStats:   globalStats,
-		CategoryStats: categoryStats,
-		MonthStats:    monthStats,
-		Awards:        awards,
-		Cancellations: cancellations,
+		UserStats:              userStats,
+		GlobalStats:            globalStats,
+		CategoryStats:          categoryStats,
+		MonthStats:             monthStats,
+		MonthlyAttendanceStats: monthlyAttendanceStats,
+		Awards:                 awards,
+		Cancellations:          cancellations,
 	}
 }
 
