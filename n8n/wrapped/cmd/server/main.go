@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/michael/stammtisch-wrapped/assets"
+	"github.com/michael/stammtisch-wrapped/internal/database"
 	"github.com/michael/stammtisch-wrapped/internal/handlers"
 )
 
@@ -17,9 +18,27 @@ func main() {
 		port = "8080"
 	}
 
+	// Initialize database connection (optional - falls back to mock data if not available)
+	var db *database.PostgresDB
+	var err error
+
+	dbConfig := database.ConfigFromEnv()
+	db, err = database.New(dbConfig)
+	if err != nil {
+		log.Printf("⚠️  Database connection failed: %v", err)
+		log.Printf("📦 Using mock data instead")
+		db = nil
+	} else {
+		log.Printf("✅ Connected to PostgreSQL database '%s'", dbConfig.DBName)
+		defer db.Close()
+	}
+
+	// Create handler with optional database
+	handler := handlers.NewWrappedHandler(db)
+
 	// Routes
-	http.HandleFunc("/", handlers.HandleIndex)
-	http.HandleFunc("/2025", handlers.Handle2025)
+	http.HandleFunc("/", handler.HandleIndex)
+	http.HandleFunc("/2026", handler.Handle2026)
 	fsys, _ := fs.Sub(assets.Static, "static")
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(fsys))))
 
