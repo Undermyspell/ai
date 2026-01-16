@@ -75,12 +75,13 @@ func (h *WrappedHandler) loadFromDatabase(ctx context.Context) *viewbuilder.Eval
 	result := evaluator.Evaluate()
 
 	return &viewbuilder.EvalData{
-		UserStats:     result.UserStats,
-		GlobalStats:   result.GlobalStats,
-		CategoryStats: result.CategoryStats,
-		MonthStats:    result.MonthStats,
-		Awards:        result.Awards,
-		Cancellations: result.Cancellations,
+		UserStats:              result.UserStats,
+		GlobalStats:            result.GlobalStats,
+		CategoryStats:          result.CategoryStats,
+		MonthStats:             result.MonthStats,
+		MonthlyAttendanceStats: result.MonthlyAttendanceStats,
+		Awards:                 result.Awards,
+		Cancellations:          result.Cancellations,
 	}
 }
 
@@ -94,11 +95,12 @@ func (h *WrappedHandler) loadFromMock() *viewbuilder.EvalData {
 	allCancellations := data.GenerateCancellations()
 
 	return &viewbuilder.EvalData{
-		UserStats:     userStats,
-		GlobalStats:   globalStats,
-		CategoryStats: categoryStats,
-		MonthStats:    monthStats,
-		Awards:        awards,
-		Cancellations: allCancellations,
+		UserStats:              userStats,
+		GlobalStats:            globalStats,
+		CategoryStats:          categoryStats,
+		MonthStats:             monthStats,
+		MonthlyAttendanceStats: data.GetMonthlyAttendanceStats(),
+		Awards:                 awards,
+		Cancellations:          allCancellations,
 	}
 }
