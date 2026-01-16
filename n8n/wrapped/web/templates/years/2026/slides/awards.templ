@@ -1,5 +1,9 @@
 package slides
 
+import (
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+)
+
 // AwardsIntro slide
 templ AwardsIntro() {
 	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
@@ -15,23 +19,51 @@ templ AwardsIntro() {
 	</div>
 }
 
-// Awards slide
-templ Awards() {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-10 pb-6 overflow-y-auto" data-duration="10000">
-		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-6">
-			🏅 Die Awards 2025
-		</h2>
-		<div id="awards-container" class="w-full max-w-md space-y-4">
-			<!-- Wird dynamisch gefüllt -->
+// AwardCard renders a single award card
+templ AwardCard(award viewmodels.AwardView) {
+	<div class={ "animate-on-enter animate-scale-in " + award.DelayClass + " bg-gradient-to-r " + award.Color + " rounded-xl p-4" }>
+		<div class="flex items-center gap-4">
+			<span class="text-4xl">{ award.Emoji }</span>
+			<div class="flex-1">
+				<h3 class="font-bold text-biergold text-lg">{ award.Title }</h3>
+				<p class="text-xs text-schaum/50">{ award.Subtitle }</p>
+			</div>
+			<div class="text-right">
+				<span class="text-2xl">{ award.WinnerEmoji }</span>
+				<p class="font-bold text-schaum">{ award.WinnerName }</p>
+			</div>
 		</div>
 	</div>
 }
 
-// Finale slide - Der große Abschluss
-templ Finale() {
+// Awards slide
+templ Awards(awards []viewmodels.AwardView) {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-10 pb-6 overflow-y-auto" data-duration="10000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-6">
+			🏅 Die Awards 2025
+		</h2>
+		<div class="w-full max-w-md space-y-4">
+			for _, award := range awards {
+				@AwardCard(award)
+			}
+		</div>
+	</div>
+}
+
+// ConfettiParticle renders a single confetti particle
+templ ConfettiParticle(p viewmodels.ConfettiParticle) {
+	<div
+		style={ "position: absolute; left: " + p.Left + "; top: -20px; width: " + p.Size + "; height: " + p.Size + "; background: " + p.Color + "; border-radius: " + p.BorderRadius + "; animation: confetti " + p.Duration + " ease-in " + p.Delay + " infinite;" }
+	></div>
+}
+
+// Finale slide - Der große Abschluss (server-side rendered confetti)
+templ Finale(confetti viewmodels.ConfettiView) {
 	<div class="slide flex-col items-center justify-center h-screen px-6 text-center relative overflow-hidden" data-duration="10000">
-		<div id="confetti-container" class="absolute inset-0 pointer-events-none">
-			<!-- Konfetti wird dynamisch generiert -->
+		<div class="absolute inset-0 pointer-events-none">
+			for _, p := range confetti.Particles {
+				@ConfettiParticle(p)
+			}
 		</div>
 		<div class="animate-on-enter animate-scale-in z-10">
 			<span class="text-8xl mb-6 block">🍻</span>

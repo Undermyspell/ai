@@ -1,5 +1,11 @@
 package slides
 
+import (
+	"fmt"
+
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+)
+
 // ExcusesIntro slide
 templ ExcusesIntro() {
 	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
@@ -15,49 +21,103 @@ templ ExcusesIntro() {
 	</div>
 }
 
+// CategoryCard renders a single category stat card
+templ CategoryCard(cat viewmodels.CategoryStat) {
+	<div class={ "animate-on-enter animate-slide-left " + cat.DelayClass + " bg-holz-light/40 rounded-xl p-4" }>
+		<div class="flex items-center justify-between mb-2">
+			<div class="flex items-center gap-2">
+				<span class="text-2xl">{ cat.Emoji }</span>
+				<span class="font-bold text-schaum">{ cat.Label }</span>
+			</div>
+			<span class="text-biergold font-bold">{ fmt.Sprintf("%d", cat.Count) }x</span>
+		</div>
+		<div class="w-full bg-holz rounded-full h-3">
+			<div
+				class="bg-biergold h-3 rounded-full transition-all duration-1000"
+				style={ fmt.Sprintf("width: %d%%", cat.Percentage) }
+			></div>
+		</div>
+	</div>
+}
+
 // ExcuseCategories slide
-templ ExcuseCategories() {
+templ ExcuseCategories(categories []viewmodels.CategoryStat) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="7000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
 			📊 Ausreden nach Kategorie
 		</h2>
-		<div id="excuse-categories" class="w-full max-w-md space-y-3">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-3">
+			for _, cat := range categories {
+				@CategoryCard(cat)
+			}
+		</div>
+	</div>
+}
+
+// ExcuseCard renders a single best excuse card
+templ ExcuseCard(excuse viewmodels.Excuse) {
+	<div class={ "animate-on-enter animate-fade-in-up " + excuse.DelayClass + " bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4" }>
+		<div class="flex items-start gap-3">
+			<span class="text-2xl">💬</span>
+			<div class="flex-1">
+				<p class="text-schaum italic">"{ excuse.Message }"</p>
+				<p class="text-schaum/50 text-sm mt-2">— { excuse.UserName }</p>
+			</div>
 		</div>
 	</div>
 }
 
 // BestExcuses slide
-templ BestExcuses() {
+templ BestExcuses(excuses []viewmodels.Excuse) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-10 pb-6 overflow-y-auto" data-duration="8000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
 			🏆 Kreativste Ausreden 2025
 		</h2>
 		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-6">Die besten Klassiker</p>
-		<div id="best-excuses" class="w-full max-w-md space-y-3">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md space-y-3">
+			for _, excuse := range excuses {
+				@ExcuseCard(excuse)
+			}
 		</div>
 	</div>
 }
 
+// HeatmapCell renders a single heatmap cell
+templ HeatmapCell(month viewmodels.HeatmapMonth) {
+	<div class={ "animate-on-enter animate-scale-in " + month.DelayClass + " " + month.BgColor + " rounded-lg p-3 text-center" }>
+		<div class="text-xs text-schaum/70">{ month.Label }</div>
+		<div class="text-lg font-bold text-schaum">{ fmt.Sprintf("%d", month.Count) }</div>
+	</div>
+}
+
 // Heatmap slide
-templ Heatmap() {
+templ Heatmap(months []viewmodels.HeatmapMonth, insight viewmodels.HeatmapInsight) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6" data-duration="6000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-2">
 			🗓️ Absage-Heatmap 2025
 		</h2>
 		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-6">Wann wurde am meisten abgesagt?</p>
-		<div id="heatmap" class="w-full max-w-md">
-			<!-- Wird dynamisch gefüllt -->
+		<div class="w-full max-w-md">
+			<div class="grid grid-cols-4 gap-2">
+				for _, month := range months {
+					@HeatmapCell(month)
+				}
+			</div>
+			<div class="flex justify-center gap-2 mt-4 text-xs text-schaum/50">
+				<span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500/50 rounded"></span> Wenig</span>
+				<span class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-500 rounded"></span> Mittel</span>
+				<span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded"></span> Viel</span>
+			</div>
 		</div>
-		<div id="heatmap-insight" class="animate-on-enter animate-fade-in-up delay-700 mt-6 text-center">
-			<!-- Insight wird dynamisch gefüllt -->
+		<div class="animate-on-enter animate-fade-in-up delay-700 mt-6 text-center">
+			<p class="text-schaum/70">😰 Schlechtester Monat: <span class="text-red-400 font-bold">{ insight.WorstMonth }</span> mit { fmt.Sprintf("%d", insight.WorstCount) } Absagen</p>
+			<p class="text-schaum/70 mt-1">🎉 Bester Monat: <span class="text-green-400 font-bold">{ insight.BestMonth }</span> mit nur { fmt.Sprintf("%d", insight.BestCount) } Absagen</p>
 		</div>
 	</div>
 }
 
-// AISummary slide - Der typische Stammtisch
-templ AISummary() {
+// AISummary slide - Der typische Stammtisch (server-side rendered)
+templ AISummary(stats viewmodels.AIStats) {
 	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="7000">
 		<div class="animate-on-enter animate-scale-in">
 			<span class="text-6xl mb-4 block">🧠</span>
@@ -66,8 +126,8 @@ templ AISummary() {
 			Der typische Stammtisch 2025
 		</h2>
 		<div class="animate-on-enter animate-fade-in delay-400 bg-holz-light/40 rounded-2xl p-6 max-w-md">
-			<p class="text-schaum text-lg leading-relaxed" id="ai-summary">
-				<!-- Wird dynamisch gefüllt -->
+			<p class="text-schaum text-lg leading-relaxed">
+				@templ.Raw(stats.SummaryHTML)
 			</p>
 		</div>
 		<div class="animate-on-enter animate-fade-in-up delay-700 mt-6 text-schaum/50 text-sm">
