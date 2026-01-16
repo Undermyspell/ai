@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"time"
 
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
@@ -123,6 +124,7 @@ func buildStreaks(users []models.UserStats) ([]viewmodels.StreakUser, []viewmode
 			Name:                user.Name,
 			Emoji:               user.Emoji,
 			MaxAttendanceStreak: user.MaxAttendanceStreak,
+			DateRange:           formatDateRange(user.MaxAttendanceStreakStart, user.MaxAttendanceStreakEnd),
 			DelayClass:          fmt.Sprintf("delay-%d", i*200+200),
 		})
 	}
@@ -145,6 +147,7 @@ func buildStreaks(users []models.UserStats) ([]viewmodels.StreakUser, []viewmode
 			Name:                  user.Name,
 			Emoji:                 user.Emoji,
 			MaxCancellationStreak: user.MaxCancellationStreak,
+			DateRange:             formatDateRange(user.MaxCancellationStreakStart, user.MaxCancellationStreakEnd),
 			DelayClass:            fmt.Sprintf("delay-%d", i*200+700),
 		})
 	}
@@ -576,4 +579,25 @@ func getFunFact(user models.UserStats) string {
 	default:
 		return fmt.Sprintf("%dx gefehlt", user.CancellationCount)
 	}
+}
+
+// formatDateRange formats a date range for display (e.g., "12. Jan - 9. Feb")
+func formatDateRange(start, end time.Time) string {
+	if start.IsZero() || end.IsZero() {
+		return ""
+	}
+
+	germanMonths := []string{
+		"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+		"Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+	}
+
+	startMonth := germanMonths[start.Month()-1]
+	endMonth := germanMonths[end.Month()-1]
+
+	if start.Equal(end) {
+		return fmt.Sprintf("%d. %s", start.Day(), startMonth)
+	}
+
+	return fmt.Sprintf("%d. %s – %d. %s", start.Day(), startMonth, end.Day(), endMonth)
 }

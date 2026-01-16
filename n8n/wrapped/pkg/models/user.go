@@ -12,17 +12,21 @@ type User struct {
 // UserStats contains calculated statistics for a user
 type UserStats struct {
 	User
-	CancellationCount      int            `json:"cancellationCount"`
-	AttendanceCount        int            `json:"attendanceCount"`
-	AttendanceRate         int            `json:"attendanceRate"`
-	MaxAttendanceStreak    int            `json:"maxAttendanceStreak"`
-	MaxCancellationStreak  int            `json:"maxCancellationStreak"`
-	NeverCancelled         bool           `json:"neverCancelled"`
-	FavoriteExcuseCategory string         `json:"favoriteExcuseCategory"`
-	Rank                   int            `json:"rank"`
-	Title                  string         `json:"title"`
-	TitleEmoji             string         `json:"titleEmoji"`
-	Cancellations          []Cancellation `json:"cancellations,omitempty"`
+	CancellationCount          int            `json:"cancellationCount"`
+	AttendanceCount            int            `json:"attendanceCount"`
+	AttendanceRate             int            `json:"attendanceRate"`
+	MaxAttendanceStreak        int            `json:"maxAttendanceStreak"`
+	MaxAttendanceStreakStart   time.Time      `json:"maxAttendanceStreakStart"`
+	MaxAttendanceStreakEnd     time.Time      `json:"maxAttendanceStreakEnd"`
+	MaxCancellationStreak      int            `json:"maxCancellationStreak"`
+	MaxCancellationStreakStart time.Time      `json:"maxCancellationStreakStart"`
+	MaxCancellationStreakEnd   time.Time      `json:"maxCancellationStreakEnd"`
+	NeverCancelled             bool           `json:"neverCancelled"`
+	FavoriteExcuseCategory     string         `json:"favoriteExcuseCategory"`
+	Rank                       int            `json:"rank"`
+	Title                      string         `json:"title"`
+	TitleEmoji                 string         `json:"titleEmoji"`
+	Cancellations              []Cancellation `json:"cancellations,omitempty"`
 }
 
 // Cancellation represents a user's absence

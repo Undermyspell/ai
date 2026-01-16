@@ -5,10 +5,17 @@ import (
 	"time"
 )
 
+// StreakResult contains the streak count and date range
+type StreakResult struct {
+	Count int
+	Start time.Time
+	End   time.Time
+}
+
 // calculateStreaks calculates max attendance and cancellation streaks for a user
-func (e *Evaluator) calculateStreaks(userID int, cancellationDates []time.Time) (maxAttendanceStreak, maxCancellationStreak int) {
+func (e *Evaluator) calculateStreaks(userID int, cancellationDates []time.Time) (attendance StreakResult, cancellation StreakResult) {
 	if len(e.rawData.Thursdays) == 0 {
-		return 0, 0
+		return StreakResult{}, StreakResult{}
 	}
 
 	// Create a set of cancellation dates for O(1) lookup
@@ -24,8 +31,10 @@ func (e *Evaluator) calculateStreaks(userID int, cancellationDates []time.Time) 
 		return thursdays[i].Before(thursdays[j])
 	})
 
-	currentAttendanceStreak := 0
-	currentCancellationStreak := 0
+	var maxAttendance, maxCancellation StreakResult
+	var currentAttendanceStart, currentCancellationStart time.Time
+	currentAttendanceCount := 0
+	currentCancellationCount := 0
 
 	for _, thursday := range thursdays {
 		dateKey := thursday.Format("2006-01-02")
@@ -33,20 +42,34 @@ func (e *Evaluator) calculateStreaks(userID int, cancellationDates []time.Time) 
 
 		if wasCancelled {
 			// User was absent
-			currentCancellationStreak++
-			if currentCancellationStreak > maxCancellationStreak {
-				maxCancellationStreak = currentCancellationStreak
+			if currentCancellationCount == 0 {
+				currentCancellationStart = thursday
 			}
-			currentAttendanceStreak = 0
+			currentCancellationCount++
+			if currentCancellationCount > maxCancellation.Count {
+				maxCancellation = StreakResult{
+					Count: currentCancellationCount,
+					Start: currentCancellationStart,
+					End:   thursday,
+				}
+			}
+			currentAttendanceCount = 0
 		} else {
 			// User was present
-			currentAttendanceStreak++
-			if currentAttendanceStreak > maxAttendanceStreak {
-				maxAttendanceStreak = currentAttendanceStreak
+			if currentAttendanceCount == 0 {
+				currentAttendanceStart = thursday
 			}
-			currentCancellationStreak = 0
+			currentAttendanceCount++
+			if currentAttendanceCount > maxAttendance.Count {
+				maxAttendance = StreakResult{
+					Count: currentAttendanceCount,
+					Start: currentAttendanceStart,
+					End:   thursday,
+				}
+			}
+			currentCancellationCount = 0
 		}
 	}
 
-	return maxAttendanceStreak, maxCancellationStreak
+	return maxAttendance, maxCancellation
 }
