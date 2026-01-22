@@ -19,7 +19,7 @@ services:
       retries: 5
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:2.4.2
+    image: docker.n8n.io/n8nio/n8n:2.5.0
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -37,54 +37,54 @@ services:
       - DB_POSTGRESDB_SCHEMA=public
       - DB_POSTGRESDB_PASSWORD=n8n_password
     volumes:
-      - n8n_datdo n
+      - n8n_data:/home/node/.n8n
     depends_on:
       postgres:
         condition: service_healthy
 
-  ollama:
-    image: ollama/ollama:0.13.0
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
+  # ollama:
+  #   image: ollama/ollama:0.13.0
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   environment:
+  #     - OLLAMA_HOST=0.0.0.0
 
-  ollama-setup:
-    image: ollama/ollama:0.13.0
-    depends_on:
-      - ollama
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=http://ollama:11434
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        echo "Waiting for Ollama server to be ready..."
-        sleep 15
-        echo "Downloading model llama3.2.."
-        OLLAMA_HOST=http://ollama:11434 ollama pull llama3.2
-        echo "Model llama3.2 downloaded successfully"
-        echo "Verifying model is available..."
-        OLLAMA_HOST=http://ollama:11434 ollama list
-    restart: "no"
+  # ollama-setup:
+  #   image: ollama/ollama:0.13.0
+  #   depends_on:
+  #     - ollama
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   environment:
+  #     - OLLAMA_HOST=http://ollama:11434
+  #   entrypoint: /bin/sh
+  #   command:
+  #     - -c
+  #     - |
+  #       echo "Waiting for Ollama server to be ready..."
+  #       sleep 15
+  #       echo "Downloading model llama3.2.."
+  #       OLLAMA_HOST=http://ollama:11434 ollama pull llama3.2
+  #       echo "Model llama3.2 downloaded successfully"
+  #       echo "Verifying model is available..."
+  #       OLLAMA_HOST=http://ollama:11434 ollama list
+  #   restart: "no"
 
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    restart: unless-stopped
-    ports:
-      - "3000:8080"
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - WEBUI_SECRET_KEY=your-secret-key-change-this
-    volumes:
-      - open_webui_data:/app/backend/data
-    depends_on:
-      - ollama
+  # open-webui:
+  #   image: ghcr.io/open-webui/open-webui:main
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:8080"
+  #   environment:
+  #     - OLLAMA_BASE_URL=http://ollama:11434
+  #     - WEBUI_SECRET_KEY=your-secret-key-change-this
+  #   volumes:
+  #     - open_webui_data:/app/backend/data
+  #   depends_on:
+  #     - ollama
 
   evolution-api:
     image: evoapicloud/evolution-api:v2.3.7
@@ -117,12 +117,12 @@ volumes:
     name: n8n_n8n_data
   postgres_data:
     name: n8n_postgres_data
-  ollama_data:
-    external: true
-    name: n8n_ollama_data
-  open_webui_data:
-    external: true
-    name: n8n_open_webui_data
+  # ollama_data:
+  #   external: true
+  #   name: n8n_ollama_data
+  # open_webui_data:
+  #   external: true
+  #   name: n8n_open_webui_data
   evolution_instances:
     external: true
     name: n8n_evolution_instances
