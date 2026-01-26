@@ -1,0 +1,6 @@
+apiVersion: v2
+name: n8n-stack
+description: n8n workflow automation platform with PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "2.5.0"
