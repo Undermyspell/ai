@@ -35,18 +35,18 @@ spec:
       sources:
       
       # Source 1: Helm chart with environment-specific values
-      - repoURL: UPDATE_ME  # TODO: Replace with your git repository URL (e.g., https://github.com/username/repo.git)
+      - repoURL: https://github.com/Undermyspell/ai.git
         targetRevision: HEAD
-        path: n8n/deployment/helm-charts/zumba-stack
+        path: deployment/helm-charts/zumba-stack
         helm:
           releaseName: zumba
           valueFiles:
           - ../../environments/{{.env}}/values.yaml
       
       # Source 2: SealedSecrets via Kustomize (includes common-labels component)
-      - repoURL: UPDATE_ME  # TODO: Replace with your git repository URL (same as above)
+      - repoURL: https://github.com/Undermyspell/ai.git 
         targetRevision: HEAD
-        path: n8n/deployment/environments/{{.env}}
+        path: deployment/environments/{{.env}}
       
       destination:
         server: https://kubernetes.default.svc
