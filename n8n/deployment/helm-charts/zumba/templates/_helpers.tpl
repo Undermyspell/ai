@@ -38,9 +38,6 @@ helm.sh/chart: {{ include "zumba.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- with .Values.customLabels }}
-{{- toYaml . | nindent 0 }}
-{{- end }}
 {{- end }}
 
 {{/*
