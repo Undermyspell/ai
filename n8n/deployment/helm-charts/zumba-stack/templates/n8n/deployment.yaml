@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "n8n-stack.fullname" . }}-n8n
+  name: {{ include "zumba-stack.fullname" . }}-n8n
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "n8n-stack.n8n.labels" . | nindent 4 }}
+    {{- include "zumba-stack.n8n.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "n8n-stack.n8n.selectorLabels" . | nindent 6 }}
+      {{- include "zumba-stack.n8n.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "n8n-stack.n8n.selectorLabels" . | nindent 8 }}
+        {{- include "zumba-stack.n8n.selectorLabels" . | nindent 8 }}
     spec:
       initContainers:
       - name: wait-for-postgres
@@ -22,7 +22,7 @@ spec:
         - sh
         - -c
         - |
-          until nc -z {{ include "n8n-stack.fullname" . }}-postgres {{ .Values.postgres.service.port }}; do
+          until nc -z {{ include "zumba-stack.fullname" . }}-postgres {{ .Values.postgres.service.port }}; do
             echo "Waiting for postgres..."
             sleep 2
           done
@@ -36,7 +36,7 @@ spec:
           protocol: TCP
         envFrom:
         - configMapRef:
-            name: {{ include "n8n-stack.fullname" . }}-n8n
+            name: {{ include "zumba-stack.fullname" . }}-n8n
         env:
         - name: DB_POSTGRESDB_PASSWORD
           valueFrom:
@@ -63,4 +63,4 @@ spec:
       volumes:
       - name: n8n-data
         persistentVolumeClaim:
-          claimName: {{ include "n8n-stack.fullname" . }}-n8n-data
+          claimName: {{ include "zumba-stack.fullname" . }}-n8n-data

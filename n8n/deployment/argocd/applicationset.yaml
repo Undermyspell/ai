@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: n8n-stack
+  name: zumba-stack
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -23,7 +23,7 @@ spec:
     metadata:
       name: zumba-{{.env}}
       labels:
-        app.kubernetes.io/name: n8n-stack
+        app.kubernetes.io/name: zumba-stack
         app.kubernetes.io/instance: zumba-{{.env}}
         app.kubernetes.io/managed-by: argocd
     spec:

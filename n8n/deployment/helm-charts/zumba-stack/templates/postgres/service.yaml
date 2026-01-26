@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "n8n-stack.fullname" . }}-postgres
+  name: {{ include "zumba-stack.fullname" . }}-postgres
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "n8n-stack.postgres.labels" . | nindent 4 }}
+    {{- include "zumba-stack.postgres.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.postgres.service.type }}
   ports:
@@ -13,4 +13,4 @@ spec:
       protocol: TCP
       name: postgres
   selector:
-    {{- include "n8n-stack.postgres.selectorLabels" . | nindent 4 }}
+    {{- include "zumba-stack.postgres.selectorLabels" . | nindent 4 }}
