@@ -8,23 +8,31 @@ spec:
   - list:
       elements:
       - env: staging
+        namespace: zumba-staging
       - env: production
+        namespace: zumba-production
   template:
     metadata:
       name: zumba-{{env}}
     spec:
       project: default
-      source:
-        repoURL: https://github.com/your-username/your-repo.git  # TODO: Update with your actual git repository URL
+      # Multi-source support: Deploy both Helm chart and SealedSecrets
+      sources:
+      # Source 1: Helm chart with environment-specific values
+      - repoURL: https://github.com/your-username/your-repo.git  # TODO: Update with your actual git repository URL
         targetRevision: HEAD
-        path: n8n/deployment/helm-charts/n8n-stack
+        path: n8n/deployment/helm-charts/zumba-stack
         helm:
+          releaseName: zumba
           valueFiles:
-          - values.yaml
           - ../../environments/{{env}}/values.yaml
+      # Source 2: SealedSecrets via Kustomize
+      - repoURL: https://github.com/your-username/your-repo.git  # TODO: Update with your actual git repository URL
+        targetRevision: HEAD
+        path: n8n/deployment/environments/{{env}}
       destination:
         server: https://kubernetes.default.svc
-        namespace: zumba-{{env}}
+        namespace: {{namespace}}
       syncPolicy:
         automated:
           prune: true
