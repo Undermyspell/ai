@@ -1,4 +1,4 @@
-# Default values for zumba-stack Helm chart
+# Default values for zumba Helm chart
 # These are sensible defaults that work for most deployments
 # Override these in environment-specific values.yaml files
 

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "zumba-stack.fullname" . }}-postgres-data
+  name: {{ include "zumba.fullname" . }}-postgres-data
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "zumba-stack.postgres.labels" . | nindent 4 }}
+    {{- include "zumba.postgres.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce

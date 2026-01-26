@@ -37,7 +37,7 @@ spec:
       # Source 1: Helm chart with environment-specific values
       - repoURL: https://github.com/Undermyspell/ai.git
         targetRevision: HEAD
-        path: n8n/deployment/helm-charts/zumba-stack
+        path: n8n/deployment/helm-charts/zumba
         helm:
           releaseName: zumba
           valueFiles:

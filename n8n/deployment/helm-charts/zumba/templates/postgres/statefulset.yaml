@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "zumba-stack.fullname" . }}-postgres
+  name: {{ include "zumba.fullname" . }}-postgres
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "zumba-stack.postgres.labels" . | nindent 4 }}
+    {{- include "zumba.postgres.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "zumba-stack.fullname" . }}-postgres
+  serviceName: {{ include "zumba.fullname" . }}-postgres
   replicas: 1
   selector:
     matchLabels:
-      {{- include "zumba-stack.postgres.selectorLabels" . | nindent 6 }}
+      {{- include "zumba.postgres.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "zumba-stack.postgres.selectorLabels" . | nindent 8 }}
+        {{- include "zumba.postgres.selectorLabels" . | nindent 8 }}
     spec:
       containers:
       - name: postgres
@@ -26,7 +26,7 @@ spec:
           protocol: TCP
         envFrom:
         - configMapRef:
-            name: {{ include "zumba-stack.fullname" . }}-postgres
+            name: {{ include "zumba.fullname" . }}-postgres
         env:
         - name: POSTGRES_PASSWORD
           valueFrom:
@@ -59,4 +59,4 @@ spec:
       volumes:
       - name: postgres-data
         persistentVolumeClaim:
-          claimName: {{ include "zumba-stack.fullname" . }}-postgres-data
+          claimName: {{ include "zumba.fullname" . }}-postgres-data
