@@ -3,39 +3,66 @@ kind: ApplicationSet
 metadata:
   name: n8n-stack
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  
   generators:
   - list:
       elements:
+      # Staging environment
       - env: staging
         namespace: zumba-staging
+      # Production environment
       - env: production
         namespace: zumba-production
+  
   template:
     metadata:
-      name: zumba-{{env}}
+      name: zumba-{{.env}}
+      labels:
+        app.kubernetes.io/name: n8n-stack
+        app.kubernetes.io/instance: zumba-{{.env}}
+        app.kubernetes.io/managed-by: argocd
     spec:
       project: default
-      # Multi-source support: Deploy both Helm chart and SealedSecrets
+      
+      # Multi-source deployment:
+      # 1. Helm chart for main application (n8n + PostgreSQL)
+      # 2. Kustomize for SealedSecrets and labels
       sources:
+      
       # Source 1: Helm chart with environment-specific values
-      - repoURL: https://github.com/your-username/your-repo.git  # TODO: Update with your actual git repository URL
+      - repoURL: UPDATE_ME  # TODO: Replace with your git repository URL (e.g., https://github.com/username/repo.git)
         targetRevision: HEAD
         path: n8n/deployment/helm-charts/zumba-stack
         helm:
           releaseName: zumba
           valueFiles:
-          - ../../environments/{{env}}/values.yaml
-      # Source 2: SealedSecrets via Kustomize
-      - repoURL: https://github.com/your-username/your-repo.git  # TODO: Update with your actual git repository URL
+          - ../../environments/{{.env}}/values.yaml
+      
+      # Source 2: SealedSecrets via Kustomize (includes common-labels component)
+      - repoURL: UPDATE_ME  # TODO: Replace with your git repository URL (same as above)
         targetRevision: HEAD
-        path: n8n/deployment/environments/{{env}}
+        path: n8n/deployment/environments/{{.env}}
+      
       destination:
         server: https://kubernetes.default.svc
-        namespace: {{namespace}}
+        namespace: "{{.namespace}}"
+      
       syncPolicy:
         automated:
-          prune: true
-          selfHeal: true
+          prune: true      # Remove resources that are no longer defined in git
+          selfHeal: true   # Automatically sync when cluster state differs from git
         syncOptions:
-        - CreateNamespace=true
+        - CreateNamespace=true           # Auto-create namespace if it doesn't exist
+        - ServerSideApply=true           # Use server-side apply for better conflict resolution
+        - RespectIgnoreDifferences=true  # Respect ignoreDifferences configuration
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
