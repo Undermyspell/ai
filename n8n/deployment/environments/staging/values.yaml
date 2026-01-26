@@ -1,3 +1,6 @@
+# Staging environment overrides
+# Inherits from: environments/base/values.yaml
+
 namespace: zumba-staging
 
 n8n:

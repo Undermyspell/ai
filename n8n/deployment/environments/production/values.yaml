@@ -1,3 +1,6 @@
+# Production environment overrides
+# Inherits from: environments/base/values.yaml
+
 namespace: zumba-production
 
 n8n:
