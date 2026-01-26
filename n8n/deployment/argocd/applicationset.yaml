@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: n8n-stack
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - env: staging
+      - env: production
+  template:
+    metadata:
+      name: zumba-{{env}}
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/your-username/your-repo.git  # TODO: Update with your actual git repository URL
+        targetRevision: HEAD
+        path: n8n/deployment/helm-charts/n8n-stack
+        helm:
+          valueFiles:
+          - values.yaml
+          - ../../environments/{{env}}/values.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: zumba-{{env}}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true

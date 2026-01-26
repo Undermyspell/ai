@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "n8n-stack.fullname" . }}-postgres
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "n8n-stack.postgres.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "n8n-stack.fullname" . }}-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "n8n-stack.postgres.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "n8n-stack.postgres.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: postgres
+        image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+        imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+        ports:
+        - name: postgres
+          containerPort: 5432
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "n8n-stack.fullname" . }}-postgres
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: {{ .Values.postgres.persistence.mountPath }}/pgdata
+        volumeMounts:
+        - name: postgres-data
+          mountPath: {{ .Values.postgres.persistence.mountPath }}
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U {{ .Values.postgres.username }} -d {{ .Values.postgres.database }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U {{ .Values.postgres.username }} -d {{ .Values.postgres.database }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.postgres.resources | nindent 10 }}
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: {{ include "n8n-stack.fullname" . }}-postgres-data
