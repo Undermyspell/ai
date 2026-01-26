@@ -5,6 +5,14 @@
 # Namespace will be set by Kustomize/ArgoCD
 # namespace: override-me
 
+# Custom labels (zumba.io/* domain)
+# Override in environment-specific values.yaml
+customLabels:
+  zumba.io/application: zumba
+  zumba.io/managed-by: argocd
+  zumba.io/stack: zumba
+  # zumba.io/environment: set per environment
+
 n8n:
   image:
     repository: docker.n8n.io/n8nio/n8n

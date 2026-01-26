@@ -8,6 +8,6 @@ labels:
 - pairs:
     zumba.io/application: zumba
     zumba.io/managed-by: argocd
-    zumba.io/stack: n8n
+    zumba.io/stack: zumba
   includeSelectors: false
   includeTemplates: false
