@@ -2,10 +2,10 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: {{ include "n8n-stack.fullname" . }}-n8n
+  name: {{ include "zumba-stack.fullname" . }}-n8n
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "n8n-stack.n8n.labels" . | nindent 4 }}
+    {{- include "zumba-stack.n8n.labels" . | nindent 4 }}
 spec:
   entryPoints:
     - web
@@ -13,6 +13,6 @@ spec:
     - match: Host(`{{ .Values.ingress.host }}`)
       kind: Rule
       services:
-        - name: {{ include "n8n-stack.fullname" . }}-n8n
+        - name: {{ include "zumba-stack.fullname" . }}-n8n
           port: {{ .Values.n8n.service.port }}
 {{- end }}

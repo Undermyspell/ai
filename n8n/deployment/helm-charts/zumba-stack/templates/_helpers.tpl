@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "n8n-stack.name" -}}
+{{- define "zumba-stack.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "n8n-stack.fullname" -}}
+{{- define "zumba-stack.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,16 +24,16 @@ Create a default fully qualified app name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "n8n-stack.chart" -}}
+{{- define "zumba-stack.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "n8n-stack.labels" -}}
-helm.sh/chart: {{ include "n8n-stack.chart" . }}
-{{ include "n8n-stack.selectorLabels" . }}
+{{- define "zumba-stack.labels" -}}
+helm.sh/chart: {{ include "zumba-stack.chart" . }}
+{{ include "zumba-stack.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,39 +43,39 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "n8n-stack.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "n8n-stack.name" . }}
+{{- define "zumba-stack.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "zumba-stack.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 n8n specific labels
 */}}
-{{- define "n8n-stack.n8n.labels" -}}
-{{ include "n8n-stack.labels" . }}
+{{- define "zumba-stack.n8n.labels" -}}
+{{ include "zumba-stack.labels" . }}
 app.kubernetes.io/component: n8n
 {{- end }}
 
 {{/*
 n8n selector labels
 */}}
-{{- define "n8n-stack.n8n.selectorLabels" -}}
-{{ include "n8n-stack.selectorLabels" . }}
+{{- define "zumba-stack.n8n.selectorLabels" -}}
+{{ include "zumba-stack.selectorLabels" . }}
 app.kubernetes.io/component: n8n
 {{- end }}
 
 {{/*
 postgres specific labels
 */}}
-{{- define "n8n-stack.postgres.labels" -}}
-{{ include "n8n-stack.labels" . }}
+{{- define "zumba-stack.postgres.labels" -}}
+{{ include "zumba-stack.labels" . }}
 app.kubernetes.io/component: postgres
 {{- end }}
 
 {{/*
 postgres selector labels
 */}}
-{{- define "n8n-stack.postgres.selectorLabels" -}}
-{{ include "n8n-stack.selectorLabels" . }}
+{{- define "zumba-stack.postgres.selectorLabels" -}}
+{{ include "zumba-stack.selectorLabels" . }}
 app.kubernetes.io/component: postgres
 {{- end }}
