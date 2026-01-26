@@ -31,7 +31,7 @@ spec:
       
       # Multi-source deployment:
       # 1. Helm chart for main application (n8n + PostgreSQL)
-      # 2. Kustomize for SealedSecrets and labels
+      # 2. Kustomize for SealedSecrets
       sources:
       
       # Source 1: Helm chart with environment-specific values
@@ -43,7 +43,7 @@ spec:
           valueFiles:
           - ../../environments/{{.env}}/values.yaml
       
-      # Source 2: SealedSecrets via Kustomize (includes common-labels component)
+      # Source 2: SealedSecrets via Kustomize
       - repoURL: https://github.com/Undermyspell/ai.git 
         targetRevision: HEAD
         path: n8n/deployment/environments/{{.env}}
