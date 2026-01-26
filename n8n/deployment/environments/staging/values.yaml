@@ -7,10 +7,10 @@ n8n:
   resources:
     requests:
       cpu: 500m
-      memory: 1Gi
+      memory: 500Mi
     limits:
       cpu: 1000m
-      memory: 2Gi
+      memory: 1Gi
   
   persistence:
     size: 2Gi
