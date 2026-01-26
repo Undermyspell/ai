@@ -1,8 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Staging environment - SealedSecrets only
-# (Helm chart is deployed directly by ArgoCD)
+# Staging environment
+# References Helm-generated manifests and applies labels
 
 namespace: zumba-staging
 
@@ -13,8 +13,9 @@ components:
 resources:
 - sealed-secrets/postgres-secrets.yaml
 - sealed-secrets/n8n-secrets.yaml
+# Note: Helm resources added by ArgoCD multi-source
 
-# Add staging-specific label
+# Add staging-specific label  
 labels:
 - pairs:
     zumba.io/environment: stage

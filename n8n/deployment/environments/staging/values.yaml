@@ -3,6 +3,13 @@
 
 namespace: zumba-staging
 
+# Add staging-specific custom label
+customLabels:
+  zumba.io/application: zumba
+  zumba.io/managed-by: argocd
+  zumba.io/stack: zumba
+  zumba.io/environment: stage
+
 n8n:
   resources:
     requests:
