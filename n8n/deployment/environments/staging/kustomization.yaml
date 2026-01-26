@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 # Staging environment - SealedSecrets only
-# (Helm chart is deployed via ArgoCD with Kustomize post-renderer)
+# (Helm chart is deployed directly by ArgoCD)
 
 namespace: zumba-staging
 
@@ -10,7 +10,6 @@ namespace: zumba-staging
 components:
 - ../components/common-labels
 
-# Add SealedSecrets
 resources:
 - sealed-secrets/postgres-secrets.yaml
 - sealed-secrets/n8n-secrets.yaml
