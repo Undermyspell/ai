@@ -6,16 +6,17 @@ kind: Kustomization
 
 namespace: zumba-staging
 
+# Include common labels component
+components:
+- ../components/common-labels
+
 resources:
 - sealed-secrets/postgres-secrets.yaml
 - sealed-secrets/n8n-secrets.yaml
 
-# Labels applied to SealedSecrets
+# Add staging-specific label
 labels:
 - pairs:
-    zumba.io/application: zumba
-    zumba.io/managed-by: argocd
-    zumba.io/stack: n8n
     zumba.io/environment: stage
   includeSelectors: false
   includeTemplates: false

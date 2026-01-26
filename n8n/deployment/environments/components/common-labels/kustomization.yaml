@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+# Common labels component
+# Can be included in any environment to apply standard zumba labels
+
+labels:
+- pairs:
+    zumba.io/application: zumba
+    zumba.io/managed-by: argocd
+    zumba.io/stack: n8n
+  includeSelectors: false
+  includeTemplates: false
