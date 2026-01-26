@@ -35,7 +35,6 @@ spec:
       sources:
       
       # Source 1: Helm chart with environment-specific values
-      # Uses Kustomize post-renderer to apply labels
       - repoURL: https://github.com/Undermyspell/ai.git
         targetRevision: HEAD
         path: n8n/deployment/helm-charts/zumba
@@ -43,10 +42,6 @@ spec:
           releaseName: zumba
           valueFiles:
           - ../../environments/{{.env}}/values.yaml
-          # Post-render with Kustomize to apply labels
-          postRenderers:
-          - kustomize:
-              path: ../../environments/{{.env}}/post-render
       
       # Source 2: SealedSecrets via Kustomize (includes common-labels component)
       - repoURL: https://github.com/Undermyspell/ai.git 
