@@ -14,9 +14,17 @@ spec:
   externalTrafficPolicy: Local
   {{- end }}
   ports:
-    - port: {{ if .Values.postgres.externalAccess.enabled }}{{ .Values.postgres.externalAccess.port }}{{ else }}{{ .Values.postgres.service.port }}{{ end }}
+    # Internal cluster port (always present for n8n and other internal apps)
+    - port: {{ .Values.postgres.service.port }}
       targetPort: 5432
       protocol: TCP
       name: postgres
+    {{- if .Values.postgres.externalAccess.enabled }}
+    # External LoadBalancer port (only when external access is enabled)
+    - port: {{ .Values.postgres.externalAccess.port }}
+      targetPort: 5432
+      protocol: TCP
+      name: postgres-external
+    {{- end }}
   selector:
     {{- include "zumba.postgres.selectorLabels" . | nindent 4 }}
