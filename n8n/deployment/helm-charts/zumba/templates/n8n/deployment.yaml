@@ -43,6 +43,11 @@ spec:
             secretKeyRef:
               name: postgres-secrets
               key: DB_POSTGRESDB_PASSWORD
+        - name: N8N_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: n8n-secrets
+              key: N8N_ENCRYPTION_KEY
         volumeMounts:
         - name: n8n-data
           mountPath: {{ .Values.n8n.persistence.mountPath }}
