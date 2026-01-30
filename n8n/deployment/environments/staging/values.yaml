@@ -29,6 +29,11 @@ postgres:
   
   persistence:
     size: 2Gi
+  
+  # Enable external access on port 5433
+  externalAccess:
+    enabled: true
+    port: 5433
 
 ingress:
   host: zumba-stage.pi.home
