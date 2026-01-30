@@ -1,3 +1,5 @@
+---
+# Internal ClusterIP service for in-cluster access (always created)
 apiVersion: v1
 kind: Service
 metadata:
@@ -6,25 +8,36 @@ metadata:
   labels:
     {{- include "zumba.postgres.labels" . | nindent 4 }}
 spec:
-  type: {{ if .Values.postgres.externalAccess.enabled }}{{ .Values.postgres.externalAccess.type }}{{ else }}{{ .Values.postgres.service.type }}{{ end }}
-  {{- if and .Values.postgres.externalAccess.enabled .Values.postgres.externalAccess.loadBalancerIP }}
-  loadBalancerIP: {{ .Values.postgres.externalAccess.loadBalancerIP }}
-  {{- end }}
-  {{- if .Values.postgres.externalAccess.enabled }}
-  externalTrafficPolicy: Local
-  {{- end }}
+  type: ClusterIP
   ports:
-    # Internal cluster port (always present for n8n and other internal apps)
     - port: {{ .Values.postgres.service.port }}
       targetPort: 5432
       protocol: TCP
       name: postgres
-    {{- if .Values.postgres.externalAccess.enabled }}
-    # External LoadBalancer port (only when external access is enabled)
+  selector:
+    {{- include "zumba.postgres.selectorLabels" . | nindent 4 }}
+---
+{{- if .Values.postgres.externalAccess.enabled }}
+# External LoadBalancer service for external access (only when enabled)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zumba.fullname" . }}-postgres-external
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.postgres.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres-external
+spec:
+  type: {{ .Values.postgres.externalAccess.type }}
+  {{- if .Values.postgres.externalAccess.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.postgres.externalAccess.loadBalancerIP }}
+  {{- end }}
+  externalTrafficPolicy: Local
+  ports:
     - port: {{ .Values.postgres.externalAccess.port }}
       targetPort: 5432
       protocol: TCP
-      name: postgres-external
-    {{- end }}
+      name: postgres
   selector:
     {{- include "zumba.postgres.selectorLabels" . | nindent 4 }}
+{{- end }}
