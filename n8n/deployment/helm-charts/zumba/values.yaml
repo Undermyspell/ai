@@ -70,6 +70,14 @@ postgres:
   service:
     type: ClusterIP
     port: 5432
+  
+  # External access configuration
+  # Override per environment to enable LoadBalancer and set external port
+  externalAccess:
+    enabled: false
+    type: LoadBalancer  # Service type when external access is enabled
+    port: 5432  # External port - override per environment (e.g., 5433 for staging, 5434 for production)
+    loadBalancerIP: ""  # Optional: specify a fixed IP if your LB supports it
 
 ingress:
   enabled: true
