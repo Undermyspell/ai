@@ -30,6 +30,16 @@ spec:
       - name: evolution-api
         image: "{{ .Values.evolutionApi.image.repository }}:{{ .Values.evolutionApi.image.tag }}"
         imagePullPolicy: {{ .Values.evolutionApi.image.pullPolicy }}
+        command:
+        - sh
+        - -c
+        - |
+          # URL-encode the password for DATABASE_CONNECTION_URI
+          # Replace = with %3D, + with %2B, / with %2F
+          ENCODED_PASSWORD=$(echo -n "$DATABASE_PASSWORD" | sed 's/+/%2B/g; s/\//%2F/g; s/=/%3D/g')
+          export DATABASE_CONNECTION_URI="postgresql://${DATABASE_USER}:${ENCODED_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}?schema=${DATABASE_SCHEMA}"
+          # Start the application
+          exec node ./dist/src/main.js
         ports:
         - name: http
           containerPort: 8080
@@ -50,9 +60,6 @@ spec:
             secretKeyRef:
               name: postgres-secrets
               key: POSTGRES_PASSWORD
-        # Build DATABASE_CONNECTION_URI from environment variables
-        - name: DATABASE_CONNECTION_URI
-          value: "postgresql://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(DATABASE_NAME)?schema=$(DATABASE_SCHEMA)"
         - name: DATABASE_CONNECTION_CLIENT_NAME
           value: "evolution_exchange"
         volumeMounts:
