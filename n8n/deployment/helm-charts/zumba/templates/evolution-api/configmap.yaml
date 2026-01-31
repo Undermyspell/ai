@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "zumba.fullname" . }}-evolution-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.evolutionApi.labels" . | nindent 4 }}
+data:
+  # Database configuration (non-sensitive)
+  DATABASE_HOST: {{ include "zumba.fullname" . }}-postgres
+  DATABASE_PORT: {{ .Values.evolutionApi.database.port | quote }}
+  DATABASE_USER: {{ .Values.evolutionApi.database.user | quote }}
+  DATABASE_NAME: {{ .Values.evolutionApi.database.name | quote }}
+  DATABASE_SCHEMA: {{ .Values.evolutionApi.database.schema | quote }}
+  
+  # Evolution API configuration
+  CONFIG_SESSION_PHONE_VERSION: {{ .Values.evolutionApi.env.CONFIG_SESSION_PHONE_VERSION | quote }}
+  DATABASE_ENABLED: {{ .Values.evolutionApi.env.DATABASE_ENABLED | quote }}
+  DATABASE_PROVIDER: {{ .Values.evolutionApi.env.DATABASE_PROVIDER | quote }}
+  DATABASE_SAVE_DATA_INSTANCE: {{ .Values.evolutionApi.env.DATABASE_SAVE_DATA_INSTANCE | quote }}
+  DATABASE_SAVE_DATA_CONTACTS: {{ .Values.evolutionApi.env.DATABASE_SAVE_DATA_CONTACTS | quote }}
+  DATABASE_SAVE_DATA_CHATS: {{ .Values.evolutionApi.env.DATABASE_SAVE_DATA_CHATS | quote }}
+  DATABASE_SAVE_DATA_NEW_MESSAGE: {{ .Values.evolutionApi.env.DATABASE_SAVE_DATA_NEW_MESSAGE | quote }}
+  DATABASE_SAVE_DATA_LABELS: {{ .Values.evolutionApi.env.DATABASE_SAVE_DATA_LABELS | quote }}
+  DATABASE_SAVE_MESSAGE_UPDATE: {{ .Values.evolutionApi.env.DATABASE_SAVE_MESSAGE_UPDATE | quote }}
+  DATABASE_SAVE_DATA_HISTORIC: {{ .Values.evolutionApi.env.DATABASE_SAVE_DATA_HISTORIC | quote }}
+  CACHE_REDIS_ENABLED: {{ .Values.evolutionApi.env.CACHE_REDIS_ENABLED | quote }}
+  TZ: {{ .Values.evolutionApi.env.TZ | quote }}

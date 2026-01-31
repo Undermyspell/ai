@@ -79,3 +79,19 @@ postgres selector labels
 {{ include "zumba.selectorLabels" . }}
 app.kubernetes.io/component: postgres
 {{- end }}
+
+{{/*
+evolution-api specific labels
+*/}}
+{{- define "zumba.evolutionApi.labels" -}}
+{{ include "zumba.labels" . }}
+app.kubernetes.io/component: evolution-api
+{{- end }}
+
+{{/*
+evolution-api selector labels
+*/}}
+{{- define "zumba.evolutionApi.selectorLabels" -}}
+{{ include "zumba.selectorLabels" . }}
+app.kubernetes.io/component: evolution-api
+{{- end }}

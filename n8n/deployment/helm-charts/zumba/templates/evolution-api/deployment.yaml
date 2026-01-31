@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zumba.fullname" . }}-evolution-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.evolutionApi.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "zumba.evolutionApi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zumba.evolutionApi.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z {{ include "zumba.fullname" . }}-postgres {{ .Values.postgres.service.port }}; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      containers:
+      - name: evolution-api
+        image: "{{ .Values.evolutionApi.image.repository }}:{{ .Values.evolutionApi.image.tag }}"
+        imagePullPolicy: {{ .Values.evolutionApi.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "zumba.fullname" . }}-evolution-api
+        env:
+        # API Key from sealed secret
+        - name: AUTHENTICATION_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: evolution-api-secrets
+              key: AUTHENTICATION_API_KEY
+        # Database password from existing postgres secret (reuse!)
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        # Build DATABASE_CONNECTION_URI from environment variables
+        - name: DATABASE_CONNECTION_URI
+          value: "postgresql://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(DATABASE_NAME)?schema=$(DATABASE_SCHEMA)"
+        - name: DATABASE_CONNECTION_CLIENT_NAME
+          value: "evolution_exchange"
+        volumeMounts:
+        - name: evolution-instances
+          mountPath: {{ .Values.evolutionApi.persistence.mountPath }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.evolutionApi.resources | nindent 10 }}
+      volumes:
+      - name: evolution-instances
+        persistentVolumeClaim:
+          claimName: {{ include "zumba.fullname" . }}-evolution-api-data

@@ -1,0 +1,16 @@
+{{- if .Values.evolutionApi.persistence.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "zumba.fullname" . }}-evolution-api-data
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.evolutionApi.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.evolutionApi.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.evolutionApi.persistence.size }}
+{{- end }}
