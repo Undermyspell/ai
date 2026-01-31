@@ -1,0 +1,57 @@
+# /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    # API & Dashboard Configuration
+    # See: https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/
+    api:
+      # REQUIRED: Enable the Traefik API
+      # When set to true, the API endpoints become available
+      # This is needed for the dashboard to function (dashboard queries the API for data)
+      # Default in Helm chart: dashboard is enabled by default (api.dashboard: true)
+      # Security Warning: Do NOT expose this publicly without authentication in production
+      dashboard: true
+      insecure: true
+      # OPTIONAL: Configure API base path
+      # Default: "/" - all API endpoints are served from root
+      # If changed to e.g. "/admin", dashboard would be at /admin/dashboard/
+      # basePath: "/"
+    # Port Configuration for Traefik Dashboard Access
+    # The 'traefik' port is the internal dashboard/API port (port 8080 by default)
+    # See: https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml#L1254
+    ports:
+      traefik:
+        # REQUIRED: Expose the dashboard port
+        # By default, the traefik port (8080) is NOT exposed for security reasons
+        # Setting this to true makes it accessible outside the pod
+        # Default: false (not exposed)
+        # ⚠️  SECURITY WARNING: Only enable this if you understand the implications
+        # The dashboard will be accessible without authentication by default
+        expose:
+          default: true
+    # WORKAROUND: Manually add --api.insecure=true flag
+    # The Helm chart version 37.1.x doesn't properly translate api.insecure: true
+    # to the --api.insecure=true command line argument, so we add it manually here.
+    # This flag is REQUIRED for the dashboard to actually work on port 8080.
+    additionalArguments:
+      - "--api.insecure=true"
+    # OPTIONAL: Enable logging for debugging
+    # These settings help you troubleshoot routing and see access patterns
+    # Default log level is INFO, which is appropriate for most use cases
+    logs:
+      general:
+        # OPTIONAL: Set log level
+        # Options: TRACE, DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+        # Default: INFO
+        # Recommendation: Keep at INFO unless debugging
+        level: INFO
+      access:
+        # OPTIONAL: Enable access logs to see all requests
+        # Default: false (disabled)
+        # Useful for: Debugging routing issues, monitoring traffic
+        # Trade-off: Increases log volume
+        enabled: true
