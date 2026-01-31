@@ -1,0 +1,18 @@
+{{- if .Values.evolutionApiIngress.enabled -}}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "zumba.fullname" . }}-evolution-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.evolutionApi.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`{{ .Values.evolutionApiIngress.host }}`)
+      kind: Rule
+      services:
+        - name: {{ include "zumba.fullname" . }}-evolution-api
+          port: {{ .Values.evolutionApi.service.port }}
+{{- end }}

@@ -83,3 +83,53 @@ ingress:
   enabled: true
   className: traefik
   host: n8n.example.com  # Override per environment
+
+evolutionApi:
+  image:
+    repository: evoapicloud/evolution-api
+    tag: "v2.3.7"
+    pullPolicy: IfNotPresent
+  
+  # Default resources - override per environment
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 1Gi
+    mountPath: /evolution/instances
+  
+  database:
+    host: postgres  # Will be templated to {{ include "zumba.fullname" . }}-postgres
+    port: "5432"
+    user: n8n
+    name: evolution
+    schema: public
+  
+  env:
+    CONFIG_SESSION_PHONE_VERSION: "2.3000.1028395461"
+    DATABASE_ENABLED: "true"
+    DATABASE_PROVIDER: postgresql
+    DATABASE_SAVE_DATA_INSTANCE: "true"
+    DATABASE_SAVE_DATA_CONTACTS: "false"
+    DATABASE_SAVE_DATA_CHATS: "false"
+    DATABASE_SAVE_DATA_NEW_MESSAGE: "false"
+    DATABASE_SAVE_DATA_LABELS: "false"
+    DATABASE_SAVE_MESSAGE_UPDATE: "false"
+    DATABASE_SAVE_DATA_HISTORIC: "false"
+    CACHE_REDIS_ENABLED: "false"
+    TZ: America/Sao_Paulo
+  
+  service:
+    type: ClusterIP
+    port: 8080
+
+evolutionApiIngress:
+  enabled: true
+  host: evolution.example.com  # Override per environment
