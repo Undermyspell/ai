@@ -67,7 +67,7 @@
   "packageRules": [
     {
       "description": "Auto-merge n8n updates in staging environment only",
-      "matchFiles": [
+      "matchFileNames": [
         "n8n/deployment/environments/staging/values.yaml"
       ],
       "matchPackageNames": [
@@ -85,7 +85,7 @@
     },
     {
       "description": "Manual review required for base and production values",
-      "matchFiles": [
+      "matchFileNames": [
         "n8n/deployment/helm-charts/zumba/values.yaml",
         "n8n/deployment/environments/production/values.yaml"
       ],
