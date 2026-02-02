@@ -1,11 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "timezone": "Europe/Berlin",
   "schedule": [
-    "at 6pm every day"
+    "* 18 * * *"
   ],
   "includePaths": [
     "n8n/**"
@@ -20,7 +20,7 @@
       "customType": "regex",
       "description": "Update n8n Docker image tag in base Helm values",
       "managerFilePatterns": [
-        "^n8n/deployment/helm-charts/zumba/values\\.yaml$"
+        "n8n/deployment/helm-charts/zumba/values.yaml"
       ],
       "matchStrings": [
         "n8n:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
@@ -31,7 +31,7 @@
       "customType": "regex",
       "description": "Update n8n Docker image tag in staging environment",
       "managerFilePatterns": [
-        "^n8n/deployment/environments/staging/values\\.yaml$"
+        "n8n/deployment/environments/staging/values.yaml"
       ],
       "matchStrings": [
         "n8n:\\s*\\n\\s*image:\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
@@ -43,7 +43,7 @@
       "customType": "regex",
       "description": "Update postgres Docker image tag in base Helm values",
       "managerFilePatterns": [
-        "^n8n/deployment/helm-charts/zumba/values\\.yaml$"
+        "n8n/deployment/helm-charts/zumba/values.yaml"
       ],
       "matchStrings": [
         "postgres:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
@@ -54,7 +54,7 @@
       "customType": "regex",
       "description": "Update Evolution API Docker image tag in base Helm values",
       "managerFilePatterns": [
-        "^n8n/deployment/helm-charts/zumba/values\\.yaml$"
+        "n8n/deployment/helm-charts/zumba/values.yaml"
       ],
       "matchStrings": [
         "evolutionApi:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
