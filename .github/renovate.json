@@ -15,16 +15,11 @@
   ],
   "semanticCommits": "enabled",
   "dependencyDashboard": true,
-  "kubernetes": {
-    "fileMatch": [
-      "\\.yaml$",
-      "\\.yml$"
-    ]
-  },
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "description": "Update n8n Docker image tag in base Helm values",
-      "fileMatch": [
+      "managerFilePatterns": [
         "^n8n/deployment/helm-charts/zumba/values\\.yaml$"
       ],
       "matchStrings": [
@@ -33,8 +28,9 @@
       "datasourceTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update n8n Docker image tag in staging environment",
-      "fileMatch": [
+      "managerFilePatterns": [
         "^n8n/deployment/environments/staging/values\\.yaml$"
       ],
       "matchStrings": [
@@ -44,8 +40,9 @@
       "datasourceTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update postgres Docker image tag in base Helm values",
-      "fileMatch": [
+      "managerFilePatterns": [
         "^n8n/deployment/helm-charts/zumba/values\\.yaml$"
       ],
       "matchStrings": [
@@ -54,8 +51,9 @@
       "datasourceTemplate": "docker"
     },
     {
+      "customType": "regex",
       "description": "Update Evolution API Docker image tag in base Helm values",
-      "fileMatch": [
+      "managerFilePatterns": [
         "^n8n/deployment/helm-charts/zumba/values\\.yaml$"
       ],
       "matchStrings": [
