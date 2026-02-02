@@ -1,0 +1,134 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "at 6pm every day"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "semanticCommits": "enabled",
+  "dependencyDashboard": true,
+  "kubernetes": {
+    "fileMatch": [
+      "\\.yaml$",
+      "\\.yml$"
+    ]
+  },
+  "regexManagers": [
+    {
+      "description": "Update n8n Docker image tag in base Helm values",
+      "fileMatch": [
+        "^deployment/helm-charts/zumba/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "n8n:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Update n8n Docker image tag in staging environment",
+      "fileMatch": [
+        "^deployment/environments/staging/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "n8n:\\s*\\n\\s*image:\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
+      ],
+      "depNameTemplate": "docker.n8n.io/n8nio/n8n",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Update postgres Docker image tag in base Helm values",
+      "fileMatch": [
+        "^deployment/helm-charts/zumba/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "postgres:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Update Evolution API Docker image tag in base Helm values",
+      "fileMatch": [
+        "^deployment/helm-charts/zumba/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "evolutionApi:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Auto-merge n8n updates in staging environment only",
+      "matchFiles": [
+        "deployment/environments/staging/values.yaml"
+      ],
+      "matchPackageNames": [
+        "docker.n8n.io/n8nio/n8n"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash",
+      "labels": [
+        "dependencies",
+        "staging",
+        "n8n",
+        "automerge"
+      ]
+    },
+    {
+      "description": "Manual review required for base and production values",
+      "matchFiles": [
+        "deployment/helm-charts/zumba/values.yaml",
+        "deployment/environments/production/values.yaml"
+      ],
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "manual-review"
+      ]
+    },
+    {
+      "description": "Group all postgres updates together",
+      "matchPackageNames": [
+        "postgres"
+      ],
+      "groupName": "postgres",
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "postgres",
+        "manual-review"
+      ]
+    },
+    {
+      "description": "Group all Evolution API updates together",
+      "matchPackageNames": [
+        "evoapicloud/evolution-api"
+      ],
+      "groupName": "evolution-api",
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "evolution-api",
+        "manual-review"
+      ]
+    },
+    {
+      "description": "Separate major updates for manual review",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "major-update",
+        "manual-review"
+      ]
+    }
+  ]
+}
