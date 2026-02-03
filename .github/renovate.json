@@ -60,6 +60,18 @@
         "evolutionApi:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update ArgoCD version in kustomization.yaml",
+      "managerFilePatterns": [
+        "n8n/deployment/argocd/base/kustomization.yaml"
+      ],
+      "matchStrings": [
+        "https://raw\\.githubusercontent\\.com/argoproj/argo-cd/(?<currentValue>v[\\d.]+)/manifests/install\\.yaml"
+      ],
+      "depNameTemplate": "argoproj/argo-cd",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [
@@ -128,6 +140,20 @@
       "labels": [
         "dependencies",
         "major-update",
+        "manual-review"
+      ]
+    },
+    {
+      "description": "ArgoCD updates require manual review",
+      "matchPackageNames": [
+        "argoproj/argo-cd"
+      ],
+      "groupName": "argocd",
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "argocd",
+        "infrastructure",
         "manual-review"
       ]
     }

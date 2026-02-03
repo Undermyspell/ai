@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/instance: argocd
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Undermyspell/ai.git
+    targetRevision: HEAD
+    path: n8n/deployment/argocd/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false      # Safety: don't auto-delete ArgoCD resources
+      selfHeal: true    # Auto-correct drift from desired state
+    syncOptions:
+      - ServerSideApply=true    # Better conflict resolution for large manifests
+      - CreateNamespace=true    # Create namespace if it doesn't exist
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
