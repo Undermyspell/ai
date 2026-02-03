@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  # ArgoCD installation manifest - pin to specific version for controlled updates
+  # To upgrade: change version below, commit, push - ArgoCD will self-update
+  # Release notes: https://github.com/argoproj/argo-cd/releases
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.0/manifests/install.yaml
+  # Custom Traefik IngressRoute for argocd.pi.home
+  - ingress-route.yaml

@@ -1,8 +1,93 @@
-# ArgoCD ApplicationSet
+# ArgoCD Configuration
 
-This directory contains the ArgoCD ApplicationSet that deploys n8n to staging and production environments.
+This directory contains ArgoCD configuration for:
+1. **Self-managed ArgoCD** - ArgoCD manages its own installation via GitOps
+2. **ApplicationSet** - Deploys n8n to staging and production environments
 
-## Before Deployment
+## Directory Structure
+
+```
+argocd/
+├── argocd-app.yaml       # ArgoCD self-management Application
+├── applicationset.yaml   # ApplicationSet for zumba environments
+├── base/
+│   ├── kustomization.yaml   # Kustomize config pointing to ArgoCD v3.3.0
+│   └── ingress-route.yaml   # Traefik IngressRoute for argocd.pi.home
+└── README.md
+```
+
+---
+
+## ArgoCD Self-Management
+
+ArgoCD manages itself using GitOps. The configuration in `base/` pulls the official ArgoCD manifests and applies custom patches.
+
+### Current Version
+
+**ArgoCD v3.3.0** - Pinned in `base/kustomization.yaml`
+
+### How It Works
+
+1. `base/kustomization.yaml` references the upstream ArgoCD `install.yaml` from GitHub
+2. Custom resources (like the Traefik IngressRoute) are added as additional resources
+3. `argocd-app.yaml` creates an ArgoCD Application that watches this `base/` directory
+4. ArgoCD syncs and manages itself!
+
+### Initial Setup (First Time Only)
+
+```bash
+# 1. Commit and push changes to git
+git add n8n/deployment/argocd/
+git commit -m "Add ArgoCD self-management"
+git push
+
+# 2. Apply the ArgoCD self-management Application
+kubectl apply -f argocd-app.yaml
+
+# 3. Verify ArgoCD is managing itself
+kubectl get application argocd -n argocd
+```
+
+### Upgrading ArgoCD
+
+To upgrade ArgoCD to a new version:
+
+1. **Check releases**: https://github.com/argoproj/argo-cd/releases
+
+2. **Update version** in `base/kustomization.yaml`:
+   ```yaml
+   resources:
+     - https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.0/manifests/install.yaml  # Update version here
+   ```
+
+3. **Commit and push**:
+   ```bash
+   git add base/kustomization.yaml
+   git commit -m "Upgrade ArgoCD to v3.4.0"
+   git push
+   ```
+
+4. **ArgoCD auto-syncs** and updates itself (or manually sync via UI/CLI)
+
+### Adding Custom Patches
+
+To customize ArgoCD (e.g., resource limits, replicas, config):
+
+1. Create a patch file in `base/` (e.g., `resource-patch.yaml`)
+2. Add it to `base/kustomization.yaml`:
+   ```yaml
+   patches:
+     - path: resource-patch.yaml
+   ```
+3. Commit and push
+
+---
+
+## ApplicationSet for Zumba Environments
+
+The `applicationset.yaml` deploys n8n to staging and production environments.
+
+### Before Deployment
 
 **IMPORTANT**: Update the git repository URL before applying this ApplicationSet!
 
@@ -298,8 +383,12 @@ To add a "dev" environment:
 
 ```
 argocd/
-├── applicationset.yaml  - ApplicationSet manifest
-└── README.md           - This file
+├── argocd-app.yaml       # ArgoCD self-management Application
+├── applicationset.yaml   # ApplicationSet for zumba environments  
+├── base/
+│   ├── kustomization.yaml   # Points to ArgoCD v3.3.0 + custom resources
+│   └── ingress-route.yaml   # Traefik IngressRoute for argocd.pi.home
+└── README.md
 ```
 
 ## Next Steps
