@@ -14,7 +14,7 @@
     "dependencies"
   ],
   "semanticCommits": "enabled",
-  "dependencyDashboard": true,
+  "dependencyDashboard": false,
   "customManagers": [
     {
       "customType": "regex",
