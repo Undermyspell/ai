@@ -24,7 +24,7 @@ type Config struct {
 func ConfigFromEnv() Config {
 	return Config{
 		Host:     getEnvOrDefault("DB_HOST", "192.168.178.46"),
-		Port:     getEnvOrDefault("DB_PORT", "5432"),
+		Port:     getEnvOrDefault("DB_PORT", "5433"),
 		User:     getEnvOrDefault("DB_USER", "n8n"),
 		Password: getEnvOrDefault("DB_PASSWORD", "n8n_password"),
 		DBName:   getEnvOrDefault("DB_NAME", "zumba"),
