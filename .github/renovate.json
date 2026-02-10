@@ -4,9 +4,6 @@
     "config:recommended"
   ],
   "timezone": "Europe/Berlin",
-  "schedule": [
-    "* 18 * * *"
-  ],
   "includePaths": [
     "n8n/**"
   ],
