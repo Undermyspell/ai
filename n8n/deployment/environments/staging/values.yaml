@@ -5,7 +5,7 @@ namespace: zumba-staging
 
 n8n:
   image:
-    tag: "2.10.0"
+    tag: "2.10.1"
   resources:
     requests:
       cpu: 500m
