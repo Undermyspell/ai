@@ -22,7 +22,9 @@
       "matchStrings": [
         "n8n:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
       ],
-      "datasourceTemplate": "docker"
+      "depNameTemplate": "n8n-io/n8n",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^n8n@(?<version>.*)$"
     },
     {
       "customType": "regex",
@@ -33,8 +35,9 @@
       "matchStrings": [
         "n8n:\\s*\\n\\s*image:\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
       ],
-      "depNameTemplate": "docker.n8n.io/n8nio/n8n",
-      "datasourceTemplate": "docker"
+      "depNameTemplate": "n8n-io/n8n",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^n8n@(?<version>.*)$"
     },
     {
       "customType": "regex",
@@ -78,7 +81,7 @@
         "n8n/deployment/environments/staging/values.yaml"
       ],
       "matchPackageNames": [
-        "docker.n8n.io/n8nio/n8n"
+        "n8n-io/n8n"
       ],
       "automerge": true,
       "automergeType": "pr",
