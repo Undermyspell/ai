@@ -1,0 +1,75 @@
+package days
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+	"github.com/michael/zumba-admin-ui/web/emoji"
+)
+
+type DetailVM struct {
+	Date     time.Time
+	Excluded bool
+	Cells    []Cell
+}
+
+type Cell struct {
+	UserID  string
+	Name    string
+	Absent  bool
+	Message *string
+}
+
+templ Detail(vm DetailVM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Donnerstag</div>
+		<h1>{ timeutil.FormatDE(vm.Date) }</h1>
+		if vm.Excluded {
+			<p class="meta"><strong>Ausgeschlossen.</strong> Dieser Tag zählt nicht in die Auswertung.</p>
+		} else {
+			<p class="meta">{ fmt.Sprintf("%d von %d Personen abgemeldet", absentCount(vm.Cells), len(vm.Cells)) }</p>
+		}
+	</div>
+	if !vm.Excluded {
+		<div class="attendance-grid enter">
+			for _, c := range vm.Cells {
+				@cellRow(c)
+			}
+		</div>
+	}
+}
+
+templ cellRow(c Cell) {
+	<div class={ "attendance-cell", cellClass(c.Absent) }>
+		<span class="emoji">{ emoji.For(c.Name) }</span>
+		<div>
+			<div class="name">{ c.Name }</div>
+			if c.Absent && c.Message != nil && *c.Message != "" {
+				<div class="msg">„{ *c.Message }"</div>
+			}
+		</div>
+		if c.Absent {
+			<span class="status">Abgemeldet</span>
+		} else {
+			<span class="status">Anwesend</span>
+		}
+	</div>
+}
+
+func cellClass(absent bool) string {
+	if absent {
+		return "absent"
+	}
+	return "present"
+}
+
+func absentCount(cells []Cell) int {
+	n := 0
+	for _, c := range cells {
+		if c.Absent {
+			n++
+		}
+	}
+	return n
+}

@@ -1,0 +1,126 @@
+package members
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+	"github.com/michael/zumba-admin-ui/web/emoji"
+)
+
+type DetailVM struct {
+	User      store.User
+	Stats     store.LeaderboardRow
+	Entries   []DetailEntry // newest first
+}
+
+type DetailEntry struct {
+	Date    time.Time
+	Absent  bool
+	Message *string
+}
+
+templ Detail(vm DetailVM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Mitglied</div>
+		<h1>{ emoji.For(vm.User.Name) } { vm.User.Name }</h1>
+		<p class="meta">{ fmt.Sprintf("%d/%d Donnerstage besucht – %d%% Quote", vm.Stats.AttendanceCount, vm.Stats.ThursdayCount, percentInt(vm.Stats.AttendPercent)) }</p>
+	</div>
+	<section class="grid-stats">
+		@statCard("Zusagen", fmt.Sprintf("%d", vm.Stats.AttendanceCount), "")
+		@statCard("Absagen", fmt.Sprintf("%d", vm.Stats.AwayCount), "")
+		@statCardAccent("Quote", fmt.Sprintf("%d%%", percentInt(vm.Stats.AttendPercent)), "Ø")
+		@statStreak(vm.Stats.Streak)
+	</section>
+	<section class="section">
+		<div class="section-head">
+			<div class="title">
+				<h2>Verlauf</h2>
+				<span class="count">{ fmt.Sprintf("%d Donnerstage", len(vm.Entries)) }</span>
+			</div>
+		</div>
+		<div class="list">
+			for _, e := range vm.Entries {
+				@entryRow(e)
+			}
+		</div>
+	</section>
+}
+
+templ entryRow(e DetailEntry) {
+	<div class={ "attendance-cell", entryClass(e.Absent) }>
+		<span class="emoji">{ statusEmoji(e.Absent) }</span>
+		<div>
+			<div class="name">{ timeutil.FormatDE(e.Date) }</div>
+			if e.Absent && e.Message != nil && *e.Message != "" {
+				<div class="msg">„{ *e.Message }"</div>
+			}
+		</div>
+		<span class="status">{ statusLabel(e.Absent) }</span>
+	</div>
+}
+
+templ statCard(label, value, sub string) {
+	<div class="stat-card">
+		<div class="label">{ label }</div>
+		<div class="value">{ value }</div>
+		if sub != "" {
+			<div class="sub">{ sub }</div>
+		}
+	</div>
+}
+
+templ statCardAccent(label, value, sub string) {
+	<div class="stat-card accent">
+		<div class="label">{ label }</div>
+		<div class="value">{ value }</div>
+		if sub != "" {
+			<div class="sub">{ sub }</div>
+		}
+	</div>
+}
+
+templ statStreak(streak int) {
+	<div class={ "stat-card", streakBgClass(streak) }>
+		<div class="label">Streak</div>
+		<div class="value">
+			if streak > 0 {
+				{ fmt.Sprintf("🔥 +%d", streak) }
+			} else if streak < 0 {
+				{ fmt.Sprintf("🧊 %d", streak) }
+			} else {
+				{ "–" }
+			}
+		</div>
+		<div class="sub">aktuell</div>
+	</div>
+}
+
+func entryClass(absent bool) string {
+	if absent {
+		return "absent"
+	}
+	return "present"
+}
+
+func statusEmoji(absent bool) string {
+	if absent {
+		return "✕"
+	}
+	return "✓"
+}
+
+func statusLabel(absent bool) string {
+	if absent {
+		return "Abgemeldet"
+	}
+	return "Anwesend"
+}
+
+func streakBgClass(streak int) string {
+	if streak > 0 {
+		return "accent"
+	}
+	return ""
+}

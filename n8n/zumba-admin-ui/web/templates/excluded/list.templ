@@ -1,0 +1,48 @@
+package excluded
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+)
+
+type ListVM struct {
+	Days []time.Time // newest first
+}
+
+templ List(vm ListVM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Sperrtage</div>
+		<h1>Ausgeschlossene Donnerstage</h1>
+		<p class="meta">Diese Tage zählen nicht in der Auswertung.</p>
+	</div>
+	if len(vm.Days) == 0 {
+		<div class="empty">
+			<div class="icon">📭</div>
+			<p>Keine Sperrtage in der aktuellen Saison.</p>
+		</div>
+	} else {
+		<div class="list enter">
+			for _, d := range vm.Days {
+				@row(d)
+			}
+		</div>
+	}
+}
+
+templ row(d time.Time) {
+	<div class="excluded-row">
+		<span class="marker"></span>
+		<div>
+			<div class="label">{ timeutil.FormatDE(d) }</div>
+			<div class="iso">{ fmt.Sprintf("KW %d · %s", isoWeek(d), timeutil.FormatISO(d)) }</div>
+		</div>
+		<span class="status" style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); letter-spacing: 0.10em; text-transform: uppercase;">Excluded</span>
+	</div>
+}
+
+func isoWeek(t time.Time) int {
+	_, w := t.ISOWeek()
+	return w
+}
