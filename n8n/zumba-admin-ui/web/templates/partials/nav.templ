@@ -1,0 +1,33 @@
+package partials
+
+type navItem struct {
+	Key   string
+	Href  string
+	Icon  string
+	Label string
+}
+
+var navItems = []navItem{
+	{Key: "dashboard", Href: "/dashboard", Icon: "📊", Label: "Dashboard"},
+	{Key: "members", Href: "/members", Icon: "👥", Label: "Mitglieder"},
+	{Key: "days", Href: "/days", Icon: "📅", Label: "Donnerstage"},
+	{Key: "excluded", Href: "/excluded", Icon: "🚫", Label: "Ausgeschlossen"},
+}
+
+templ Nav(active string) {
+	<nav class="app-nav" aria-label="Hauptnavigation">
+		for _, item := range navItems {
+			if item.Key == active {
+				<a href={ templ.URL(item.Href) } aria-current="page">
+					<span class="icon">{ item.Icon }</span>
+					<span class="label">{ item.Label }</span>
+				</a>
+			} else {
+				<a href={ templ.URL(item.Href) }>
+					<span class="icon">{ item.Icon }</span>
+					<span class="label">{ item.Label }</span>
+				</a>
+			}
+		}
+	</nav>
+}

@@ -1,0 +1,44 @@
+package templates
+
+import "github.com/michael/zumba-admin-ui/web/templates/partials"
+
+type PageMeta struct {
+	Title      string
+	ActiveNav  string // "dashboard" | "members" | "days" | "excluded"
+	MockMode   bool
+}
+
+templ Layout(meta PageMeta) {
+	<!DOCTYPE html>
+	<html lang="de" data-theme="light">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+			<meta name="color-scheme" content="light dark"/>
+			<title>{ meta.Title } · Zumba Admin</title>
+			<link rel="stylesheet" href="/static/css/styles.css"/>
+			<script src="/static/js/theme.js"></script>
+			<script src="/static/js/htmx.min.js" defer></script>
+		</head>
+		<body>
+			<div class="app">
+				<header class="app-header">
+					<a href="/dashboard" class="app-brand">
+						<span class="glyph">𝔃</span>
+						<span class="wordmark">Zumba</span>
+						<span class="tag">Logbuch</span>
+					</a>
+					@partials.ThemeToggle()
+				</header>
+				@partials.Nav(meta.ActiveNav)
+				<main class="app-main">
+					if meta.MockMode {
+						@partials.Banner("Mock-Daten aktiv – keine Verbindung zur Datenbank.")
+					}
+					{ children... }
+				</main>
+				<div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+			</div>
+		</body>
+	</html>
+}

@@ -1,0 +1,117 @@
+package dashboard
+
+import (
+	"fmt"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+	"github.com/michael/zumba-admin-ui/web/emoji"
+	"github.com/michael/zumba-admin-ui/web/templates/partials"
+)
+
+type ViewModel struct {
+	PeriodStart       string
+	PeriodEnd         string
+	TotalThursdays    int
+	TotalUsers        int
+	TotalAttendances  int
+	TotalAbsences     int
+	AverageRate       int // 0..100, rounded
+	StripItems        []partials.ThursdayStripItem
+	Leaderboard       []store.LeaderboardRow
+}
+
+templ Page(vm ViewModel) {
+	<div class="page-header enter">
+		<div class="eyebrow">Zumba · Admin</div>
+		<h1>Stammtisch-Logbuch</h1>
+		<p class="meta">Saison <strong>{ vm.PeriodStart }</strong> – <strong>{ vm.PeriodEnd }</strong></p>
+	</div>
+	@partials.ThursdayStrip(vm.StripItems)
+	<section class="grid-stats">
+		@statCard("Donnerstage", fmt.Sprintf("%d", vm.TotalThursdays), "bisher")
+		@statCardAccent("Quote", fmt.Sprintf("%d%%", vm.AverageRate), "Ø Teilnahme")
+		@statCard("Zusagen", fmt.Sprintf("%d", vm.TotalAttendances), "")
+		@statCard("Absagen", fmt.Sprintf("%d", vm.TotalAbsences), "")
+	</section>
+	<section class="section">
+		<div class="section-head">
+			<div class="title">
+				<h2>Tafelrunde</h2>
+				<span class="count">{ fmt.Sprintf("%d Mitglieder", vm.TotalUsers) }</span>
+			</div>
+		</div>
+		<div class="list enter">
+			for i, r := range vm.Leaderboard {
+				@leaderboardRow(i+1, r)
+			}
+		</div>
+	</section>
+}
+
+templ statCard(label, value, sub string) {
+	<div class="stat-card">
+		<div class="label">{ label }</div>
+		<div class="value">{ value }</div>
+		if sub != "" {
+			<div class="sub">{ sub }</div>
+		}
+	</div>
+}
+
+templ statCardAccent(label, value, sub string) {
+	<div class="stat-card accent">
+		<div class="label">{ label }</div>
+		<div class="value">{ value }</div>
+		if sub != "" {
+			<div class="sub">{ sub }</div>
+		}
+	</div>
+}
+
+templ leaderboardRow(rank int, r store.LeaderboardRow) {
+	<div class="member-row">
+		<div class={ "rank", rankMedalClass(rank) }>{ fmt.Sprintf("%d", rank) }</div>
+		<div class="who">
+			<span class="emoji">{ emoji.For(r.UserName) }</span>
+			<div>
+				<div class="name">{ r.UserName }</div>
+				<div class="meta">{ fmt.Sprintf("%d von %d Donnerstagen", r.AttendanceCount, r.ThursdayCount) }</div>
+			</div>
+		</div>
+		<div class="stats">
+			<div class="pct">{ fmt.Sprintf("%d%%", percentInt(r.AttendPercent)) }</div>
+			@streakChip(r.Streak)
+		</div>
+	</div>
+}
+
+templ streakChip(streak int) {
+	if streak > 0 {
+		<span class="streak hot">{ fmt.Sprintf("🔥 +%d", streak) }</span>
+	} else if streak < 0 {
+		<span class="streak cold">{ fmt.Sprintf("🧊 %d", streak) }</span>
+	} else {
+		<span class="streak">–</span>
+	}
+}
+
+func rankMedalClass(rank int) string {
+	switch rank {
+	case 1:
+		return "medal-1"
+	case 2:
+		return "medal-2"
+	case 3:
+		return "medal-3"
+	default:
+		return ""
+	}
+}
+
+func percentInt(p float64) int {
+	return int(p + 0.5)
+}
+
+// satisfy import (timeutil used elsewhere)
+var _ = timeutil.IsThursday

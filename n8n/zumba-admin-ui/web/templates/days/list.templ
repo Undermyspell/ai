@@ -1,0 +1,63 @@
+package days
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+	"github.com/michael/zumba-admin-ui/web/templates/partials"
+)
+
+type ListVM struct {
+	StripItems []partials.ThursdayStripItem
+	Days       []DayCard
+	TotalUsers int
+}
+
+type DayCard struct {
+	Date            time.Time
+	Attendance      int
+	AwayCount       int
+	AbsentUserIDs   []string // for dot rendering: present users get a green dot, others red
+}
+
+var monthsAbbr = []string{
+	"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+	"Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+}
+
+templ List(vm ListVM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Donnerstage</div>
+		<h1>Stammtisch-Tage</h1>
+		<p class="meta">{ fmt.Sprintf("%d Donnerstage, exklusive Sperrtage.", len(vm.Days)) }</p>
+	</div>
+	@partials.ThursdayStrip(vm.StripItems)
+	<div class="stack enter">
+		for _, d := range vm.Days {
+			@dayCard(d, vm.TotalUsers)
+		}
+	</div>
+}
+
+templ dayCard(d DayCard, totalUsers int) {
+	<a class="day-card" href={ templ.URL(fmt.Sprintf("/days/%s", timeutil.FormatISO(d.Date))) }>
+		<div class="date">
+			<div class="num">{ fmt.Sprintf("%d", d.Date.Day()) }</div>
+			<div class="month">{ monthsAbbr[int(d.Date.Month())-1] }</div>
+		</div>
+		<div class="summary">
+			<div class="name">{ timeutil.FormatDE(d.Date) }</div>
+			<div class="meta">{ fmt.Sprintf("%d anwesend · %d abgemeldet", d.Attendance, d.AwayCount) }</div>
+		</div>
+		<div class="dots" aria-hidden="true">
+			for i := 0; i < totalUsers; i++ {
+				if i < d.Attendance {
+					<span class="dot"></span>
+				} else {
+					<span class="dot absent"></span>
+				}
+			}
+		</div>
+	</a>
+}

@@ -1,0 +1,22 @@
+package partials
+
+type ToastKind string
+
+const (
+	ToastInfo    ToastKind = "info"
+	ToastSuccess ToastKind = "success"
+	ToastError   ToastKind = "error"
+)
+
+templ Toast(kind ToastKind, message string) {
+	<div class={ "toast", string(kind) } role="status">
+		if kind == ToastSuccess {
+			<span class="icon">✓</span>
+		} else if kind == ToastError {
+			<span class="icon">!</span>
+		} else {
+			<span class="icon">·</span>
+		}
+		<div>{ message }</div>
+	</div>
+}
