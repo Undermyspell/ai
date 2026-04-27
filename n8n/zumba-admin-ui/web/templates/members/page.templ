@@ -1,0 +1,72 @@
+package members
+
+import (
+	"fmt"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
+	"github.com/michael/zumba-admin-ui/web/emoji"
+	"github.com/michael/zumba-admin-ui/web/templates/partials"
+)
+
+type ListVM struct {
+	StripItems []partials.ThursdayStripItem
+	Rows       []store.LeaderboardRow
+}
+
+templ List(vm ListVM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Mitglieder</div>
+		<h1>Tafelrunde</h1>
+		<p class="meta">{ fmt.Sprintf("%d Personen, sortiert nach Anwesenheit.", len(vm.Rows)) }</p>
+	</div>
+	@partials.ThursdayStrip(vm.StripItems)
+	<div class="list enter">
+		for i, r := range vm.Rows {
+			@row(i+1, r)
+		}
+	</div>
+}
+
+templ row(rank int, r store.LeaderboardRow) {
+	<a class="member-row" href={ templ.URL(fmt.Sprintf("/members/%s", r.UserID)) }>
+		<div class={ "rank", rankMedalClass(rank) }>{ fmt.Sprintf("%d", rank) }</div>
+		<div class="who">
+			<span class="emoji">{ emoji.For(r.UserName) }</span>
+			<div>
+				<div class="name">{ r.UserName }</div>
+				<div class="meta">{ fmt.Sprintf("%d/%d · %d Absagen", r.AttendanceCount, r.ThursdayCount, r.AwayCount) }</div>
+			</div>
+		</div>
+		<div class="stats">
+			<div class="pct">{ fmt.Sprintf("%d%%", percentInt(r.AttendPercent)) }</div>
+			@streakChip(r.Streak)
+		</div>
+	</a>
+}
+
+templ streakChip(streak int) {
+	if streak > 0 {
+		<span class="streak hot">{ fmt.Sprintf("🔥 +%d", streak) }</span>
+	} else if streak < 0 {
+		<span class="streak cold">{ fmt.Sprintf("🧊 %d", streak) }</span>
+	} else {
+		<span class="streak">–</span>
+	}
+}
+
+func rankMedalClass(rank int) string {
+	switch rank {
+	case 1:
+		return "medal-1"
+	case 2:
+		return "medal-2"
+	case 3:
+		return "medal-3"
+	default:
+		return ""
+	}
+}
+
+func percentInt(p float64) int {
+	return int(p + 0.5)
+}

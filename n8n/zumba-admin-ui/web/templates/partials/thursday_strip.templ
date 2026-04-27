@@ -1,0 +1,60 @@
+package partials
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+)
+
+type ThursdayStripItem struct {
+	Date      time.Time
+	Rate      string // "excellent" | "good" | "ok" | "poor" | "excluded" | ""
+	Excluded  bool
+}
+
+func RateLabel(attended, total int) string {
+	if total == 0 {
+		return ""
+	}
+	pct := attended * 100 / total
+	switch {
+	case pct >= 85:
+		return "excellent"
+	case pct >= 70:
+		return "good"
+	case pct >= 50:
+		return "ok"
+	default:
+		return "poor"
+	}
+}
+
+var monthsAbbr = []string{
+	"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+	"Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+}
+
+templ ThursdayStrip(items []ThursdayStripItem) {
+	<div class="thursday-strip" aria-label="Letzte Donnerstage">
+		for _, it := range items {
+			@thursdayChip(it)
+		}
+	</div>
+}
+
+templ thursdayChip(it ThursdayStripItem) {
+	if it.Excluded {
+		<a class="thursday-chip" data-rate="excluded" href={ templ.URL(fmt.Sprintf("/days/%s", timeutil.FormatISO(it.Date))) } title={ fmt.Sprintf("Excluded: %s", timeutil.FormatDE(it.Date)) }>
+			<span class="day">{ fmt.Sprintf("%d", it.Date.Day()) }</span>
+			<span class="month">{ monthsAbbr[int(it.Date.Month())-1] }</span>
+			<span class="swatch"></span>
+		</a>
+	} else {
+		<a class="thursday-chip" data-rate={ it.Rate } href={ templ.URL(fmt.Sprintf("/days/%s", timeutil.FormatISO(it.Date))) } title={ timeutil.FormatDE(it.Date) }>
+			<span class="day">{ fmt.Sprintf("%d", it.Date.Day()) }</span>
+			<span class="month">{ monthsAbbr[int(it.Date.Month())-1] }</span>
+			<span class="swatch"></span>
+		</a>
+	}
+}
