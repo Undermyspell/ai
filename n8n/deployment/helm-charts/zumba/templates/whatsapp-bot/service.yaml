@@ -1,0 +1,18 @@
+{{- if .Values.whatsappBot.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zumba.fullname" . }}-whatsapp-bot
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.whatsappBot.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.whatsappBot.service.type }}
+  ports:
+    - port: {{ .Values.whatsappBot.service.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "zumba.whatsappBot.selectorLabels" . | nindent 4 }}
+{{- end }}

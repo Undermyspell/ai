@@ -1,0 +1,679 @@
+{
+  "updatedAt": "2026-03-10T20:20:22.073Z",
+  "createdAt": "2025-10-06T13:34:44.235Z",
+  "id": "HG0zPlWsmPI3Mt7z",
+  "name": "Zumba",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "34eb3798-c645-45e5-9a0d-4054c806bdcf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1760,
+        -384
+      ],
+      "id": "810b1b4f-b9e0-45e9-84eb-592fb4641976",
+      "name": "Webhook",
+      "webhookId": "34eb3798-c645-45e5-9a0d-4054c806bdcf"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f209d214-f1c0-4721-83a2-03ed8bdfdfe7",
+              "name": "userId",
+              "value": "={{ $('Webhook').item.json.body.data.key.fromMe ? $('Webhook').item.json.body.sender : $json.body.data.key.participantAlt }}",
+              "type": "string"
+            },
+            {
+              "id": "0f50cb0f-8de3-49d7-a32b-aafba370bb58",
+              "name": "userName",
+              "value": "={{ $json.body.data.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "21b43fb7-e591-4cb1-b085-f0c8b834dfed",
+              "name": "message",
+              "value": "={{ $json.body.data.message.conversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1088,
+        -240
+      ],
+      "id": "bb21634f-f320-4f06-a01c-12c6fcae8e43",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "stammtisch_abwesenheit",
+          "mode": "list",
+          "cachedResultName": "stammtisch_abwesenheit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ $today }}",
+            "userId": "={{ $('Edit Fields').item.json.userId }}",
+            "message": "={{ $('Edit Fields').item.json.message }}"
+          },
+          "matchingColumns": [
+            "userId",
+            "date"
+          ],
+          "schema": [
+            {
+              "id": "userId",
+              "displayName": "userId",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -288,
+        -432
+      ],
+      "id": "1bde74ef-f2f0-49f2-b5a1-1589e722713d",
+      "name": "Insert or update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "4evJ7u19qhU043QW",
+          "name": "Zumba"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "stammtisch_abwesenheit",
+          "mode": "list",
+          "cachedResultName": "stammtisch_abwesenheit"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "userId",
+              "value": "={{ $('Edit Fields').item.json.userId }}"
+            },
+            {
+              "column": "date",
+              "value": "={{ $today }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -288,
+        -240
+      ],
+      "id": "668ebf58-b1b4-4c80-8ad9-e02ec3bbc4d5",
+      "name": "Delete table or rows",
+      "credentials": {
+        "postgres": {
+          "id": "4evJ7u19qhU043QW",
+          "name": "Zumba"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log($input.all());\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        -144
+      ],
+      "id": "80a6e0a4-c930-4274-95e5-b9503cbb4ec0",
+      "name": "Debug Output"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "false",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "1a878295-5fcd-4c6b-bc61-356064d61340"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Absage"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9e4e464f-bb14-43d5-a00d-631245a85329",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "true",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Zusage"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -512,
+        -336
+      ],
+      "id": "16f889f9-5a50-4ea9-b74a-6ddd6e5e474a",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5e11502f-6f30-42a1-8034-b760007f2f0e",
+              "leftValue": "={{ $json.body.data.message.conversation.trim().toLowerCase() }}",
+              "rightValue": "statistik",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1536,
+        -384
+      ],
+      "id": "fc344a98-90ea-4017-984d-8b5e7cfd08c1",
+      "name": "Statistik request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e6c234c0-b4f8-4c73-81cc-a88981bdb4a1",
+              "leftValue": "={{ $json.body.data.messageType }}",
+              "rightValue": "conversation",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "f49d8ddd-aecc-4425-ba2e-710f8ba82707",
+              "leftValue": "={{ $json.body.data.key.remoteJid }}",
+              "rightValue": "491717868843-1443438520@g.us",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "a6fe49bb-c927-4a6b-9026-c03fa51ed52f",
+              "leftValue": "={{ (new Date().getDay() === 4) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1312,
+        -240
+      ],
+      "id": "72dc97cb-4a92-4539-9799-47e401751453",
+      "name": "Check for valid message from Zumba group"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Map DB Input ---\nconst users = $input.all().map(item => ({\n    name: item.json.user_name,\n    attendance: Number(item.json.attendance_count),\n    away: Number(item.json.away_count),\n    start_date: item.json.start_date,\n    percent: Number(item.json.attend_percentage),\n    streak: Number(item.json.streak)\n}));\n\nconst total = users[0].attendance + users[0].away;\n\n// --- Sortiere User nach Attendance & Prozent ---\nusers.sort((a, b) => {\n    if (b.attendance !== a.attendance) return b.attendance - a.attendance;\n    return b.percent - a.percent;\n});\n\n// --- Balken mit ▰▱ ---\nfunction barChart(percent, length = 6) {\n    const filled = Math.round((percent / 100) * length);\n    return \"▰\".repeat(filled) + \"▱\".repeat(length - filled);\n}\n\n// --- Medaillen mit Gleichstand ---\nconst medals = [\"🥇\", \"🥈\", \"🥉\"];\nlet lastAttendance = null;\nlet lastPercent = null;\nlet rank = 0;\n\nconst ranked = users.map(u => {\n    if (lastAttendance !== u.attendance || lastPercent !== u.percent) {\n        rank++;\n    }\n    const medal = rank <= medals.length ? medals[rank - 1] : `${rank} `;\n    lastAttendance = u.attendance;\n    lastPercent = u.percent;\n    return { ...u, medal, rank };\n});\n\n// --- Highlights ---\nconst mvp = ranked[0];\nconst avgPercent = Math.round(users.reduce((s, u) => s + u.percent, 0) / users.length);\nconst hottest = ranked.reduce((a, b) => a.streak > b.streak ? a : b);\nconst coldest = ranked.reduce((a, b) => a.streak < b.streak ? a : b);\n\n// --- Build Report ---\nlet text = `🍻 *ZUMBA STATS*\\n`;\ntext += `_Weihnachtsfeier → Weihnachtsfeier_\\n\\n`;\n\ntext += `📊 *${total}* Stammtische\\n\\n`;\ntext += `👑 *MVP:* ${mvp.name} (${mvp.percent}%)\\n`;\nif (hottest.streak > 0) text += `🔥 *Heißeste Serie:* ${hottest.name} (${hottest.streak}x)\\n`;\nif (coldest.streak < 0) text += `❄️ *Längste Pause:* ${coldest.name} (${Math.abs(coldest.streak)}x)\\n`;\ntext += `📈 *Durchschnitt:* ${avgPercent}%\\n\\n`;\n\ntext += `── *RANGLISTE* ──\\n\\n`;\n\ntext += ranked.map(u => {\n    let startDateText = \"\";\n    if (u.start_date) {\n        const d = new Date(u.start_date);\n        startDateText = ` _(${d.getDate()}.${d.getMonth() + 1}.)_`;\n    }\n    const bar = barChart(u.percent);\n    let streakLabel = \"\";\n    if (u.streak > 0) streakLabel = ` 🔥+${u.streak}`;\n    if (u.streak < 0) streakLabel = ` ❄️${u.streak}`;\n    return `${u.medal} *${u.name}* ${bar} ${u.attendance}-${u.away} (${u.percent}%)${streakLabel}${startDateText}`;\n}).join('\\n');\n\ntext += `\\n\\n🤖🍺 *Automatisch erstellt vom Zumba-Bot*`;\n\nreturn {\n    message: text,\n    receiver: $('Webhook').first().json.body.data.key.remoteJid\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        -528
+      ],
+      "id": "56b2294f-9992-44dc-8774-d194f12b22be",
+      "name": "Generate Whatsapp Message"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH startdates AS (\n    SELECT\n        u.\"userId\",\n        GREATEST(\n            COALESCE(u.\"startDate\", DATE '2025-12-01')::date,\n            DATE '2025-12-01'\n        ) AS effective_start_date\n    FROM public.users u\n),\n\n-- Count all valid Thursdays for each user (excluding excluded_days)\nuser_thursdays AS (\n    SELECT \n        s.\"userId\",\n        s.effective_start_date,\n        COUNT(*) AS thursday_count\n    FROM startdates s\n    CROSS JOIN LATERAL generate_series(\n        s.effective_start_date,\n        current_date,\n        interval '1 day'\n    ) d(day)\n    LEFT JOIN excluded_days ed\n        ON ed.date = d.day\n    WHERE EXTRACT(ISODOW FROM d.day) = 4\n      AND ed.date IS NULL\n    GROUP BY s.\"userId\", s.effective_start_date\n),\n\n-- Build per-Thursday attendance status (0 = attended, 1 = absent)\nper_thursday AS (\n    SELECT\n        s.\"userId\",\n        d.day AS thursday,\n        CASE WHEN a.\"userId\" IS NOT NULL THEN 1 ELSE 0 END AS is_absent\n    FROM startdates s\n    CROSS JOIN LATERAL (\n        SELECT day\n        FROM generate_series(\n            s.effective_start_date,\n            current_date,\n            interval '1 day'\n        ) day\n        LEFT JOIN excluded_days ed\n            ON ed.date = day\n        WHERE EXTRACT(ISODOW FROM day) = 4\n          AND ed.date IS NULL\n    ) d\n    LEFT JOIN public.stammtisch_abwesenheit a\n        ON a.\"userId\" = s.\"userId\"\n        AND a.date = d.day\n),\n\n-- Compute streak: compare each row with the first row in descending order\nstreak_calc AS (\n    SELECT\n        p.\"userId\",\n        p.thursday,\n        p.is_absent,\n        CASE\n            WHEN p.is_absent = first_value(p.is_absent)\n                OVER (PARTITION BY p.\"userId\" ORDER BY p.thursday DESC)\n            THEN 0\n            ELSE 1\n        END AS break_flag\n    FROM per_thursday p\n),\n\n-- Collapse to first break and compute streak count\nuser_streak AS (\n    SELECT\n        \"userId\",\n        CASE\n            WHEN is_absent = 1 THEN -COUNT(*)\n            ELSE COUNT(*)\n        END AS streak\n    FROM (\n        SELECT\n            sc.*,\n            SUM(break_flag) OVER (\n                PARTITION BY \"userId\"\n                ORDER BY thursday DESC\n                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n            ) AS grp\n        FROM streak_calc sc\n    ) x\n    WHERE grp = 0\n    GROUP BY \"userId\", is_absent\n)\n\nSELECT \n    COUNT(a.\"userId\") AS away_count,\n    ut.thursday_count - COUNT(a.\"userId\") AS attendance_count,\n    ROUND(\n        (ut.thursday_count - COUNT(a.\"userId\")::numeric) \n        / ut.thursday_count * 100,\n        2\n    ) AS attend_percentage,\n    u.\"userId\" AS user_id,\n    u.\"userName\" AS user_name,\n    u.\"startDate\",\n    ut.effective_start_date,\n    us.streak\nFROM public.users u\nJOIN user_thursdays ut \n    ON ut.\"userId\" = u.\"userId\"\nLEFT JOIN public.stammtisch_abwesenheit a \n    ON a.\"userId\" = u.\"userId\"\n    AND a.date >= ut.effective_start_date\nLEFT JOIN excluded_days ed\n    ON ed.date = a.date\nLEFT JOIN user_streak us \n    ON us.\"userId\" = u.\"userId\"\nWHERE ed.date IS NULL\nGROUP BY \n    u.\"userId\", \n    u.\"userName\", \n    ut.thursday_count, \n    ut.effective_start_date,\n    us.streak\nORDER BY attendance_count DESC, attend_percentage DESC;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1312,
+        -528
+      ],
+      "id": "1fa69679-4474-4911-bdf2-a894e8992e05",
+      "name": "Get Per user stats",
+      "credentials": {
+        "postgres": {
+          "id": "4evJ7u19qhU043QW",
+          "name": "Zumba"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://zumba-evolution-api:8080/message/sendText/whatsapp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "test_api_key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.receiver }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -800,
+        -528
+      ],
+      "id": "2cb87fdd-a233-4379-9df2-f125b638a430",
+      "name": "Send to WhatsApp (Evolution API)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "Du bist ein Klassifizierungsassitent, der Nachrichten in Zusagen oder Absagen zuordnen soll. Nachrichten können auch weder eine Zusage noch eine Absage sein.\n\nTypische Absage-Signale:\n- „abmelden“, „abmelde“, „meld mich ab“\n- „bin raus“\n- „komm heute nicht“\n- „schaff’s heute nicht“\n- „leider ohne mich heute“\n\nWenn solche Signale enthalten sind → antworte mit:\nfalse\n\nBEISPIELE FÜR ZUSAGE (true)\n--------------------------------\nFolgende Formulierungen gelten als ZUSAGE:\n- „Melde mich wieder an“\n- „Bin heute doch wieder dabei“\n- „Komme heute doch“\n\nTypische Zusage-Signale:\n- „melde mich (wieder) an“\n- „bin dabei“\n- „komme heute“\n- „ich komme“\n- „bin am Start“\n- „ich bin heute doch dabei“\n\nWenn die Nachricht klar eine TEILNAHME für heute Abend ausdrückt → antworte mit:\ntrue\n\nBEISPIELE FÜR invalid\n--------------------------------\nAntworte mit invalid, wenn:\n- Die Nachricht keinen Bezug zu Zu-/Absage für heute Abend hat.\n- Die Aussage unklar ist (z.B. nur „Mal schauen“, „Weiß noch nicht“, „Vielleicht“).\n- Es nur Smalltalk oder andere Inhalte sind, ohne klare Zu- oder Absage.\n- Du nicht sicher zuordnen kannst, ob der User kommt oder nicht.\n\nDann immer:\ninvalid\n\nZUSAMMENFASSUNG DER ENTSCHEIDUNGSLOGIK\n--------------------------------\n1. Enthält die Nachricht klare Absage-Signale?  \n   → dann: false\n\n2. Sonst: Enthält die Nachricht klare Zusage-Signale?  \n   → dann: true\n\n3. Sonst:  \n   → invalid\n\nANTWORTFORMAT ERNEUT (SEHR WICHTIG)\n--------------------------------\nGib als Antwort NUR einen der folgenden drei Werte aus, OHNE weitere Texte:\n- true\n- false\n- invalid\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -864,
+        -240
+      ],
+      "id": "b4961767-782e-42a3-8db3-279d335ab82d",
+      "name": "Absagen Classifier",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        -16
+      ],
+      "id": "4162f2fb-d52a-4138-bcd4-4219febb21be",
+      "name": "Gemine 2.5-flash",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JJXxLqJCaKWye8mH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -16
+      ],
+      "id": "9cafff2c-b510-46fb-9be2-14251f7f72db",
+      "name": "Gemini-3-flash-preview",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JJXxLqJCaKWye8mH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * 4"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1760,
+        -640
+      ],
+      "id": "af6b6586-c1ea-43f4-9ff6-39aea1e4863a",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Statistik request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Absagen Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete table or rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Statistik request": {
+      "main": [
+        [
+          {
+            "node": "Get Per user stats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check for valid message from Zumba group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for valid message from Zumba group": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Whatsapp Message": {
+      "main": [
+        [
+          {
+            "node": "Send to WhatsApp (Evolution API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Per user stats": {
+      "main": [
+        [
+          {
+            "node": "Generate Whatsapp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Absagen Classifier": {
+      "main": [
+        [
+          {
+            "node": "Debug Output",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemine 2.5-flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Absagen Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini-3-flash-preview": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Absagen Classifier",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": []
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "3ff16835-bebc-44c0-86be-b107d32b6545",
+  "activeVersionId": "3ff16835-bebc-44c0-86be-b107d32b6545",
+  "versionCounter": 406,
+  "triggerCount": 2,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2025-10-06T13:34:44.235Z",
+      "createdAt": "2025-10-06T13:34:44.235Z",
+      "role": "workflow:owner",
+      "workflowId": "HG0zPlWsmPI3Mt7z",
+      "projectId": "nLYPTlFb3JeR4iiz",
+      "project": {
+        "updatedAt": "2025-10-06T13:30:27.731Z",
+        "createdAt": "2025-10-06T13:20:51.133Z",
+        "id": "nLYPTlFb3JeR4iiz",
+        "name": "Michael Kaiser <michael_kaiser2@outlook.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "b0a32115-309d-4d72-a914-62d680bb9202"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 3ff16835",
+    "description": ""
+  }
+}

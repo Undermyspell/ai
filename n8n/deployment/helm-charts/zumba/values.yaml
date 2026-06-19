@@ -133,3 +133,39 @@ evolutionApi:
 evolutionApiIngress:
   enabled: true
   host: evolution.example.com  # Override per environment
+
+# whatsapp-bot: Go-Service, der den n8n-"Zumba"-Workflow ablöst
+# (Webhook → Classifier/Statistik → Postgres/Evolution).
+whatsappBot:
+  enabled: false  # Auf true setzen, sobald ein Image gebaut/gepusht wurde
+  image:
+    repository: ghcr.io/undermyspell/zumba-whatsapp-bot  # ggf. an genutzte Registry anpassen
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+  env:
+    # Postgres: Domänendaten liegen in DB "zumba", Verbindung als User n8n
+    DB_NAME: zumba
+    DB_PORT: "5432"
+    DB_USER: n8n
+    DB_SSLMODE: disable
+    # Gemini-Modelle (Primär + Fallback wie im n8n-Agent)
+    GEMINI_MODEL: gemini-2.5-flash
+    GEMINI_FALLBACK_MODEL: gemini-3-flash-preview
+    # Evolution API
+    EVOLUTION_INSTANCE: whatsapp
+    # Zumba-WhatsApp-Gruppe (remoteJid)
+    ZUMBA_GROUP_JID: "491717868843-1443438520@g.us"
+    TZ: Europe/Berlin
+
+  service:
+    type: ClusterIP
+    port: 8080

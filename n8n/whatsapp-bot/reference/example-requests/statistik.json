@@ -1,0 +1,19 @@
+{
+  "event": "messages.upsert",
+  "instance": "whatsapp",
+  "sender": "4915112345678@s.whatsapp.net",
+  "data": {
+    "messageType": "conversation",
+    "pushName": "Max Mustermann",
+    "key": {
+      "remoteJid": "491717868843-1443438520@g.us",
+      "fromMe": false,
+      "id": "3EB0EXAMPLESTATISTIK",
+      "participant": "4915112345678@s.whatsapp.net",
+      "participantAlt": "4915112345678@s.whatsapp.net"
+    },
+    "message": {
+      "conversation": "statistik"
+    }
+  }
+}
