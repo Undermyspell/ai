@@ -13,6 +13,9 @@ type Config struct {
 
 	EvalPeriodStart time.Time
 	EvalPeriodEnd   time.Time
+
+	// BotURL ist die Basis-URL des whatsapp-bot (für die Bot-Test-Seite).
+	BotURL string
 }
 
 type DBConfig struct {
@@ -42,6 +45,7 @@ func Load() (Config, error) {
 			Name:     getenv("DB_NAME", "zumba"),
 			SSLMode:  getenv("DB_SSLMODE", "disable"),
 		},
+		BotURL: getenv("BOT_URL", "http://localhost:8080"),
 	}
 
 	start, err := parseDate(getenv("EVAL_PERIOD_START", "2025-12-01"))
