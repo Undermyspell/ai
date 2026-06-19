@@ -1,0 +1,22 @@
+{{- if .Values.whatsappBot.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "zumba.fullname" . }}-whatsapp-bot
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.whatsappBot.labels" . | nindent 4 }}
+data:
+  PORT: {{ .Values.whatsappBot.service.port | quote }}
+  DB_HOST: {{ include "zumba.fullname" . }}-postgres
+  DB_PORT: {{ .Values.whatsappBot.env.DB_PORT | quote }}
+  DB_NAME: {{ .Values.whatsappBot.env.DB_NAME | quote }}
+  DB_USER: {{ .Values.whatsappBot.env.DB_USER | quote }}
+  DB_SSLMODE: {{ .Values.whatsappBot.env.DB_SSLMODE | quote }}
+  GEMINI_MODEL: {{ .Values.whatsappBot.env.GEMINI_MODEL | quote }}
+  GEMINI_FALLBACK_MODEL: {{ .Values.whatsappBot.env.GEMINI_FALLBACK_MODEL | quote }}
+  EVOLUTION_URL: http://{{ include "zumba.fullname" . }}-evolution-api:{{ .Values.evolutionApi.service.port }}
+  EVOLUTION_INSTANCE: {{ .Values.whatsappBot.env.EVOLUTION_INSTANCE | quote }}
+  ZUMBA_GROUP_JID: {{ .Values.whatsappBot.env.ZUMBA_GROUP_JID | quote }}
+  TZ: {{ .Values.whatsappBot.env.TZ | quote }}
+{{- end }}

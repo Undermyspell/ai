@@ -1,0 +1,75 @@
+{{- if .Values.whatsappBot.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zumba.fullname" . }}-whatsapp-bot
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.whatsappBot.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      {{- include "zumba.whatsappBot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zumba.whatsappBot.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z {{ include "zumba.fullname" . }}-postgres {{ .Values.postgres.service.port }}; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      containers:
+      - name: whatsapp-bot
+        image: "{{ .Values.whatsappBot.image.repository }}:{{ .Values.whatsappBot.image.tag }}"
+        imagePullPolicy: {{ .Values.whatsappBot.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "zumba.fullname" . }}-whatsapp-bot
+        env:
+        # DB-Passwort: bestehendes postgres-secret wiederverwenden (User n8n, wie n8n)
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: DB_POSTGRESDB_PASSWORD
+        # Evolution-API-Key: bestehendes Secret wiederverwenden
+        - name: EVOLUTION_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: evolution-api-secrets
+              key: AUTHENTICATION_API_KEY
+        # Gemini-Key: neues SealedSecret whatsapp-bot-secrets
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: whatsapp-bot-secrets
+              key: GEMINI_API_KEY
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.whatsappBot.resources | nindent 10 }}
+{{- end }}

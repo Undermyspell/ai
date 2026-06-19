@@ -95,3 +95,19 @@ evolution-api selector labels
 {{ include "zumba.selectorLabels" . }}
 app.kubernetes.io/component: evolution-api
 {{- end }}
+
+{{/*
+whatsapp-bot specific labels
+*/}}
+{{- define "zumba.whatsappBot.labels" -}}
+{{ include "zumba.labels" . }}
+app.kubernetes.io/component: whatsapp-bot
+{{- end }}
+
+{{/*
+whatsapp-bot selector labels
+*/}}
+{{- define "zumba.whatsappBot.selectorLabels" -}}
+{{ include "zumba.selectorLabels" . }}
+app.kubernetes.io/component: whatsapp-bot
+{{- end }}
