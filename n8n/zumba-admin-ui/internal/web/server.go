@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/a-h/templ"
@@ -62,6 +64,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /toggle-absence", s.handleToggleAbsence)
 	mux.HandleFunc("GET /bot-test", s.handleBotTest)
 	mux.HandleFunc("GET /bot-test/example/{kind}", s.handleBotTestExample)
+	mux.HandleFunc("POST /bot-test/run", s.handleBotTestRun)
 
 	return logRequests(mux)
 }
@@ -535,6 +538,51 @@ func (s *Server) handleBotTestExample(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	_, _ = w.Write([]byte(body))
+}
+
+// botOutcome mirrors the whatsapp-bot Outcome JSON.
+type botOutcome struct {
+	Path           string `json:"path"`
+	Classification string `json:"classification"`
+	Action         string `json:"action"`
+	Message        string `json:"message"`
+	Recipient      string `json:"recipient"`
+	Date           string `json:"date"`
+	UserID         string `json:"userId"`
+	Reason         string `json:"reason"`
+}
+
+func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
+	payload := r.FormValue("payload")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	client := &http.Client{Timeout: 35 * time.Second}
+	req, err := http.NewRequestWithContext(r.Context(), "POST", strings.TrimRight(s.cfg.BotURL, "/")+"/test", strings.NewReader(payload))
+	if err != nil {
+		_ = bottest.ErrorPanel(err.Error()).Render(r.Context(), w)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		_ = bottest.ErrorPanel("Bot nicht erreichbar: "+err.Error()).Render(r.Context(), w)
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		_ = bottest.ErrorPanel("Bot-Status "+resp.Status+": "+string(body)).Render(r.Context(), w)
+		return
+	}
+	var out botOutcome
+	if err := json.Unmarshal(body, &out); err != nil {
+		_ = bottest.ErrorPanel("Antwort nicht lesbar: "+err.Error()).Render(r.Context(), w)
+		return
+	}
+	_ = bottest.Response(bottest.ResponseVM{
+		Path: out.Path, Classification: out.Classification, Action: out.Action,
+		Message: out.Message, Recipient: out.Recipient, Date: out.Date, UserID: out.UserID,
+	}).Render(r.Context(), w)
 }
 
 func (s *Server) fail(w http.ResponseWriter, what string, err error) {
