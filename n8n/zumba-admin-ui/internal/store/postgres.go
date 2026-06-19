@@ -251,3 +251,38 @@ ORDER BY attendance_count DESC, attend_percentage DESC, u."userName"
 	}
 	return out, rows.Err()
 }
+
+func (s *Postgres) InsertAbsence(ctx context.Context, userID string, date time.Time, message *string) error {
+	const q = `
+		INSERT INTO public.stammtisch_abwesenheit ("userId", date, message)
+		VALUES ($1, $2, $3)
+		ON CONFLICT ("userId", date) DO UPDATE SET message = EXCLUDED.message`
+	if _, err := s.db.ExecContext(ctx, q, userID, date, message); err != nil {
+		return fmt.Errorf("InsertAbsence: %w", err)
+	}
+	return nil
+}
+
+func (s *Postgres) DeleteAbsence(ctx context.Context, userID string, date time.Time) error {
+	const q = `DELETE FROM public.stammtisch_abwesenheit WHERE "userId" = $1 AND date = $2`
+	if _, err := s.db.ExecContext(ctx, q, userID, date); err != nil {
+		return fmt.Errorf("DeleteAbsence: %w", err)
+	}
+	return nil
+}
+
+func (s *Postgres) InsertExcludedDay(ctx context.Context, date time.Time) error {
+	const q = `INSERT INTO public.excluded_days (date) VALUES ($1) ON CONFLICT (date) DO NOTHING`
+	if _, err := s.db.ExecContext(ctx, q, date); err != nil {
+		return fmt.Errorf("InsertExcludedDay: %w", err)
+	}
+	return nil
+}
+
+func (s *Postgres) DeleteExcludedDay(ctx context.Context, date time.Time) error {
+	const q = `DELETE FROM public.excluded_days WHERE date = $1`
+	if _, err := s.db.ExecContext(ctx, q, date); err != nil {
+		return fmt.Errorf("DeleteExcludedDay: %w", err)
+	}
+	return nil
+}

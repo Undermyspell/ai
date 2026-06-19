@@ -14,8 +14,8 @@ import (
 // across reloads.
 type Mock struct {
 	users        []User
-	absences     []Absence       // only entries for valid Thursdays
-	excludedDays []time.Time     // Thursdays
+	absences     []Absence   // only entries for valid Thursdays
+	excludedDays []time.Time // Thursdays
 }
 
 func NewMock(p timeutil.Period) *Mock {
@@ -187,6 +187,53 @@ func (m *Mock) Leaderboard(ctx context.Context, p timeutil.Period) ([]Leaderboar
 		return rows[i].UserName < rows[j].UserName
 	})
 	return rows, nil
+}
+
+func (m *Mock) InsertAbsence(_ context.Context, userID string, date time.Time, message *string) error {
+	day := timeutil.StartOfDay(date)
+	for i := range m.absences {
+		if m.absences[i].UserID == userID && timeutil.FormatISO(m.absences[i].Date) == timeutil.FormatISO(day) {
+			m.absences[i].Message = message // upsert
+			return nil
+		}
+	}
+	m.absences = append(m.absences, Absence{UserID: userID, Date: day, Message: message})
+	return nil
+}
+
+func (m *Mock) DeleteAbsence(_ context.Context, userID string, date time.Time) error {
+	out := m.absences[:0]
+	for _, a := range m.absences {
+		if a.UserID == userID && timeutil.FormatISO(a.Date) == timeutil.FormatISO(date) {
+			continue
+		}
+		out = append(out, a)
+	}
+	m.absences = out
+	return nil
+}
+
+func (m *Mock) InsertExcludedDay(_ context.Context, date time.Time) error {
+	day := timeutil.StartOfDay(date)
+	for _, d := range m.excludedDays {
+		if timeutil.FormatISO(d) == timeutil.FormatISO(day) {
+			return nil
+		}
+	}
+	m.excludedDays = append(m.excludedDays, day)
+	return nil
+}
+
+func (m *Mock) DeleteExcludedDay(_ context.Context, date time.Time) error {
+	out := m.excludedDays[:0]
+	for _, d := range m.excludedDays {
+		if timeutil.FormatISO(d) == timeutil.FormatISO(date) {
+			continue
+		}
+		out = append(out, d)
+	}
+	m.excludedDays = out
+	return nil
 }
 
 // computeStreakMock walks Thursdays newest-first; returns +N for an attendance
