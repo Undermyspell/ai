@@ -36,12 +36,16 @@ type LeaderboardRow struct {
 	Streak int
 }
 
-// Store is the read-side interface used by handlers in Phase 1.
-// Phase 2 will add Insert/Delete on a Writer interface.
+// Store is the interface used by handlers. Phase 2 adds the write methods.
 type Store interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	ListThursdays(ctx context.Context, p timeutil.Period) ([]time.Time, error)
 	ListExcludedDays(ctx context.Context, p timeutil.Period) ([]time.Time, error)
 	ListAbsences(ctx context.Context, p timeutil.Period) ([]Absence, error)
 	Leaderboard(ctx context.Context, p timeutil.Period) ([]LeaderboardRow, error)
+
+	InsertAbsence(ctx context.Context, userID string, date time.Time, message *string) error
+	DeleteAbsence(ctx context.Context, userID string, date time.Time) error
+	InsertExcludedDay(ctx context.Context, date time.Time) error
+	DeleteExcludedDay(ctx context.Context, date time.Time) error
 }
