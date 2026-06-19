@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -402,6 +403,12 @@ func (s *Server) buildStrip(ctx context.Context, period timeutil.Period) ([]part
 func (s *Server) fail(w http.ResponseWriter, what string, err error) {
 	log.Printf("%s: %v", what, err)
 	http.Error(w, "interner Fehler", http.StatusInternalServerError)
+}
+
+func (s *Server) triggerToast(w http.ResponseWriter, level, msg string) {
+	// JSON object form of HX-Trigger so the client receives event detail.
+	payload := fmt.Sprintf(`{"showToast":{"level":%q,"msg":%q}}`, level, msg)
+	w.Header().Set("HX-Trigger", payload)
 }
 
 func logRequests(next http.Handler) http.Handler {
