@@ -1,0 +1,20 @@
+{{- if .Values.adminUi.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "zumba.fullname" . }}-admin-ui
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.adminUi.labels" . | nindent 4 }}
+data:
+  PORT: {{ .Values.adminUi.service.port | quote }}
+  DB_HOST: {{ include "zumba.fullname" . }}-postgres
+  DB_PORT: {{ .Values.adminUi.env.DB_PORT | quote }}
+  DB_NAME: {{ .Values.adminUi.env.DB_NAME | quote }}
+  DB_USER: {{ .Values.adminUi.env.DB_USER | quote }}
+  DB_SSLMODE: {{ .Values.adminUi.env.DB_SSLMODE | quote }}
+  EVAL_PERIOD_START: {{ .Values.adminUi.env.EVAL_PERIOD_START | quote }}
+  EVAL_PERIOD_END: {{ .Values.adminUi.env.EVAL_PERIOD_END | quote }}
+  TZ: {{ .Values.adminUi.env.TZ | quote }}
+  BOT_URL: http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}
+{{- end }}
