@@ -17,18 +17,28 @@ templ List(vm ListVM) {
 		<h1>Ausgeschlossene Donnerstage</h1>
 		<p class="meta">Diese Tage zählen nicht in der Auswertung.</p>
 	</div>
-	if len(vm.Days) == 0 {
-		<div class="empty">
-			<div class="icon">📭</div>
-			<p>Keine Sperrtage in der aktuellen Saison.</p>
-		</div>
-	} else {
-		<div class="list enter">
-			for _, d := range vm.Days {
-				@row(d)
-			}
-		</div>
-	}
+	<form class="excluded-form enter" hx-post="/excluded" hx-target="#excluded-region" hx-swap="outerHTML">
+		<input type="date" name="date" required aria-label="Donnerstag wählen"/>
+		<button type="submit" class="btn-primary">Sperrtag anlegen</button>
+	</form>
+	@ListRegion(vm)
+}
+
+templ ListRegion(vm ListVM) {
+	<div id="excluded-region">
+		if len(vm.Days) == 0 {
+			<div class="empty">
+				<div class="icon">📭</div>
+				<p>Keine Sperrtage in der aktuellen Saison.</p>
+			</div>
+		} else {
+			<div class="list enter">
+				for _, d := range vm.Days {
+					@row(d)
+				}
+			</div>
+		}
+	</div>
 }
 
 templ row(d time.Time) {
@@ -38,7 +48,13 @@ templ row(d time.Time) {
 			<div class="label">{ timeutil.FormatDE(d) }</div>
 			<div class="iso">{ fmt.Sprintf("KW %d · %s", isoWeek(d), timeutil.FormatISO(d)) }</div>
 		</div>
-		<span class="status" style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); letter-spacing: 0.10em; text-transform: uppercase;">Excluded</span>
+		<button
+			class="btn-danger"
+			hx-delete={ "/excluded/" + timeutil.FormatISO(d) }
+			hx-target="#excluded-region"
+			hx-swap="outerHTML"
+			hx-confirm="Sperrtag wirklich entfernen?"
+		>Entfernen</button>
 	</div>
 }
 
