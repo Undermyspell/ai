@@ -813,3 +813,97 @@ h3 { font-size: 17px; line-height: 1.25; }
    ============================================================ */
 .htmx-swapping { opacity: 0.5; transition: opacity 80ms; }
 .htmx-settling { background: var(--accent-soft) !important; }
+
+/* ── Phase 2: write controls + bot-test ───────────────────────────── */
+
+/* Toast exit animation (base .toast styled above) */
+.toast-out { opacity: 0; transform: translateY(8px); transition: opacity .3s ease, transform .3s ease; }
+
+/* Attendance toggle (day + member detail) */
+.toggle {
+  margin-left: auto;
+  border: 1px solid var(--rule-strong);
+  background: var(--bg-elev);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.toggle:hover { border-color: var(--accent); }
+.toggle.is-present { color: var(--success); border-color: var(--success-soft); background: var(--success-soft); }
+.toggle.is-absent  { color: var(--danger);  border-color: var(--danger-soft);  background: var(--danger-soft); }
+
+/* Generic buttons */
+.btn-primary {
+  border: 0; cursor: pointer;
+  background: var(--accent); color: #fff;
+  font-weight: 600; padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+}
+.btn-primary:hover { background: var(--accent-strong); }
+.btn-danger {
+  border: 1px solid var(--danger-soft); cursor: pointer;
+  background: transparent; color: var(--danger);
+  font-size: 13px; padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm); margin-left: auto;
+}
+.btn-danger:hover { background: var(--danger-soft); }
+
+/* Excluded-day create form */
+.excluded-form {
+  display: flex; gap: var(--space-3); flex-wrap: wrap;
+  align-items: center; margin-bottom: var(--space-5);
+}
+.excluded-form input[type="date"] {
+  background: var(--bg-elev); color: var(--ink);
+  border: 1px solid var(--rule-strong); border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3); font-family: var(--font-body);
+}
+.excluded-row .btn-danger { margin-left: auto; }
+
+/* Bot-test page */
+.bot-test { display: flex; flex-direction: column; gap: var(--space-4); }
+.kind-switch { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.kind-btn {
+  border: 1px solid var(--rule-strong); background: var(--bg-elev);
+  color: var(--ink-soft); cursor: pointer;
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+.kind-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+#bot-json {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5;
+  background: var(--bg-sunk); color: var(--ink);
+  border: 1px solid var(--rule-strong); border-radius: var(--radius);
+  padding: var(--space-3); margin-bottom: var(--space-3);
+}
+.bot-response { margin-top: var(--space-4); }
+.bot-result { display: flex; flex-direction: column; gap: var(--space-3); }
+.wa-bubble {
+  background: var(--success-soft); border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4); box-shadow: var(--shadow-card);
+}
+.wa-bubble pre {
+  margin: 0; white-space: pre-wrap; word-break: break-word;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink);
+}
+.wa-meta { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
+.badges { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.badge {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm);
+  background: var(--bg-elev); color: var(--ink-soft); border: 1px solid var(--rule);
+}
+.badge.cls-true  { background: var(--success-soft); color: var(--success); }
+.badge.cls-false { background: var(--danger-soft);  color: var(--danger); }
+.badge.action    { background: var(--accent-soft);  color: var(--accent-strong); }
+.bot-error {
+  background: var(--danger-soft); color: var(--danger);
+  border-radius: var(--radius); padding: var(--space-3) var(--space-4);
+}

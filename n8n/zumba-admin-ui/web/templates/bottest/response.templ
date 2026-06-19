@@ -1,0 +1,59 @@
+package bottest
+
+type ResponseVM struct {
+	Path           string
+	Classification string
+	Action         string
+	Message        string
+	Recipient      string
+	Date           string
+	UserID         string
+}
+
+templ Response(vm ResponseVM) {
+	<div class="bot-result enter">
+		if vm.Path == "statistik" {
+			<div class="wa-bubble">
+				<pre>{ vm.Message }</pre>
+			</div>
+			<div class="wa-meta">Empfänger: { vm.Recipient }</div>
+		} else if vm.Path == "classify" {
+			<div class="badges">
+				<span class={ "badge", "cls-" + vm.Classification }>{ classificationLabel(vm.Classification) }</span>
+				<span class="badge action">{ actionLabel(vm.Action) }</span>
+			</div>
+			<div class="wa-meta">User: { vm.UserID } · Datum: { vm.Date }</div>
+			<div class="wa-bubble"><pre>{ vm.Message }</pre></div>
+		} else {
+			<div class="wa-meta">Ignoriert (Guards aktiv).</div>
+		}
+	</div>
+}
+
+templ ErrorPanel(msg string) {
+	<div class="bot-error enter">
+		<strong>Fehler:</strong> { msg }
+	</div>
+}
+
+func classificationLabel(c string) string {
+	switch c {
+	case "true":
+		return "Zusage (true)"
+	case "false":
+		return "Absage (false)"
+	default:
+		return "invalid"
+	}
+}
+
+func actionLabel(a string) string {
+	switch a {
+	case "marked_absent":
+		return "Absage eingetragen"
+	case "marked_present":
+		return "Absage entfernt"
+	default:
+		return "keine DB-Aktion"
+	}
+}
