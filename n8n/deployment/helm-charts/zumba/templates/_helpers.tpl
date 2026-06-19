@@ -111,3 +111,19 @@ whatsapp-bot selector labels
 {{ include "zumba.selectorLabels" . }}
 app.kubernetes.io/component: whatsapp-bot
 {{- end }}
+
+{{/*
+admin-ui specific labels
+*/}}
+{{- define "zumba.adminUi.labels" -}}
+{{ include "zumba.labels" . }}
+app.kubernetes.io/component: admin-ui
+{{- end }}
+
+{{/*
+admin-ui selector labels
+*/}}
+{{- define "zumba.adminUi.selectorLabels" -}}
+{{ include "zumba.selectorLabels" . }}
+app.kubernetes.io/component: admin-ui
+{{- end }}
