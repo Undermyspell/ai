@@ -1,0 +1,25 @@
+package partials
+
+import (
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+)
+
+// AbsenceToggle rendert einen Button, der die An-/Abwesenheit eines Mitglieds
+// für einen Donnerstag umschaltet. Er postet an /toggle-absence und ersetzt
+// sich selbst durch die vom Server neu gerenderte Antwort.
+templ AbsenceToggle(userID string, date time.Time, absent bool) {
+	<button
+		class={ "toggle", templ.KV("is-absent", absent), templ.KV("is-present", !absent) }
+		hx-post="/toggle-absence"
+		hx-vals={ `{"userId":"` + userID + `","date":"` + timeutil.FormatISO(date) + `"}` }
+		hx-swap="outerHTML"
+	>
+		if absent {
+			Abgemeldet
+		} else {
+			Anwesend
+		}
+	</button>
+}
