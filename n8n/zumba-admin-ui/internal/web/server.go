@@ -54,6 +54,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /days", s.handleDays)
 	mux.HandleFunc("GET /days/{date}", s.handleDayDetail)
 	mux.HandleFunc("GET /excluded", s.handleExcluded)
+	mux.HandleFunc("POST /excluded", s.handleAddExcluded)
+	mux.HandleFunc("DELETE /excluded/{date}", s.handleDeleteExcluded)
 
 	return logRequests(mux)
 }
@@ -328,6 +330,53 @@ func (s *Server) handleExcluded(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, r, s.meta("Sperrtage", "excluded"),
 		excluded.List(excluded.ListVM{Days: all}))
+}
+
+func (s *Server) handleAddExcluded(w http.ResponseWriter, r *http.Request) {
+	date, err := timeutil.ParseISO(r.FormValue("date"))
+	if err != nil {
+		s.triggerToast(w, "error", "Ungültiges Datum.")
+		http.Error(w, "ungültiges Datum", http.StatusUnprocessableEntity)
+		return
+	}
+	if !timeutil.IsThursday(date) {
+		s.triggerToast(w, "error", "Nur Donnerstage können gesperrt werden.")
+		http.Error(w, "kein Donnerstag", http.StatusUnprocessableEntity)
+		return
+	}
+	if err := s.store.InsertExcludedDay(r.Context(), date); err != nil {
+		s.fail(w, "insert excluded", err)
+		return
+	}
+	s.triggerToast(w, "success", "Sperrtag angelegt.")
+	s.renderExcludedList(w, r)
+}
+
+func (s *Server) handleDeleteExcluded(w http.ResponseWriter, r *http.Request) {
+	date, err := timeutil.ParseISO(r.PathValue("date"))
+	if err != nil {
+		http.Error(w, "ungültiges Datum", http.StatusUnprocessableEntity)
+		return
+	}
+	if err := s.store.DeleteExcludedDay(r.Context(), date); err != nil {
+		s.fail(w, "delete excluded", err)
+		return
+	}
+	s.triggerToast(w, "success", "Sperrtag entfernt.")
+	s.renderExcludedList(w, r)
+}
+
+// renderExcludedList renders just the list region (HTMX swap target).
+func (s *Server) renderExcludedList(w http.ResponseWriter, r *http.Request) {
+	all, err := s.store.ListExcludedDays(r.Context(), s.period())
+	if err != nil {
+		s.fail(w, "excluded", err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := excluded.ListRegion(excluded.ListVM{Days: all}).Render(r.Context(), w); err != nil {
+		log.Printf("render excluded region: %v", err)
+	}
 }
 
 func (s *Server) buildStrip(ctx context.Context, period timeutil.Period) ([]partials.ThursdayStripItem, error) {
