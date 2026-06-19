@@ -56,6 +56,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /excluded", s.handleExcluded)
 	mux.HandleFunc("POST /excluded", s.handleAddExcluded)
 	mux.HandleFunc("DELETE /excluded/{date}", s.handleDeleteExcluded)
+	mux.HandleFunc("POST /toggle-absence", s.handleToggleAbsence)
 
 	return logRequests(mux)
 }
@@ -447,6 +448,55 @@ func (s *Server) buildStrip(ctx context.Context, period timeutil.Period) ([]part
 		})
 	}
 	return out, nil
+}
+
+func (s *Server) handleToggleAbsence(w http.ResponseWriter, r *http.Request) {
+	userID := r.FormValue("userId")
+	date, err := timeutil.ParseISO(r.FormValue("date"))
+	if err != nil {
+		http.Error(w, "ungültiges Datum", http.StatusUnprocessableEntity)
+		return
+	}
+	if userID == "" {
+		http.Error(w, "userId fehlt", http.StatusUnprocessableEntity)
+		return
+	}
+
+	absences, err := s.store.ListAbsences(r.Context(), s.period())
+	if err != nil {
+		s.fail(w, "absences", err)
+		return
+	}
+	currentlyAbsent := false
+	iso := timeutil.FormatISO(date)
+	for _, a := range absences {
+		if a.UserID == userID && timeutil.FormatISO(a.Date) == iso {
+			currentlyAbsent = true
+			break
+		}
+	}
+
+	var nowAbsent bool
+	if currentlyAbsent {
+		if err := s.store.DeleteAbsence(r.Context(), userID, date); err != nil {
+			s.fail(w, "delete absence", err)
+			return
+		}
+		nowAbsent = false
+		s.triggerToast(w, "success", "Als anwesend markiert.")
+	} else {
+		if err := s.store.InsertAbsence(r.Context(), userID, date, nil); err != nil {
+			s.fail(w, "insert absence", err)
+			return
+		}
+		nowAbsent = true
+		s.triggerToast(w, "success", "Als abgemeldet markiert.")
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := partials.AbsenceToggle(userID, date, nowAbsent).Render(r.Context(), w); err != nil {
+		log.Printf("render toggle: %v", err)
+	}
 }
 
 func (s *Server) fail(w http.ResponseWriter, what string, err error) {
