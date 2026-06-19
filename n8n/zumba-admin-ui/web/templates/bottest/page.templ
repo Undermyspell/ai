@@ -1,0 +1,36 @@
+package bottest
+
+type PageVM struct {
+	DefaultKind string // "statistik"
+	DefaultJSON string // pretty example for DefaultKind
+}
+
+templ Page(vm PageVM) {
+	<div class="page-header enter">
+		<div class="eyebrow">WhatsApp-Bot</div>
+		<h1>Bot-Test</h1>
+		<p class="meta">Beispiel-Request auswählen, optional anpassen, an den Bot senden.</p>
+	</div>
+	<div class="bot-test enter">
+		<div class="kind-switch" role="tablist">
+			@kindButton("statistik", "Statistik", vm.DefaultKind)
+			@kindButton("absage", "Absage", vm.DefaultKind)
+			@kindButton("zusage", "Zusage", vm.DefaultKind)
+		</div>
+		<form hx-post="/bot-test/run" hx-target="#bot-response" hx-swap="innerHTML">
+			<textarea id="bot-json" name="payload" rows="18" spellcheck="false">{ vm.DefaultJSON }</textarea>
+			<button type="submit" class="btn-primary">An Bot senden</button>
+		</form>
+		<div id="bot-response" class="bot-response"></div>
+	</div>
+}
+
+templ kindButton(kind, label, active string) {
+	<button
+		type="button"
+		class={ "kind-btn", templ.KV("active", kind == active) }
+		hx-get={ "/bot-test/example/" + kind }
+		hx-target="#bot-json"
+		hx-swap="innerHTML"
+	>{ label }</button>
+}

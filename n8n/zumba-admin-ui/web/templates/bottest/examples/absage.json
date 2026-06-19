@@ -1,0 +1,19 @@
+{
+  "event": "messages.upsert",
+  "instance": "whatsapp",
+  "sender": "4915112345678@s.whatsapp.net",
+  "data": {
+    "messageType": "conversation",
+    "pushName": "Max Mustermann",
+    "key": {
+      "remoteJid": "000000000000-0000000000@g.us",
+      "fromMe": false,
+      "id": "3EB0EXAMPLEABSAGE",
+      "participant": "4915112345678@s.whatsapp.net",
+      "participantAlt": "4915112345678@s.whatsapp.net"
+    },
+    "message": {
+      "conversation": "bin heute leider raus, komm nicht"
+    }
+  }
+}

@@ -1,7 +1,9 @@
 package web
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log"
@@ -16,6 +18,7 @@ import (
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 	"github.com/michael/zumba-admin-ui/web/templates"
+	"github.com/michael/zumba-admin-ui/web/templates/bottest"
 	"github.com/michael/zumba-admin-ui/web/templates/dashboard"
 	"github.com/michael/zumba-admin-ui/web/templates/days"
 	"github.com/michael/zumba-admin-ui/web/templates/excluded"
@@ -57,6 +60,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /excluded", s.handleAddExcluded)
 	mux.HandleFunc("DELETE /excluded/{date}", s.handleDeleteExcluded)
 	mux.HandleFunc("POST /toggle-absence", s.handleToggleAbsence)
+	mux.HandleFunc("GET /bot-test", s.handleBotTest)
+	mux.HandleFunc("GET /bot-test/example/{kind}", s.handleBotTestExample)
 
 	return logRequests(mux)
 }
@@ -497,6 +502,39 @@ func (s *Server) handleToggleAbsence(w http.ResponseWriter, r *http.Request) {
 	if err := partials.AbsenceToggle(userID, date, nowAbsent).Render(r.Context(), w); err != nil {
 		log.Printf("render toggle: %v", err)
 	}
+}
+
+var botExampleKinds = map[string]bool{"statistik": true, "absage": true, "zusage": true}
+
+func (s *Server) loadExample(kind string) (string, bool) {
+	if !botExampleKinds[kind] {
+		return "", false
+	}
+	raw, err := bottest.Examples.ReadFile("examples/" + kind + ".json")
+	if err != nil {
+		return "", false
+	}
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, raw, "", "  "); err != nil {
+		return string(raw), true
+	}
+	return pretty.String(), true
+}
+
+func (s *Server) handleBotTest(w http.ResponseWriter, r *http.Request) {
+	def, _ := s.loadExample("statistik")
+	s.render(w, r, s.meta("Bot-Test", "bottest"),
+		bottest.Page(bottest.PageVM{DefaultKind: "statistik", DefaultJSON: def}))
+}
+
+func (s *Server) handleBotTestExample(w http.ResponseWriter, r *http.Request) {
+	body, ok := s.loadExample(r.PathValue("kind"))
+	if !ok {
+		http.Error(w, "unbekannt", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write([]byte(body))
 }
 
 func (s *Server) fail(w http.ResponseWriter, what string, err error) {
