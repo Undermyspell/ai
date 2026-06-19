@@ -272,7 +272,10 @@ func (s *Postgres) DeleteAbsence(ctx context.Context, userID string, date time.T
 }
 
 func (s *Postgres) InsertExcludedDay(ctx context.Context, date time.Time) error {
-	const q = `INSERT INTO public.excluded_days (date) VALUES ($1) ON CONFLICT (date) DO NOTHING`
+	// Idempotent ohne Abhängigkeit von einem UNIQUE-Constraint auf excluded_days(date).
+	const q = `INSERT INTO public.excluded_days (date)
+		SELECT $1::date
+		WHERE NOT EXISTS (SELECT 1 FROM public.excluded_days WHERE date = $1)`
 	if _, err := s.db.ExecContext(ctx, q, date); err != nil {
 		return fmt.Errorf("InsertExcludedDay: %w", err)
 	}
