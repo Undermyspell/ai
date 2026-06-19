@@ -6,6 +6,7 @@ import (
 
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 	"github.com/michael/zumba-admin-ui/web/emoji"
+	"github.com/michael/zumba-admin-ui/web/templates/partials"
 )
 
 type DetailVM struct {
@@ -34,13 +35,13 @@ templ Detail(vm DetailVM) {
 	if !vm.Excluded {
 		<div class="attendance-grid enter">
 			for _, c := range vm.Cells {
-				@cellRow(c)
+				@cellRow(vm.Date, c)
 			}
 		</div>
 	}
 }
 
-templ cellRow(c Cell) {
+templ cellRow(date time.Time, c Cell) {
 	<div class={ "attendance-cell", cellClass(c.Absent) }>
 		<span class="emoji">{ emoji.For(c.Name) }</span>
 		<div>
@@ -49,11 +50,7 @@ templ cellRow(c Cell) {
 				<div class="msg">„{ *c.Message }"</div>
 			}
 		</div>
-		if c.Absent {
-			<span class="status">Abgemeldet</span>
-		} else {
-			<span class="status">Anwesend</span>
-		}
+		@partials.AbsenceToggle(c.UserID, date, c.Absent)
 	</div>
 }
 
