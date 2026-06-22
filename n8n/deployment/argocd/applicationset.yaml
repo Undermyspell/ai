@@ -15,9 +15,7 @@ spec:
       # Staging environment
       - env: staging
         namespace: zumba-staging
-      # Production environment
-      - env: production
-        namespace: zumba-production
+      # Production was removed (unused) — see git history if it needs to come back.
   
   template:
     metadata:
