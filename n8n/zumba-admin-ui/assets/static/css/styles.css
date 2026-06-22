@@ -907,3 +907,8 @@ h3 { font-size: 17px; line-height: 1.25; }
   background: var(--danger-soft); color: var(--danger);
   border-radius: var(--radius); padding: var(--space-3) var(--space-4);
 }
+
+/* Bot-Test: Dry-Run controls */
+.bot-actions { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.dry-toggle { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 14px; color: var(--ink-soft); cursor: pointer; }
+.badge.dryrun { display: inline-block; background: var(--accent-soft); color: var(--accent-strong); border: 1px solid var(--rule); margin-bottom: var(--space-2); }

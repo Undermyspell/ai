@@ -19,7 +19,13 @@ templ Page(vm PageVM) {
 		</div>
 		<form hx-post="/bot-test/run" hx-target="#bot-response" hx-swap="innerHTML">
 			<textarea id="bot-json" name="payload" rows="18" spellcheck="false">{ vm.DefaultJSON }</textarea>
-			<button type="submit" class="btn-primary">An Bot senden</button>
+			<div class="bot-actions">
+				<label class="dry-toggle">
+					<input type="checkbox" name="dryRun" value="true" checked/>
+					Dry-Run (nichts senden/schreiben)
+				</label>
+				<button type="submit" class="btn-primary">An Bot senden</button>
+			</div>
 		</form>
 		<div id="bot-response" class="bot-response"></div>
 	</div>

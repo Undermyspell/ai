@@ -9,7 +9,7 @@ import (
 
 func TestRunStatistikReturnsText(t *testing.T) {
 	s, st, snd := newTestServer(classifier.Invalid, friday) // friday: guards would block, but statistik ignores guards
-	out := s.run(context.Background(), groupMsg("statistik"), false)
+	out := s.run(context.Background(), groupMsg("statistik"), false, false)
 	if out.Path != "statistik" {
 		t.Fatalf("Path = %q, want statistik", out.Path)
 	}
@@ -23,7 +23,7 @@ func TestRunStatistikReturnsText(t *testing.T) {
 
 func TestRunClassifyBypassMarksAbsent(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Absage, friday) // not Thursday, but bypass=true
-	out := s.run(context.Background(), groupMsg("bin raus"), true)
+	out := s.run(context.Background(), groupMsg("bin raus"), true, false)
 	if out.Path != "classify" || out.Classification != "false" || out.Action != "marked_absent" {
 		t.Fatalf("bad outcome: %+v", out)
 	}
@@ -34,7 +34,7 @@ func TestRunClassifyBypassMarksAbsent(t *testing.T) {
 
 func TestRunClassifyZusageMarksPresent(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Zusage, friday)
-	out := s.run(context.Background(), groupMsg("bin dabei"), true)
+	out := s.run(context.Background(), groupMsg("bin dabei"), true, false)
 	if out.Action != "marked_present" || st.presentUserID != "user-123" {
 		t.Fatalf("bad outcome/store: %+v / %+v", out, st)
 	}
@@ -42,7 +42,7 @@ func TestRunClassifyZusageMarksPresent(t *testing.T) {
 
 func TestRunGuardsBlockWithoutBypass(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Absage, friday)
-	out := s.run(context.Background(), groupMsg("bin raus"), false)
+	out := s.run(context.Background(), groupMsg("bin raus"), false, false)
 	if out.Path != "ignored" || out.Reason == "" {
 		t.Fatalf("expected ignored with reason: %+v", out)
 	}
