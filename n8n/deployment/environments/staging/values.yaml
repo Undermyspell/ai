@@ -52,3 +52,12 @@ evolutionApiIngress:
 
 ingress:
   host: zumba-stage.pi.home
+
+# whatsapp-bot aktivieren mit dem lokal in den k3s-containerd importierten Image.
+# IfNotPresent + exakter Name -> k3s nutzt das lokale Image ohne Registry-Pull.
+whatsappBot:
+  enabled: true
+  image:
+    repository: zumba-whatsapp-bot
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
