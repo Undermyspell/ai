@@ -78,7 +78,7 @@ var (
 
 func TestStatistikSendsStats(t *testing.T) {
 	s, st, snd := newTestServer(classifier.Invalid, thursday)
-	s.run(context.Background(), groupMsg("Statistik"), false)
+	s.run(context.Background(), groupMsg("Statistik"), false, false)
 	if !st.statsCalled {
 		t.Error("UserStats not called")
 	}
@@ -89,7 +89,7 @@ func TestStatistikSendsStats(t *testing.T) {
 
 func TestAbsageMarksAbsent(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Absage, thursday)
-	s.run(context.Background(), groupMsg("bin raus heute"), false)
+	s.run(context.Background(), groupMsg("bin raus heute"), false, false)
 	if st.absentUserID != "user-123" || st.absentMessage != "bin raus heute" {
 		t.Errorf("MarkAbsent wrong: %+v", st)
 	}
@@ -100,7 +100,7 @@ func TestAbsageMarksAbsent(t *testing.T) {
 
 func TestZusageMarksPresent(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Zusage, thursday)
-	s.run(context.Background(), groupMsg("bin doch dabei"), false)
+	s.run(context.Background(), groupMsg("bin doch dabei"), false, false)
 	if st.presentUserID != "user-123" {
 		t.Errorf("MarkPresent wrong: %+v", st)
 	}
@@ -111,7 +111,7 @@ func TestZusageMarksPresent(t *testing.T) {
 
 func TestInvalidDoesNothing(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Invalid, thursday)
-	s.run(context.Background(), groupMsg("schönes wetter heute"), false)
+	s.run(context.Background(), groupMsg("schönes wetter heute"), false, false)
 	if st.absentUserID != "" || st.presentUserID != "" {
 		t.Errorf("no DB action expected: %+v", st)
 	}
@@ -119,7 +119,7 @@ func TestInvalidDoesNothing(t *testing.T) {
 
 func TestNotThursdayDoesNothing(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Absage, friday)
-	s.run(context.Background(), groupMsg("bin raus"), false)
+	s.run(context.Background(), groupMsg("bin raus"), false, false)
 	if st.absentUserID != "" {
 		t.Error("no action expected on non-Thursday")
 	}
@@ -129,7 +129,7 @@ func TestWrongGroupDoesNothing(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Absage, thursday)
 	ev := groupMsg("bin raus")
 	ev.Data.Key.RemoteJid = "someone-else@g.us"
-	s.run(context.Background(), ev, false)
+	s.run(context.Background(), ev, false, false)
 	if st.absentUserID != "" {
 		t.Error("no action expected for other group")
 	}
@@ -139,7 +139,7 @@ func TestNonConversationDoesNothing(t *testing.T) {
 	s, st, _ := newTestServer(classifier.Absage, thursday)
 	ev := groupMsg("bin raus")
 	ev.Data.MessageType = "imageMessage"
-	s.run(context.Background(), ev, false)
+	s.run(context.Background(), ev, false, false)
 	if st.absentUserID != "" {
 		t.Error("no action expected for non-conversation")
 	}
@@ -150,7 +150,7 @@ func TestFromMeUsesSender(t *testing.T) {
 	ev.Data.Key.FromMe = true
 	ev.Sender = "owner-jid"
 	s, st, _ := newTestServer(classifier.Absage, thursday)
-	s.run(context.Background(), ev, false)
+	s.run(context.Background(), ev, false, false)
 	if st.absentUserID != "owner-jid" {
 		t.Errorf("fromMe should use sender, got %q", st.absentUserID)
 	}

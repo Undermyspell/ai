@@ -550,14 +550,20 @@ type botOutcome struct {
 	Date           string `json:"date"`
 	UserID         string `json:"userId"`
 	Reason         string `json:"reason"`
+	DryRun         bool   `json:"dryRun"`
 }
 
 func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	payload := r.FormValue("payload")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	url := strings.TrimRight(s.cfg.BotURL, "/") + "/test"
+	if r.FormValue("dryRun") == "true" {
+		url += "?dryRun=true"
+	}
+
 	client := &http.Client{Timeout: 35 * time.Second}
-	req, err := http.NewRequestWithContext(r.Context(), "POST", strings.TrimRight(s.cfg.BotURL, "/")+"/test", strings.NewReader(payload))
+	req, err := http.NewRequestWithContext(r.Context(), "POST", url, strings.NewReader(payload))
 	if err != nil {
 		_ = bottest.ErrorPanel(err.Error()).Render(r.Context(), w)
 		return
@@ -582,6 +588,7 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	_ = bottest.Response(bottest.ResponseVM{
 		Path: out.Path, Classification: out.Classification, Action: out.Action,
 		Message: out.Message, Recipient: out.Recipient, Date: out.Date, UserID: out.UserID,
+		DryRun: out.DryRun,
 	}).Render(r.Context(), w)
 }
 

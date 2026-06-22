@@ -8,15 +8,23 @@ type ResponseVM struct {
 	Recipient      string
 	Date           string
 	UserID         string
+	DryRun         bool
 }
 
 templ Response(vm ResponseVM) {
 	<div class="bot-result enter">
+		if vm.DryRun {
+			<div class="badge dryrun">🧪 Dry-Run — nichts gesendet/geschrieben</div>
+		}
 		if vm.Path == "statistik" {
 			<div class="wa-bubble">
 				<pre>{ vm.Message }</pre>
 			</div>
-			<div class="wa-meta">Empfänger: { vm.Recipient }</div>
+			if vm.DryRun {
+				<div class="wa-meta">Würde an { vm.Recipient } gehen (nicht gesendet).</div>
+			} else {
+				<div class="wa-meta">Gesendet an { vm.Recipient }.</div>
+			}
 		} else if vm.Path == "classify" {
 			<div class="badges">
 				<span class={ "badge", "cls-" + vm.Classification }>{ classificationLabel(vm.Classification) }</span>
@@ -53,6 +61,10 @@ func actionLabel(a string) string {
 		return "Absage eingetragen"
 	case "marked_present":
 		return "Absage entfernt"
+	case "would_mark_absent":
+		return "würde Absage eintragen"
+	case "would_mark_present":
+		return "würde Absage entfernen"
 	default:
 		return "keine DB-Aktion"
 	}

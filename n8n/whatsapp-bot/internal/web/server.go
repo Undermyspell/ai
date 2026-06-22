@@ -64,20 +64,23 @@ func (s *Server) Routes() http.Handler {
 type Outcome struct {
 	Path           string `json:"path"`           // "statistik" | "classify" | "ignored"
 	Classification string `json:"classification"` // "true"|"false"|"invalid"
-	Action         string `json:"action"`         // "marked_absent"|"marked_present"|"none"
+	Action         string `json:"action"`         // marked_absent|marked_present|would_mark_absent|would_mark_present|none
 	Message        string `json:"message"`        // Statistik-Text bzw. Eingabe-Text
 	Recipient      string `json:"recipient"`
 	Date           string `json:"date"`
 	UserID         string `json:"userId"`
 	Reason         string `json:"reason"`
+	DryRun         bool   `json:"dryRun"` // true: nichts gesendet/geschrieben, nur berechnet
 }
 
-func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuards bool) Outcome {
+// run verarbeitet ein Event. bypassGuards überspringt die Donnerstag-/Gruppen-Prüfung
+// (Test-Pfad). dryRun berechnet das Ergebnis, ohne zu senden oder in die DB zu schreiben.
+func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuards, dryRun bool) Outcome {
 	msg := ev.Message()
 
 	if strings.EqualFold(strings.TrimSpace(msg), "statistik") {
-		text := s.statsText(ctx, ev.RemoteJid())
-		return Outcome{Path: "statistik", Message: text, Recipient: ev.RemoteJid()}
+		text := s.statsText(ctx, ev.RemoteJid(), !dryRun)
+		return Outcome{Path: "statistik", Message: text, Recipient: ev.RemoteJid(), DryRun: dryRun}
 	}
 
 	if !bypassGuards {
@@ -100,17 +103,22 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 		Recipient:      ev.RemoteJid(),
 		UserID:         userID,
 		Date:           today.Format("2006-01-02"),
+		DryRun:         dryRun,
 	}
 	switch res {
 	case classifier.Absage:
-		if err := s.store.MarkAbsent(ctx, userID, today, msg); err != nil {
+		if dryRun {
+			out.Action = "would_mark_absent"
+		} else if err := s.store.MarkAbsent(ctx, userID, today, msg); err != nil {
 			log.Printf("⚠️  MarkAbsent(%s): %v", userID, err)
 		} else {
 			out.Action = "marked_absent"
 			log.Printf("📝 Absage: %s (%s)", ev.UserName(), userID)
 		}
 	case classifier.Zusage:
-		if err := s.store.MarkPresent(ctx, userID, today); err != nil {
+		if dryRun {
+			out.Action = "would_mark_present"
+		} else if err := s.store.MarkPresent(ctx, userID, today); err != nil {
 			log.Printf("⚠️  MarkPresent(%s): %v", userID, err)
 		} else {
 			out.Action = "marked_present"
@@ -120,18 +128,21 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 	return out
 }
 
-// statsText baut den Ranglisten-Text, sendet ihn über den Sender und gibt ihn zurück.
-func (s *Server) statsText(ctx context.Context, receiver string) string {
+// statsText baut den Ranglisten-Text und gibt ihn zurück. Bei send=true wird er
+// zusätzlich über den Sender verschickt.
+func (s *Server) statsText(ctx context.Context, receiver string, send bool) string {
 	stats, err := s.store.UserStats(ctx)
 	if err != nil {
 		log.Printf("⚠️  UserStats: %v", err)
 		return ""
 	}
 	text := report.Build(stats)
-	if err := s.sender.SendText(ctx, receiver, text); err != nil {
-		log.Printf("⚠️  SendText(%s): %v", receiver, err)
-	} else {
-		log.Printf("📊 Statistik gesendet an %s", receiver)
+	if send {
+		if err := s.sender.SendText(ctx, receiver, text); err != nil {
+			log.Printf("⚠️  SendText(%s): %v", receiver, err)
+		} else {
+			log.Printf("📊 Statistik gesendet an %s", receiver)
+		}
 	}
 	return text
 }
@@ -143,7 +154,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	s.run(r.Context(), ev, false)
+	s.run(r.Context(), ev, false, false)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -153,7 +164,8 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	out := s.run(r.Context(), ev, true)
+	dryRun := r.URL.Query().Get("dryRun") == "true"
+	out := s.run(r.Context(), ev, true, dryRun)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)
 }
