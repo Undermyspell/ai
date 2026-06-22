@@ -10,3 +10,4 @@ resources:
 - sealed-secrets/postgres-secrets.yaml
 - sealed-secrets/n8n-secrets.yaml
 - sealed-secrets/evolution-api-secrets.yaml
+- sealed-secrets/whatsapp-bot-secrets.yaml
