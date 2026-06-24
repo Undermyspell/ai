@@ -170,6 +170,12 @@ whatsappBot:
     type: ClusterIP
     port: 8080
 
+  # Automatischer Wochenreport: CronJob, der die Statistik an die Zumba-Gruppe sendet.
+  weeklyReport:
+    enabled: false          # per Umgebung auf true setzen
+    schedule: "0 21 * * 4"  # Donnerstag 21:00
+    timeZone: Europe/Berlin
+
 # admin-ui: Go-Service zur Verwaltung der Stammtisch-Daten + Bot-Test-Seite
 adminUi:
   enabled: false

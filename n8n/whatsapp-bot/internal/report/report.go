@@ -19,6 +19,15 @@ import (
 // auf true setzen, um die ursprünglich beabsichtigte Anzeige zu aktivieren.
 const showStartDate = false
 
+// WeeklyNote ist der Hinweis, der dem automatischen Donnerstag-Wochenreport
+// vorangestellt wird. Ansonsten identisch zum on-demand "statistik"-Text.
+const WeeklyNote = "📅 *Automatischer Wochenreport (Do 21:00)*\n\n"
+
+// BuildWeekly entspricht Build, stellt aber den Wochenreport-Hinweis voran.
+func BuildWeekly(rows []store.Stat) string {
+	return WeeklyNote + Build(rows)
+}
+
 // Build erzeugt den WhatsApp-Text. rows wird in DB-Reihenfolge erwartet
 // (ORDER BY attendance_count DESC, attend_percentage DESC).
 func Build(rows []store.Stat) string {

@@ -65,6 +65,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /bot-test", s.handleBotTest)
 	mux.HandleFunc("GET /bot-test/example/{kind}", s.handleBotTestExample)
 	mux.HandleFunc("POST /bot-test/run", s.handleBotTestRun)
+	mux.HandleFunc("GET /bot-test/weekly", s.handleBotTestWeekly)
 
 	return logRequests(mux)
 }
@@ -553,6 +554,14 @@ type botOutcome struct {
 	DryRun         bool   `json:"dryRun"`
 }
 
+// handleBotTestWeekly ruft den Wochenreport-Endpoint des Bots im Dry-Run auf
+// (nur Vorschau, kein Versand) und rendert die Nachricht ins UI.
+func (s *Server) handleBotTestWeekly(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	url := strings.TrimRight(s.cfg.BotURL, "/") + "/weekly-report?dryRun=true"
+	s.proxyBot(w, r, url, nil)
+}
+
 func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	payload := r.FormValue("payload")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -561,9 +570,14 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	if r.FormValue("dryRun") == "true" {
 		url += "?dryRun=true"
 	}
+	s.proxyBot(w, r, url, strings.NewReader(payload))
+}
 
+// proxyBot schickt eine POST-Anfrage an den Bot und rendert dessen Outcome
+// (bzw. ein Fehler-Panel) als HTMX-Fragment.
+func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, body io.Reader) {
 	client := &http.Client{Timeout: 35 * time.Second}
-	req, err := http.NewRequestWithContext(r.Context(), "POST", url, strings.NewReader(payload))
+	req, err := http.NewRequestWithContext(r.Context(), "POST", url, body)
 	if err != nil {
 		_ = bottest.ErrorPanel(err.Error()).Render(r.Context(), w)
 		return
@@ -575,13 +589,13 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		_ = bottest.ErrorPanel("Bot-Status "+resp.Status+": "+string(body)).Render(r.Context(), w)
+		_ = bottest.ErrorPanel("Bot-Status "+resp.Status+": "+string(respBody)).Render(r.Context(), w)
 		return
 	}
 	var out botOutcome
-	if err := json.Unmarshal(body, &out); err != nil {
+	if err := json.Unmarshal(respBody, &out); err != nil {
 		_ = bottest.ErrorPanel("Antwort nicht lesbar: "+err.Error()).Render(r.Context(), w)
 		return
 	}
