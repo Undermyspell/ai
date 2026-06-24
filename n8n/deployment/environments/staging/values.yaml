@@ -59,15 +59,17 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.1.1"
+    tag: "0.1.2"
     pullPolicy: IfNotPresent
+  weeklyReport:
+    enabled: true
 
 # admin-ui aktivieren (lokales Image; BOT_URL zeigt per ConfigMap auf den Bot).
 adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.1.1"
+    tag: "0.1.2"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.pi.home
