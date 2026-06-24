@@ -853,6 +853,20 @@ h3 { font-size: 17px; line-height: 1.25; }
   border-radius: var(--radius-sm); margin-left: auto;
 }
 .btn-danger:hover { background: var(--danger-soft); }
+.btn-secondary {
+  border: 1px solid var(--rule-strong); cursor: pointer;
+  background: var(--bg-elev); color: var(--ink);
+  font-weight: 600; padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Wochenreport-Test */
+.weekly-test {
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  padding-top: var(--space-3); border-top: 1px solid var(--rule);
+}
+.weekly-hint { font-size: 13px; color: var(--ink-soft); }
 
 /* Excluded-day create form */
 .excluded-form {

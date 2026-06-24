@@ -1,0 +1,40 @@
+{{- if and .Values.whatsappBot.enabled .Values.whatsappBot.weeklyReport.enabled -}}
+# Wochenreport: ruft donnerstags 21:00 (Europe/Berlin) den /weekly-report-Endpoint
+# des Bots auf, der die aktuelle Statistik an die Zumba-Gruppe sendet.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "zumba.fullname" . }}-whatsapp-bot-weekly
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.whatsappBot.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.whatsappBot.weeklyReport.schedule | quote }}
+  timeZone: {{ .Values.whatsappBot.weeklyReport.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            {{- include "zumba.whatsappBot.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: trigger
+            image: busybox:1.35
+            command:
+            - sh
+            - -c
+            - |
+              set -e
+              URL="http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}/weekly-report"
+              echo "POST $URL"
+              wget -q -O- --post-data="" --header="Content-Type: application/json" "$URL"
+              echo "✅ Wochenreport ausgelöst"
+{{- end }}

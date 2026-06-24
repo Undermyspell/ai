@@ -53,6 +53,7 @@ func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /webhook/whatsapp", s.handleWebhook)
 	mux.HandleFunc("POST /test", s.handleTest)
+	mux.HandleFunc("POST /weekly-report", s.handleWeekly)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -142,6 +143,36 @@ func (s *Server) statsText(ctx context.Context, receiver string, send bool) stri
 			log.Printf("⚠️  SendText(%s): %v", receiver, err)
 		} else {
 			log.Printf("📊 Statistik gesendet an %s", receiver)
+		}
+	}
+	return text
+}
+
+// handleWeekly versendet den automatischen Wochenreport an die Zumba-Gruppe
+// (per CronJob donnerstags 21:00 aufgerufen). ?dryRun=true berechnet den Text
+// nur und sendet nicht – für den Test-Button im Admin-UI.
+func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
+	dryRun := r.URL.Query().Get("dryRun") == "true"
+	text := s.weeklyText(r.Context(), !dryRun)
+	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: dryRun}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(out)
+}
+
+// weeklyText baut den Wochenreport-Text (mit Hinweis-Header) und sendet ihn bei
+// send=true an die konfigurierte Zumba-Gruppe.
+func (s *Server) weeklyText(ctx context.Context, send bool) string {
+	stats, err := s.store.UserStats(ctx)
+	if err != nil {
+		log.Printf("⚠️  UserStats: %v", err)
+		return ""
+	}
+	text := report.BuildWeekly(stats)
+	if send {
+		if err := s.sender.SendText(ctx, s.groupJID, text); err != nil {
+			log.Printf("⚠️  SendText(Wochenreport, %s): %v", s.groupJID, err)
+		} else {
+			log.Printf("📅 Wochenreport gesendet an %s", s.groupJID)
 		}
 	}
 	return text

@@ -27,6 +27,16 @@ templ Page(vm PageVM) {
 				<button type="submit" class="btn-primary">An Bot senden</button>
 			</div>
 		</form>
+		<div class="weekly-test">
+			<button
+				type="button"
+				class="btn-secondary"
+				hx-get="/bot-test/weekly"
+				hx-target="#bot-response"
+				hx-swap="innerHTML"
+			>📅 Wochenreport testen</button>
+			<span class="weekly-hint">Donnerstags-Report — nur Vorschau, nichts gesendet.</span>
+		</div>
 		<div id="bot-response" class="bot-response"></div>
 	</div>
 }
