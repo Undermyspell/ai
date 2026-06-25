@@ -45,18 +45,28 @@ func NewGemini(apiKey, model, fallbackModel string) *Gemini {
 	}
 }
 
+// Classification ist das Ergebnis eines Classifier-Laufs inkl. Gemini-Roh-Antwort
+// und tatsächlich genutztem Modell (für Trace/Debugging in der Verlauf-Ansicht).
+type Classification struct {
+	Result Result
+	Raw    string // ungetrimmte Antwort von Gemini
+	Model  string // Modell, das die Antwort lieferte (Primär oder Fallback)
+}
+
 // Classify ruft erst das Primär-, bei Fehler das Fallback-Modell auf. Jede
 // nicht eindeutige Antwort (alles außer "true"/"false") wird zu Invalid – so
 // löst der nachgelagerte Switch (n8n) bei "invalid" keine DB-Aktion aus.
-func (g *Gemini) Classify(ctx context.Context, message string) (Result, error) {
-	raw, err := g.generate(ctx, g.model, message)
+func (g *Gemini) Classify(ctx context.Context, message string) (Classification, error) {
+	model := g.model
+	raw, err := g.generate(ctx, model, message)
 	if err != nil && g.fallbackModel != "" && g.fallbackModel != g.model {
-		raw, err = g.generate(ctx, g.fallbackModel, message)
+		model = g.fallbackModel
+		raw, err = g.generate(ctx, model, message)
 	}
 	if err != nil {
-		return Invalid, err
+		return Classification{Result: Invalid, Model: model}, err
 	}
-	return normalize(raw), nil
+	return Classification{Result: normalize(raw), Raw: raw, Model: model}, nil
 }
 
 func normalize(raw string) Result {

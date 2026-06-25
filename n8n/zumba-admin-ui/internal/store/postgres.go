@@ -1,7 +1,9 @@
 package store
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -288,4 +290,59 @@ func (s *Postgres) DeleteExcludedDay(ctx context.Context, date time.Time) error 
 		return fmt.Errorf("DeleteExcludedDay: %w", err)
 	}
 	return nil
+}
+
+func (s *Postgres) ListTraces(ctx context.Context, limit int) ([]Trace, error) {
+	const q = `
+		SELECT id, created_at, user_name, message, message_type, path,
+		       classification, action, has_error
+		FROM bot_trace
+		WHERE created_at > now() - interval '21 days'
+		ORDER BY created_at DESC
+		LIMIT $1`
+	rows, err := s.db.QueryContext(ctx, q, limit)
+	if err != nil {
+		return nil, fmt.Errorf("ListTraces: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Trace
+	for rows.Next() {
+		var t Trace
+		if err := rows.Scan(&t.ID, &t.CreatedAt, &t.UserName, &t.Message,
+			&t.MessageType, &t.Path, &t.Classification, &t.Action, &t.HasError); err != nil {
+			return nil, fmt.Errorf("ListTraces scan: %w", err)
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+func (s *Postgres) GetTrace(ctx context.Context, id int64) (*Trace, error) {
+	const q = `
+		SELECT id, created_at, remote_jid, user_id, user_name, message, message_type,
+		       path, classification, action, has_error,
+		       COALESCE(raw_payload::text, ''), trace::text
+		FROM bot_trace WHERE id = $1`
+	var t Trace
+	var rawPayload, stepsJSON string
+	err := s.db.QueryRowContext(ctx, q, id).Scan(
+		&t.ID, &t.CreatedAt, &t.RemoteJid, &t.UserID, &t.UserName, &t.Message,
+		&t.MessageType, &t.Path, &t.Classification, &t.Action, &t.HasError,
+		&rawPayload, &stepsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("GetTrace: %w", err)
+	}
+	if err := json.Unmarshal([]byte(stepsJSON), &t.Steps); err != nil {
+		return nil, fmt.Errorf("GetTrace steps: %w", err)
+	}
+	if rawPayload != "" {
+		var pretty bytes.Buffer
+		if json.Indent(&pretty, []byte(rawPayload), "", "  ") == nil {
+			t.RawPayload = pretty.String()
+		} else {
+			t.RawPayload = rawPayload
+		}
+	}
+	return &t, nil
 }

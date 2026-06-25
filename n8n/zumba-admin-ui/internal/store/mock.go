@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"sort"
 	"time"
@@ -234,6 +235,66 @@ func (m *Mock) DeleteExcludedDay(_ context.Context, date time.Time) error {
 	}
 	m.excludedDays = out
 	return nil
+}
+
+// sampleTraces liefert ein paar Beispiel-Aufzeichnungen, damit die Verlauf-Ansicht
+// auch ohne DB (Mock-Modus) etwas Sinnvolles zeigt.
+func sampleTraces() []Trace {
+	base := time.Date(2026, 6, 25, 20, 12, 0, 0, time.Local) // ein Donnerstag
+	return []Trace{
+		{
+			ID: 3, CreatedAt: base, UserName: "Tobi", Message: "bin heute leider raus",
+			MessageType: "conversation", Path: "classify", Classification: "false", Action: "marked_absent",
+			RemoteJid: "000000000000-0000000000@g.us", UserID: "49170...@s.whatsapp.net",
+			RawPayload: "{\n  \"data\": { \"messageType\": \"conversation\" }\n}",
+			Steps: []TraceStep{
+				{Node: "received", Outcome: "info", Label: "Webhook empfangen", Detail: "Tobi · Typ \"conversation\""},
+				{Node: "check_statistik", Outcome: "info", Label: "\"statistik\"?", Detail: "nein"},
+				{Node: "guard_type", Outcome: "pass", Label: "messageType == conversation?", Detail: "ja"},
+				{Node: "guard_group", Outcome: "pass", Label: "Zumba-Gruppe?", Detail: "ja"},
+				{Node: "guard_thursday", Outcome: "pass", Label: "Donnerstag?", Detail: "Thu, 2026-06-25"},
+				{Node: "classify", Outcome: "info", Label: "Classifier (Gemini)", Detail: "→ false (roh: \"false\" · gemini-2.5-flash)"},
+				{Node: "mark_absent", Outcome: "pass", Label: "Absage: DB-Insert", Detail: "eingetragen für 2026-06-25"},
+			},
+		},
+		{
+			ID: 2, CreatedAt: base.Add(-3 * time.Minute), UserName: "Hiller", Message: "statistik",
+			MessageType: "conversation", Path: "statistik", RemoteJid: "000000000000-0000000000@g.us",
+			Steps: []TraceStep{
+				{Node: "received", Outcome: "info", Label: "Webhook empfangen", Detail: "Hiller · Typ \"conversation\""},
+				{Node: "check_statistik", Outcome: "pass", Label: "\"statistik\"?", Detail: "ja"},
+				{Node: "build_stats", Outcome: "pass", Label: "Statistik berechnen", Detail: "15 Nutzer"},
+				{Node: "send_stats", Outcome: "pass", Label: "An Gruppe senden", Detail: "→ Zumba-Gruppe"},
+			},
+		},
+		{
+			ID: 1, CreatedAt: base.Add(-30 * time.Minute), UserName: "Michl", Message: "",
+			MessageType: "imageMessage", Path: "ignored", RemoteJid: "000000000000-0000000000@g.us",
+			Steps: []TraceStep{
+				{Node: "received", Outcome: "info", Label: "Webhook empfangen", Detail: "Michl · Typ \"imageMessage\""},
+				{Node: "check_statistik", Outcome: "info", Label: "\"statistik\"?", Detail: "nein"},
+				{Node: "guard_type", Outcome: "fail", Label: "messageType == conversation?", Detail: "nein: imageMessage"},
+				{Node: "ignored", Outcome: "info", Label: "Ignoriert", Detail: "kein conversation-Event"},
+			},
+		},
+	}
+}
+
+func (m *Mock) ListTraces(_ context.Context, limit int) ([]Trace, error) {
+	traces := sampleTraces()
+	if limit > 0 && limit < len(traces) {
+		traces = traces[:limit]
+	}
+	return traces, nil
+}
+
+func (m *Mock) GetTrace(_ context.Context, id int64) (*Trace, error) {
+	for _, t := range sampleTraces() {
+		if t.ID == id {
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("GetTrace: trace %d nicht gefunden", id)
 }
 
 // computeStreakMock walks Thursdays newest-first; returns +N for an attendance
