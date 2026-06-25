@@ -926,3 +926,147 @@ h3 { font-size: 17px; line-height: 1.25; }
 .bot-actions { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
 .dry-toggle { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 14px; color: var(--ink-soft); cursor: pointer; }
 .badge.dryrun { display: inline-block; background: var(--accent-soft); color: var(--accent-strong); border: 1px solid var(--rule); margin-bottom: var(--space-2); }
+
+/* ============================================================
+   Verlauf (Bot-Trace) — Liste + n8n-artiger Flow-Graph
+   ============================================================ */
+
+/* --- Liste --- */
+.trace-list { display: flex; flex-direction: column; gap: var(--space-4); }
+.trace-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.trace-count { font-family: var(--font-mono); font-size: 13px; color: var(--ink-faint); letter-spacing: .02em; }
+.btn-sm { font-size: 13px; padding: var(--space-1) var(--space-3); }
+
+.trace-rows { display: flex; flex-direction: column; border: 1px solid var(--rule); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-elev); box-shadow: var(--shadow-card); }
+.trace-row {
+  display: grid; align-items: center; gap: var(--space-3);
+  grid-template-columns: 140px 120px 1fr auto 20px 14px;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink); text-decoration: none;
+  transition: background .12s ease;
+}
+.trace-row:last-child { border-bottom: 0; }
+.trace-row:hover { background: var(--accent-soft); }
+.tr-time { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-soft); }
+.tr-user { font-weight: 600; }
+.tr-msg { color: var(--ink-soft); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-path { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 12.5px; font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+.tr-path .tp-icon { font-size: 14px; }
+.tr-path.path-statistik { color: var(--accent-strong); }
+.tr-path.path-classify { color: var(--ink); }
+.tr-path.path-ignored { color: var(--ink-faint); }
+.tp-cls { font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 1px var(--space-2); border-radius: 999px; border: 1px solid var(--rule-strong); }
+.tp-cls.cls-false { color: var(--danger); border-color: var(--danger-soft); background: var(--danger-soft); }
+.tp-cls.cls-true { color: var(--success); border-color: var(--success-soft); background: var(--success-soft); }
+.tp-cls.cls-invalid { color: var(--ink-faint); }
+.tr-flag { width: 20px; text-align: center; color: var(--danger); font-size: 14px; }
+.tr-go { color: var(--ink-faint); font-size: 18px; text-align: center; }
+
+.trace-empty { text-align: center; padding: var(--space-8) var(--space-5); color: var(--ink-soft); background: var(--bg-elev); border: 1px dashed var(--rule-strong); border-radius: var(--radius-lg); }
+.trace-empty .te-glyph { font-size: 40px; display: block; margin-bottom: var(--space-3); opacity: .8; }
+
+/* --- Detail --- */
+.trace-detail { display: flex; flex-direction: column; gap: var(--space-5); }
+.back-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+.back-link:hover { text-decoration: underline; }
+
+.trace-facts { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); margin: 0; padding: var(--space-4) var(--space-5); background: var(--bg-elev); border: 1px solid var(--rule); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.trace-facts > div { display: flex; flex-direction: column; gap: 2px; }
+.trace-facts dt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); }
+.trace-facts dd { margin: 0; font-weight: 600; }
+.trace-facts dd.mono { font-family: var(--font-mono); font-weight: 500; }
+.trace-facts dd.bad { color: var(--danger); }
+.trace-facts .muted { color: var(--ink-faint); font-weight: 400; }
+
+.trace-msg { padding: var(--space-3) var(--space-4); background: var(--bg-sunk); border-left: 3px solid var(--accent); border-radius: var(--radius-sm); }
+.trace-msg .tm-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); }
+.trace-msg p { margin: var(--space-1) 0 0; }
+
+/* --- Flow-Graph --- */
+.flow-card { background: var(--bg-elev); border: 1px solid var(--rule); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
+.flow-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--rule); }
+.fh-title { font-family: var(--font-display); font-weight: 600; font-size: 17px; }
+.flow-legend { display: flex; gap: var(--space-4); font-size: 12px; color: var(--ink-soft); }
+.flow-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+.flow-legend .lg::before { content: ""; width: 14px; height: 3px; border-radius: 2px; }
+.flow-legend .taken::before { background: var(--accent); }
+.flow-legend .skipped::before { background: var(--rule-strong); }
+.flow-legend .error::before { background: var(--danger); }
+
+/* gepunktete „Canvas" wie bei n8n */
+.flow-wrap {
+  overflow-x: auto;
+  background-color: var(--bg-sunk);
+  background-image: radial-gradient(var(--rule-strong) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+  padding: var(--space-5);
+}
+.flow-svg { display: block; width: 100%; height: auto; min-width: 760px; margin: 0 auto; max-width: 1040px; }
+
+/* Kanten */
+.flow-edge { fill: none; stroke: var(--rule-strong); stroke-width: 1.6; }
+.flow-edge.is-skipped { stroke-dasharray: 4 5; opacity: .7; }
+.flow-edge.is-taken { stroke: var(--accent); stroke-width: 2.4; filter: drop-shadow(0 1px 2px var(--accent-soft)); }
+.arrow-taken { fill: var(--accent); }
+.arrow-skip { fill: var(--rule-strong); }
+
+/* Kanten-Labels (Pills) */
+.flow-elabel rect { fill: var(--bg-elev); stroke: var(--rule-strong); stroke-width: 1; }
+.flow-elabel text { font-family: var(--font-mono); font-size: 11px; font-weight: 600; fill: var(--ink-faint); }
+.flow-elabel.is-taken rect { fill: var(--accent-soft); stroke: var(--accent); }
+.flow-elabel.is-taken text { fill: var(--accent-strong); }
+
+/* Knotenkarten (foreignObject) */
+.flow-node {
+  box-sizing: border-box; height: 100%; width: 100%;
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-elev); border: 1px solid var(--rule-strong);
+  border-radius: var(--radius); box-shadow: var(--shadow-card);
+  opacity: 0; animation: flowIn .35s ease forwards;
+}
+.flow-node .fn-icon {
+  flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center;
+  font-size: 18px; border-radius: var(--radius-sm); background: var(--bg-sunk);
+}
+.flow-node .fn-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.flow-node .fn-title { font-weight: 600; font-size: 13.5px; line-height: 1.2; color: var(--ink); }
+.flow-node .fn-detail {
+  font-family: var(--font-mono); font-size: 10.5px; line-height: 1.25; color: var(--ink-faint);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Zustände */
+.flow-node.is-skipped { opacity: 0; animation: flowInDim .35s ease forwards; border-style: dashed; box-shadow: none; }
+.flow-node.is-skipped .fn-icon { filter: grayscale(1); opacity: .55; }
+.flow-node.is-taken { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 20px -12px var(--accent); }
+.flow-node.is-taken .fn-icon { background: var(--accent-soft); }
+.flow-node.is-taken .fn-title { color: var(--accent-strong); }
+.flow-node.is-fail { border-color: var(--danger); background: var(--danger-soft); }
+.flow-node.is-fail .fn-title { color: var(--danger); }
+.flow-node.is-error { border-color: var(--danger); background: var(--danger-soft); box-shadow: 0 0 0 1px var(--danger); }
+.flow-node.is-error .fn-icon { background: var(--danger-soft); }
+.flow-node.is-error .fn-title { color: var(--danger); }
+
+@keyframes flowIn { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes flowInDim { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: .5; transform: none; } }
+
+/* Roh-Payload */
+.trace-raw { background: var(--bg-elev); border: 1px solid var(--rule); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.trace-raw summary { cursor: pointer; padding: var(--space-3) var(--space-5); font-weight: 600; color: var(--ink-soft); }
+.trace-raw summary:hover { color: var(--accent); }
+.trace-raw pre { margin: 0; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--rule); background: var(--bg-sunk); font-size: 12px; line-height: 1.5; overflow-x: auto; color: var(--ink-soft); }
+
+@media (max-width: 720px) {
+  .trace-row { grid-template-columns: 1fr auto 14px; grid-template-areas: "user path flag" "msg msg msg" "time time time"; row-gap: var(--space-1); }
+  .tr-time { grid-area: time; } .tr-user { grid-area: user; } .tr-msg { grid-area: msg; white-space: normal; }
+  .tr-path { grid-area: path; } .tr-flag { grid-area: flag; } .tr-go { display: none; }
+}
+
+/* Reduced-Motion: Knoten sofort im Endzustand (keine unsichtbaren Karten). */
+@media (prefers-reduced-motion: reduce) {
+  .flow-node { animation: none; opacity: 1; }
+  .flow-node.is-skipped { animation: none; opacity: .5; }
+}

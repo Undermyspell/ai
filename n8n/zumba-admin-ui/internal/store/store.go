@@ -48,4 +48,50 @@ type Store interface {
 	DeleteAbsence(ctx context.Context, userID string, date time.Time) error
 	InsertExcludedDay(ctx context.Context, date time.Time) error
 	DeleteExcludedDay(ctx context.Context, date time.Time) error
+
+	// Bot-Trace (Verlauf-Ansicht): ListTraces liefert Zusammenfassungen,
+	// GetTrace die volle Aufzeichnung inkl. Schritte + Roh-Payload.
+	ListTraces(ctx context.Context, limit int) ([]Trace, error)
+	GetTrace(ctx context.Context, id int64) (*Trace, error)
+}
+
+// Knoten-IDs des festen Bot-Flow-Graphen (Vertrag mit dem whatsapp-bot).
+const (
+	NodeReceived       = "received"
+	NodeCheckStatistik = "check_statistik"
+	NodeBuildStats     = "build_stats"
+	NodeSendStats      = "send_stats"
+	NodeGuardType      = "guard_type"
+	NodeGuardGroup     = "guard_group"
+	NodeGuardThursday  = "guard_thursday"
+	NodeClassify       = "classify"
+	NodeMarkAbsent     = "mark_absent"
+	NodeMarkPresent    = "mark_present"
+	NodeNoAction       = "no_action"
+	NodeIgnored        = "ignored"
+)
+
+// TraceStep ist ein Entscheidungspunkt im Bot-Flow (gespiegelt aus dem Bot).
+type TraceStep struct {
+	Node    string `json:"node"`
+	Outcome string `json:"outcome"` // pass | fail | info | error
+	Label   string `json:"label"`
+	Detail  string `json:"detail"`
+}
+
+// Trace ist eine aufgezeichnete Bot-Verarbeitung eines Gruppen-Events.
+type Trace struct {
+	ID             int64
+	CreatedAt      time.Time
+	RemoteJid      string
+	UserID         string
+	UserName       string
+	Message        string
+	MessageType    string
+	Path           string // statistik | classify | ignored
+	Classification string // true | false | invalid | ""
+	Action         string
+	HasError       bool
+	RawPayload     string // hübsch eingerücktes JSON (nur in GetTrace befüllt)
+	Steps          []TraceStep
 }

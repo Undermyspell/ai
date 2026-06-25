@@ -53,6 +53,9 @@ func (s *spyStore) DeleteExcludedDay(_ context.Context, date time.Time) error {
 	return nil
 }
 
+func (s *spyStore) ListTraces(_ context.Context, _ int) ([]store.Trace, error) { return nil, nil }
+func (s *spyStore) GetTrace(_ context.Context, _ int64) (*store.Trace, error)   { return nil, nil }
+
 func mustDate(s string) time.Time {
 	d, err := timeutil.ParseISO(s)
 	if err != nil {

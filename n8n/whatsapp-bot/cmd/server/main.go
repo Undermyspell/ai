@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
 	"github.com/michael/zumba-whatsapp-bot/internal/sink"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
+	"github.com/michael/zumba-whatsapp-bot/internal/tracestore"
 	"github.com/michael/zumba-whatsapp-bot/internal/web"
 )
 
@@ -52,6 +54,15 @@ func main() {
 	}
 
 	srv := web.New(st, cl, snd, cfg.GroupJID, cfg.Location)
+
+	// Trace-Aufzeichnung (Gruppe + Donnerstag) in der zumba-DB.
+	tracer := tracestore.New(pg.DB)
+	if err := tracer.EnsureSchema(context.Background()); err != nil {
+		log.Printf("⚠️  bot_trace Schema: %v (Aufzeichnung deaktiviert)", err)
+	} else {
+		srv.Tracer = tracer
+		log.Printf("🧭 Trace-Aufzeichnung aktiv (bot_trace, 21 Tage Retention)")
+	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("🍻 Zumba WhatsApp-Bot läuft auf http://localhost%s (Webhook: POST /webhook/whatsapp)", addr)

@@ -1,0 +1,53 @@
+package trace
+
+import "github.com/michael/zumba-admin-ui/internal/store"
+
+templ Detail(t store.Trace) {
+	<div class="page-header enter">
+		<div class="eyebrow">
+			<a href="/trace" class="back-link">← Verlauf</a>
+		</div>
+		<h1>Event #{ itoa(t.ID) }</h1>
+		<p class="meta">{ FmtTime(t.CreatedAt) } · { orDash(t.UserName) }</p>
+	</div>
+
+	<div class="trace-detail enter">
+		<dl class="trace-facts">
+			<div><dt>Pfad</dt><dd>{ PathIcon(t.Path) } { PathLabel(t.Path) }</dd></div>
+			if t.Classification != "" {
+				<div><dt>Klassifizierung</dt><dd>{ ClassLabel(t.Classification) } <span class="muted">({ t.Classification })</span></dd></div>
+			}
+			<div><dt>Aktion</dt><dd>{ ActionLabel(t.Action) }</dd></div>
+			<div><dt>Typ</dt><dd class="mono">{ orDash(t.MessageType) }</dd></div>
+			if t.HasError {
+				<div><dt>Status</dt><dd class="bad">⚠ Fehler im Verlauf</dd></div>
+			}
+		</dl>
+
+		if t.Message != "" {
+			<div class="trace-msg">
+				<span class="tm-label">Nachricht</span>
+				<p>{ t.Message }</p>
+			</div>
+		}
+
+		<div class="flow-card">
+			<div class="flow-head">
+				<span class="fh-title">Verarbeitungspfad</span>
+				<div class="flow-legend">
+					<span class="lg taken">genommen</span>
+					<span class="lg skipped">übersprungen</span>
+					<span class="lg error">Fehler</span>
+				</div>
+			</div>
+			@FlowGraph(BuildGraph(t.Steps))
+		</div>
+
+		if t.RawPayload != "" {
+			<details class="trace-raw">
+				<summary>Roh-Payload (Evolution-Event)</summary>
+				<pre class="mono">{ t.RawPayload }</pre>
+			</details>
+		}
+	</div>
+}

@@ -1,0 +1,79 @@
+package trace
+
+import "github.com/michael/zumba-admin-ui/internal/store"
+
+templ List(traces []store.Trace) {
+	<div class="page-header enter">
+		<div class="eyebrow">WhatsApp-Bot</div>
+		<h1>Verlauf</h1>
+		<p class="meta">
+			Aufgezeichnete Gruppen-Events der letzten 3 Wochen (nur donnerstags).
+			Eine Zeile öffnen, um den Verarbeitungspfad zu sehen.
+		</p>
+	</div>
+	<div id="trace-list" class="trace-list enter">
+		<div class="trace-toolbar">
+			<span class="trace-count">{ countLabel(len(traces)) }</span>
+			<button
+				type="button"
+				class="btn-secondary btn-sm"
+				hx-get="/trace"
+				hx-target="#trace-list"
+				hx-select="#trace-list"
+				hx-swap="outerHTML"
+			>↻ Aktualisieren</button>
+		</div>
+		if len(traces) == 0 {
+			<div class="trace-empty">
+				<span class="te-glyph">📭</span>
+				<p>Noch keine Aufzeichnungen. Sobald in der Zumba-Gruppe an einem Donnerstag etwas passiert, erscheint es hier.</p>
+			</div>
+		} else {
+			<div class="trace-rows">
+				for _, t := range traces {
+					<a class="trace-row" href={ templ.URL(rowHref(t.ID)) }>
+						<span class="tr-time">{ FmtTime(t.CreatedAt) }</span>
+						<span class="tr-user">{ orDash(t.UserName) }</span>
+						<span class="tr-msg">{ msgPreview(t) }</span>
+						<span class={ "tr-path", "path-" + t.Path }>
+							<span class="tp-icon">{ PathIcon(t.Path) }</span>
+							{ PathLabel(t.Path) }
+							if t.Classification != "" {
+								<span class={ "tp-cls", "cls-" + t.Classification }>{ ClassLabel(t.Classification) }</span>
+							}
+						</span>
+						if t.HasError {
+							<span class="tr-flag" title="Fehler im Verlauf">⚠</span>
+						} else {
+							<span class="tr-flag"></span>
+						}
+						<span class="tr-go">›</span>
+					</a>
+				}
+			</div>
+		}
+	</div>
+}
+
+func rowHref(id int64) string { return "/trace/" + itoa(id) }
+
+func msgPreview(t store.Trace) string {
+	if t.Message == "" {
+		return "—"
+	}
+	return Truncate(t.Message, 56)
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "—"
+	}
+	return s
+}
+
+func countLabel(n int) string {
+	if n == 1 {
+		return "1 Eintrag"
+	}
+	return itoa(int64(n)) + " Einträge"
+}

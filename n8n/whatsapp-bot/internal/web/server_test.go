@@ -35,8 +35,8 @@ func (f *fakeStore) MarkPresent(_ context.Context, userID string, _ time.Time) e
 
 type fakeClassifier struct{ result classifier.Result }
 
-func (f fakeClassifier) Classify(context.Context, string) (classifier.Result, error) {
-	return f.result, nil
+func (f fakeClassifier) Classify(context.Context, string) (classifier.Classification, error) {
+	return classifier.Classification{Result: f.result, Raw: string(f.result), Model: "fake"}, nil
 }
 
 type fakeSender struct {
