@@ -101,7 +101,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	strip, err := s.buildStrip(ctx, period)
+	strip, err := s.buildStrip(ctx, period, 0) // alle Donnerstage – auf dem Dashboard auswählbar
 	if err != nil {
 		s.fail(w, "strip", err)
 		return
@@ -139,23 +139,9 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, s.meta("Dashboard", "dashboard"), dashboard.Page(vm))
 }
 
+// Mitglieder sind jetzt direkt im Dashboard integriert; alte /members-Links umleiten.
 func (s *Server) handleMembers(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	period := s.period()
-
-	board, err := s.store.Leaderboard(ctx, period)
-	if err != nil {
-		s.fail(w, "leaderboard", err)
-		return
-	}
-	strip, err := s.buildStrip(ctx, period)
-	if err != nil {
-		s.fail(w, "strip", err)
-		return
-	}
-
-	s.render(w, r, s.meta("Mitglieder", "members"),
-		members.List(members.ListVM{StripItems: strip, Rows: board}))
+	http.Redirect(w, r, "/dashboard", http.StatusMovedPermanently)
 }
 
 func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +203,7 @@ func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
 		entries = append(entries, members.DetailEntry{Date: t, Absent: absent, Message: msg})
 	}
 
-	s.render(w, r, s.meta(user.Name, "members"),
+	s.render(w, r, s.meta(user.Name, "dashboard"),
 		members.Detail(members.DetailVM{User: *user, Stats: stats, Entries: entries}))
 }
 
@@ -240,7 +226,7 @@ func (s *Server) handleDays(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "absences", err)
 		return
 	}
-	strip, err := s.buildStrip(ctx, period)
+	strip, err := s.buildStrip(ctx, period, 12)
 	if err != nil {
 		s.fail(w, "strip", err)
 		return
@@ -391,7 +377,9 @@ func (s *Server) renderExcludedList(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) buildStrip(ctx context.Context, period timeutil.Period) ([]partials.ThursdayStripItem, error) {
+// buildStrip baut die Donnerstags-Kacheln. limit == 0 => alle (Dashboard);
+// limit > 0 => nur die jüngsten N.
+func (s *Server) buildStrip(ctx context.Context, period timeutil.Period, limit int) ([]partials.ThursdayStripItem, error) {
 	thursdays, err := s.store.ListThursdays(ctx, period)
 	if err != nil {
 		return nil, err
@@ -435,8 +423,8 @@ func (s *Server) buildStrip(ctx context.Context, period timeutil.Period) ([]part
 		}
 	}
 	sort.Slice(dates, func(i, j int) bool { return dates[i].After(dates[j]) })
-	if len(dates) > 12 {
-		dates = dates[:12]
+	if limit > 0 && len(dates) > limit {
+		dates = dates[:limit]
 	}
 	// reverse: oldest-left, newest-right
 	for i, j := 0, len(dates)-1; i < j; i, j = i+1, j-1 {

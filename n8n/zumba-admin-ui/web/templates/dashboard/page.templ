@@ -27,12 +27,20 @@ templ Page(vm ViewModel) {
 		<h1>Stammtisch-Logbuch</h1>
 		<p class="meta">Saison <strong>{ vm.PeriodStart }</strong> – <strong>{ vm.PeriodEnd }</strong></p>
 	</div>
-	@partials.ThursdayStrip(vm.StripItems)
 	<section class="grid-stats">
 		@statCard("Donnerstage", fmt.Sprintf("%d", vm.TotalThursdays), "bisher")
 		@statCardAccent("Quote", fmt.Sprintf("%d%%", vm.AverageRate), "Ø Teilnahme")
 		@statCard("Zusagen", fmt.Sprintf("%d", vm.TotalAttendances), "")
 		@statCard("Absagen", fmt.Sprintf("%d", vm.TotalAbsences), "")
+	</section>
+	<section class="section">
+		<div class="section-head">
+			<div class="title">
+				<h2>Donnerstage</h2>
+				<span class="count">{ fmt.Sprintf("%d Termine – zum Öffnen anklicken", len(vm.StripItems)) }</span>
+			</div>
+		</div>
+		@partials.ThursdayStrip(vm.StripItems)
 	</section>
 	<section class="section">
 		<div class="section-head">
@@ -70,20 +78,20 @@ templ statCardAccent(label, value, sub string) {
 }
 
 templ leaderboardRow(rank int, r store.LeaderboardRow) {
-	<div class="member-row">
+	<a class="member-row" href={ templ.URL(fmt.Sprintf("/members/%s", r.UserID)) }>
 		<div class={ "rank", rankMedalClass(rank) }>{ fmt.Sprintf("%d", rank) }</div>
 		<div class="who">
 			<span class="emoji">{ emoji.For(r.UserName) }</span>
 			<div>
 				<div class="name">{ r.UserName }</div>
-				<div class="meta">{ fmt.Sprintf("%d von %d Donnerstagen", r.AttendanceCount, r.ThursdayCount) }</div>
+				<div class="meta">{ fmt.Sprintf("%d von %d Donnerstagen · %d Absagen", r.AttendanceCount, r.ThursdayCount, r.AwayCount) }</div>
 			</div>
 		</div>
 		<div class="stats">
 			<div class="pct">{ fmt.Sprintf("%d%%", percentInt(r.AttendPercent)) }</div>
 			@streakChip(r.Streak)
 		</div>
-	</div>
+	</a>
 }
 
 templ streakChip(streak int) {
