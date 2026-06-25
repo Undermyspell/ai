@@ -99,10 +99,18 @@ func Build(rows []store.Stat) string {
 	b.WriteString(fmt.Sprintf("📊 *%d* Stammtische\n\n", total))
 	b.WriteString(fmt.Sprintf("👑 *MVP:* %s (%s%%)\n", mvp.Name, fmtNum(mvp.Percent)))
 	if hottest.Streak > 0 {
-		b.WriteString(fmt.Sprintf("🔥 *Heißeste Serie:* %s (%dx)\n", hottest.Name, hottest.Streak))
+		flame := "🔥"
+		if hottest.Streak > 7 {
+			flame = "❤️‍🔥"
+		}
+		b.WriteString(fmt.Sprintf("%s *Heißeste Serie:* %s (%dx)\n", flame, hottest.Name, hottest.Streak))
 	}
 	if coldest.Streak < 0 {
-		b.WriteString(fmt.Sprintf("❄️ *Längste Pause:* %s (%dx)\n", coldest.Name, abs(coldest.Streak)))
+		ice := "❄️"
+		if coldest.Streak < -3 {
+			ice = "🧊"
+		}
+		b.WriteString(fmt.Sprintf("%s *Längste Pause:* %s (%dx)\n", ice, coldest.Name, abs(coldest.Streak)))
 	}
 	b.WriteString(fmt.Sprintf("📈 *Durchschnitt:* %d%%\n\n", avgPercent))
 	b.WriteString("── *RANGLISTE* ──\n\n")
@@ -115,13 +123,7 @@ func Build(rows []store.Stat) string {
 			startDateText = fmt.Sprintf(" _(%d.%d.)_", d.Day(), int(d.Month()))
 		}
 		bar := barChart(u.Percent, 6)
-		streakLabel := ""
-		if u.Streak > 0 {
-			streakLabel = fmt.Sprintf(" 🔥+%d", u.Streak)
-		}
-		if u.Streak < 0 {
-			streakLabel = fmt.Sprintf(" ❄️%d", u.Streak)
-		}
+		streakLabel := hotTag(u.Streak) + coldTag(u.Streak)
 		lines = append(lines, fmt.Sprintf("%s *%s* %s %d-%d (%s%%)%s%s",
 			u.medal, u.Name, bar, u.Attendance, u.Away, fmtNum(u.Percent), streakLabel, startDateText))
 	}

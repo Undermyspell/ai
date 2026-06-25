@@ -24,7 +24,6 @@ type Style struct {
 func Styles() []Style {
 	return []Style{
 		{"klassik", "Klassik (live)", Build},
-		{"klassik-plus", "Klassik + neue Icons", buildKlassikPlus},
 		{"podium", "Podium", buildPodium},
 		{"kompakt", "Kompakt", buildKompakt},
 		{"tabelle", "Scoreboard (Tabelle)", buildTabelle},
@@ -118,7 +117,7 @@ func analyze(rows []store.Stat) analysis {
 func hotTag(streak int) string {
 	switch {
 	case streak > 7:
-		return fmt.Sprintf(" 🌋+%d", streak)
+		return fmt.Sprintf(" ❤️‍🔥+%d", streak)
 	case streak > 0:
 		return fmt.Sprintf(" 🔥+%d", streak)
 	}
@@ -140,7 +139,7 @@ func coldTag(streak int) string {
 func hotEmoji(streak int) string {
 	switch {
 	case streak > 7:
-		return "🌋"
+		return "❤️‍🔥"
 	case streak > 0:
 		return "🔥"
 	}
@@ -159,48 +158,10 @@ func coldEmoji(streak int) string {
 
 func empty() string { return "🍻 *ZUMBA STATS*\n\n_Keine Daten._" }
 
-// --- Design 1: Klassik + neue Icons (sonst identisch zur Live-Nachricht) ---
+// Hinweis: "Klassik" (= Live-Nachricht, report.Build) nutzt jetzt selbst die neuen
+// Icons (❤️‍🔥 ab Streak > 7, 🧊 ab Pause > 3) – daher keine separate "+Icons"-Variante mehr.
 
-func buildKlassikPlus(rows []store.Stat) string {
-	if len(rows) == 0 {
-		return empty()
-	}
-	a := analyze(rows)
-
-	var b strings.Builder
-	b.WriteString("🍻 *ZUMBA STATS*\n")
-	b.WriteString("_Weihnachtsfeier → Weihnachtsfeier_\n\n")
-	fmt.Fprintf(&b, "📊 *%d* Stammtische\n\n", a.total)
-	fmt.Fprintf(&b, "👑 *MVP:* %s (%s%%)\n", a.mvp.Name, fmtNum(a.mvp.Percent))
-	if a.hottest.Streak > 0 {
-		flame := "🔥"
-		if a.hottest.Streak > 7 {
-			flame = "🌋"
-		}
-		fmt.Fprintf(&b, "%s *Heißeste Serie:* %s (%dx)\n", flame, a.hottest.Name, a.hottest.Streak)
-	}
-	if a.coldest.Streak < 0 {
-		ice := "❄️"
-		if a.coldest.Streak < -3 {
-			ice = "🧊"
-		}
-		fmt.Fprintf(&b, "%s *Längste Pause:* %s (%dx)\n", ice, a.coldest.Name, abs(a.coldest.Streak))
-	}
-	fmt.Fprintf(&b, "📈 *Durchschnitt:* %d%%\n\n", a.avgPercent)
-	b.WriteString("── *RANGLISTE* ──\n\n")
-
-	lines := make([]string, 0, len(a.users))
-	for _, u := range a.users {
-		lines = append(lines, fmt.Sprintf("%s *%s* %s %d-%d (%s%%)%s%s",
-			u.medal, u.Name, barChart(u.Percent, 6), u.Attendance, u.Away,
-			fmtNum(u.Percent), hotTag(u.Streak), coldTag(u.Streak)))
-	}
-	b.WriteString(strings.Join(lines, "\n"))
-	b.WriteString("\n\n🤖🍺 *Automatisch erstellt vom Zumba-Bot*")
-	return b.String()
-}
-
-// --- Design 2: Podium (Top 3 im Fokus, Rest als Verfolger) ---
+// --- Design: Podium (Top 3 im Fokus, Rest als Verfolger) ---
 
 func buildPodium(rows []store.Stat) string {
 	if len(rows) == 0 {
@@ -337,7 +298,7 @@ func slimBar(percent float64) string {
 func hotColdMark(streak int) string {
 	switch {
 	case streak > 7:
-		return " 🌋"
+		return " ❤️‍🔥"
 	case streak < -3:
 		return " 🧊"
 	}
