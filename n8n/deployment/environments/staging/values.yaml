@@ -48,10 +48,10 @@ evolutionApi:
     size: 1Gi
 
 evolutionApiIngress:
-  host: evolution-stage.pi.home
+  host: evolution-stage.192.168.178.46.nip.io
 
 ingress:
-  host: zumba-stage.pi.home
+  host: zumba-stage.192.168.178.46.nip.io
 
 # whatsapp-bot aktivieren mit dem lokal in den k3s-containerd importierten Image.
 # IfNotPresent + exakter Name -> k3s nutzt das lokale Image ohne Registry-Pull.
@@ -72,4 +72,4 @@ adminUi:
     tag: "0.1.10"
     pullPolicy: IfNotPresent
   ingress:
-    host: zumba-admin-stage.pi.home
+    host: zumba-admin-stage.192.168.178.46.nip.io
