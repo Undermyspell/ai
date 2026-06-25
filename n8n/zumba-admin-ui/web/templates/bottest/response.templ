@@ -9,18 +9,23 @@ type ResponseVM struct {
 	Date           string
 	UserID         string
 	DryRun         bool
+	PreviewTo      string
 }
 
 templ Response(vm ResponseVM) {
 	<div class="bot-result enter">
-		if vm.DryRun {
+		if vm.PreviewTo != "" {
+			<div class="badge preview">📱 Vorschau — auch an { vm.PreviewTo } gesendet</div>
+		} else if vm.DryRun {
 			<div class="badge dryrun">🧪 Dry-Run — nichts gesendet/geschrieben</div>
 		}
 		if vm.Path == "statistik" {
 			<div class="wa-bubble">
 				<pre>{ vm.Message }</pre>
 			</div>
-			if vm.DryRun {
+			if vm.PreviewTo != "" {
+				<div class="wa-meta">Als Vorschau an { vm.PreviewTo } gesendet (nicht an die Gruppe).</div>
+			} else if vm.DryRun {
 				<div class="wa-meta">Würde an { vm.Recipient } gehen (nicht gesendet).</div>
 			} else {
 				<div class="wa-meta">Gesendet an { vm.Recipient }.</div>

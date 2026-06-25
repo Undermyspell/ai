@@ -162,8 +162,8 @@ whatsappBot:
     GEMINI_FALLBACK_MODEL: gemini-3-flash-preview
     # Evolution API
     EVOLUTION_INSTANCE: whatsapp
-    # Zumba-WhatsApp-Gruppe (remoteJid)
-    ZUMBA_GROUP_JID: "000000000000-0000000000@g.us"
+    # Hinweis: ZUMBA_GROUP_JID + PREVIEW_JID (statische WhatsApp-Nummern) liegen
+    # im SealedSecret whatsapp-bot-secrets, nicht hier im Klartext.
     TZ: Europe/Berlin
 
   service:

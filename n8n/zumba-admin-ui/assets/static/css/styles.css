@@ -1070,3 +1070,13 @@ h3 { font-size: 17px; line-height: 1.25; }
   .flow-node { animation: none; opacity: 1; }
   .flow-node.is-skipped { animation: none; opacity: .5; }
 }
+
+/* Bot-Test: Modus-Auswahl (Dry-Run / Vorschau / Scharf) */
+.mode-switch { display: flex; flex-direction: column; gap: var(--space-2); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--space-3) var(--space-4); margin: var(--space-3) 0; }
+.mode-switch legend { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); padding: 0 var(--space-2); }
+.mode-opt { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--space-3); align-items: baseline; cursor: pointer; padding: var(--space-1) 0; }
+.mode-opt input { grid-row: span 2; align-self: center; accent-color: var(--accent); }
+.mo-title { font-weight: 600; }
+.mo-hint { grid-column: 2; font-size: 12px; color: var(--ink-faint); }
+.mode-opt.mo-live .mo-title { color: var(--danger); }
+.badge.preview { display: inline-block; background: var(--success-soft); color: var(--success); border: 1px solid var(--success-soft); margin-bottom: var(--space-2); }

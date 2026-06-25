@@ -47,6 +47,10 @@ type Server struct {
 
 	// Tracer zeichnet Gruppen-/Donnerstag-Events auf (von main gesetzt; nil = aus).
 	Tracer Tracer
+
+	// PreviewJID ist das Ziel des "Vorschau"-Modus der Bot-Test-Seite (von main
+	// gesetzt; leer = Vorschau aus).
+	PreviewJID string
 }
 
 func New(st store.Store, cl Classifier, snd Sender, groupJID string, loc *time.Location) *Server {
@@ -82,7 +86,8 @@ type Outcome struct {
 	Date           string `json:"date"`
 	UserID         string `json:"userId"`
 	Reason         string `json:"reason"`
-	DryRun         bool   `json:"dryRun"` // true: nichts gesendet/geschrieben, nur berechnet
+	DryRun         bool   `json:"dryRun"`              // true: nichts gesendet/geschrieben, nur berechnet
+	PreviewTo      string `json:"previewTo,omitempty"` // gesetzt: Nachricht wurde als Vorschau an diese Nummer geschickt
 }
 
 // run verarbeitet ein Event und protokolliert jeden Entscheidungspunkt im
@@ -212,9 +217,21 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, rec
 // (per CronJob donnerstags 21:00 aufgerufen). ?dryRun=true berechnet den Text
 // nur und sendet nicht – für den Test-Button im Admin-UI.
 func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
-	dryRun := r.URL.Query().Get("dryRun") == "true"
-	text := s.weeklyText(r.Context(), !dryRun)
-	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: dryRun}
+	q := r.URL.Query()
+	dryRun := q.Get("dryRun") == "true"
+	preview := q.Get("preview") == "true" && s.PreviewJID != ""
+
+	text := s.weeklyText(r.Context(), !(dryRun || preview))
+	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: dryRun || preview}
+	if preview && text != "" {
+		if err := s.sender.SendText(r.Context(), s.PreviewJID, text); err != nil {
+			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
+		} else {
+			out.PreviewTo = s.PreviewJID
+			out.DryRun = false
+			log.Printf("📱 Wochenreport-Vorschau gesendet an %s", s.PreviewJID)
+		}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)
 }
@@ -286,8 +303,22 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	dryRun := r.URL.Query().Get("dryRun") == "true"
-	out := s.run(r.Context(), ev, true, dryRun, tracestore.NewRecorder())
+	q := r.URL.Query()
+	dryRun := q.Get("dryRun") == "true"
+	preview := q.Get("preview") == "true" && s.PreviewJID != ""
+
+	// Vorschau verhält sich wie Dry-Run (keine Gruppe/DB), schickt die erzeugte
+	// Nachricht aber zusätzlich an die Vorschau-Nummer.
+	out := s.run(r.Context(), ev, true, dryRun || preview, tracestore.NewRecorder())
+	if preview && out.Path == "statistik" && out.Message != "" {
+		if err := s.sender.SendText(r.Context(), s.PreviewJID, out.Message); err != nil {
+			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
+		} else {
+			out.PreviewTo = s.PreviewJID
+			out.DryRun = false
+			log.Printf("📱 Vorschau gesendet an %s", s.PreviewJID)
+		}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)
 }

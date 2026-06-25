@@ -554,13 +554,26 @@ type botOutcome struct {
 	UserID         string `json:"userId"`
 	Reason         string `json:"reason"`
 	DryRun         bool   `json:"dryRun"`
+	PreviewTo      string `json:"previewTo"`
 }
 
-// handleBotTestWeekly ruft den Wochenreport-Endpoint des Bots im Dry-Run auf
-// (nur Vorschau, kein Versand) und rendert die Nachricht ins UI.
+// modeQuery übersetzt den Modus der Bot-Test-Seite in den Query-Parameter des Bots.
+// dryrun → ?dryRun=true · preview → ?preview=true · live → kein Parameter (scharf).
+func modeQuery(mode string) string {
+	switch mode {
+	case "preview":
+		return "?preview=true"
+	case "live":
+		return ""
+	default:
+		return "?dryRun=true"
+	}
+}
+
+// handleBotTestWeekly ruft den Wochenreport-Endpoint des Bots im gewählten Modus auf.
 func (s *Server) handleBotTestWeekly(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	url := strings.TrimRight(s.cfg.BotURL, "/") + "/weekly-report?dryRun=true"
+	url := strings.TrimRight(s.cfg.BotURL, "/") + "/weekly-report" + modeQuery(r.FormValue("mode"))
 	s.proxyBot(w, r, url, nil)
 }
 
@@ -568,10 +581,7 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	payload := r.FormValue("payload")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	url := strings.TrimRight(s.cfg.BotURL, "/") + "/test"
-	if r.FormValue("dryRun") == "true" {
-		url += "?dryRun=true"
-	}
+	url := strings.TrimRight(s.cfg.BotURL, "/") + "/test" + modeQuery(r.FormValue("mode"))
 	s.proxyBot(w, r, url, strings.NewReader(payload))
 }
 
@@ -604,7 +614,7 @@ func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, bo
 	_ = bottest.Response(bottest.ResponseVM{
 		Path: out.Path, Classification: out.Classification, Action: out.Action,
 		Message: out.Message, Recipient: out.Recipient, Date: out.Date, UserID: out.UserID,
-		DryRun: out.DryRun,
+		DryRun: out.DryRun, PreviewTo: out.PreviewTo,
 	}).Render(r.Context(), w)
 }
 

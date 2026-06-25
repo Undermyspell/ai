@@ -54,6 +54,10 @@ func main() {
 	}
 
 	srv := web.New(st, cl, snd, cfg.GroupJID, cfg.Location)
+	srv.PreviewJID = cfg.PreviewJID
+	if cfg.PreviewJID != "" {
+		log.Printf("📱 Vorschau-Modus aktiv → %s", cfg.PreviewJID)
+	}
 
 	// Trace-Aufzeichnung (Gruppe + Donnerstag) in der zumba-DB.
 	tracer := tracestore.New(pg.DB)

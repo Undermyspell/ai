@@ -21,6 +21,10 @@ type Config struct {
 	// dieser Gruppe werden klassifiziert (1:1 aus dem n8n-Workflow).
 	GroupJID string
 
+	// PreviewJID ist die Nummer, an die der "Vorschau"-Modus der Bot-Test-Seite
+	// die erzeugte Nachricht schickt (statt an die Gruppe). Leer = Vorschau aus.
+	PreviewJID string
+
 	// Location steuert die Donnerstag-Prüfung und das Tagesdatum für die DB-Writes.
 	Location *time.Location
 }
@@ -98,8 +102,9 @@ func Load() (Config, error) {
 			Mode: OutputMode(getenv("OUTPUT_MODE", string(OutputEvolution))),
 			File: getenv("OUTPUT_FILE", "output.txt"),
 		},
-		GroupJID: getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
-		Location: loc,
+		GroupJID:   getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
+		PreviewJID: os.Getenv("PREVIEW_JID"),
+		Location:   loc,
 	}
 
 	switch cfg.Output.Mode {
