@@ -1,6 +1,7 @@
 package report
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
@@ -16,11 +17,10 @@ func TestBuild(t *testing.T) {
 	want := "🍻 *ZUMBA STATS*\n" +
 		"_Weihnachtsfeier → Weihnachtsfeier_\n\n" +
 		"📊 *10* Stammtische\n\n" +
-		"👑 *MVP:* A (100%)\n" +
+		"🐐 *GOAT:* A (100%)\n" +
 		"🔥 *Heißeste Serie:* A (5x)\n" +
 		"❄️ *Längste Pause:* B (2x)\n" +
-		"📈 *Durchschnitt:* 87%\n\n" +
-		"── *RANGLISTE* ──\n\n" +
+		"\n── *RANGLISTE* ──\n\n" +
 		"🥇 *A* ▰▰▰▰▰▰ 10-0 (100%) 🔥+5\n" +
 		"🥈 *B* ▰▰▰▰▰▱ 8-2 (80%) ❄️-2\n" +
 		"🥈 *C* ▰▰▰▰▰▱ 8-2 (80%) 🔥+1\n\n" +
@@ -29,6 +29,23 @@ func TestBuild(t *testing.T) {
 	got := Build(rows)
 	if got != want {
 		t.Errorf("Build mismatch.\n--- got ---\n%s\n--- want ---\n%s", got, want)
+	}
+}
+
+// Gleichstand bei der heißesten Serie: alle Namen müssen genannt werden.
+func TestBuildTiedStreaks(t *testing.T) {
+	rows := []store.Stat{
+		{Name: "A", Attendance: 10, Away: 0, Percent: 100, Streak: 4},
+		{Name: "B", Attendance: 9, Away: 1, Percent: 90, Streak: 4},
+		{Name: "C", Attendance: 4, Away: 6, Percent: 40, Streak: -2},
+		{Name: "D", Attendance: 4, Away: 6, Percent: 40, Streak: -2},
+	}
+	got := Build(rows)
+	if !strings.Contains(got, "🔥 *Heißeste Serie:* A, B (4x)") {
+		t.Errorf("erwartete 'A, B (4x)' in heißester Serie, bekam:\n%s", got)
+	}
+	if !strings.Contains(got, "❄️ *Längste Pause:* C, D (2x)") {
+		t.Errorf("erwartete 'C, D (2x)' in längster Pause, bekam:\n%s", got)
 	}
 }
 

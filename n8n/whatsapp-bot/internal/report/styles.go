@@ -185,7 +185,7 @@ func buildPodium(rows []store.Stat) string {
 		b.WriteString(strings.Join(chasers, " · "))
 		b.WriteString("\n")
 	}
-	fmt.Fprintf(&b, "\n👑 %s · ⌀ %d%%", a.mvp.Name, a.avgPercent)
+	fmt.Fprintf(&b, "\n🐐 %s", a.mvp.Name)
 	return b.String()
 }
 
@@ -198,7 +198,7 @@ func buildKompakt(rows []store.Stat) string {
 	a := analyze(rows)
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "🍻 *ZUMBA* · %d× · ⌀%d%%\n\n", a.total, a.avgPercent)
+	fmt.Fprintf(&b, "🍻 *ZUMBA* · %d×\n\n", a.total)
 	for _, u := range a.users {
 		tag := hotEmoji(u.Streak) + coldEmoji(u.Streak)
 		if tag != "" {
@@ -220,7 +220,7 @@ func buildTabelle(rows []store.Stat) string {
 
 	var b strings.Builder
 	b.WriteString("📊 *ZUMBA SCOREBOARD*\n")
-	fmt.Fprintf(&b, "_%d Stammtische · ⌀ %d%%_\n", a.total, a.avgPercent)
+	fmt.Fprintf(&b, "_%d Stammtische_\n", a.total)
 	b.WriteString("```\n")
 	b.WriteString(" #  Name         W-L     %\n")
 	for _, u := range a.users {
@@ -274,7 +274,7 @@ func buildMinimal(rows []store.Stat) string {
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "*ZUMBA* — nach %d Stammtischen\n", a.total)
-	fmt.Fprintf(&b, "_MVP %s · Schnitt %d%%_\n\n", a.mvp.Name, a.avgPercent)
+	fmt.Fprintf(&b, "_GOAT %s_\n\n", a.mvp.Name)
 	for _, u := range a.users {
 		fmt.Fprintf(&b, "%s  %s%s  _%s%%_\n",
 			slimBar(u.Percent), u.Name, hotColdMark(u.Streak), fmtNum(u.Percent))
