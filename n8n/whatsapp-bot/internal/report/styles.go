@@ -118,7 +118,7 @@ func analyze(rows []store.Stat) analysis {
 func hotTag(streak int) string {
 	switch {
 	case streak > 7:
-		return fmt.Sprintf(" 🟣🔥+%d", streak)
+		return fmt.Sprintf(" 🌋+%d", streak)
 	case streak > 0:
 		return fmt.Sprintf(" 🔥+%d", streak)
 	}
@@ -140,7 +140,7 @@ func coldTag(streak int) string {
 func hotEmoji(streak int) string {
 	switch {
 	case streak > 7:
-		return "🟣🔥"
+		return "🌋"
 	case streak > 0:
 		return "🔥"
 	}
@@ -175,7 +175,7 @@ func buildKlassikPlus(rows []store.Stat) string {
 	if a.hottest.Streak > 0 {
 		flame := "🔥"
 		if a.hottest.Streak > 7 {
-			flame = "🟣🔥"
+			flame = "🌋"
 		}
 		fmt.Fprintf(&b, "%s *Heißeste Serie:* %s (%dx)\n", flame, a.hottest.Name, a.hottest.Streak)
 	}
@@ -337,7 +337,7 @@ func slimBar(percent float64) string {
 func hotColdMark(streak int) string {
 	switch {
 	case streak > 7:
-		return " 🟣"
+		return " 🌋"
 	case streak < -3:
 		return " 🧊"
 	}
