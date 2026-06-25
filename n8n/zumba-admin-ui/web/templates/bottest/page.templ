@@ -5,6 +5,19 @@ type PageVM struct {
 	DefaultJSON string // pretty example for DefaultKind
 }
 
+type styleOption struct{ ID, Label string }
+
+// styleOptions spiegelt report.Styles() im Bot. "klassik" ist die Live-Nachricht.
+var styleOptions = []styleOption{
+	{"klassik", "Klassik (live)"},
+	{"klassik-plus", "Klassik + neue Icons"},
+	{"podium", "Podium"},
+	{"kompakt", "Kompakt"},
+	{"tabelle", "Scoreboard (Tabelle)"},
+	{"race", "Rennen"},
+	{"minimal", "Minimal"},
+}
+
 templ Page(vm PageVM) {
 	<div class="page-header enter">
 		<div class="eyebrow">WhatsApp-Bot</div>
@@ -19,6 +32,15 @@ templ Page(vm PageVM) {
 		</div>
 		<form hx-post="/bot-test/run" hx-target="#bot-response" hx-swap="innerHTML">
 			<textarea id="bot-json" name="payload" rows="18" spellcheck="false">{ vm.DefaultJSON }</textarea>
+			<div class="style-row">
+				<label for="bot-style">Statistik-Design</label>
+				<select id="bot-style" name="style" class="style-select">
+					for _, o := range styleOptions {
+						<option value={ o.ID }>{ o.Label }</option>
+					}
+				</select>
+				<span class="style-hint">Nur für „Statistik" – Live-Nachricht bleibt „Klassik".</span>
+			</div>
 			<fieldset class="mode-switch">
 				<legend>Modus</legend>
 				<label class="mode-opt">
