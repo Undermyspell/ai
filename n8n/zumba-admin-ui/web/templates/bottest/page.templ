@@ -29,14 +29,10 @@ templ Page(vm PageVM) {
 				<label class="mode-opt">
 					<input type="radio" name="mode" value="preview"/>
 					<span class="mo-title">📱 Vorschau an meine Nummer</span>
-					<span class="mo-hint">UI + echte WhatsApp an dich – nicht an Gruppe/DB</span>
-				</label>
-				<label class="mode-opt mo-live">
-					<input type="radio" name="mode" value="live"/>
-					<span class="mo-title">⚠ Scharf</span>
-					<span class="mo-hint">echte Verarbeitung (Gruppe/DB)</span>
+					<span class="mo-hint">UI + echte WhatsApp an dich – nie an die Gruppe</span>
 				</label>
 			</fieldset>
+			<p class="mode-note">Die Testseite sendet nie an die Zumba-Gruppe. Echte Gruppen-Nachrichten kommen nur über reale „statistik"-Anfragen und den Wochenreport-CronJob.</p>
 			<div class="bot-actions">
 				<button type="submit" class="btn-primary">An Bot senden</button>
 			</div>

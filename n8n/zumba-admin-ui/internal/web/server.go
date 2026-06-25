@@ -558,16 +558,13 @@ type botOutcome struct {
 }
 
 // modeQuery übersetzt den Modus der Bot-Test-Seite in den Query-Parameter des Bots.
-// dryrun → ?dryRun=true · preview → ?preview=true · live → kein Parameter (scharf).
+// Die Testseite kennt nur dryrun und preview – sie löst NIE einen echten
+// Gruppen-Versand aus (der passiert nur über echte Statistik-Webhooks + CronJob).
 func modeQuery(mode string) string {
-	switch mode {
-	case "preview":
+	if mode == "preview" {
 		return "?preview=true"
-	case "live":
-		return ""
-	default:
-		return "?dryRun=true"
 	}
+	return "?dryRun=true"
 }
 
 // handleBotTestWeekly ruft den Wochenreport-Endpoint des Bots im gewählten Modus auf.
