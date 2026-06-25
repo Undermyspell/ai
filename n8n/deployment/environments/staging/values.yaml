@@ -59,7 +59,7 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.1.9"
+    tag: "0.1.10"
     pullPolicy: IfNotPresent
   weeklyReport:
     enabled: true

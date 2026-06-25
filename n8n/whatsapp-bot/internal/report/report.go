@@ -75,45 +75,49 @@ func Build(rows []store.Stat) string {
 	}
 
 	// Highlights.
-	mvp := rankedUsers[0]
-	var sumPercent float64
-	for _, u := range users {
-		sumPercent += u.Percent
-	}
-	avgPercent := int(math.Round(sumPercent / float64(len(users))))
+	goat := rankedUsers[0]
 
-	hottest := rankedUsers[0]
-	coldest := rankedUsers[0]
+	// Heißeste Serie / längste Pause: höchste bzw. niedrigste Streak – bei
+	// Gleichstand werden ALLE Namen genannt (in Ranglisten-Reihenfolge).
+	maxStreak, minStreak := rankedUsers[0].Streak, rankedUsers[0].Streak
 	for _, u := range rankedUsers {
-		if u.Streak > hottest.Streak {
-			hottest = u
+		if u.Streak > maxStreak {
+			maxStreak = u.Streak
 		}
-		if u.Streak < coldest.Streak {
-			coldest = u
+		if u.Streak < minStreak {
+			minStreak = u.Streak
 		}
+	}
+	streakNames := func(streak int) string {
+		var names []string
+		for _, u := range rankedUsers {
+			if u.Streak == streak {
+				names = append(names, u.Name)
+			}
+		}
+		return strings.Join(names, ", ")
 	}
 
 	var b strings.Builder
 	b.WriteString("🍻 *ZUMBA STATS*\n")
 	b.WriteString("_Weihnachtsfeier → Weihnachtsfeier_\n\n")
 	b.WriteString(fmt.Sprintf("📊 *%d* Stammtische\n\n", total))
-	b.WriteString(fmt.Sprintf("👑 *MVP:* %s (%s%%)\n", mvp.Name, fmtNum(mvp.Percent)))
-	if hottest.Streak > 0 {
+	b.WriteString(fmt.Sprintf("🐐 *GOAT:* %s (%s%%)\n", goat.Name, fmtNum(goat.Percent)))
+	if maxStreak > 0 {
 		flame := "🔥"
-		if hottest.Streak > 7 {
+		if maxStreak > 7 {
 			flame = "❤️‍🔥"
 		}
-		b.WriteString(fmt.Sprintf("%s *Heißeste Serie:* %s (%dx)\n", flame, hottest.Name, hottest.Streak))
+		b.WriteString(fmt.Sprintf("%s *Heißeste Serie:* %s (%dx)\n", flame, streakNames(maxStreak), maxStreak))
 	}
-	if coldest.Streak < 0 {
+	if minStreak < 0 {
 		ice := "❄️"
-		if coldest.Streak < -3 {
+		if minStreak < -3 {
 			ice = "🧊"
 		}
-		b.WriteString(fmt.Sprintf("%s *Längste Pause:* %s (%dx)\n", ice, coldest.Name, abs(coldest.Streak)))
+		b.WriteString(fmt.Sprintf("%s *Längste Pause:* %s (%dx)\n", ice, streakNames(minStreak), abs(minStreak)))
 	}
-	b.WriteString(fmt.Sprintf("📈 *Durchschnitt:* %d%%\n\n", avgPercent))
-	b.WriteString("── *RANGLISTE* ──\n\n")
+	b.WriteString("\n── *RANGLISTE* ──\n\n")
 
 	lines := make([]string, 0, len(rankedUsers))
 	for _, u := range rankedUsers {
