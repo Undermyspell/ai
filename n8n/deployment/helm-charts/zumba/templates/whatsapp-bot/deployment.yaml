@@ -58,6 +58,19 @@ spec:
             secretKeyRef:
               name: whatsapp-bot-secrets
               key: GEMINI_API_KEY
+        # Statische WhatsApp-Nummern als Secret behandeln (nicht im ConfigMap)
+        - name: ZUMBA_GROUP_JID
+          valueFrom:
+            secretKeyRef:
+              name: whatsapp-bot-secrets
+              key: ZUMBA_GROUP_JID
+        # Vorschau-Nummer für den Bot-Test ("Vorschau an meine Nummer")
+        - name: PREVIEW_JID
+          valueFrom:
+            secretKeyRef:
+              name: whatsapp-bot-secrets
+              key: PREVIEW_JID
+              optional: true
         livenessProbe:
           httpGet:
             path: /healthz

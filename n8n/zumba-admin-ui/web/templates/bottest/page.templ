@@ -19,11 +19,25 @@ templ Page(vm PageVM) {
 		</div>
 		<form hx-post="/bot-test/run" hx-target="#bot-response" hx-swap="innerHTML">
 			<textarea id="bot-json" name="payload" rows="18" spellcheck="false">{ vm.DefaultJSON }</textarea>
-			<div class="bot-actions">
-				<label class="dry-toggle">
-					<input type="checkbox" name="dryRun" value="true" checked/>
-					Dry-Run (nichts senden/schreiben)
+			<fieldset class="mode-switch">
+				<legend>Modus</legend>
+				<label class="mode-opt">
+					<input type="radio" name="mode" value="dryrun" checked/>
+					<span class="mo-title">Dry-Run</span>
+					<span class="mo-hint">nur UI – nichts gesendet/geschrieben</span>
 				</label>
+				<label class="mode-opt">
+					<input type="radio" name="mode" value="preview"/>
+					<span class="mo-title">📱 Vorschau an meine Nummer</span>
+					<span class="mo-hint">UI + echte WhatsApp an dich – nicht an Gruppe/DB</span>
+				</label>
+				<label class="mode-opt mo-live">
+					<input type="radio" name="mode" value="live"/>
+					<span class="mo-title">⚠ Scharf</span>
+					<span class="mo-hint">echte Verarbeitung (Gruppe/DB)</span>
+				</label>
+			</fieldset>
+			<div class="bot-actions">
 				<button type="submit" class="btn-primary">An Bot senden</button>
 			</div>
 		</form>
@@ -32,10 +46,11 @@ templ Page(vm PageVM) {
 				type="button"
 				class="btn-secondary"
 				hx-get="/bot-test/weekly"
+				hx-include="[name='mode']"
 				hx-target="#bot-response"
 				hx-swap="innerHTML"
 			>📅 Wochenreport testen</button>
-			<span class="weekly-hint">Donnerstags-Report — nur Vorschau, nichts gesendet.</span>
+			<span class="weekly-hint">Nutzt den gewählten Modus (Dry-Run = nur Vorschau im UI).</span>
 		</div>
 		<div id="bot-response" class="bot-response"></div>
 	</div>
