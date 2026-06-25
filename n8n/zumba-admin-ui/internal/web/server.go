@@ -579,6 +579,9 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	url := strings.TrimRight(s.cfg.BotURL, "/") + "/test" + modeQuery(r.FormValue("mode"))
+	if style := r.FormValue("style"); style != "" && style != "klassik" {
+		url += "&style=" + style
+	}
 	s.proxyBot(w, r, url, strings.NewReader(payload))
 }
 

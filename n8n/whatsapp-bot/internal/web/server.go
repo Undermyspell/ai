@@ -303,12 +303,24 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	preview := r.URL.Query().Get("preview") == "true" && s.PreviewJID != ""
+	q := r.URL.Query()
+	preview := q.Get("preview") == "true" && s.PreviewJID != ""
+	style := q.Get("style")
 
 	// Die Testseite löst NIE einen Versand an die echte Gruppe oder DB-Writes aus:
 	// run() läuft hier immer als Dry-Run. Echter Gruppen-Versand passiert
 	// ausschließlich über echte Statistik-Webhooks und den Wochenreport-CronJob.
 	out := s.run(r.Context(), ev, true, true, tracestore.NewRecorder())
+
+	// Optional: Statistik-Vorschau in einem alternativen Design rendern (nur Testseite).
+	if out.Path == "statistik" && style != "" && style != "klassik" {
+		if stats, err := s.store.UserStats(r.Context()); err != nil {
+			log.Printf("⚠️  UserStats(style %s): %v", style, err)
+		} else {
+			out.Message = report.BuildByStyle(style, stats)
+		}
+	}
+
 	if preview && out.Path == "statistik" && out.Message != "" {
 		if err := s.sender.SendText(r.Context(), s.PreviewJID, out.Message); err != nil {
 			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
