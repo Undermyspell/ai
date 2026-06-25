@@ -303,13 +303,12 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	q := r.URL.Query()
-	dryRun := q.Get("dryRun") == "true"
-	preview := q.Get("preview") == "true" && s.PreviewJID != ""
+	preview := r.URL.Query().Get("preview") == "true" && s.PreviewJID != ""
 
-	// Vorschau verhält sich wie Dry-Run (keine Gruppe/DB), schickt die erzeugte
-	// Nachricht aber zusätzlich an die Vorschau-Nummer.
-	out := s.run(r.Context(), ev, true, dryRun || preview, tracestore.NewRecorder())
+	// Die Testseite löst NIE einen Versand an die echte Gruppe oder DB-Writes aus:
+	// run() läuft hier immer als Dry-Run. Echter Gruppen-Versand passiert
+	// ausschließlich über echte Statistik-Webhooks und den Wochenreport-CronJob.
+	out := s.run(r.Context(), ev, true, true, tracestore.NewRecorder())
 	if preview && out.Path == "statistik" && out.Message != "" {
 		if err := s.sender.SendText(r.Context(), s.PreviewJID, out.Message); err != nil {
 			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
