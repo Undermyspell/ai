@@ -37,6 +37,15 @@ templ Detail(vm DetailVM) {
 	<section class="section">
 		<div class="section-head">
 			<div class="title">
+				<h2>Überblick</h2>
+				<span class="count">{ fmt.Sprintf("%d anwesend · %d abgemeldet", vm.Stats.AttendanceCount, vm.Stats.AwayCount) }</span>
+			</div>
+		</div>
+		@attendanceStrip(vm.Entries)
+	</section>
+	<section class="section">
+		<div class="section-head">
+			<div class="title">
 				<h2>Verlauf</h2>
 				<span class="count">{ fmt.Sprintf("%d Donnerstage", len(vm.Entries)) }</span>
 			</div>
@@ -47,6 +56,40 @@ templ Detail(vm DetailVM) {
 			}
 		</div>
 	</section>
+}
+
+// attendanceStrip zeigt eine Kachel pro Donnerstag (chronologisch, links = älter):
+// grün = anwesend, rot = abgemeldet. Klick führt zum jeweiligen Donnerstag.
+templ attendanceStrip(entries []DetailEntry) {
+	<div class="att-strip" aria-label="Anwesenheit pro Donnerstag">
+		for _, e := range chrono(entries) {
+			<a
+				class={ "att-dot", templ.KV("absent", e.Absent), templ.KV("present", !e.Absent) }
+				href={ templ.URL("/days/" + timeutil.FormatISO(e.Date)) }
+				title={ attTitle(e) }
+			></a>
+		}
+	</div>
+}
+
+func chrono(entries []DetailEntry) []DetailEntry {
+	out := make([]DetailEntry, len(entries))
+	for i, e := range entries {
+		out[len(entries)-1-i] = e
+	}
+	return out
+}
+
+func attTitle(e DetailEntry) string {
+	s := timeutil.FormatDE(e.Date)
+	if e.Absent {
+		s += " – abgemeldet"
+		if e.Message != nil && *e.Message != "" {
+			s += ": " + *e.Message
+		}
+		return s
+	}
+	return s + " – anwesend"
 }
 
 templ entryRow(userID string, e DetailEntry) {
