@@ -12,7 +12,9 @@ spec:
   schedule: {{ .Values.whatsappBot.weeklyReport.schedule | quote }}
   timeZone: {{ .Values.whatsappBot.weeklyReport.timeZone | quote }}
   concurrencyPolicy: Forbid
-  startingDeadlineSeconds: 300
+  # 1h Nachhol-Fenster: übersteht NTP-Zeitsprünge nach Boot ohne RTC-Zeit,
+  # danach verfällt der Run statt mitten in der Nacht zu feuern.
+  startingDeadlineSeconds: 3600
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
