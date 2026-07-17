@@ -8,13 +8,13 @@ spec:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`argocd.pi.home`)
+      match: Host(`argocd.pi.home`) || Host(`argocd.192.168.178.46.nip.io`)
       priority: 10
       services:
         - name: argocd-server
           port: 80
     - kind: Rule
-      match: Host(`argocd.pi.home`) && Header(`Content-Type`, `application/grpc`)
+      match: (Host(`argocd.pi.home`) || Host(`argocd.192.168.178.46.nip.io`)) && Header(`Content-Type`, `application/grpc`)
       priority: 11
       services:
         - name: argocd-server
