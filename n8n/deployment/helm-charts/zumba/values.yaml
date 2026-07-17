@@ -79,6 +79,23 @@ postgres:
     port: 5432  # External port - override per environment (e.g., 5433 for staging, 5434 for production)
     loadBalancerIP: ""  # Optional: specify a fixed IP if your LB supports it
 
+  # Wöchentliches Voll-Backup (pg_dumpall aller DBs) nach Google Drive via rclone.
+  # Benötigt SealedSecret "rclone-config" (Key: rclone.conf) im Ziel-Namespace,
+  # siehe deployment/README.md → "Postgres-Backup".
+  backup:
+    enabled: false  # per Umgebung auf true setzen
+    schedule: "0 1 * * 5"  # Freitag 01:00
+    timeZone: Europe/Berlin
+    # rclone-Zielpfad: <remote-name aus rclone.conf>:<Ordnerpfad in Google Drive>
+    # Pro Umgebung überschreiben (z.B. gdrive:zumba-backups/staging)
+    remotePath: "gdrive:zumba-backups"
+    # Backups älter als N Tage werden im Remote gelöscht; 0 = nie löschen
+    retentionDays: 90
+    image:
+      repository: rclone/rclone
+      tag: "1.74.4"
+      pullPolicy: IfNotPresent
+
 ingress:
   enabled: true
   className: traefik
