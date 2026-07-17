@@ -35,6 +35,11 @@ postgres:
     enabled: true
     port: 5433
 
+  # Wöchentliches Backup nach Google Drive (Freitag 01:00, siehe Chart-Defaults)
+  backup:
+    enabled: true
+    remotePath: "gdrive:zumba-backups/staging"
+
 evolutionApi:
   resources:
     requests:

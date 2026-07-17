@@ -1,0 +1,105 @@
+{{- if .Values.postgres.backup.enabled -}}
+# Wöchentliches Voll-Backup: pg_dumpall (alle DBs: n8n, zumba, evolution-Schema
+# + Rollen) → gzip → Upload per rclone in ein Google-Drive-Verzeichnis.
+# Benötigt das Secret "rclone-config" (Key: rclone.conf) mit einem konfigurierten
+# rclone-Remote, siehe deployment/README.md → "Postgres-Backup".
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "zumba.fullname" . }}-postgres-backup
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.postgres.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.postgres.backup.schedule | quote }}
+  timeZone: {{ .Values.postgres.backup.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  # 1h Nachhol-Fenster: übersteht NTP-Zeitsprünge nach Boot ohne RTC-Zeit,
+  # danach verfällt der Run statt mitten in der Nacht zu feuern.
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            {{- include "zumba.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: postgres-backup
+        spec:
+          restartPolicy: OnFailure
+          initContainers:
+          # Schritt 1: Dump in gemeinsames emptyDir-Volume
+          - name: pg-dump
+            image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+            imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+            env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_PASSWORD
+            command:
+            - sh
+            - -c
+            - |
+              set -e
+              FILE="/backup/zumba-pg-$(date +%Y-%m-%d_%H%M).sql.gz"
+              echo "Dumpe alle Datenbanken nach $FILE ..."
+              pg_dumpall -h {{ include "zumba.fullname" . }}-postgres -p {{ .Values.postgres.service.port }} -U {{ .Values.postgres.username }} | gzip > "$FILE"
+              ls -lh /backup
+            volumeMounts:
+            - name: backup
+              mountPath: /backup
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 256Mi
+          containers:
+          # Schritt 2: Upload nach Google Drive + Aufräumen alter Backups
+          - name: upload
+            image: "{{ .Values.postgres.backup.image.repository }}:{{ .Values.postgres.backup.image.tag }}"
+            imagePullPolicy: {{ .Values.postgres.backup.image.pullPolicy }}
+            command:
+            - sh
+            - -c
+            - |
+              set -e
+              CONF="--config /config/rclone/rclone.conf"
+              REMOTE="{{ .Values.postgres.backup.remotePath }}"
+              echo "Lade Backup nach $REMOTE hoch ..."
+              rclone $CONF copy /backup "$REMOTE" --progress
+              {{- if gt (int .Values.postgres.backup.retentionDays) 0 }}
+              echo "Lösche Backups älter als {{ .Values.postgres.backup.retentionDays }} Tage ..."
+              rclone $CONF delete "$REMOTE" --min-age {{ .Values.postgres.backup.retentionDays }}d
+              {{- end }}
+              echo "Aktuelle Backups im Remote:"
+              rclone $CONF ls "$REMOTE"
+              echo "✅ Backup abgeschlossen"
+            volumeMounts:
+            - name: backup
+              mountPath: /backup
+              readOnly: true
+            - name: rclone-config
+              mountPath: /config/rclone
+              readOnly: true
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 256Mi
+          volumes:
+          - name: backup
+            emptyDir:
+              sizeLimit: 1Gi
+          - name: rclone-config
+            secret:
+              secretName: rclone-config
+{{- end }}

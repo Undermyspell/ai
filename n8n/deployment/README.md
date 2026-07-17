@@ -152,9 +152,12 @@ kubectl logs -n zumba-staging -l app.kubernetes.io/component=postgres -f
 
 ### Current Secrets
 
-Each environment has 2 encrypted SealedSecrets (safe to commit to git):
+Each environment has its own encrypted SealedSecrets (safe to commit to git):
 - `postgres-secrets`: PostgreSQL passwords
 - `n8n-secrets`: n8n encryption key
+- `evolution-api-secrets`: Evolution API key
+- `whatsapp-bot-secrets`: WhatsApp bot secrets (Gemini key, group JIDs)
+- `rclone-config`: rclone.conf for the Postgres backup upload to Google Drive (see "Postgres-Backup")
 
 **⚠️ Important:** Staging and production use **different** secrets!
 
@@ -294,6 +297,78 @@ kubectl delete pod <pod-name> -n zumba-staging
 
 ---
 
+## 💾 Postgres-Backup
+
+Wöchentliches Voll-Backup der Postgres-Instanz nach Google Drive, als CronJob im Helm-Chart
+(`templates/postgres/backup-cronjob.yaml`, gated per `postgres.backup.enabled`).
+
+**Ablauf** (Freitag 01:00 Europe/Berlin, konfigurierbar über `postgres.backup.schedule`):
+1. initContainer (`postgres`-Image): `pg_dumpall` (alle DBs: `n8n`, `zumba`, Rollen) → gzip → emptyDir
+2. Container (`rclone/rclone`): Upload nach `postgres.backup.remotePath` (z.B. `gdrive:zumba-backups/staging`),
+   danach Retention-Cleanup (`retentionDays`, Default 90 Tage; `0` = nie löschen)
+
+### Einmalige Einrichtung (Google Drive via rclone)
+
+Auf dem Arbeitsrechner (braucht Browser für OAuth-Flow):
+
+```bash
+# 1. rclone-Remote anlegen
+rclone config
+#   n) New remote
+#   name>   gdrive
+#   type>   drive
+#   client_id / client_secret: leer lassen (eingebaute rclone-App) oder eigene OAuth-Client-ID
+#   scope>  drive.file        # WICHTIG: Minimal-Scope, sieht nur selbst erstellte Dateien
+#   Rest: Defaults, Browser-Login mit Google-Konto
+
+# 2. Testen
+rclone mkdir gdrive:zumba-backups/staging
+rclone ls gdrive:zumba-backups --max-depth 2
+
+# 3. Config als SealedSecret einchecken (Key MUSS rclone.conf heißen)
+cd deployment/scripts
+./create-sealed-secret.sh staging rclone-config "rclone.conf=$(cat ~/.config/rclone/rclone.conf)"
+
+# 4. Committen & pushen — ArgoCD deployt CronJob + Secret
+```
+
+**Hinweis Scope:** `drive.file` erlaubt der App nur Zugriff auf Dateien/Ordner, die sie selbst
+erstellt hat. Der in Schritt 2 per rclone angelegte Ordner zählt dazu. Bei Secret-Leak ist nur
+das Backup-Verzeichnis kompromittiert, nicht der restliche Drive. Widerruf jederzeit unter
+https://myaccount.google.com/permissions.
+
+**Achtung:** Die `rclone.conf` enthält einen Refresh-Token für dein Google-Konto — niemals
+unverschlüsselt committen, nur als SealedSecret.
+
+### Backup manuell auslösen / prüfen
+
+```bash
+# Manuell starten
+kubectl create job -n zumba-staging --from=cronjob/zumba-postgres-backup backup-manual
+
+# Logs ansehen
+kubectl logs -n zumba-staging job/backup-manual -c pg-dump
+kubectl logs -n zumba-staging job/backup-manual -f
+
+# Ergebnis in Drive prüfen
+rclone ls gdrive:zumba-backups/staging
+```
+
+### Restore
+
+```bash
+# Dump holen
+rclone copy gdrive:zumba-backups/staging/zumba-pg-<DATUM>.sql.gz .
+
+# In (leere) Instanz einspielen — Staging-Postgres ist extern auf Port 5433 erreichbar
+gunzip -c zumba-pg-<DATUM>.sql.gz | psql -h 192.168.178.46 -p 5433 -U n8n -d postgres
+
+# Danach Pods neu starten
+kubectl rollout restart deployment/zumba-n8n -n zumba-staging
+```
+
+---
+
 ## 📚 Next Steps
 
 ### 1. Enable HTTPS/TLS (Recommended)
@@ -303,7 +378,7 @@ kubectl delete pod <pod-name> -n zumba-staging
 - Set `N8N_SECURE_COOKIE: "true"` in values.yaml
 
 ### 2. Setup Backups
-- PostgreSQL backup CronJob (pg_dump to external storage)
+- ✅ PostgreSQL backup CronJob (pg_dumpall → Google Drive, see "Postgres-Backup" above)
 - n8n workflow exports to git
 - PVC snapshots (if storage class supports it)
 - Test restore procedures
