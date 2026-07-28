@@ -14,7 +14,7 @@ Four independent components share one repo, all centered on a self-hosted n8n + 
 - `whatsapp-statistic/` — three standalone JS snippets (`original.js`, `dashboard.js`, `rpg.js`) that are pasted into n8n Code nodes. They consume `$input.all()` from a Postgres query node and emit a WhatsApp-formatted ranking message. They are siblings, not versions: pick one styling and keep them in sync with the SQL in `whatsapp-statistic.sql`.
 - `system-prompt.txt`, `absagen.sql`, `whatsapp-statistic.sql` — the n8n LLM classifier prompt and the SQL queries it relies on. The classifier returns exactly `true` / `false` / `invalid`; do not change that contract without also updating the consuming n8n workflow.
 
-The remote is `github.com/Undermyspell/ai` (referenced from `deployment/argocd/applicationset.yaml`); the deployment path inside that repo is `n8n/deployment/...`, i.e. the GitOps targets assume this directory is checked in under `n8n/` upstream.
+The remote is `github.com/Undermyspell/ai` (referenced from `deployment/argocd/applicationset.yaml`); the deployment path inside that repo is `zumba-bot/deployment/...`, i.e. the GitOps targets assume this directory is checked in under `zumba-bot/` upstream.
 
 ## Domain model (shared across components)
 

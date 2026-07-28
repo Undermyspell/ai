@@ -25,7 +25,7 @@ Production-ready GitOps deployment of n8n workflow automation platform to k3s Ku
 
 ```
 GitHub (https://github.com/Undermyspell/ai)
-  └── n8n/deployment/
+  └── zumba-bot/deployment/
       ├── helm-charts/zumba/          (Helm chart)
       ├── environments/
       │   ├── staging/values.yaml     (overrides + sealed-secrets)

@@ -7,7 +7,7 @@ This document provides a comprehensive view of the Kubernetes/GitOps infrastruct
 ```mermaid
 flowchart TB
     subgraph Internet["☁️ Internet"]
-        GH["<b>GitHub Repository</b><br/>github.com/Undermyspell/ai<br/>━━━━━━━━━━━━━━━━━━<br/>📁 n8n/deployment/<br/>├── argocd/<br/>├── helm-charts/zumba/<br/>├── environments/<br/>│   ├── staging/<br/>│   └── production/<br/>└── scripts/"]
+        GH["<b>GitHub Repository</b><br/>github.com/Undermyspell/ai<br/>━━━━━━━━━━━━━━━━━━<br/>📁 zumba-bot/deployment/<br/>├── argocd/<br/>├── helm-charts/zumba/<br/>├── environments/<br/>│   ├── staging/<br/>│   └── production/<br/>└── scripts/"]
         
         REN["<b>🤖 Renovate Bot</b><br/><i>(Not yet configured)</i><br/>━━━━━━━━━━━━━━━<br/>Auto-updates:<br/>• Container images<br/>• Helm charts<br/>• Dependencies"]
     end

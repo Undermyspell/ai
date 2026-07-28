@@ -37,7 +37,7 @@ ArgoCD manages itself using GitOps. The configuration in `base/` pulls the offic
 
 ```bash
 # 1. Commit and push changes to git
-git add n8n/deployment/argocd/
+git add zumba-bot/deployment/argocd/
 git commit -m "Add ArgoCD self-management"
 git push
 
@@ -125,12 +125,12 @@ Creates two ArgoCD Applications:
 Each application uses **multi-source deployment**:
 
 ### Source 1: Helm Chart
-- **Path**: `n8n/deployment/helm-charts/zumba-stack`
+- **Path**: `zumba-bot/deployment/helm-charts/zumba-stack`
 - **Purpose**: Main application resources (n8n Deployment, PostgreSQL StatefulSet, Services, PVCs, etc.)
 - **Values**: Environment-specific values from `environments/{staging|production}/values.yaml`
 
 ### Source 2: Kustomize
-- **Path**: `n8n/deployment/environments/{staging|production}`
+- **Path**: `zumba-bot/deployment/environments/{staging|production}`
 - **Purpose**: SealedSecrets with labels
 - **Resources**: 
   - `sealed-secrets/postgres-secrets.yaml`

@@ -5,7 +5,7 @@
   ],
   "timezone": "Europe/Berlin",
   "includePaths": [
-    "n8n/**"
+    "zumba-bot/**"
   ],
   "labels": [
     "dependencies"
@@ -17,7 +17,7 @@
       "customType": "regex",
       "description": "Update n8n Docker image tag in base Helm values",
       "managerFilePatterns": [
-        "n8n/deployment/helm-charts/zumba/values.yaml"
+        "zumba-bot/deployment/helm-charts/zumba/values.yaml"
       ],
       "matchStrings": [
         "n8n:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
@@ -30,7 +30,7 @@
       "customType": "regex",
       "description": "Update n8n Docker image tag in staging environment",
       "managerFilePatterns": [
-        "n8n/deployment/environments/staging/values.yaml"
+        "zumba-bot/deployment/environments/staging/values.yaml"
       ],
       "matchStrings": [
         "n8n:\\s*\\n\\s*image:\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
@@ -43,7 +43,7 @@
       "customType": "regex",
       "description": "Update postgres Docker image tag in base Helm values",
       "managerFilePatterns": [
-        "n8n/deployment/helm-charts/zumba/values.yaml"
+        "zumba-bot/deployment/helm-charts/zumba/values.yaml"
       ],
       "matchStrings": [
         "postgres:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
@@ -54,7 +54,7 @@
       "customType": "regex",
       "description": "Update Evolution API Docker image tag in base Helm values",
       "managerFilePatterns": [
-        "n8n/deployment/helm-charts/zumba/values.yaml"
+        "zumba-bot/deployment/helm-charts/zumba/values.yaml"
       ],
       "matchStrings": [
         "evolutionApi:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
@@ -65,7 +65,7 @@
       "customType": "regex",
       "description": "Update ArgoCD version in kustomization.yaml",
       "managerFilePatterns": [
-        "n8n/deployment/argocd/base/kustomization.yaml"
+        "zumba-bot/deployment/argocd/base/kustomization.yaml"
       ],
       "matchStrings": [
         "https://raw\\.githubusercontent\\.com/argoproj/argo-cd/(?<currentValue>v[\\d.]+)/manifests/install\\.yaml"
@@ -78,7 +78,7 @@
     {
       "description": "Auto-merge n8n updates in staging environment only",
       "matchFileNames": [
-        "n8n/deployment/environments/staging/values.yaml"
+        "zumba-bot/deployment/environments/staging/values.yaml"
       ],
       "matchPackageNames": [
         "n8n-io/n8n"
@@ -96,8 +96,8 @@
     {
       "description": "Manual review required for base and production values",
       "matchFileNames": [
-        "n8n/deployment/helm-charts/zumba/values.yaml",
-        "n8n/deployment/environments/production/values.yaml"
+        "zumba-bot/deployment/helm-charts/zumba/values.yaml",
+        "zumba-bot/deployment/environments/production/values.yaml"
       ],
       "automerge": false,
       "labels": [

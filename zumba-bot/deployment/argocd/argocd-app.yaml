@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://github.com/Undermyspell/ai.git
     targetRevision: HEAD
-    path: n8n/deployment/argocd/base
+    path: zumba-bot/deployment/argocd/base
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
