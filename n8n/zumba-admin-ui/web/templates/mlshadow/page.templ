@@ -104,16 +104,41 @@ templ Row(m store.MLMessage) {
 					✔ geprüft:
 					<span class={ "ml-badge", "ml-" + effectiveLabel(m) }>{ labelText(effectiveLabel(m)) }</span>
 				</span>
+				if m.ModelLabel != nil {
+					if *m.ModelLabel == effectiveLabel(m) {
+						<span class="ml-verdict ml-verdict-ok">Modell ✓</span>
+					} else {
+						<span class="ml-verdict ml-verdict-bad">Modell ✗</span>
+					}
+				}
+				if m.GeminiLabel == effectiveLabel(m) {
+					<span class="ml-verdict ml-verdict-ok">Gemini ✓</span>
+				} else {
+					<span class="ml-verdict ml-verdict-bad">Gemini ✗</span>
+				}
 			} else {
-				<span class="ml-source">Korrektes Label:</span>
-				for _, l := range []string{"true", "false", "invalid"} {
+				if m.GeminiLabel != "" {
 					<button
 						type="button"
-						class={ "ml-verify-btn", "ml-" + l }
-						hx-post={ verifyHref(m.ID, l) }
+						class="ml-verify-btn ml-true"
+						hx-post={ verifyHref(m.ID, m.GeminiLabel) }
 						hx-target={ "#" + rowID(m.ID) }
 						hx-swap="outerHTML"
-					>{ labelText(l) }</button>
+					>✓ Passt (wie Gemini)</button>
+					<span class="ml-source">falsch — richtig ist:</span>
+				} else {
+					<span class="ml-source">Richtig ist:</span>
+				}
+				for _, l := range []string{"true", "false", "invalid"} {
+					if l != m.GeminiLabel {
+						<button
+							type="button"
+							class={ "ml-verify-btn", "ml-" + l }
+							hx-post={ verifyHref(m.ID, l) }
+							hx-target={ "#" + rowID(m.ID) }
+							hx-swap="outerHTML"
+						>{ labelText(l) }</button>
+					}
 				}
 			}
 		</div>

@@ -54,7 +54,14 @@ templ Row(t store.MLTestMessage) {
 	<div class={ "ml-row", templ.KV("ml-row-verified", isCorrect(t)), templ.KV("ml-row-disagree", isWrong(t)) } id={ rowID(t.ID) }>
 		<div class="ml-row-head">
 			<span class="ml-time">{ t.CreatedAt.Format("02.01. 15:04") }</span>
-			<span class="ml-agree">{ statusText(t) }</span>
+			switch {
+				case t.ExpectedLabel == nil:
+					<span class="ml-verdict ml-verdict-open">offen — bitte bewerten</span>
+				case *t.ExpectedLabel == t.ModelLabel:
+					<span class="ml-verdict ml-verdict-ok">✓ PASST</span>
+				default:
+					<span class="ml-verdict ml-verdict-bad">✗ FALSCH</span>
+			}
 			<button
 				type="button"
 				class="ml-delete-btn"
@@ -101,17 +108,6 @@ func isCorrect(t store.MLTestMessage) bool {
 
 func isWrong(t store.MLTestMessage) bool {
 	return t.ExpectedLabel != nil && *t.ExpectedLabel != t.ModelLabel
-}
-
-func statusText(t store.MLTestMessage) string {
-	switch {
-	case t.ExpectedLabel == nil:
-		return "offen — bitte bewerten"
-	case *t.ExpectedLabel == t.ModelLabel:
-		return "✓ Modell lag richtig"
-	default:
-		return "✗ Modell lag falsch"
-	}
 }
 
 func labelText(l string) string {

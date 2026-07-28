@@ -1157,3 +1157,7 @@ h3 { font-size: 17px; line-height: 1.25; }
 .ml-test-form textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ml-delete-btn { margin-left: var(--space-2); font: inherit; font-size: 13px; background: none; border: none; cursor: pointer; opacity: .45; }
 .ml-delete-btn:hover { opacity: 1; }
+.ml-verdict { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .04em; padding: 2px 10px; border-radius: 999px; }
+.ml-verdict-ok { color: #fff; background: var(--success); }
+.ml-verdict-bad { color: #fff; background: var(--danger); }
+.ml-verdict-open { color: var(--accent-strong); background: var(--accent-soft); border: 1px dashed var(--accent); font-weight: 600; }
