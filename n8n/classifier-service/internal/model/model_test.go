@@ -2,7 +2,10 @@ package model
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"math"
+	"os"
 	"testing"
 
 	modeldata "github.com/michael/zumba-classifier/model"
@@ -15,13 +18,23 @@ type goldenCase struct {
 
 // TestGoldenParity vergleicht die Go-Inferenz mit den von sklearn berechneten
 // Wahrscheinlichkeiten (ml-classifier/scripts/export_weights.py).
+//
+// golden.json enthält echte Nachrichten und liegt deshalb nicht im Repo —
+// ohne die Datei wird der Test übersprungen.
 func TestGoldenParity(t *testing.T) {
+	raw, err := os.ReadFile("../../model/golden.json")
+	if errors.Is(err, fs.ErrNotExist) {
+		t.Skip("golden.json fehlt — lokal via ml-classifier/scripts/export_weights.py erzeugen")
+	}
+	if err != nil {
+		t.Fatalf("golden.json: %v", err)
+	}
 	m, err := Load(modeldata.ModelGZ)
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
 	var cases []goldenCase
-	if err := json.Unmarshal(modeldata.GoldenJSON, &cases); err != nil {
+	if err := json.Unmarshal(raw, &cases); err != nil {
 		t.Fatalf("golden.json: %v", err)
 	}
 	if len(cases) == 0 {
