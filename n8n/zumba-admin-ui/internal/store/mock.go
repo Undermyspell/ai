@@ -393,3 +393,29 @@ func (m *Mock) MLShadowStats(_ context.Context) (MLShadowStats, error) {
 }
 
 func (m *Mock) VerifyMLMessage(_ context.Context, _ int64, _ *string) error { return nil }
+
+// --- Manueller ML-Test: Mock ---
+
+func (m *Mock) InsertMLTest(_ context.Context, _, _ string, _ float64) (int64, error) {
+	return 1, nil
+}
+
+func (m *Mock) ListMLTests(_ context.Context, limit int) ([]MLTestMessage, error) {
+	s := func(v string) *string { return &v }
+	out := []MLTestMessage{
+		{ID: 3, CreatedAt: time.Date(2026, 7, 27, 10, 12, 0, 0, time.Local),
+			Message: "i kimm heid ned, sorry", ModelLabel: "false", ModelConfidence: 0.93},
+		{ID: 2, CreatedAt: time.Date(2026, 7, 27, 10, 10, 0, 0, time.Local),
+			Message: "mal schauen ob i's schaff", ModelLabel: "invalid", ModelConfidence: 0.81,
+			ExpectedLabel: s("invalid")},
+		{ID: 1, CreatedAt: time.Date(2026, 7, 27, 10, 8, 0, 0, time.Local),
+			Message: "bin am start heit", ModelLabel: "invalid", ModelConfidence: 0.52,
+			ExpectedLabel: s("true")},
+	}
+	if limit > 0 && limit < len(out) {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (m *Mock) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }

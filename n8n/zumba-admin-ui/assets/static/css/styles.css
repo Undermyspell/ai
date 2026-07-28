@@ -1149,3 +1149,9 @@ h3 { font-size: 17px; line-height: 1.25; }
 .ml-docs th { background: var(--bg-sunk); color: var(--ink); }
 .ml-docs hr { border: none; border-top: 1px solid var(--rule); margin: var(--space-5) 0; }
 .ml-docs blockquote { border-left: 3px solid var(--rule-strong); padding-left: var(--space-3); color: var(--ink-faint); margin-bottom: var(--space-3); }
+
+/* --- Manueller ML-Test --- */
+.ml-test-form { margin-bottom: var(--space-5); }
+.ml-test-form form { display: flex; gap: var(--space-3); align-items: flex-end; }
+.ml-test-form textarea { flex: 1; font: inherit; padding: var(--space-2) var(--space-3); border: 1px solid var(--rule-strong); border-radius: var(--radius); background: var(--bg-elev); color: var(--ink); resize: vertical; }
+.ml-test-form textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }

@@ -70,6 +70,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /trace/{id}", s.handleTraceDetail)
 	mux.HandleFunc("GET /ml-shadow", s.handleMLShadow)
 	mux.HandleFunc("POST /ml-shadow/verify/{id}", s.handleMLVerify)
+	mux.HandleFunc("GET /ml-test", s.handleMLTest)
+	mux.HandleFunc("POST /ml-test/run", s.handleMLTestRun)
+	mux.HandleFunc("POST /ml-test/judge/{id}", s.handleMLTestJudge)
 	mux.HandleFunc("GET /ml-doku", s.handleMLDocs)
 
 	return logRequests(mux)

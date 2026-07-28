@@ -17,4 +17,8 @@ data:
   EVAL_PERIOD_END: {{ .Values.adminUi.env.EVAL_PERIOD_END | quote }}
   TZ: {{ .Values.adminUi.env.TZ | quote }}
   BOT_URL: http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}
+  {{- if .Values.classifier.enabled }}
+  # Manueller ML-Test: Admin-UI ruft den classifier-service direkt
+  CLASSIFIER_URL: http://{{ include "zumba.fullname" . }}-classifier:{{ .Values.classifier.service.port }}
+  {{- end }}
 {{- end }}

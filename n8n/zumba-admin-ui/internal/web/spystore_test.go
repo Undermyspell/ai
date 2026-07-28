@@ -71,3 +71,11 @@ func (s *spyStore) MLShadowStats(_ context.Context) (store.MLShadowStats, error)
 	return store.MLShadowStats{}, nil
 }
 func (s *spyStore) VerifyMLMessage(_ context.Context, _ int64, _ *string) error { return nil }
+
+func (s *spyStore) InsertMLTest(_ context.Context, _, _ string, _ float64) (int64, error) {
+	return 1, nil
+}
+func (s *spyStore) ListMLTests(_ context.Context, _ int) ([]store.MLTestMessage, error) {
+	return nil, nil
+}
+func (s *spyStore) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }

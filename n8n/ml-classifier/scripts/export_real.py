@@ -62,6 +62,38 @@ def main() -> None:
                 rows[key] = {"text": msg.strip(), "label": label, "source": "real",
                              "origin": "bot_trace", "verified": False}
 
+        # Shadow-Modus-Protokoll: handgeprüfte Label schlagen Gemini-Label.
+        # (Tabelle existiert erst nach dem ersten Bot-Deploy mit Shadow-Modus.)
+        for table, sql, verified_col in (
+            ("ml_messages",
+             """SELECT message, COALESCE(corrected_label, gemini_label), verified
+                FROM ml_messages
+                WHERE COALESCE(corrected_label, gemini_label)
+                      IN ('true', 'false', 'invalid')
+                  AND btrim(message) <> ''""", True),
+            # Manuelle Testfälle aus dem Admin-UI: nur bewertete übernehmen.
+            ("ml_test_messages",
+             """SELECT message, expected_label, true
+                FROM ml_test_messages
+                WHERE expected_label IN ('true', 'false', 'invalid')
+                  AND btrim(message) <> ''""", True),
+        ):
+            try:
+                cur.execute(sql)
+            except Exception as e:  # noqa: BLE001 - Tabelle fehlt evtl. noch
+                conn.rollback()
+                print(f"{table} übersprungen: {e}", file=sys.stderr)
+                continue
+            for msg, label, verified in cur.fetchall():
+                key = normalize(msg)
+                if not key:
+                    continue
+                rec = {"text": msg.strip(), "label": label, "source": "real",
+                       "origin": table, "verified": bool(verified)}
+                # Handgeprüfte Einträge überschreiben unverifizierte Duplikate.
+                if key not in rows or (verified and not rows[key]["verified"]):
+                    rows[key] = rec
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8") as f:
         for rec in rows.values():

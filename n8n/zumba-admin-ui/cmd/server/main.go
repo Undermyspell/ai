@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -35,7 +36,12 @@ func main() {
 		mockMode = true
 	} else {
 		log.Printf("✅ Connected to PostgreSQL '%s' on %s:%s", cfg.DB.Name, cfg.DB.Host, cfg.DB.Port)
-		st = store.NewPostgres(pg)
+		pgStore := store.NewPostgres(pg)
+		// Tabelle für den manuellen ML-Test (Schreiber ist das Admin-UI).
+		if err := pgStore.EnsureMLTestSchema(context.Background()); err != nil {
+			log.Printf("⚠️  ml_test_messages Schema: %v", err)
+		}
+		st = pgStore
 		defer pg.Close()
 	}
 

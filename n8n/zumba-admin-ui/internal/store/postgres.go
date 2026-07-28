@@ -419,3 +419,70 @@ func (s *Postgres) VerifyMLMessage(ctx context.Context, id int64, correctedLabel
 	}
 	return nil
 }
+
+// --- Manueller ML-Test (ml_test_messages) ---
+
+// EnsureMLTestSchema legt die Tabelle für manuelle Testfälle idempotent an
+// (Schreiber ist das Admin-UI, daher liegt das Schema hier und nicht im Bot).
+func (s *Postgres) EnsureMLTestSchema(ctx context.Context) error {
+	const q = `
+		CREATE TABLE IF NOT EXISTS ml_test_messages (
+		  id               BIGSERIAL PRIMARY KEY,
+		  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+		  message          TEXT NOT NULL,
+		  model_label      TEXT NOT NULL,
+		  model_confidence DOUBLE PRECISION NOT NULL,
+		  expected_label   TEXT
+		);
+		CREATE INDEX IF NOT EXISTS ml_test_messages_created_idx
+		  ON ml_test_messages (created_at DESC);`
+	_, err := s.db.ExecContext(ctx, q)
+	return err
+}
+
+func (s *Postgres) InsertMLTest(ctx context.Context, message, modelLabel string, confidence float64) (int64, error) {
+	const q = `
+		INSERT INTO ml_test_messages (message, model_label, model_confidence)
+		VALUES ($1, $2, $3) RETURNING id`
+	var id int64
+	if err := s.db.QueryRowContext(ctx, q, message, modelLabel, confidence).Scan(&id); err != nil {
+		return 0, fmt.Errorf("InsertMLTest: %w", err)
+	}
+	return id, nil
+}
+
+func (s *Postgres) ListMLTests(ctx context.Context, limit int) ([]MLTestMessage, error) {
+	const q = `
+		SELECT id, created_at, message, model_label, model_confidence, expected_label
+		FROM ml_test_messages
+		ORDER BY created_at DESC
+		LIMIT $1`
+	rows, err := s.db.QueryContext(ctx, q, limit)
+	if err != nil {
+		return nil, fmt.Errorf("ListMLTests: %w", err)
+	}
+	defer rows.Close()
+
+	var out []MLTestMessage
+	for rows.Next() {
+		var m MLTestMessage
+		if err := rows.Scan(&m.ID, &m.CreatedAt, &m.Message, &m.ModelLabel,
+			&m.ModelConfidence, &m.ExpectedLabel); err != nil {
+			return nil, fmt.Errorf("ListMLTests scan: %w", err)
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
+func (s *Postgres) JudgeMLTest(ctx context.Context, id int64, expectedLabel string) error {
+	const q = `UPDATE ml_test_messages SET expected_label = $2 WHERE id = $1`
+	res, err := s.db.ExecContext(ctx, q, id, expectedLabel)
+	if err != nil {
+		return fmt.Errorf("JudgeMLTest: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("JudgeMLTest: Eintrag %d nicht gefunden", id)
+	}
+	return nil
+}

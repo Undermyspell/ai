@@ -1,0 +1,119 @@
+package mltest
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
+)
+
+templ Page(tests []store.MLTestMessage, classifierConfigured bool) {
+	<div class="page-header enter">
+		<div class="eyebrow">ML-Klassifikator</div>
+		<h1>Manueller Test</h1>
+		<p class="meta">
+			Nachricht eintippen → das Modell klassifiziert sie. Danach bewerten:
+			passt, oder das richtige Label hinterlegen. Bewertete Einträge fließen
+			als Trainingsdaten in die nächste Modell-Version.
+		</p>
+	</div>
+	<div class="ml-test-form enter">
+		if classifierConfigured {
+			<form hx-post="/ml-test/run" hx-target="#mltest-list" hx-select="#mltest-list" hx-swap="outerHTML" hx-on::after-request="if(event.detail.successful) this.reset()">
+				<textarea name="message" rows="2" required placeholder="z.B. „muss mi heit obmeldn ❌“ oder „bin doch dabei 🍻“"></textarea>
+				<button type="submit" class="btn-primary">Klassifizieren</button>
+			</form>
+		} else {
+			<div class="trace-empty">
+				<span class="te-glyph">🔌</span>
+				<p>Kein classifier-service konfiguriert (CLASSIFIER_URL fehlt).</p>
+			</div>
+		}
+	</div>
+	@List(tests)
+}
+
+templ List(tests []store.MLTestMessage) {
+	<div id="mltest-list" class="ml-list enter">
+		if len(tests) == 0 {
+			<div class="trace-empty">
+				<span class="te-glyph">🧪</span>
+				<p>Noch keine Testfälle. Oben eine Nachricht eintippen.</p>
+			</div>
+		} else {
+			<div class="ml-rows">
+				for _, t := range tests {
+					@Row(t)
+				}
+			</div>
+		}
+	</div>
+}
+
+templ Row(t store.MLTestMessage) {
+	<div class={ "ml-row", templ.KV("ml-row-verified", isCorrect(t)), templ.KV("ml-row-disagree", isWrong(t)) } id={ rowID(t.ID) }>
+		<div class="ml-row-head">
+			<span class="ml-time">{ t.CreatedAt.Format("02.01. 15:04") }</span>
+			<span class="ml-agree">{ statusText(t) }</span>
+		</div>
+		<div class="ml-msg">{ t.Message }</div>
+		<div class="ml-labels">
+			<span class="ml-source">Modell</span>
+			<span class={ "ml-badge", "ml-" + t.ModelLabel }>{ labelText(t.ModelLabel) }</span>
+			<span class="ml-conf">{ fmt.Sprintf("%.0f %%", t.ModelConfidence*100) }</span>
+			if t.ExpectedLabel != nil && *t.ExpectedLabel != t.ModelLabel {
+				<span class="ml-source">richtig wäre</span>
+				<span class={ "ml-badge", "ml-" + *t.ExpectedLabel }>{ labelText(*t.ExpectedLabel) }</span>
+			}
+		</div>
+		if t.ExpectedLabel == nil {
+			<div class="ml-verify">
+				<button type="button" class="ml-verify-btn ml-true" hx-post={ judgeHref(t.ID, t.ModelLabel) } hx-target={ "#" + rowID(t.ID) } hx-swap="outerHTML">✓ Passt</button>
+				<span class="ml-source">falsch — richtig ist:</span>
+				for _, l := range []string{"true", "false", "invalid"} {
+					if l != t.ModelLabel {
+						<button type="button" class={ "ml-verify-btn", "ml-" + l } hx-post={ judgeHref(t.ID, l) } hx-target={ "#" + rowID(t.ID) } hx-swap="outerHTML">{ labelText(l) }</button>
+					}
+				}
+			</div>
+		}
+	</div>
+}
+
+func rowID(id int64) string { return "mltest-row-" + strconv.FormatInt(id, 10) }
+
+func judgeHref(id int64, label string) string {
+	return "/ml-test/judge/" + strconv.FormatInt(id, 10) + "?label=" + label
+}
+
+func isCorrect(t store.MLTestMessage) bool {
+	return t.ExpectedLabel != nil && *t.ExpectedLabel == t.ModelLabel
+}
+
+func isWrong(t store.MLTestMessage) bool {
+	return t.ExpectedLabel != nil && *t.ExpectedLabel != t.ModelLabel
+}
+
+func statusText(t store.MLTestMessage) string {
+	switch {
+	case t.ExpectedLabel == nil:
+		return "offen — bitte bewerten"
+	case *t.ExpectedLabel == t.ModelLabel:
+		return "✓ Modell lag richtig"
+	default:
+		return "✗ Modell lag falsch"
+	}
+}
+
+func labelText(l string) string {
+	switch l {
+	case "true":
+		return "Zusage"
+	case "false":
+		return "Absage"
+	case "invalid":
+		return "invalid"
+	default:
+		return "—"
+	}
+}

@@ -60,6 +60,23 @@ type Store interface {
 	// VerifyMLMessage markiert einen Eintrag als handgeprüft; correctedLabel
 	// ist das korrekte Label (nil = Gemini-Label war korrekt).
 	VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) error
+
+	// Manueller ML-Test (ml_test_messages): über das UI eingetippte Nachrichten,
+	// vom classifier-service klassifiziert und per Hand bewertet.
+	InsertMLTest(ctx context.Context, message, modelLabel string, confidence float64) (int64, error)
+	ListMLTests(ctx context.Context, limit int) ([]MLTestMessage, error)
+	// JudgeMLTest hinterlegt das erwartete Label ("passt" = Modell-Label).
+	JudgeMLTest(ctx context.Context, id int64, expectedLabel string) error
+}
+
+// MLTestMessage ist ein manuell eingegebener Testfall aus dem Admin-UI.
+type MLTestMessage struct {
+	ID              int64
+	CreatedAt       time.Time
+	Message         string
+	ModelLabel      string
+	ModelConfidence float64
+	ExpectedLabel   *string // nil = noch nicht bewertet
 }
 
 // MLMessage ist ein Eintrag aus ml_messages (Shadow-Modus-Protokoll des Bots).
