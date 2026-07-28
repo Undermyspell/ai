@@ -1,0 +1,182 @@
+package mlshadow
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
+)
+
+// VM bündelt alles, was die Shadow-Seite rendert.
+type VM struct {
+	Stats        store.MLShadowStats
+	Messages     []store.MLMessage
+	OnlyDisagree bool
+}
+
+templ Page(vm VM) {
+	<div class="page-header enter">
+		<div class="eyebrow">ML-Klassifikator</div>
+		<h1>Shadow-Modus</h1>
+		<p class="meta">
+			Das eigene Modell klassifiziert jede Nachricht parallel zu Gemini.
+			Abweichungen prüfen und das korrekte Label setzen — geprüfte Einträge
+			werden Trainings- und Testdaten.
+		</p>
+	</div>
+	@Stats(vm.Stats)
+	@List(vm)
+}
+
+templ Stats(st store.MLShadowStats) {
+	<div class="ml-stats enter">
+		<div class="ml-stat">
+			<span class="ml-stat-num">{ strconv.Itoa(st.Total) }</span>
+			<span class="ml-stat-label">Nachrichten</span>
+		</div>
+		<div class="ml-stat">
+			<span class="ml-stat-num">{ strconv.Itoa(st.WithModel) }</span>
+			<span class="ml-stat-label">Modell-Antworten</span>
+		</div>
+		<div class="ml-stat">
+			<span class="ml-stat-num">{ agreementPct(st) }</span>
+			<span class="ml-stat-label">Übereinstimmung</span>
+		</div>
+		for _, ls := range st.PerLabel {
+			<div class="ml-stat ml-stat-sub">
+				<span class="ml-stat-num">{ labelPct(ls) }</span>
+				<span class="ml-stat-label"><span class={ "ml-badge", "ml-" + ls.Label }>{ labelText(ls.Label) }</span> { fmt.Sprintf("%d/%d", ls.Agree, ls.Total) }</span>
+			</div>
+		}
+	</div>
+}
+
+templ List(vm VM) {
+	<div id="ml-list" class="ml-list enter">
+		<div class="ml-toolbar">
+			if vm.OnlyDisagree {
+				<button type="button" class="btn-secondary btn-sm" hx-get="/ml-shadow?filter=alle" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">Alle anzeigen</button>
+				<span class="ml-filter-hint">Nur Abweichungen &amp; Modell-Ausfälle</span>
+			} else {
+				<button type="button" class="btn-secondary btn-sm" hx-get="/ml-shadow?filter=disagree" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">Nur Abweichungen</button>
+			}
+			<button type="button" class="btn-secondary btn-sm" hx-get="/ml-shadow" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">↻ Aktualisieren</button>
+		</div>
+		if len(vm.Messages) == 0 {
+			<div class="trace-empty">
+				<span class="te-glyph">🤖</span>
+				<p>Noch keine Shadow-Einträge. Sobald der Bot donnerstags Nachrichten klassifiziert, erscheinen sie hier.</p>
+			</div>
+		} else {
+			<div class="ml-rows">
+				for _, m := range vm.Messages {
+					@Row(m)
+				}
+			</div>
+		}
+	</div>
+}
+
+templ Row(m store.MLMessage) {
+	<div class={ "ml-row", templ.KV("ml-row-disagree", isDisagree(m)), templ.KV("ml-row-verified", m.Verified) } id={ rowID(m.ID) }>
+		<div class="ml-row-head">
+			<span class="ml-time">{ m.CreatedAt.Format("02.01. 15:04") }</span>
+			<span class="ml-user">{ orDash(m.UserName) }</span>
+			<span class="ml-agree">{ agreeGlyph(m) }</span>
+		</div>
+		<div class="ml-msg">{ m.Message }</div>
+		<div class="ml-labels">
+			<span class="ml-source">Gemini</span>
+			<span class={ "ml-badge", "ml-" + m.GeminiLabel }>{ labelText(m.GeminiLabel) }</span>
+			<span class="ml-source">Modell</span>
+			if m.ModelLabel != nil {
+				<span class={ "ml-badge", "ml-" + *m.ModelLabel }>{ labelText(*m.ModelLabel) }</span>
+				if m.ModelConfidence != nil {
+					<span class="ml-conf">{ fmt.Sprintf("%.0f %%", *m.ModelConfidence*100) }</span>
+				}
+			} else {
+				<span class="ml-badge ml-missing">keine Antwort</span>
+			}
+		</div>
+		<div class="ml-verify">
+			if m.Verified {
+				<span class="ml-verified-tag">
+					✔ geprüft:
+					<span class={ "ml-badge", "ml-" + effectiveLabel(m) }>{ labelText(effectiveLabel(m)) }</span>
+				</span>
+			} else {
+				<span class="ml-source">Korrektes Label:</span>
+				for _, l := range []string{"true", "false", "invalid"} {
+					<button
+						type="button"
+						class={ "ml-verify-btn", "ml-" + l }
+						hx-post={ verifyHref(m.ID, l) }
+						hx-target={ "#" + rowID(m.ID) }
+						hx-swap="outerHTML"
+					>{ labelText(l) }</button>
+				}
+			}
+		</div>
+	</div>
+}
+
+func rowID(id int64) string { return "ml-row-" + strconv.FormatInt(id, 10) }
+
+func verifyHref(id int64, label string) string {
+	return "/ml-shadow/verify/" + strconv.FormatInt(id, 10) + "?label=" + label
+}
+
+func isDisagree(m store.MLMessage) bool { return m.Agree == nil || !*m.Agree }
+
+func agreeGlyph(m store.MLMessage) string {
+	switch {
+	case m.Agree == nil:
+		return "⚠ Modell ohne Antwort"
+	case *m.Agree:
+		return "✓ einig"
+	default:
+		return "✗ Abweichung"
+	}
+}
+
+// effectiveLabel: nach Prüfung gilt das korrigierte Label, sonst Gemini.
+func effectiveLabel(m store.MLMessage) string {
+	if m.CorrectedLabel != nil {
+		return *m.CorrectedLabel
+	}
+	return m.GeminiLabel
+}
+
+func labelText(l string) string {
+	switch l {
+	case "true":
+		return "Zusage"
+	case "false":
+		return "Absage"
+	case "invalid":
+		return "invalid"
+	default:
+		return "—"
+	}
+}
+
+func agreementPct(st store.MLShadowStats) string {
+	if st.WithModel == 0 {
+		return "—"
+	}
+	return fmt.Sprintf("%.0f %%", float64(st.Agree)/float64(st.WithModel)*100)
+}
+
+func labelPct(ls store.MLLabelStat) string {
+	if ls.Total == 0 {
+		return "—"
+	}
+	return fmt.Sprintf("%.0f %%", float64(ls.Agree)/float64(ls.Total)*100)
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "—"
+	}
+	return s
+}

@@ -53,6 +53,43 @@ type Store interface {
 	// GetTrace die volle Aufzeichnung inkl. Schritte + Roh-Payload.
 	ListTraces(ctx context.Context, limit int) ([]Trace, error)
 	GetTrace(ctx context.Context, id int64) (*Trace, error)
+
+	// ML-Shadow-Modus (ml_messages): Gemini- vs. eigenes Modell-Label.
+	ListMLMessages(ctx context.Context, onlyDisagree bool, limit int) ([]MLMessage, error)
+	MLShadowStats(ctx context.Context) (MLShadowStats, error)
+	// VerifyMLMessage markiert einen Eintrag als handgeprüft; correctedLabel
+	// ist das korrekte Label (nil = Gemini-Label war korrekt).
+	VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) error
+}
+
+// MLMessage ist ein Eintrag aus ml_messages (Shadow-Modus-Protokoll des Bots).
+type MLMessage struct {
+	ID              int64
+	CreatedAt       time.Time
+	UserID          string
+	UserName        string
+	Message         string
+	GeminiLabel     string
+	ModelLabel      *string // nil = classifier-service war nicht erreichbar
+	ModelConfidence *float64
+	Agree           *bool
+	Verified        bool
+	CorrectedLabel  *string
+}
+
+// MLLabelStat aggregiert Übereinstimmung je Gemini-Label.
+type MLLabelStat struct {
+	Label string
+	Total int
+	Agree int
+}
+
+// MLShadowStats fasst den Stand des Shadow-Modus zusammen.
+type MLShadowStats struct {
+	Total     int // alle protokollierten Nachrichten
+	WithModel int // davon mit Modell-Antwort
+	Agree     int // davon Übereinstimmung Gemini == Modell
+	PerLabel  []MLLabelStat
 }
 
 // Knoten-IDs des festen Bot-Flow-Graphen (Vertrag mit dem whatsapp-bot).

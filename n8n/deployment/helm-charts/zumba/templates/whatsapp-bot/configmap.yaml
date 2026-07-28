@@ -18,6 +18,10 @@ data:
   EVOLUTION_URL: http://{{ include "zumba.fullname" . }}-evolution-api:{{ .Values.evolutionApi.service.port }}
   EVOLUTION_INSTANCE: {{ .Values.whatsappBot.env.EVOLUTION_INSTANCE | quote }}
   TZ: {{ .Values.whatsappBot.env.TZ | quote }}
+  {{- if .Values.classifier.enabled }}
+  # ML-Shadow-Modus: eigenes Modell klassifiziert parallel zu Gemini (ml_messages)
+  CLASSIFIER_URL: http://{{ include "zumba.fullname" . }}-classifier:{{ .Values.classifier.service.port }}
+  {{- end }}
   # ZUMBA_GROUP_JID + PREVIEW_JID kommen aus dem SealedSecret whatsapp-bot-secrets
   # (statische WhatsApp-Nummern werden als Secret behandelt, nicht im ConfigMap).
 {{- end }}

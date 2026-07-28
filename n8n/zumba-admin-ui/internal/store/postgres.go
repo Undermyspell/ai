@@ -346,3 +346,76 @@ func (s *Postgres) GetTrace(ctx context.Context, id int64) (*Trace, error) {
 	}
 	return &t, nil
 }
+
+// --- ML-Shadow-Modus (ml_messages) ---
+
+func (s *Postgres) ListMLMessages(ctx context.Context, onlyDisagree bool, limit int) ([]MLMessage, error) {
+	q := `
+		SELECT id, created_at, COALESCE(user_id,''), COALESCE(user_name,''), message,
+		       COALESCE(gemini_label,''), model_label, model_confidence, agree,
+		       verified, corrected_label
+		FROM ml_messages`
+	if onlyDisagree {
+		// Disagreement = Modell widerspricht ODER Modell hat nicht geantwortet.
+		q += ` WHERE agree IS DISTINCT FROM true`
+	}
+	q += ` ORDER BY created_at DESC LIMIT $1`
+	rows, err := s.db.QueryContext(ctx, q, limit)
+	if err != nil {
+		return nil, fmt.Errorf("ListMLMessages: %w", err)
+	}
+	defer rows.Close()
+
+	var out []MLMessage
+	for rows.Next() {
+		var m MLMessage
+		if err := rows.Scan(&m.ID, &m.CreatedAt, &m.UserID, &m.UserName, &m.Message,
+			&m.GeminiLabel, &m.ModelLabel, &m.ModelConfidence, &m.Agree,
+			&m.Verified, &m.CorrectedLabel); err != nil {
+			return nil, fmt.Errorf("ListMLMessages scan: %w", err)
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
+func (s *Postgres) MLShadowStats(ctx context.Context) (MLShadowStats, error) {
+	var st MLShadowStats
+	const totals = `
+		SELECT count(*),
+		       count(*) FILTER (WHERE model_label IS NOT NULL),
+		       count(*) FILTER (WHERE agree)
+		FROM ml_messages`
+	if err := s.db.QueryRowContext(ctx, totals).Scan(&st.Total, &st.WithModel, &st.Agree); err != nil {
+		return st, fmt.Errorf("MLShadowStats: %w", err)
+	}
+	const perLabel = `
+		SELECT COALESCE(gemini_label,''), count(*), count(*) FILTER (WHERE agree)
+		FROM ml_messages
+		GROUP BY 1 ORDER BY 1`
+	rows, err := s.db.QueryContext(ctx, perLabel)
+	if err != nil {
+		return st, fmt.Errorf("MLShadowStats per label: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var ls MLLabelStat
+		if err := rows.Scan(&ls.Label, &ls.Total, &ls.Agree); err != nil {
+			return st, fmt.Errorf("MLShadowStats scan: %w", err)
+		}
+		st.PerLabel = append(st.PerLabel, ls)
+	}
+	return st, rows.Err()
+}
+
+func (s *Postgres) VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) error {
+	const q = `UPDATE ml_messages SET verified = true, corrected_label = $2 WHERE id = $1`
+	res, err := s.db.ExecContext(ctx, q, id, correctedLabel)
+	if err != nil {
+		return fmt.Errorf("VerifyMLMessage: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("VerifyMLMessage: Eintrag %d nicht gefunden", id)
+	}
+	return nil
+}

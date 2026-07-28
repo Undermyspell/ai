@@ -127,3 +127,19 @@ admin-ui selector labels
 {{ include "zumba.selectorLabels" . }}
 app.kubernetes.io/component: admin-ui
 {{- end }}
+
+{{/*
+classifier specific labels
+*/}}
+{{- define "zumba.classifier.labels" -}}
+{{ include "zumba.labels" . }}
+app.kubernetes.io/component: classifier
+{{- end }}
+
+{{/*
+classifier selector labels
+*/}}
+{{- define "zumba.classifier.selectorLabels" -}}
+{{ include "zumba.selectorLabels" . }}
+app.kubernetes.io/component: classifier
+{{- end }}

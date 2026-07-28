@@ -320,3 +320,76 @@ func computeStreakMock(thursdaysDesc []time.Time, absenceDates []time.Time) int 
 	}
 	return count
 }
+
+// --- ML-Shadow-Modus: Beispieldaten für den Mock-Betrieb ---
+
+func sampleMLMessages() []MLMessage {
+	s := func(v string) *string { return &v }
+	f := func(v float64) *float64 { return &v }
+	b := func(v bool) *bool { return &v }
+	base := time.Date(2026, 7, 23, 18, 30, 0, 0, time.Local)
+	return []MLMessage{
+		{ID: 5, CreatedAt: base.Add(90 * time.Minute), UserID: "u03", UserName: "Sepp",
+			Message: "Muss mi heut abmelden ❌", GeminiLabel: "false",
+			ModelLabel: s("false"), ModelConfidence: f(0.97), Agree: b(true)},
+		{ID: 4, CreatedAt: base.Add(60 * time.Minute), UserID: "u07", UserName: "Tobi",
+			Message: "Bei mir wirds bissi später ✌🏻", GeminiLabel: "true",
+			ModelLabel: s("invalid"), ModelConfidence: f(0.48), Agree: b(false)},
+		{ID: 3, CreatedAt: base.Add(40 * time.Minute), UserID: "u01", UserName: "Max",
+			Message: "Schau ma moi wie's Wetter wird", GeminiLabel: "invalid",
+			ModelLabel: s("invalid"), ModelConfidence: f(0.88), Agree: b(true),
+			Verified: true},
+		{ID: 2, CreatedAt: base.Add(20 * time.Minute), UserID: "u05", UserName: "Flo",
+			Message: "Gruzefix.... Nullinger", GeminiLabel: "false",
+			ModelLabel: s("invalid"), ModelConfidence: f(0.61), Agree: b(false),
+			Verified: true, CorrectedLabel: s("false")},
+		{ID: 1, CreatedAt: base, UserID: "u02", UserName: "Basti",
+			Message: "I bin dabei heit 🍻", GeminiLabel: "true",
+			ModelLabel: nil, ModelConfidence: nil, Agree: nil},
+	}
+}
+
+func (m *Mock) ListMLMessages(_ context.Context, onlyDisagree bool, limit int) ([]MLMessage, error) {
+	var out []MLMessage
+	for _, msg := range sampleMLMessages() {
+		if onlyDisagree && msg.Agree != nil && *msg.Agree {
+			continue
+		}
+		out = append(out, msg)
+	}
+	if limit > 0 && limit < len(out) {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (m *Mock) MLShadowStats(_ context.Context) (MLShadowStats, error) {
+	st := MLShadowStats{}
+	per := map[string]*MLLabelStat{}
+	for _, msg := range sampleMLMessages() {
+		st.Total++
+		if msg.ModelLabel != nil {
+			st.WithModel++
+		}
+		if msg.Agree != nil && *msg.Agree {
+			st.Agree++
+		}
+		ls, ok := per[msg.GeminiLabel]
+		if !ok {
+			ls = &MLLabelStat{Label: msg.GeminiLabel}
+			per[msg.GeminiLabel] = ls
+		}
+		ls.Total++
+		if msg.Agree != nil && *msg.Agree {
+			ls.Agree++
+		}
+	}
+	for _, label := range []string{"false", "invalid", "true"} {
+		if ls, ok := per[label]; ok {
+			st.PerLabel = append(st.PerLabel, *ls)
+		}
+	}
+	return st, nil
+}
+
+func (m *Mock) VerifyMLMessage(_ context.Context, _ int64, _ *string) error { return nil }

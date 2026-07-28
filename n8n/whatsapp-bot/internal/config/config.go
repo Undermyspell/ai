@@ -25,6 +25,10 @@ type Config struct {
 	// die erzeugte Nachricht schickt (statt an die Gruppe). Leer = Vorschau aus.
 	PreviewJID string
 
+	// ClassifierURL ist die Basis-URL des classifier-service für den
+	// ML-Shadow-Modus (z.B. http://zumba-classifier:8080). Leer = Shadow aus.
+	ClassifierURL string
+
 	// Location steuert die Donnerstag-Prüfung und das Tagesdatum für die DB-Writes.
 	Location *time.Location
 }
@@ -102,9 +106,10 @@ func Load() (Config, error) {
 			Mode: OutputMode(getenv("OUTPUT_MODE", string(OutputEvolution))),
 			File: getenv("OUTPUT_FILE", "output.txt"),
 		},
-		GroupJID:   getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
-		PreviewJID: os.Getenv("PREVIEW_JID"),
-		Location:   loc,
+		GroupJID:      getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
+		PreviewJID:    os.Getenv("PREVIEW_JID"),
+		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
+		Location:      loc,
 	}
 
 	switch cfg.Output.Mode {

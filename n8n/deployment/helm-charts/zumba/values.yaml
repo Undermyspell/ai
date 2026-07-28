@@ -193,6 +193,28 @@ whatsappBot:
     schedule: "0 21 * * 4"  # Donnerstag 21:00
     timeZone: Europe/Berlin
 
+# classifier: eigenes ML-Modell (TF-IDF + LogReg, pure Go) im Shadow-Modus.
+# Der whatsapp-bot bekommt bei enabled=true automatisch CLASSIFIER_URL gesetzt
+# und protokolliert Gemini- vs. Modell-Label in ml_messages.
+classifier:
+  enabled: false  # Auf true setzen, sobald ein Image gebaut/importiert wurde
+  image:
+    repository: zumba-classifier
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
+
+  service:
+    type: ClusterIP
+    port: 8080
+
 # admin-ui: Go-Service zur Verwaltung der Stammtisch-Daten + Bot-Test-Seite
 adminUi:
   enabled: false

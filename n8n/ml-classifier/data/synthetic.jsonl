@@ -1,0 +1,973 @@
+{"text": "Muss mich für heute leider abmelden zu viel Arbeit", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute leider nicht dabei, Überstunden ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Schaffe es heute nicht, sorry 😔", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute raus, Spätschicht 😬", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Kann heute leider nicht, viel Spaß euch 🍻", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich ab für heute", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bei mir wird es heute nichts ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Heute ohne mich, bin krank 🤒", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin erkältet, bleib zuhause ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Liege flach mit Fieber, komme nicht", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe Kopfschmerzen, sage ab ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Magen spielt verrückt, ich bleib daheim 😬", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss leider passen heute 🤞", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Fällt bei mir heute flach ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Diese Woche bin ich nicht dabei ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin raus", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "heute ohne mich", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "wird nix heute bei mir ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sorry, klappt heute nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss absagen, Kind ist krank 😅", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Kleiner hat Fieber, ich bleibe zuhause 😔", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Babysitten angesagt, komme nicht 🤷", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Meine Frau arbeitet, ich hüte die Kinder 🍻", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin im Urlaub, bis in zwei Wochen ❌🇪🇸", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich ab, sitze gleich im Flieger ✈️", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin unterwegs, diese Woche ohne mich 🇭🇷", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin bis Sonntag weg, sage ab", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe heute die Geburtstagsfeier von meiner Mutter🎂", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Familienfeier, ich kann nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Schwiegereltern sind da, muss absagen 😬", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Besuch bekommen, heute nichts bei mir ✌️", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss zum Training, bin nicht dabei ⚽❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Vereinssitzung heute, sage ab ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe Fußball, komme nicht ❌⚽", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin bei der Feuerwehrübung, ohne mich heute", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Dem Wetter traue ich nicht, ich sage ab ❌🌧️", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bei dem Regen bleibe ich daheim ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zu kalt heute, bin raus 🥶", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe kein Auto heute, komme nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Mein Auto ist in der Werkstatt, ich muss absagen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Finde keinen Fahrer, wird nichts bei mir ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute leider verhindert ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss leider absagen, kurzfristig was dazwischen gekommen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Es kommt was dazwischen, ich bin heute raus ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Termin wurde verschoben, ich sage ab vielleicht wird es später doch noch was", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss länger arbeiten, sage erst mal ab ❌ wenn es schnell geht komme ich noch nach", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sitze noch im Büro, melde mich ab ❌ vielleicht schaffe ich es auf ein spätes Bier", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin noch auf der Baustelle, komme nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Das Meeting zieht sich, ich sage ab ❌ eventuell komme ich danach noch kurz vorbei", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin auf Montage diese Woche ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin geschäftlich unterwegs, ohne mich ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "sorry leute heute klappt es nicht bei mir", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "muss heute leider absagen", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "kann leider nicht kommen heute", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich vorsichtshalber ab ❌ Vielleicht schaffe ich es später doch noch", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sage erst mal ab, eventuell komme ich später noch dazu 🤞", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin erst mal raus, wenn ich es früher schaffe komme ich noch ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich ab, falls es doch klappt komme ich später ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sicherheitshalber ab, kann sein dass ich später noch aufkreuze ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich sage lieber ab, später vielleicht noch auf ein Bier 🍺", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Streiche mich heute bitte raus ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ohne mich diese Woche, nächste bin ich wieder da ✌️", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Heute nicht, nächste Woche wieder ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Diesmal bin ich nicht dabei, viel Spaß 🍻🍻", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich kneife heute, sorry 🤷", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich leider ausklinken ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zähle mich heute nicht mit ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nimm mich bitte raus für heute ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bitte ohne mich planen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich falle heute aus ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe es total vergessen mich abzumelden, bin nicht da", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sorry für die späte Absage, komme heute nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zu spät gemerkt, ich bin heute nicht dabei 😬", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Schaffe es zeitlich einfach nicht heute ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe noch zu viel zu tun, erst mal ab ❌ falls ich fertig werde komme ich später", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin komplett im Stress, sage ab 😅", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss noch die Steuererklärung fertig machen, ohne mich ✌️", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Renovierung geht vor, ich bin raus ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Umzug am Wochenende, heute muss ich packen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin beim Arzt heute Abend, komme nicht 🙈", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe einen Zahnarzttermin, sage ab ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Physiotherapie heute, melde mich ab evtl schaue ich danach noch vorbei 🫤", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Rücken macht Probleme, bleibe liegen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Knie tut weh, ich bleibe daheim 😬", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute einfach zu platt, sage ab ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nach der Schicht habe ich keine Kraft mehr, ohne mich ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin müde wie ein Sack, heute nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Heute lieber Couch als Stammtisch ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bleibe heute lieber daheim 🍺", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Keine Zeit heute, sorry 🍺", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute Abend verplant, melde mich ab ❌ später wird es vielleicht doch noch was", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doppelt gebucht, ich muss absagen 🤞", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Konzert heute, bin nicht dabei 🎸❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe Karten fürs Kino, erst mal ohne mich ❌ danach komme ich vielleicht noch dazu", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Elternabend heute, komme nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss zur Hochzeitsfeier, sage ab ❌💒", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Beerdigung heute, bin nicht da", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Habe Nachtschicht, geht nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bereitschaft diese Woche, ich bin raus ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin auf Abruf, deswegen heute ohne mich", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "sorry heutte wird das nix bei mir", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "muss mich abmleden für heute 😔", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "kann heute nicht dabei sein, tut mir leid ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich für heute entschuldigen, bin verhindert", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Heute leider nicht möglich bei mir ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin gerade erst heimgekommen, sage ab ❌ eventuell raffe ich mich später noch auf", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Stecke im Stau, melde mich ab ❌ wenn es sich auflöst komme ich vielleicht noch", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zug hat Verspätung, ich schaffe es nicht ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin noch in München, wird nichts ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss meinen Vater ins Krankenhaus fahren, sage ab ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Meine Mutter braucht Hilfe, ich bin erst mal raus ❌ eventuell komme ich später noch", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Hund ist krank, muss zum Tierarzt🐶", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Handwerker kommt heute Abend, ohne mich ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Warte noch auf eine Lieferung, sage vorsichtshalber ab danach schaue ich eventuell noch rein 😅", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Heizung ist kaputt, ich muss daheim bleiben ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Die Waschmaschine ist ausgelaufen, ich sage ab 😩", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin beim Umzug von meinem Bruder, ohne mich 🤞", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss noch fürs Studium lernen, bin raus ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Prüfung morgen, heute ohne mich ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute nicht dabei, melde mich nächste Woche wieder ✌️", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heut leider ned da ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss mi heut abmelden, zu viel Arbeit ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Heut wird des nix bei mir 😔", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kann heut ned, sorry 🤷", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut ned dabei, viel Spaß eich 🍻", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi ab für heut ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Heut ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut raus, muss no arbeiten ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Schaffs heut ned, bin no in der Firma ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin no ned dahoam, wird nix ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Heut geht bei mir gar nix 🤷", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss heut leider passen ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bei mir wirds heut nix, bin krank 🤒", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab a Erkältung, bleib daheim ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Kopfweh, meld mi ab ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Mir gehts ned gut, heut ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kloaner is krank, ich bleib da", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss auf die Kinder aufpassen, bin heut ned dabei 🙈", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Frau hat Spätschicht, ich hüt die Kinder ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin im Urlaub, meld mi ab🇮🇹", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin unterwegs, heut ned da ✈️", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin bis Sonntag weg, ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Geburtstag von meiner Schwester, sag ab🎂", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Familienfeier heut, bin ned dabei ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Besuch da, meld mi ab wenn die früher gehen komm i vielleicht no 😔", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss zum Training, heut ohne mi ⚽", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Vereinsabend, bin raus ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss beim Verein helfen, sag ab ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bei dem Wetter bleib i daheim ❌🌧️", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Zu kalt heut, bin ned dabei 🥶", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab kein Auto heut, sag ab ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Find kein Fahrer, wird nix 🍺", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss heut länger schaffen, meld mi erstmal ab evtl komm i später no ✌️", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin no auf der Baustell, sag ab ❌ vielleicht schaff ichs später no", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Spätschicht, geht ned 🤞", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Nachtschicht, bin heut raus ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sorry, heut klappts ned bei mir", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "meld mi ab, evtl schaff ichs später no", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sag erstmal ab, vielleicht komm i später no dazu ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi vorsichtshalber ab eventuell bin i später no kurz da 🍻", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin erstmal raus, wenn i früher fertig werd schau i no vorbei ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sag ab, vielleicht spring i später no dazu ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Streich mi heut bitte raus", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ohne mi diese Woch ❌ nächste bin i wieder da", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Heut ned, nächste Woch wieder ✌️", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Diesmal bin i ned dabei, viel Spaß 🍻🍻🍻", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss mi leider ausklinken heut ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Zähl mi heut ned mit", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Nimm mi bitte raus ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bitte ohne mi planen heut ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "I fall heut aus ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab total vergessen mi abzumelden, bin heut ned da ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sorry für die späte Absag, bin heut ned dabei 😔", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Schaffs zeitlich ned heut", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab no zu viel zum tun, meld mi ab falls i fertig werd komm i später 😔", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin voll im Stress, sag erstmal ab vielleicht wirds später doch no was", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss no was erledigen, erstmal ohne mi ❌ evtl bin i später no kurz da", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin beim Arzt heut Abend, meld mi ab ❌ evtl schau i danach no vorbei", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab an Zahnarzttermin, sag ab ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Rücken zwickt, bleib daheim ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut einfach zu platt ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Nach der Schicht hab i kei Kraft mehr, ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin hundemüd, heut ned ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bleib heut lieber daheim aufm Sofa", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab heut koa Zeit", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut verplant, sag erstmal ab ❌ später vielleicht no auf a Bier", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Konzert heut, bin ned dabei 🎸", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Elternabend heut, komm ned ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss auf a Hochzeit, sag ab ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab Bereitschaft diese Woch, bin raus", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Steh im Stau, sag lieber ab wenns weitergeht komm i vielleicht no", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Zug hat Verspätung, komm heut ned mehr 😬", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin no in München, wird nix mehr ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss meinen Vater fahren, sag ab", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hund muss zum Tierarzt, heut ohne mi ❌🐶", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Handwerker kommt heut, bin ned dabei ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Heizung is hin, muss daheim bleiben ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin beim Umzug helfen, sag ab 🤷", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss no lernen, heut ohne mi", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "bin heut ned dabei meld mi nächste woch wieder", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "heut wird nix sorry 🤞", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "kann heut leider ned ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "muss mi heut leider abmelden ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "bin heut raus", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "sag heut ab, packs ned 🤞", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "geht sich heut ned aus bei mir", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut ned da, hab an Termin 🤞", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wird heut leider nix, bin verhindert ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab a Fortbildung, bin heut ned dabei ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss auf Montage, diese Woch ohne mi", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "I muss mi heit obmeldn 😅", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit ned, hob no Arbat ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Heit is bei mir nix, sog ab ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit ned dabei ✌️", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass mi obmeldn, bin no in da Arbat ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Gäh, heit wird des nix bei mir ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I woaß ned obs heit hinhaut, i sog lieber ab ✌️", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Heit ohne mi, vui Spaß beim Bier 🍻", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I mog heit nimma, bin fix und fertig", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin heit z'müd, i sog ab ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I hob Kopfweh, bleib dahoam ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin krank, heit geht gar nix ❌🤒", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Mia is ned guad, i kimm ned ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Da Kloane is krank, i bleib dahoam ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass auf d'Kinder schaun, heit ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin im Urlaub, obmeldn🇮🇹☀️", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin unterwegs, heit ned do ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin bis Sunnda weg, sog ab 🫤", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob a Familienfeier, i kimm ned ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Geburtstag von da Oma, heit ohne mi ❌🎂", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob Bsuach dahoam, i meld mi ob ❌ wenn de früher gehng kimm i vielleicht no", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass zum Training, heit is nix ⚽", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob Vereinsobend, i bin raus ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass beim Verein helfa, obmeldn ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bei dem Sauwetter bleib i dahoam ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza regnets a no, i sog ab ❌🌧️", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Zvui koid heit, i kimm ned 🥶", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob koa Auto heit, geht ned 🍻", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Find koan Fahrer, heit wird nix 🤞", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass länger schaffa, sog erstmoi ab ❌ vielleicht kimm i später no", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin no aufm Bau, i meld mi ob evtl schaff is später no", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob Spätschicht, geht si ned aus", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob Nachtschicht, heit ohne mi", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Sorry, heit haut des ned hi bei mir", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi vorsichtshoiba ob ❌ vielleicht kimm i später no", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Sog erstmal ab, kann sei dass i später no auftauch", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi ob, wenn i früher fertig bin schau i no vorbei ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Sog ab, evtl kimm i später no auf a Hoibe 🍺", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Streich mi heit bitte ausse ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ohne mi heit, nächste Wocha bin i wieder do ✌️", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Heit ned, nächste Wocha wieda", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Diesmoi bin i ned dabei, vui Spaß eich 🍻🍻", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Zähl mi heit ned dazua ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Nimm mi bitte ausse für heit ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I foi heit aus", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob ganz vergessn mi obzumeldn, bin ned do 😬", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Sorry für die spate Obsog, i kimm heit ned ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Schaff des zeitlich ned heit ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob no zvui zum doa, sog ab wenn i fertig wead kimm i vielleicht no 🍻", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin voi im Stress, i sog erstmoi ab ❌ später wirds vielleicht doch no was", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass no was erledign, erstmoi ohne mi ❌ evtl bin i später no kurz do", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin beim Doktor heit Obend, sog ab evtl schau i danach no eine", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob an Zahnarzttermin, obmeldn ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Da Ruck'n zwickt, i bleib liegn ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob heit koan Bock aufs Weggeh, sog ab ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Nach da Schicht hob i koa Kraft mehr, ohne mi 🙈", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin hundsmiad, heit ned ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bleib heit liaba dahoam aufm Kanapee", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob heit koa Zeit ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin heit scho verplant, i obmeld mi ❌ vielleicht kimm i danach no auf oane", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob a Konzert, bin ned dabei 🎸", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Elternobend heit, i kimm ned", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass auf a Hochzeit, sog ab ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob Bereitschaft de Wocha, bin raus ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Steh im Stau, i sog ab wenns weidageht kimm i vielleicht no 🫤", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Da Zug hot Verspätung, i kimm heit nimma ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin no in Minga, wird nix mehr ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass mein Vadda zum Doktor fahrn, sog ab ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Da Hund muass zum Tierarzt, heit ohne mi 🐶", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Da Handwerker kimmt heit, i bin ned do ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "D'Heizung is hi, i muass dahoam bleibn ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hilf beim Umzug, sog ab ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass no lerna, heit ohne mi 😅", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "i bin heit ned dabei meld mi nächste wocha wieda", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "heit wird nix sorry ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "i kann heit ned, obmeldn 😅", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "muass mi heit obmeldn ✌️", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "i bin heit raus ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "geht si heit ned aus bei mir", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob an Termin, heit is nix", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wird heit leider nix, bin verhindert ✌️", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob a Fortbildung, heit ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muass auf Montage, de Wocha ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Fei heit kann i ned, tuad ma load", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I sog fei heit ab, hob wos anders vor ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Gäh, i muass leider absogn heit 😬", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Heit is nix mitm Stammtisch bei mir ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bring des heit ned zamm, sog ab ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Des geht si heit oanfach ned aus, ohne mi ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hob heit an andern Termin, i kimm ned", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ich muss mich für heute entschuldigen", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich leider entschuldigen für heute Abend", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich entschuldige mich für heute, schaffe es nicht", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bitte entschuldigt mich heute ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich heute entschuldigen, bin verhindert", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich muss mich entschuldigen, es wird heute nichts", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Entschuldigt mich bitte für heute Abend 🙏", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich für den heutigen Abend entschuldigen", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich möchte mich für heute entschuldigen, Termin dazwischen", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "muss mich für heute leider entschuldigen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sorry, muss mich entschuldigen heute", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich ebenfalls entschuldigen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Entschuldige mich hiermit für heute", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich muss mich heute ausnahmsweise entschuldigen", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich entschuldigen, komme nicht", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mi heut entschuldigen", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss mi a entschuldigen heut ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss mi leider entschuldigen, bin no in da Arbeit", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Entschuldigts mi heut bitte", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "muss mi heut a entschuldigen 😬", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss mi fürs heit entschuldign", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I mou mi heid entschuldign ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Entschuidigts mi heid, i ko ned", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I mou mi leider entschuidign heid obend", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "ich a ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "i a ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "ich dann auch ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich ebenfalls ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bei mir auch ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "ich leider auch ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "dito ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Dito, bin auch raus ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "same ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "bei mir a so ❌", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "i aa ned heid", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "bei mir wird's a nix heut ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ich schließ mich an ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich schließe mich der Absage an ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bei mir genauso, klappt heut nicht ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "geht mir a so, bin raus ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wir haben heute leider zu", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wir ham heut zu 😒", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bei uns is heut zu, wird nix", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Haben zu heute, sorry ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Laden hat heut zu bei mir, komm nicht weg ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Fehle heute unentschuldigt ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Heute unentschuldigt abwesend ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Unentschuldigt heut ❌ sorry Jungs", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Fällt bei mir heute aus", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Fällt heut flach bei mir ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Heut ohne mich, sorry ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wird heut nix bei mir ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Nix da heut bei mir, sorry", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut raus, entschuldigt mich", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Nein, heute klappt es bei mir nicht", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nein, bin heut nicht dabei", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Nee du, heut wird das nix bei mir", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Na, heid ned", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Naa, i ko heid ned", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Muss mich für heute abmelden, entschuldigt bitte ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich muss heute leider passen, entschuldigung", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Entschuldigung, heute ohne mich ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sorry Leute, muss mich für heut entschuldigen 🙏❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss heut entschuldigt fehlen", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heut entschuldigt ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Trag mich bitte als entschuldigt ein für heute", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich auch noch entschuldigen für heut abend ❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kurzfristig: muss mich entschuldigen ❌", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss mich schweren Herzens entschuldigen heut 🍻❌", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Entschuldigt mi, i bin heid ned dabei", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Meld mich vorsichtshalber ab, komm aber wahrscheinlich noch später", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich melde mich mal vorsichtshalber ab, vielleicht komme ich später dazu", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "meld mich vorsichtshalber mal ab, wahrscheinlich schau ich später vorbei", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Vorsichtshalber Absage von mir, evtl klappts später doch noch", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich sag vorsichtshalber ab, kann sein dass ich später noch komme", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Meld mi vorsichtshalber o, kimm aber wahrscheinlich no", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi moi vorsichtshoiber o, vielleicht kimm i später no dazua", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "meld mi mal ab, i schau aber später wahrscheinlich no rein", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sag mal vorsichtshalber ab, evtl schaff ichs später doch", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mich ab für heut, wahrscheinlich komm ich später aber no auf a Bier", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ich sag erstmal ab, später vielleicht doch noch kurz", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Erstmal Absage von mir, eventuell später noch an Sprung", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mich sicherheitshalber ab, evtl. später noch kurz dabei", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sicherheitshalber ab von mir ❌ wahrscheinlich später no kurz", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ich melde mich mal lieber ab, komm evtl später trotzdem no", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "meld mich lieber mal ab, wenns gut läuft komm ich später", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Absage von mir, aber wahrscheinlich schaff ich später noch was", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss absagen, wahrscheinlich spring ich später noch dazu", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sag ab für heut, evtl kimm i später no auf a Halbe", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I sog moi o, wahrscheinlich kimm i später no", "label": "false", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Meld mich mal ab heut, kann aber sein dass i no komm", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ab von mir ❌ evtl. wahrscheinlich später noch kurz vorbei", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich trag mich mal aus, vielleicht schaff ichs später doch noch", "label": "false", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Vorsichtshalber ohne mich heut, später eventuell doch no", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mich mal vorsorglich ab, wahrscheinlich später aber no da", "label": "false", "source": "synthetic", "dialect": "leicht"}
+{"text": "Mal schauen ob ich es schaffe", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Weiß noch nicht, kommt drauf an wie lang die Besprechung geht", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Vielleicht, i meld mi nochmal", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Eventuell schaff ichs, kann aber nix versprechen", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Schau ma moi 🤷‍♂️", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Woaß no ned, do muass i erst schaung", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Kann noch nix versprechen, die Kleine ist krank", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "mal gucken wie es heut noch ausgeht", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wenns klappt vielleicht 🤞", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin ma da fei no unsicher", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Des steht und fallt mim Termin um 17e", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "50/50 würd ich sagen 😅", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Kommt drauf an ob der Zug pünktlich is", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "I sag später nochmal Bescheid", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss i no schauen, meld mi dann", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Etza woaß i no ned, des entscheidet si erst no", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I schau moi wias wead", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Vielleicht komm ich später noch dazu, mal sehen", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin no am überlegen", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Fraglich ob ich das rechtzeitig hinbekomm", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Halt euch fei am Laufenden", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ka ob i mog 😅", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Des muss i erst no schaun ob des hinhaut", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wenn i früher rauskimm probier is", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "ungewiss no, sorry", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kann sein dass was draus wird, kann aber a sein ned", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Mal obwartn wia da Dog so laft", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Schaug ma wias laft", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "weiss no ned ob i mog", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ich geb euch in zwei Stunden Bescheid", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Momentan is des fei schwaar zum sogn", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Chancen stehn so mittel 😬", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Muss erst wissen wanns bei mir aus wird", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Vielleicht auf einen kurzen, mal schauen", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin unentschlossen ehrlich gesagt", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Hängt komplett vom Wetter ab 🌧️", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "wenn i zeit hob schau i vorbei, aber ka", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Des is bei mir no ganz offa", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "kann ich dir grad noch nicht sagen", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Frag mi nachher nochmal 😄", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Mal sehn was der Chef nachher sagt", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Eher unwahrscheinlich, aber ausschließen will ichs ned", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hmm, mal überlegen 🤔", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "I bin ma fei no ned sicha", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Vielleicht, vielleicht auch ned 🤷", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kommt ganz drauf an wie der Nachmittag wird", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wenn nix dazwischen kommt eventuell", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Des muass i ganz spontan entscheidn", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Schau ma moi, sog ma moi, moant ma moi 😄", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin grad am schwanka", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wird knapp, ob ichs pack weiß i no ned", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "weiß ned ob i überhaupt lust hob heid", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Kann aktuell leider nix Verbindliches sagen", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Da bin i ma no ned ganz schlüssig", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Evtl. später, hängt an der Kleinen", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "no ned entschieden bei mir", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wart ma moi ab wias wead", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wenns zeitlich passt gern, aber unsicher", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Meld mich am Nachmittag nochmal dazu", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Puh, schwierig heut, sag ich später", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin flexibel, aber halt noch unentschieden", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "kommt drauf an wie ich mich nachher fühl", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Vielleicht schau i auf a Bier nei, schau ma", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ka, mei Frau hod glaub i no wos vor", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I loss des heid oafach af mi zuakemma", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bei mir is des no komplett offen", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "frag später nochmal 😉", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Steht noch in den Sternen 🌟", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Möglich, aber wie gsagt unsicher", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Woaß ned obs bei mia heid geht", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Da muss ich erst mit der Familie reden", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Schau ma wia da Nachmittog wead", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin echt no im Zweifel", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Vielleicht auf a Hoibe, schau ma moi", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Sog i eich später, jetz woaß is no ned", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Besser als das Zeug letzte Woche 😂", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Lammsbräu geht ja mal gar ned 🤢", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sauber!", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "A Traum des Bier gestern 🥹", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Des glaub i ned 😂", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Der Aperol Stand war die beste Erfindung 😏", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Etza schau oaner o 😅", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "War da überhaupt Hopfen drin? 🤷‍♂️", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Die Bayern ham gestern echt schlecht gspuit", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Des Spiel gestern ❌ katastrophal", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Die Schiri Leistung ❌ ohne Worte", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Was für a Fehlpass 😭", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Der neue Wirt macht des ganz ordentlich", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Preise san a scho wieda gstiegn fei", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "6 Euro fürs Weißbier, gehts noch?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hauptsach kalt 🍺", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Prost mitanand 🍻", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I hab heut no Kopfweh von letzter Woche 🥴", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wer hod ma eigentlich de Rechnung untergjubelt 😂", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Des war a lange Nacht, mei mei", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Habedere miteinand", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Servus die Herrn ☕", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Guten Morgen zusammen ☀️", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der Kaiserschmarrn dort is echt Weltklasse", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Schnitzel war fei gscheid guad", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Nix schlimmeres wie warms Bier", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ich sag nur: Radler ist kein Bier 😤", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Mia san mia 😎", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hat oaner no des Foto von letzter Woche?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Des Bild is Gold wert 😂😂", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bitte niemals wieder veröffentlichen 🙈", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wer hod n Schirm liegn lossn?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Mei Jacke hängt glaub i no dort", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Etza is da Schmarrn scho wieda passiert", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Schild schnell ausgetauscht, gut gmacht 😅", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Der Kellner war gestern fei richtig gut drauf", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "So a Schmarrn 🙄", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Genau mei Humor 🤣", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Du bist fei echt unmöglich 😂", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sogt da Richtige 😏", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Naa, des kannst fei ned bringa", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "i lach mi grad weg", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "War schee gestern mit eich 🍻", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wedda wead heid no richtig schee ☀️", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "regnet glei wieder, typisch", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "35 Grad, mir langts langsam 🥵", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Klimaanlage im Büro ❌ kaputt seit Montag", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Kaffeemaschine ❌ hin, Tag gelaufen", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Mei Auto ❌ in da Werkstatt, super Woch", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bin heid echt fix und fertig", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Arbeit war heid a Katastroph", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Montog ghert obgschafft", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "noch 3 tage bis wochenende 🙃", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Urlaub war der absolute Wahnsinn 🏖️", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Fotos kommen später, versprochen", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Griechenland is a Traum gwesn", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Neues Radl is da 🚴", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hab endlich den Grill eingeweiht 🔥", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Steak war medium rare, perfekt", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wer grillt hod recht 😄", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Gestern 3 Stund im Stau gstanden", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Die A9 is fei a Zumutung", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Deutsche Bahn halt 🚂", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sauwedda heid", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Da legst di nieda 😳", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ganz ehrlich? Respekt 👏", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der war fei wirklich gut 😂", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "ich kann nimmer 🤣🤣", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ihr seid Vollpfosten, im positiven Sinn ❤️", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ohne eich warats echt fad", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Beste Truppn weit und breit", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Mia san scho a komischer Haufn 😅", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Des Foto is a Beweismittel 📸", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wehe des kommt rum 😂", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Neues Trikot ist endlich bestellt", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wer schaut heut Abend Champions League?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der Transfer war a glatter Fehlgriff", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ablösesumme? Wahnsinn ist das", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Abstiegskampf wie jedes Jahr 🙄", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Mei Verein bringt mi no ins Grab", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hab ma gestern den Fuß verknackst 🤕", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ruckn macht wieder Zicken", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "40 is fei nur a Zahl, sogns", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Geburtstagskind war gestern gut drauf 🎉", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Die Torte war der Hammer 🎂", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zu viel gessen, bereue aber nix", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wia gsagt, bei mir alles guad", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Passt scho 👍", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Way ka ma na 😏", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Nächste Woche bin ich auf jeden Fall wieder dabei", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Kommende Woche passt es bei mir wieder besser", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ab nächstem Donnerstag bin ich wieder regelmäßig da", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Servus liebe ZUMBA-Stammtischler, anlässlich meines Geburtstags würde ich euch nächste Woche gern auf eine Runde einladen 🎂", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Nächsten Monat bin ich zwei Wochen im Urlaub, sag rechtzeitig Bescheid", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Im August bin ich komplett raus, Fernreise ist gebucht", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Können wir den Stammtisch nächste Woche mal auf Freitag legen?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Vorschlag: nächste Woche mal a anderes Lokal probieren?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wie schauts bei euch am Samstag aus wegen Grillen?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Sonntag Frühschoppen, wer hätt Lust?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Für den Ausflug im September bitte bis Ende August melden", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nächste Woche fällt bei mir wahrscheinlich flach wegen Fortbildung", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Terminvorschlag fürs Sommerfest: 15. August, was meints?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wer hat am 20. Zeit für die Wanderung?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich hätt für übernächste Woche einen Tisch reserviert", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Nächsten Donnerstag ist doch Feiertag, oder?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Weihnachtsfeier sollten wir langsam mal planen 🎄", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nächste Woch bin i wieda dabei, gfreid mi scho", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Am Freitag drauf hätt ich auf jeden Fall Zeit", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Hab für nächste Woche 8 Plätze reserviert", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bitte gebt mir bis Dienstag Bescheid wegen der Reservierung", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nächsten Donnerstag lad i eich auf a Runde ei 🍻", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Nächste Woche feiern wir den 50er vom Sepp", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Können wir ab nächster Woche mal auf 18 Uhr vorverlegen?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Für kommende Woche such ich noch Mitfahrer", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ab September bin i wieda regelmäßig do", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Nächstes Jahr machen wir das Ganze größer", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wegen dem Ausflug: Bus ist gebucht, Restplätze gibts noch", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Übernächsten Donnerstag hab ich Betriebsfeier", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der Oktoberfest Termin steht: 27.09.", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wiesn-Tisch is reserviert, 10 Leid passn nei", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wer will nächste Woche mit zum Auswärtsspiel?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Kegeln am Samstag, wer wär dabei?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ich organisier für Oktober was Größeres, Details folgen", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nächste Woche bring ich meinen Kollegen mit", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der neue Kollege will nächsten Donnerstag mal reinschnuppern", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Für die Hüttentour brauch i no Zuasogn bis Ende Juli", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Am 3. Oktober is Feiertag, da is bestimmt mehr los", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kann jemand nächste Woche den Beamer mitbringen?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Nächste Woch schau i wieda vorbei, hoff i", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Sommerpause? Was meint ihr, machen wir eine?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wir sollten mal wieder was am Wochenende machen", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "I hätt Lust auf a Radltour am Sonntag", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ende des Monats bin ich wieder im Land", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wegen dem Gruppenfoto: Vorschläge für einen Samstag?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wer kommt heut alles?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ab wann seids ihr do?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wo sitz ma heid?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Is heut überhaupt Stammtisch?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ist der Tisch eigentlich reserviert?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Sitzen wir drinnen oder im Biergarten?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wia vui san ma heid?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Weiß jemand ob die Küche heut länger auf hat?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Gibts heut wieder des Tagesgericht?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kann mich jemand mitnehmen?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Fährt jemand über Nürnberg?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wer hat eigentlich de Karten?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Habts ihr scho bestellt?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Seids ihr scho da?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Is no a Platz frei?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wann fangts ihr heid o?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Kommt der Sepp eigentlich auch?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Weiß oaner de Adresse vom neuen Lokal?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Hat der Laden heut zu oder bin nur ich zu blöd?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Gibts da Parkplätze in der Nähe?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Muss man da eigentlich reservieren?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wie war des nochmal mit der Uhrzeit?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Was kost des Essen dort ungefähr?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wer zoit heid de Runde? 😄", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hod scho oana bstellt?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wo genau is der Biergarten nochmal?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Kann mir jemand die Speisekarte schicken?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Is der Weg dahin ausgeschildert?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wissts ihr ob heid Musi gspuit wird?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Servus", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Passt", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "https://www.br.de/nachrichten/bayern/artikel-12345", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "https://youtu.be/kJQP7kiw5Fk", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ok", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Alles klar", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Griaß di", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Servas beinand", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Moin", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "https://maps.app.goo.gl/xY7hQ2bK", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Danke!", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Jo mei", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Hmm", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Genau", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "https://www.instagram.com/p/Cx9zAbCdEf/", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Na servus", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Ach so", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wow", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Basst scho", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Was sagt die Statistik?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bot, wo bleibt die Auswertung?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Des muss korrigiert werden, i war do", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Die Zahlen stimmen hinten und vorne ned 😂", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ich steh auf Platz 3? Niemals", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der Bot hat mi glatt vergessen", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Statistik bitte 📊", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Wer führt eigentlich grad die Tabelle an?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bot spinnt scho wieda", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Kann man des nachträglich no eintragen?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meine Abmeldung letzte Woche wurde nicht gezählt", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der Feiertag müsste eigentlich rausgerechnet werden", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Der 1. Mai zählt doch ned, oder?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ranking bitte 🙏", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich fordere eine Neuauszählung 😤", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "De Statistik is a Schmarrn 😂", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Der Bot is fei scho gscheid fleißig", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wie oft war i denn jetz ned da?", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Wer is eigentlich der Dauergast?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wer hat die meisten Fehltage gesammelt?", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bot antwortet nimmer", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Auswertung war heut fix 👌", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "endlich mal eine gscheide Platzierung", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Ich glaub die Statistik hasst mich", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Des Ergebnis muass i fei anzweifeln", "label": "invalid", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bitte einmal die Jahresauswertung", "label": "invalid", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bei mir steht a Fehler drin, kann des jemand prüfen?", "label": "invalid", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "ich komme heute", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute doch dabei", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich wieder an 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Absage zurück, ich komme doch", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin am Start 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Termin wurde abgesagt, also bin ich dabei", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme heute doch, hat sich alles erledigt", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin wieder dabei, meine Tochter ist gesund 🎉", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme etwas später, so gegen halb neun", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin ab 20:30 da 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin dabei, freu mich schon 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doch dabei heute ✌️", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Meine Absage ist hinfällig, ich komme", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute Abend da", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme später, muss noch was erledigen", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, bis nachher", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zusage von mir ✅", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute am Start", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme gegen 21 Uhr, aber ich komme 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin früher fertig geworden, also bin ich dabei 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "melde mich hiermit wieder an", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "ich bin heute doch da", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei heute Abend, freu mich", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doch, ich komme", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme heute, die Fahrt klappt doch 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Meeting ist geplatzt ❌ also bin ich heute dabei 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, komme aber erst um neun", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zähl mich mit, ich bin da", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute wieder mit von der Partie", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komm heute Abend vorbei 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich zurück, bin dabei", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, bis später 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Kann doch, bin dabei", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "ich bin heute dabei, hat sich kurzfristig ergeben", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin am Start, freu mich auf ein Bier 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme heute, wird aber später", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, bringe auch noch jemanden mit", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme auf jeden Fall heute ✅", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute definitiv dabei 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin da, bis gleich", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich wieder an, Termin ist weg", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, komme direkt von der Arbeit", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Absage zurückgenommen, ich komme 🎉", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute Abend dabei", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme später dazu, aber ich komme sicher", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, wird bei mir 20 Uhr", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin dabei, freue mich schon riesig 🎉", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin am Start heute", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doch dabei, Kind ist wieder fit 🎉", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, hab heute frei bekommen", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute wieder mit dabei 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme gegen 20:45, bin also dabei", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Meine Absage von gestern gilt nicht mehr, ich komme", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, bis heute Abend 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin dabei, hab die Schicht getauscht", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute da 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Zusage ✅ bin dabei", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komm heute, freu mich", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, komme aber ein bisschen später ✌️", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doch dabei, mein Termin ist geplatzt", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute dabei, ganz sicher", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich an für heute", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, bringe Nachschub mit 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme heute Abend auf jeden Fall", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, wird bei mir aber halb zehn", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Hab doch Zeit, bin dabei 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin dabei heute, endlich mal wieder", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme später, so gegen 21:15, bin aber da", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute mit dabei ✌️", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme, hat sich alles geklärt", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, freu mich aufs Wiedersehen", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich wieder an, bin heute da 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin am Start, bis nachher 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute doch dabei, hatte vergessen die Absage zu streichen", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme heute, bin gegen acht da", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, hab jemanden gefunden der fährt", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute da, freu mich schon 🎉", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doch dabei ✅", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, komme mit dem Rad", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme heute wieder mit", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, meine Frau übernimmt die Kinder", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich zurück im Rennen, bin dabei 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute Abend am Start 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme später, muss die Kleine noch ins Bett bringen", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, bis dann 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Absage hat sich erledigt, ich komme", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin dabei, hab mich schon die ganze Woche gefreut", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin da heute", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme gegen halb neun dazu ✌️", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, Zug fährt doch", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich melde mich wieder an ✅", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute dabei, hab Urlaub genommen 🎉", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme heute, wird aber später bei mir", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, freu mich auf euch", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin da, wie immer 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doch dabei heute, alles geklärt 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, komme direkt nach dem Sport", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme heute Abend, bis später", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin am Start, wird bei mir kurz nach neun", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich an, bin dabei 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute dabei, Auto ist repariert", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, hab den Arzttermin verschoben", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme später, bin aber definitiv da ✌️", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin dabei, bringe den Neuen mit", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heute da, freu mich 🍻", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Doch dabei, Besuch ist abgesagt ❌ passt also", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, sagt mir Bescheid wo wir sitzen", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich komme heute, sicher", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Melde mich wieder an, es passt doch", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, komme so gegen 20 Uhr", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin heute Abend mit dabei 👍", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei, endlich wieder Stammtisch 🎉", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Komme etwas später, aber ich komme 💪", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Ich bin dabei, hab die Kinderbetreuung geregelt", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin dabei heute, bis nachher", "label": "true", "source": "synthetic", "dialect": "hochdeutsch"}
+{"text": "Bin heut dabei 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut doch no", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut am Start 💪", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi wieder an", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut doch dabei ✌️", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Wird bei mir a bissl später, komm aber", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei heut, freu mi scho", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut später, so gegen neune", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut wieder dabei 👍", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Doch dabei heut, hat si erledigt", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut da, Termin is abgsagt", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut, wird aber späta", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, bis nacher 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi zruck, bin dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut Abend dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm no dazua, bin dabei ✌️", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin am Start heut 💪", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Passt doch, bin dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei, hab frei kriagt", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut doch, freu mi 🎉", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, wird bei mir halb neune", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi wieder an, bin heut da", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei, endlich wieder amoi", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm später, bin aber sicher da 👍", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei heut Abend 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Doch dabei, Kind is wieder gsund 🎉", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut da, hab die Schicht tauscht", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut, bin gegen achte da", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, bring an Nachschub mit 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi an für heut ✅", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut mit dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm a bissl später, bin aber dabei ✌️", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, mei Frau macht die Kinder", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut am Start, freu mi 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Doch dabei heut ✅", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut no vorbei, bin dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, fahr mitm Radl", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meine Absag is hinfällig, i komm", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut da 👍", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut, wird bei mir aber späta", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, hab an Platz im Auto", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei, alles geklärt", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi wieder an, passt doch 💪", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin am Start, bis nacher", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm gegen neune, bin dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei, freu mi scho drauf 🎉", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Doch dabei, mei Termin is platzt", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, komm direkt vo da Arbeit", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut Abend da 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm später dazua, aber i komm", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei heut, hab Urlaub gnomma", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi zruck, bin heut dabei ✅", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut da, is doch no ausganga", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut, sicher 👍", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, bring an Kumpel mit", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin am Start heut Abend 💪", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Doch dabei, Besuch hat abgsagt ❌ also passt", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei, endlich", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm später, so um viertel nach neune ✌️", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, Auto is wieder ganz", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi an, bin heut da", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei 🍻 freu mi", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm no, bin dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, hab die Kinder untabracht", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut am Start, bis gleich", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Doch dabei heut, hab vergessen die Absag zu streichen", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, wird bei mir zwanzig Uhr", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut Abend, bin dabei 👍", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut da, alles klar", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi wieder an, bin dabei 💪", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, freu mi auf a Bier 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut doch, hat si alles gregelt", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei, bis später ✌️", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin am Start, zähl mi mit", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Doch dabei, Zug fahrt doch", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut dabei, hab an Arzttermin verschoben", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm gegen halb zehne, bin aber dabei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut Abend am Start 🍻", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm heut, wird bissl später bei mir", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, is doch no gangen", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut da, hab frei", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, komm nach dem Training", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin heut mit dabei, endlich wieder", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Komm später, bin aber da 💪", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Bin dabei, mei Termin is gestrichen", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "Meld mi an, komm heut", "label": "true", "source": "synthetic", "dialect": "leicht"}
+{"text": "I bin dabei 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza kimm i doch 💪", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili kimm i", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit am Start", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi wieda o 👍", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Bei mir werds bissl späta, kimm aber ✌️", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit doch dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili bin i dabei 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit no, wird aber späta", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, mei Termin is gschmissn worn", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza bin i doch dabei 🎉", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm, gfreid mi scho", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit dabei, pack ma's 💪", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Mei Absog is hinfällig, i kimm", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin am Start heit 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm gegen neine", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Passt scho, i bin dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit da, hob frei kriagt", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit doch, hod si olles gregelt", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, bis nacha 👍", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Do bin i dabei 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi zruck, i kimm", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit Obend dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm späta dazua, aber i kimm ✌️", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili bin i am Start 💪", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, mei Bua is wieda gsund 🎉", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit, sicha", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit dabei, endlich wieda amoi", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza kimm i, hod si olles erledigt", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, i bring an Nochschub mit 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit Obend, freid mi", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin am Start, zöhl mi mit", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit da 👍", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Kimm bissl späta, bin aba dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, i foahr mitm Radl", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili, i kimm heit ✅", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi wieda o für heit", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit dabei, hob Urlaub gnumma 🎉", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm, mei Frau macht d'Kinda", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, kimm direkt vo da Arbat", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza bin i doch am Start 💪", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit, wird hoid a bissl späta", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit dabei, gfreid mi scho 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili kimm i, wos denkst denn", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, hob d'Schicht tauscht", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm gegen hoibe zehne, bin aba da", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin am Start heit Obend ✌️", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Mei Absog kannst streicha, i kimm", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, mei Auto rennt wieda", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit, do bin i dabei 👍", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili bin i heit dabei 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi o, i bin da", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza kimm i doch, Termin is platzt ❌ passt scho 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit am Start, bis nacha", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm späta, so um neine rum", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, i bring an Kumpel mit", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit da, olles klar 💪", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili, bin dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit doch, hod si ollas erledigt 🎉", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, i hob de Kinda untabracht", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit Obend am Start 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Kimm no dazua, i bin dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, da Zug fahrt doch", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza bin i wieda dabei ✅", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit, gfreid mi auf a Hoibe 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin am Start, kimm aba a bissl späta ✌️", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili bin i da, wia imma", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi wieda o, passt doch 👍", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit dabei, endlich", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm, hob mei Termin verschom", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, wird bei mir zwanzge", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza kimm i, is doch no gonga 💪", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit da, gfreid mi", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili kimm i heit Obend 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, i kimm nach da Arbat", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm späta, aba i kimm sicha", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit am Start, pack ma's ✌️", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I meld mi wieda o, i bin dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, mei Bsuach hod obgsogt", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza bin i doch dabei heit 🎉", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit, is olles gregelt", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin am Start, bis späta 👍", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili bin i dabei, wos für a Frog", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm heit Obend, sicha 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin heit dabei, hob mi scho gfreid", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I kimm bissl späta, aba i bin da 💪", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "I bin dabei, mei Termin is gstricha", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Freili, i bin heit am Start 🍻", "label": "true", "source": "synthetic", "dialect": "bairisch"}
+{"text": "Etza is doch no gonga, i bin heit dabei", "label": "true", "source": "synthetic", "dialect": "bairisch"}

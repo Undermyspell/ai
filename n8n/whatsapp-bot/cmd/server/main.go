@@ -12,6 +12,7 @@ import (
 	"github.com/michael/zumba-whatsapp-bot/internal/config"
 	"github.com/michael/zumba-whatsapp-bot/internal/db"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
+	"github.com/michael/zumba-whatsapp-bot/internal/shadow"
 	"github.com/michael/zumba-whatsapp-bot/internal/sink"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 	"github.com/michael/zumba-whatsapp-bot/internal/tracestore"
@@ -66,6 +67,18 @@ func main() {
 	} else {
 		srv.Tracer = tracer
 		log.Printf("🧭 Trace-Aufzeichnung aktiv (bot_trace, 21 Tage Retention)")
+	}
+
+	// ML-Shadow-Modus: eigenes Modell klassifiziert parallel zu Gemini,
+	// beide Ergebnisse landen dauerhaft in ml_messages.
+	if cfg.ClassifierURL != "" {
+		sh := shadow.New(pg.DB, cfg.ClassifierURL)
+		if err := sh.EnsureSchema(context.Background()); err != nil {
+			log.Printf("⚠️  ml_messages Schema: %v (Shadow-Modus deaktiviert)", err)
+		} else {
+			srv.Shadow = sh
+			log.Printf("🤖 ML-Shadow-Modus aktiv → %s", cfg.ClassifierURL)
+		}
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

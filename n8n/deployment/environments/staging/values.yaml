@@ -64,17 +64,25 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.1.10"
+    tag: "0.1.11"
     pullPolicy: IfNotPresent
   weeklyReport:
     enabled: true
+
+# ML-Klassifikator im Shadow-Modus (Bot loggt Gemini vs. Modell in ml_messages).
+classifier:
+  enabled: true
+  image:
+    repository: zumba-classifier
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
 
 # admin-ui aktivieren (lokales Image; BOT_URL zeigt per ConfigMap auf den Bot).
 adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.1.11"
+    tag: "0.1.12"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io

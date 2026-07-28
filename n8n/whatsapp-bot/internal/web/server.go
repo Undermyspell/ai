@@ -35,6 +35,12 @@ type Tracer interface {
 	Save(ctx context.Context, t tracestore.Trace) error
 }
 
+// ShadowRecorder loggt Gemini- vs. ML-Modell-Klassifikation (Shadow-Modus,
+// optional, nil = aus). Muss selbst asynchron/best-effort arbeiten.
+type ShadowRecorder interface {
+	RecordAsync(userID, userName, message, geminiLabel string)
+}
+
 type Server struct {
 	store      store.Store
 	classifier Classifier
@@ -51,6 +57,9 @@ type Server struct {
 	// PreviewJID ist das Ziel des "Vorschau"-Modus der Bot-Test-Seite (von main
 	// gesetzt; leer = Vorschau aus).
 	PreviewJID string
+
+	// Shadow protokolliert den ML-Shadow-Modus (von main gesetzt; nil = aus).
+	Shadow ShadowRecorder
 }
 
 func New(st store.Store, cl Classifier, snd Sender, groupJID string, loc *time.Location) *Server {
@@ -144,6 +153,12 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 	} else {
 		rec.Step(tracestore.NodeClassify, tracestore.OutcomeInfo, "Classifier (Gemini)",
 			fmt.Sprintf("→ %s  (roh: %q · %s)", c.Result, c.Raw, c.Model))
+	}
+
+	// Shadow-Modus: eigenes Modell parallel klassifizieren lassen und beide
+	// Ergebnisse festhalten. Nur für echte Durchläufe, nie für Test/Dry-Run.
+	if s.Shadow != nil && !dryRun {
+		s.Shadow.RecordAsync(ev.UserID(), ev.UserName(), msg, string(c.Result))
 	}
 
 	userID := ev.UserID()

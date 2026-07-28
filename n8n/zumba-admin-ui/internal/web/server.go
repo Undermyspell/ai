@@ -68,6 +68,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /bot-test/weekly", s.handleBotTestWeekly)
 	mux.HandleFunc("GET /trace", s.handleTraceList)
 	mux.HandleFunc("GET /trace/{id}", s.handleTraceDetail)
+	mux.HandleFunc("GET /ml-shadow", s.handleMLShadow)
+	mux.HandleFunc("POST /ml-shadow/verify/{id}", s.handleMLVerify)
+	mux.HandleFunc("GET /ml-doku", s.handleMLDocs)
 
 	return logRequests(mux)
 }

@@ -63,3 +63,11 @@ func mustDate(s string) time.Time {
 	}
 	return d
 }
+
+func (s *spyStore) ListMLMessages(_ context.Context, _ bool, _ int) ([]store.MLMessage, error) {
+	return nil, nil
+}
+func (s *spyStore) MLShadowStats(_ context.Context) (store.MLShadowStats, error) {
+	return store.MLShadowStats{}, nil
+}
+func (s *spyStore) VerifyMLMessage(_ context.Context, _ int64, _ *string) error { return nil }

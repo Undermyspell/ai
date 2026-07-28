@@ -1,0 +1,18 @@
+{{- if .Values.classifier.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zumba.fullname" . }}-classifier
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.classifier.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.classifier.service.type }}
+  ports:
+    - port: {{ .Values.classifier.service.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "zumba.classifier.selectorLabels" . | nindent 4 }}
+{{- end }}
