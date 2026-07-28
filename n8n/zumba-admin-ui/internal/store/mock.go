@@ -419,3 +419,5 @@ func (m *Mock) ListMLTests(_ context.Context, limit int) ([]MLTestMessage, error
 }
 
 func (m *Mock) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }
+
+func (m *Mock) DeleteMLTest(_ context.Context, _ int64) error { return nil }

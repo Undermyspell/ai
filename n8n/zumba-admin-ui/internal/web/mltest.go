@@ -99,6 +99,24 @@ func (s *Server) handleMLTestJudge(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "not found", http.StatusNotFound)
 }
 
+// handleMLTestDelete löscht einen Testfall; die leere Antwort entfernt die
+// Zeile per HTMX-outerHTML-Swap.
+func (s *Server) handleMLTestDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		s.triggerToast(w, "error", "Ungültige ID.")
+		http.Error(w, "bad id", http.StatusBadRequest)
+		return
+	}
+	if err := s.store.DeleteMLTest(r.Context(), id); err != nil {
+		s.triggerToast(w, "error", "Löschen fehlgeschlagen.")
+		s.fail(w, "ml test delete", err)
+		return
+	}
+	s.triggerToast(w, "success", "Testfall gelöscht.")
+	w.WriteHeader(http.StatusOK)
+}
+
 // classifyMessage ruft den classifier-service. Im Mock-Modus (keine DB, lokale
 // Entwicklung) wird ohne konfigurierten Service eine feste Antwort geliefert.
 func (s *Server) classifyMessage(msg string) (string, float64, error) {

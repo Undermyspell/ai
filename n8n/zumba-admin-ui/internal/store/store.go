@@ -67,6 +67,7 @@ type Store interface {
 	ListMLTests(ctx context.Context, limit int) ([]MLTestMessage, error)
 	// JudgeMLTest hinterlegt das erwartete Label ("passt" = Modell-Label).
 	JudgeMLTest(ctx context.Context, id int64, expectedLabel string) error
+	DeleteMLTest(ctx context.Context, id int64) error
 }
 
 // MLTestMessage ist ein manuell eingegebener Testfall aus dem Admin-UI.

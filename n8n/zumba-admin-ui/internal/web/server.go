@@ -73,6 +73,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /ml-test", s.handleMLTest)
 	mux.HandleFunc("POST /ml-test/run", s.handleMLTestRun)
 	mux.HandleFunc("POST /ml-test/judge/{id}", s.handleMLTestJudge)
+	mux.HandleFunc("DELETE /ml-test/{id}", s.handleMLTestDelete)
 	mux.HandleFunc("GET /ml-doku", s.handleMLDocs)
 
 	return logRequests(mux)

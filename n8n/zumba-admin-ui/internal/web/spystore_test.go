@@ -79,3 +79,5 @@ func (s *spyStore) ListMLTests(_ context.Context, _ int) ([]store.MLTestMessage,
 	return nil, nil
 }
 func (s *spyStore) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }
+
+func (s *spyStore) DeleteMLTest(_ context.Context, _ int64) error { return nil }

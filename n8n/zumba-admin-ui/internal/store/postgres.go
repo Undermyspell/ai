@@ -486,3 +486,14 @@ func (s *Postgres) JudgeMLTest(ctx context.Context, id int64, expectedLabel stri
 	}
 	return nil
 }
+
+func (s *Postgres) DeleteMLTest(ctx context.Context, id int64) error {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM ml_test_messages WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("DeleteMLTest: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("DeleteMLTest: Eintrag %d nicht gefunden", id)
+	}
+	return nil
+}

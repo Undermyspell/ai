@@ -55,6 +55,15 @@ templ Row(t store.MLTestMessage) {
 		<div class="ml-row-head">
 			<span class="ml-time">{ t.CreatedAt.Format("02.01. 15:04") }</span>
 			<span class="ml-agree">{ statusText(t) }</span>
+			<button
+				type="button"
+				class="ml-delete-btn"
+				title="Testfall löschen"
+				hx-delete={ "/ml-test/" + strconv.FormatInt(t.ID, 10) }
+				hx-target={ "#" + rowID(t.ID) }
+				hx-swap="outerHTML"
+				hx-confirm="Testfall wirklich löschen?"
+			>🗑</button>
 		</div>
 		<div class="ml-msg">{ t.Message }</div>
 		<div class="ml-labels">

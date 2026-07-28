@@ -1155,3 +1155,5 @@ h3 { font-size: 17px; line-height: 1.25; }
 .ml-test-form form { display: flex; gap: var(--space-3); align-items: flex-end; }
 .ml-test-form textarea { flex: 1; font: inherit; padding: var(--space-2) var(--space-3); border: 1px solid var(--rule-strong); border-radius: var(--radius); background: var(--bg-elev); color: var(--ink); resize: vertical; }
 .ml-test-form textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ml-delete-btn { margin-left: var(--space-2); font: inherit; font-size: 13px; background: none; border: none; cursor: pointer; opacity: .45; }
+.ml-delete-btn:hover { opacity: 1; }
