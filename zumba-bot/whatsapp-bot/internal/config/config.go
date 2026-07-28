@@ -88,7 +88,7 @@ func Load() (Config, error) {
 			Host:     getenv("DB_HOST", "192.168.178.46"),
 			Port:     getenv("DB_PORT", "5433"),
 			User:     getenv("DB_USER", "n8n"),
-			Password: getenv("DB_PASSWORD", "n8n_password"),
+			Password: os.Getenv("DB_PASSWORD"),
 			Name:     getenv("DB_NAME", "zumba"),
 			SSLMode:  getenv("DB_SSLMODE", "disable"),
 		},
@@ -99,7 +99,7 @@ func Load() (Config, error) {
 		},
 		Evolution: EvolutionConfig{
 			URL:      getenv("EVOLUTION_URL", "http://localhost:8090"),
-			APIKey:   getenv("EVOLUTION_API_KEY", "test_api_key"),
+			APIKey:   os.Getenv("EVOLUTION_API_KEY"),
 			Instance: getenv("EVOLUTION_INSTANCE", "whatsapp"),
 		},
 		Output: OutputConfig{

@@ -26,7 +26,7 @@ func ConfigFromEnv() Config {
 		Host:     getEnvOrDefault("DB_HOST", "192.168.178.46"),
 		Port:     getEnvOrDefault("DB_PORT", "5433"),
 		User:     getEnvOrDefault("DB_USER", "n8n"),
-		Password: getEnvOrDefault("DB_PASSWORD", "n8n_password"),
+		Password: os.Getenv("DB_PASSWORD"),
 		DBName:   getEnvOrDefault("DB_NAME", "zumba"),
 		SSLMode:  getEnvOrDefault("DB_SSLMODE", "disable"),
 	}

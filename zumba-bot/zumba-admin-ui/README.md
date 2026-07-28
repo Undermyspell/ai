@@ -11,7 +11,7 @@ Admin-Weboberfläche für Stammtisch-Daten. Sister-App zu `../wrapped/`, teilt s
 ## Lokal starten
 ```bash
 make install   # einmalig: deps + air + templ
-DB_HOST=192.168.178.46 DB_PORT=5433 DB_NAME=zumba DB_USER=n8n DB_PASSWORD=n8n_password make dev
+DB_HOST=192.168.178.46 DB_PORT=5433 DB_NAME=zumba DB_USER=n8n DB_PASSWORD=<postgres-passwort> make dev
 ```
 
 Ohne DB-Env-Vars: App läuft mit Mock-Daten (siehe Banner im UI).
@@ -32,7 +32,7 @@ docker save zumba-admin-ui:0.1.0 | sudo k3s ctr images import -
 | `DB_HOST` | `192.168.178.46` | `zumba-postgres` |
 | `DB_PORT` | `5433` | `5432` |
 | `DB_USER` | `n8n` | `n8n` |
-| `DB_PASSWORD` | `n8n_password` | (Secret `postgres-secrets`) |
+| `DB_PASSWORD` | *(kein Default)* | (Secret `postgres-secrets`) |
 | `DB_NAME` | `zumba` | `zumba` |
 | `DB_SSLMODE` | `disable` | `disable` |
 | `PORT` | `8080` | `8080` |

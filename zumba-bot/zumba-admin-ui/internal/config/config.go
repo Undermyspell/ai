@@ -45,7 +45,7 @@ func Load() (Config, error) {
 			Host:     getenv("DB_HOST", "192.168.178.46"),
 			Port:     getenv("DB_PORT", "5433"),
 			User:     getenv("DB_USER", "n8n"),
-			Password: getenv("DB_PASSWORD", "n8n_password"),
+			Password: os.Getenv("DB_PASSWORD"),
 			Name:     getenv("DB_NAME", "zumba"),
 			SSLMode:  getenv("DB_SSLMODE", "disable"),
 		},
