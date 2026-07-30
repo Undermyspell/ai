@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eval-Protokoll · Stammtisch-Klassifikator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:        #131009;
+    --grid:      #1b1611;
+    --surface:   #191512;
+    --surface-2: #1f1a15;
+    --line:      #2f2820;
+    --line-soft: #241e17;
+    --ink:       #ece5d8;
+    --ink-2:     #a89d89;
+    --ink-3:     #756b5c;
+    --amber:     #c98500;   /* tfidf_logreg */
+    --blue:      #3987e5;   /* minilm_logreg */
+    --rose:      #d55181;   /* tfidf_svm / Fehler-Marker */
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background:
+      repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 28px),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18.5px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .num, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .page { max-width: 1300px; margin: 0 auto; padding: 40px clamp(16px, 3vw, 40px) 80px; }
+
+  /* ---------- Protokoll-Kopf ---------- */
+  .prot-head { border: 1px solid var(--line); background: var(--surface); position: relative; }
+  .corner { position: absolute; width: 9px; height: 9px; border: 0 solid var(--ink-3); }
+  .corner.tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+  .corner.tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+  .corner.bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+  .corner.br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+
+  .prot-title { padding: 18px 22px 14px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; justify-content: space-between; }
+  .prot-title h1 { font-family: var(--mono); font-size: 19.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+  .prot-title h1::before { content: "▮ "; color: var(--amber); }
+  .prot-title .run { font-family: var(--mono); font-size: 15.5px; color: var(--ink-3); }
+  .prot-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .prot-meta > div { padding: 12px 22px 14px; border-right: 1px dashed var(--line-soft); }
+  .prot-meta > div:last-child { border-right: 0; }
+  .prot-meta dt { font-family: var(--mono); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .prot-meta dd { font-family: var(--mono); font-size: 16.5px; margin-top: 3px; color: var(--ink); }
+  .prot-note { border-top: 1px solid var(--line); padding: 12px 22px; font-size: 16.5px; color: var(--ink-2); max-width: none; }
+  .prot-note b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Ergebnis-Register ---------- */
+  .result-strip { margin-top: 28px; border: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto auto auto; background: var(--surface); }
+  .result-strip > div { padding: 14px 22px; border-right: 1px solid var(--line-soft); }
+  .result-strip > div:last-child { border-right: 0; }
+  .rs-label { font-family: var(--mono); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .rs-val { font-family: var(--mono); font-size: 28px; font-weight: 600; margin-top: 2px; }
+  .rs-val small { font-size: 15.5px; color: var(--ink-3); font-weight: 400; }
+  .result-strip .finding { font-size: 17px; color: var(--ink-2); align-self: center; }
+  .result-strip .finding b { color: var(--amber); font-family: var(--mono); font-weight: 600; }
+  @media (max-width: 860px) { .result-strip { grid-template-columns: 1fr 1fr; } .result-strip .finding { grid-column: 1 / -1; border-bottom: 1px solid var(--line-soft); } }
+
+  /* ---------- Abschnitte ---------- */
+  section { margin-top: 56px; }
+  .fig-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; }
+  .fig-head .fig-no { font-family: var(--mono); font-size: 15.5px; font-weight: 600; letter-spacing: .1em; color: var(--amber); white-space: nowrap; }
+  .fig-head h2 { font-family: var(--mono); font-size: 17px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .fig-head::after { content: ""; flex: 1; border-bottom: 1px dashed var(--line); transform: translateY(-4px); }
+  .fig-cap { font-size: 16.5px; color: var(--ink-2); max-width: 76ch; margin-bottom: 20px; }
+  .fig-cap .err-key i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--rose); vertical-align: 1px; margin: 0 3px; }
+
+  .panel { border: 1px solid var(--line); background: var(--surface); position: relative; padding: 26px; }
+  .chart-wrap { overflow-x: auto; }
+
+  svg text { font-family: var(--mono); }
+  .axis-label { font-size: 14.5px; fill: var(--ink-3); }
+  .grid-line { stroke: var(--line-soft); stroke-width: 1; }
+
+  /* Rangliste */
+  .lb-row { display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: center; padding: 12px 0; }
+  .lb-row + .lb-row { border-top: 1px dashed var(--line-soft); }
+  .lb-name { font-family: var(--mono); font-size: 16.5px; font-weight: 600; display: flex; align-items: center; gap: 9px; }
+  .lb-name .chip { width: 8px; height: 8px; flex: none; }
+  .lb-badge { font-family: var(--mono); font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--bg); background: var(--amber); padding: 1px 6px; font-weight: 600; }
+  .lb-meta { grid-column: 2; margin-top: -4px; font-size: 15.5px; color: var(--ink-3); }
+  .lb-track { position: relative; height: 46px; }
+  .lb-track svg { display: block; width: 100%; height: 100%; }
+  .lb-val { position: absolute; top: 0; right: 0; font-family: var(--mono); font-size: 15.5px; color: var(--ink-3); }
+  .lb-val b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 640px) { .lb-row { grid-template-columns: 1fr; gap: 4px; } .lb-meta { grid-column: 1; } }
+
+  /* Metrik-Tabelle */
+  table.metrics { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 16px; }
+  table.metrics th { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; text-align: right; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+  table.metrics th:first-child, table.metrics td:first-child { text-align: left; padding-left: 0; }
+  table.metrics td { text-align: right; padding: 7px 14px; border-bottom: 1px dashed var(--line-soft); color: var(--ink-2); }
+  table.metrics tr.model-row td { color: var(--ink); font-weight: 600; border-bottom-style: solid; border-bottom-color: var(--line-soft); padding-top: 14px; }
+  table.metrics tr.model-row .chip { display: inline-block; width: 8px; height: 8px; margin-right: 8px; }
+  table.metrics td.dim { color: var(--ink-3); }
+  table.metrics td.warn { color: var(--rose); }
+  .tbl-note { font-size: 15.5px; color: var(--ink-3); margin-top: 12px; }
+  .tbl-note .mono { font-size: 15px; }
+
+  /* Legende */
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; font-family: var(--mono); font-size: 15.5px; color: var(--ink-2); margin-bottom: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { width: 8px; height: 8px; }
+
+  /* Confusion */
+  .cm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
+  .cm { border: 1px solid var(--line); background: var(--surface); padding: 18px; }
+  .cm figcaption { font-family: var(--mono); font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .cm .cm-sub { font-family: var(--mono); font-size: 14.5px; color: var(--ink-3); margin: 2px 0 14px; }
+  .cm table { border-collapse: collapse; width: 100%; }
+  .cm th { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--ink-3); padding: 3px 4px; }
+  .cm th.rowh { text-align: right; padding-right: 10px; }
+  .cm td {
+    position: relative; text-align: center; font-family: var(--mono); font-size: 16.5px; font-weight: 500;
+    height: 42px; min-width: 42px; cursor: default; border: 1px solid var(--bg);
+    outline: 1px solid transparent; transition: outline-color .1s ease;
+  }
+  .cm td:hover { outline-color: var(--ink-2); z-index: 1; }
+  .cm td.err::after { content: ""; position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--rose); }
+  .cm-axes { font-family: var(--mono); font-size: 14px; color: var(--ink-3); margin-top: 10px; }
+
+  /* Sweep */
+  .sweep-panel svg { display: block; width: 100%; height: auto; }
+  details.data-table { margin-top: 16px; font-size: 16px; color: var(--ink-2); }
+  details.data-table summary { cursor: pointer; color: var(--ink-3); font-family: var(--mono); font-size: 15.5px; }
+  details.data-table table { border-collapse: collapse; margin-top: 10px; font-family: var(--mono); }
+  details.data-table th, details.data-table td { padding: 4px 16px 4px 0; text-align: right; font-weight: 400; }
+  details.data-table th { color: var(--ink-3); font-size: 14.5px; text-transform: uppercase; letter-spacing: .08em; }
+  details.data-table td:first-child, details.data-table th:first-child { text-align: left; }
+
+  /* Fehlklassifikationen */
+  .miss-tabs { display: flex; gap: 0; margin-bottom: 0; flex-wrap: wrap; border: 1px solid var(--line); border-bottom: 0; width: fit-content; }
+  .miss-tabs button {
+    font-family: var(--mono); font-size: 15.5px; font-weight: 500; color: var(--ink-2);
+    background: none; border: 0; border-right: 1px solid var(--line);
+    padding: 8px 18px; cursor: pointer;
+  }
+  .miss-tabs button:last-child { border-right: 0; }
+  .miss-tabs button:hover { color: var(--ink); background: var(--surface-2); }
+  .miss-tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--ink); box-shadow: inset 0 2px 0 var(--amber); }
+  .miss-list { border: 1px solid var(--line); background: var(--surface); }
+  .miss-item { display: grid; grid-template-columns: 200px 1fr; gap: 18px; padding: 11px 18px; }
+  .miss-item + .miss-item { border-top: 1px dashed var(--line-soft); }
+  .miss-flow { font-family: var(--mono); font-size: 15.5px; color: var(--ink-3); white-space: nowrap; }
+  .miss-flow b { color: var(--ink-2); font-weight: 500; }
+  .miss-flow .arr { color: var(--rose); padding: 0 4px; }
+  .miss-text { font-size: 17px; color: var(--ink); }
+  .miss-empty { padding: 22px 18px; color: var(--ink-3); font-size: 16.5px; font-style: italic; }
+  @media (max-width: 640px) { .miss-item { grid-template-columns: 1fr; gap: 3px; } }
+
+  /* Anmerkungen */
+  .notes { border: 1px solid var(--line); border-left: 3px solid var(--rose); background: var(--surface); padding: 20px 24px; }
+  .notes h2 { font-family: var(--mono); font-size: 16px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 14px; }
+  .notes h2::before { content: "⚠ "; color: var(--rose); }
+  .notes ol { margin-left: 18px; display: grid; gap: 10px; max-width: 80ch; }
+  .notes li { color: var(--ink-2); font-size: 17px; }
+  .notes li::marker { color: var(--rose); font-family: var(--mono); font-size: 15.5px; }
+  .notes li strong { color: var(--ink); font-weight: 600; }
+  .notes code { font-family: var(--mono); font-size: 15.5px; background: var(--surface-2); padding: 1px 5px; }
+
+  /* ---------- Methodik / Glossar ---------- */
+  .gloss { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line); background: var(--surface); }
+  .gloss > div { padding: 18px 22px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+  .gloss > div:nth-child(2n) { border-right: 0; }
+  .gloss > div:nth-last-child(-n+2) { border-bottom: 0; }
+  .gloss dt { font-family: var(--mono); font-size: 16px; font-weight: 600; display: flex; align-items: baseline; gap: 10px; }
+  .gloss dt .tag { font-size: 12.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--line); padding: 0 6px; }
+  .gloss dd { font-size: 16.5px; color: var(--ink-2); margin-top: 6px; max-width: 58ch; }
+  .gloss dd b { color: var(--ink); font-weight: 600; }
+  .gloss dd .mono { font-size: 15px; }
+  @media (max-width: 760px) { .gloss { grid-template-columns: 1fr; } .gloss > div { border-right: 0; } .gloss > div:nth-last-child(-n+2) { border-bottom: 1px solid var(--line-soft); } .gloss > div:last-child { border-bottom: 0; } }
+
+  .arch { border: 1px solid var(--line); background: var(--surface); }
+  .arch-legend { display: flex; flex-wrap: wrap; gap: 16px 28px; padding: 12px 22px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 14.5px; color: var(--ink-2); }
+  .arch-legend .sw { display: inline-block; width: 14px; height: 11px; vertical-align: -1px; margin-right: 7px; }
+  .arch-row { padding: 16px 22px 18px; }
+  .arch-row + .arch-row { border-top: 1px dashed var(--line-soft); }
+  .arch-title { font-family: var(--mono); font-size: 15.5px; font-weight: 600; letter-spacing: .06em; }
+  .arch-title .who { color: var(--ink-3); font-weight: 400; margin-left: 10px; }
+  .pipe { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px 0; margin-top: 10px; }
+  .stage { font-family: var(--mono); font-size: 15px; padding: 7px 12px; border: 1px solid var(--line); color: var(--ink-2); display: flex; flex-direction: column; justify-content: center; }
+  .stage small { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+  .stage.trained { border-color: var(--amber); color: var(--ink); }
+  .stage.trained small { color: color-mix(in oklab, var(--amber) 70%, var(--ink-3)); }
+  .stage.frozen { border-style: dashed; border-color: #4a6d99; }
+  .pipe .arrow { align-self: center; font-family: var(--mono); color: var(--ink-3); padding: 0 8px; font-size: 15.5px; }
+  .arch-note { font-size: 16px; color: var(--ink-3); margin-top: 10px; max-width: 84ch; }
+  .arch-note b { color: var(--ink-2); font-weight: 600; }
+
+  footer { margin-top: 56px; border-top: 1px solid var(--line); padding-top: 16px;
+    font-family: var(--mono); font-size: 15px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 6px 32px; }
+  footer code { color: var(--ink-2); }
+
+  /* Tooltip */
+  #tip {
+    position: fixed; z-index: 10; pointer-events: none; opacity: 0;
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 8px 12px; font-family: var(--mono); font-size: 15.5px; color: var(--ink); max-width: 300px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,.35);
+    transition: opacity .08s ease;
+  }
+  #tip.on { opacity: 1; }
+  #tip .t-head { font-weight: 600; margin-bottom: 3px; }
+  #tip .t-row { color: var(--ink-2); display: flex; gap: 14px; justify-content: space-between; }
+  #tip .t-row b { color: var(--ink); font-weight: 500; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ Protokoll-Kopf ============ -->
+  <header class="prot-head">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div class="prot-title">
+      <h1>Eval-Protokoll · Stammtisch-Klassifikator</h1>
+      <span class="run">RUN 2026-07-29 · scripts/evaluate.py</span>
+    </div>
+    <dl class="prot-meta">
+      <div><dt>Kandidaten</dt><dd>4</dd></div>
+      <div><dt>Klassen</dt><dd>true · false · invalid</dd></div>
+      <div><dt>Training</dt><dd>synthetic.jsonl (nur Synthetik)</dd></div>
+      <div><dt>Testset</dt><dd>real.jsonl · n=71 (1× true)</dd></div>
+      <div><dt>Leitmetrik</dt><dd>Macro-F1</dd></div>
+    </dl>
+    <p class="prot-note">Gemessen wird der Transfer <b>Synthetik → Realwelt</b>: trainiert wurde ausschließlich auf
+      generierten Nachrichten, evaluiert ausschließlich auf echten WhatsApp-Nachrichten — inklusive Bairisch,
+      Emojis und Insider-Sprech. Baseline-Referenz: ein Immer-false-Dummy erreicht Macro-F1 ≈ 0.29.</p>
+  </header>
+
+  <!-- ============ Ergebnis ============ -->
+  <div class="result-strip">
+    <div class="finding">Sieger <b>tfidf_logreg</b> — Zeichen-n-Gramme (2–4) + LogReg. Deployed als 165-KB-JSON in
+      pure Go. Das finegetunte MiniLM (<b>minilm_ft</b>, 0.974) bestätigt: frozen war das Problem des Transformers —
+      zum Überholen reicht’s trotzdem nicht.</div>
+    <div><div class="rs-label">Macro-F1</div><div class="rs-val num">0.987</div></div>
+    <div><div class="rs-label">Fehler / 71</div><div class="rs-val num">1 <small>billige Richtung</small></div></div>
+    <div><div class="rs-label">true↔false</div><div class="rs-val num">0</div></div>
+  </div>
+
+  <!-- ============ Methodik: Glossar ============ -->
+  <section id="glossar">
+    <div class="fig-head"><span class="fig-no">REF. A</span><h2>Glossar · Bausteine</h2></div>
+    <p class="fig-cap">Jeder Kandidat = <b>Featurizer</b> (Text → Zahlenvektor) + <b>Klassifikator</b> (Vektor → Klasse).
+      Die Kandidaten unterscheiden sich darin, wie der Vektor entsteht und was davon aus unseren Daten gelernt wurde.</p>
+    <dl class="gloss">
+      <div>
+        <dt>TF-IDF <span class="tag">Featurizer · kein neuronales Netz</span></dt>
+        <dd>Zerlegt Wörter in <b>Zeichen-n-Gramme</b> (2–4 Zeichen, <span class="mono">char_wb</span>): „abmelden“ → <span class="mono">‹ab›, ‹abm›, ‹bmel›, …</span>
+        Pro Nachricht wird gezählt, wie oft jedes bekannte n-Gramm vorkommt (<b>TF</b> = term frequency), gewichtet damit,
+        wie selten es im Trainingskorpus ist (<b>IDF</b> = inverse document frequency — häufige Allerwelts-Gramme zählen wenig).
+        Ergebnis: dünnbesetzter Vektor mit 6758 Dimensionen. <b>Vocabulary und IDF sind gelernte Artefakte</b> —
+        sie stecken mit im <span class="mono">model.json.gz</span>. Robust gegen Dialekt/Tippfehler, weil „obmeldn“
+        und „abmelden“ viele Gramme teilen.</dd>
+      </div>
+      <div>
+        <dt>LogReg <span class="tag">Klassifikator · linear</span></dt>
+        <dd><b>Logistische Regression</b>: pro Klasse eine Gewichtszeile (3 × 6758) + Intercept. Skalarprodukt mit dem
+        Feature-Vektor ergibt einen Score je Klasse, <b>Softmax</b> macht daraus Wahrscheinlichkeiten.
+        Liefert damit <b>Konfidenzen</b> — Grundlage der invalid-Schwelle (ABB. 4). Kein Deep Learning:
+        eine einzige lineare Schicht, in Millisekunden auf CPU auswertbar.</dd>
+      </div>
+      <div>
+        <dt>LinearSVC <span class="tag">Klassifikator · linear</span></dt>
+        <dd><b>Support Vector Machine</b> (linear): ebenfalls eine Gewichtszeile pro Klasse, optimiert aber den
+        maximalen Trennabstand (Margin) statt Wahrscheinlichkeiten. Liefert <b>kein</b> <span class="mono">predict_proba</span> —
+        darum fehlt tfidf_svm im Schwellen-Sweep. Hier reine Baseline.</dd>
+      </div>
+      <div>
+        <dt>MiniLM <span class="tag">Featurizer · Transformer-Encoder</span></dt>
+        <dd><span class="mono">paraphrase-multilingual-MiniLM-L12-v2</span>: Encoder-only-Modell der <b>BERT-Familie</b>,
+        per Destillation verkleinert (12 Layer, Hidden 384, ~117M Parameter inkl. multilingualem Vokabular),
+        via sentence-transformers auf Paraphrasen finegetuned. Text → Tokens → 12 Self-Attention-Layer →
+        Mean Pooling → <b>dichtes 384-dim Satz-Embedding</b>; bedeutungsähnliche Sätze landen nahe beieinander
+        („bin raus“ ≈ „ich komme nicht“). Vortrainiert auf Standardsprache — „obmeldn“ und „Sogi doch!“
+        landen im Nirgendwo des Vektorraums.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ============ Methodik: Architektur-Muster ============ -->
+  <section id="architektur">
+    <div class="fig-head"><span class="fig-no">REF. B</span><h2>Architektur-Muster · Transfer-Learning-Stufen</h2></div>
+    <p class="fig-cap">Drei Stufen, wie viel vom Modell aus den eigenen Daten gelernt wird. Seit RUN 2026-07-29
+      sind alle drei im Vergleich vertreten — Stufe C als <span class="mono">minilm_ft</span>.</p>
+    <div class="arch">
+      <div class="arch-legend">
+        <span><span class="sw" style="border:1px solid var(--amber)"></span>aus unseren Daten trainiert</span>
+        <span><span class="sw" style="border:1px dashed #4a6d99"></span>vortrainiert, eingefroren (frozen)</span>
+        <span><span class="sw" style="border:1px solid var(--line)"></span>Daten / Ergebnis</span>
+      </div>
+
+      <div class="arch-row">
+        <div class="arch-title">A · FEATURE-EXTRAKTION, KLASSISCH <span class="who">→ tfidf_logreg · tfidf_svm</span></div>
+        <div class="pipe">
+          <span class="stage">Text</span><span class="arrow">→</span>
+          <span class="stage trained">TF-IDF<small>vocabulary + idf gelernt</small></span><span class="arrow">→</span>
+          <span class="stage trained">LogReg / SVM<small>coef + intercept gelernt</small></span><span class="arrow">→</span>
+          <span class="stage">Klasse</span>
+        </div>
+        <p class="arch-note"><b>Alles</b> stammt aus unseren Daten — Features wie Klassifikator. Kein Vorwissen,
+          dafür exakt auf die Eigenart der Nachrichten angepasst. Winzig im Deployment (165 KB, pure Go).</p>
+      </div>
+
+      <div class="arch-row">
+        <div class="arch-title">B · LINEAR PROBING / FROZEN ENCODER <span class="who">→ minilm_logreg</span></div>
+        <div class="pipe">
+          <span class="stage">Text</span><span class="arrow">→</span>
+          <span class="stage frozen">MiniLM-Encoder<small>117M Param. · unverändert</small></span><span class="arrow">→</span>
+          <span class="stage">384-dim Embedding</span><span class="arrow">→</span>
+          <span class="stage trained">LogReg<small>einzige gelernte Schicht</small></span><span class="arrow">→</span>
+          <span class="stage">Klasse</span>
+        </div>
+        <p class="arch-note">Auch „Feature-Extraktion mit vortrainiertem Netz“: der Encoder bleibt eingefroren,
+          nur der lineare Kopf lernt. Billig zu trainieren, aber der Encoder kann sich der Domäne
+          <b>nicht anpassen</b> — genau daran scheitert er hier (Macro-F1 0.57).</p>
+      </div>
+
+      <div class="arch-row">
+        <div class="arch-title">C · FULL FINE-TUNING <span class="who">→ minilm_ft</span></div>
+        <div class="pipe">
+          <span class="stage">Text</span><span class="arrow">→</span>
+          <span class="stage trained" style="border-style:dashed">MiniLM-Encoder<small>alle 117M Param. mittrainiert</small></span><span class="arrow">→</span>
+          <span class="stage trained">Klassifikations-Head<small>Linear 384 → 3</small></span><span class="arrow">→</span>
+          <span class="stage">Klasse</span>
+        </div>
+        <p class="arch-note">Ganzes Netz lernt mit (LR 2e-5, 4 Epochen, balanced Loss —
+          <span class="mono">finetune_minilm.py</span>). Ergebnis: Encoder eignet sich Bairisch/Emojis an,
+          Macro-F1 springt von <b>0.57 (frozen) auf 0.974</b> — schlägt TF-IDF trotzdem nicht.
+          Kosten bleiben: Deployment wüchse von <b>165 KB JSON</b> auf <b>~450 MB safetensors / ~100 MB ONNX</b> +
+          Tokenizer. Dazwischen läge noch PEFT/LoRA (nur kleine Adapter-Matrizen lernen) — bei dieser Modellgröße irrelevant.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Abb. 1 Rangliste ============ -->
+  <section id="leaderboard">
+    <div class="fig-head"><span class="fig-no">ABB. 1</span><h2>Rangliste · Macro-F1</h2></div>
+    <p class="fig-cap">Jede Klasse zählt gleich viel — die false-Übermacht (54/71) kann die Metrik nicht schönen.</p>
+    <div class="panel" id="lb"></div>
+  </section>
+
+  <!-- ============ Tab. 1 Metriken ============ -->
+  <section id="metrics">
+    <div class="fig-head"><span class="fig-no">TAB. 1</span><h2>Precision · Recall · F1 je Klasse</h2></div>
+    <p class="fig-cap">Vollständige Kennzahlen aus <span class="mono">classification_report</span>.
+      true-Werte beruhen auf n=1 und sind statistisch wertlos (rot markiert).</p>
+    <div class="panel chart-wrap" id="metrictable"></div>
+  </section>
+
+  <!-- ============ Abb. 2 F1-Dotplot ============ -->
+  <section id="classes">
+    <div class="fig-head"><span class="fig-no">ABB. 2</span><h2>F1 je Klasse · Spannweite</h2></div>
+    <p class="fig-cap">Wo genau verliert wer? MiniLM bricht bei <b>invalid</b> ein und trifft die einzige echte Zusage nicht.</p>
+    <div class="panel">
+      <div class="legend" id="dot-legend"></div>
+      <div class="chart-wrap" id="dotplot"></div>
+    </div>
+  </section>
+
+  <!-- ============ Abb. 3 Confusion ============ -->
+  <section id="confusion">
+    <div class="fig-head"><span class="fig-no">ABB. 3</span><h2>Confusion-Matrizen</h2></div>
+    <p class="fig-cap">Zeile = wahre Klasse, Spalte = Vorhersage. Nicht jeder Fehler kostet gleich:
+      true↔false (falsche Anwesenheit!) ist teuer, Abrutschen nach invalid billig.
+      <span class="err-key"><i></i> = Fehlklassifikation</span></p>
+    <div class="cm-grid" id="cms"></div>
+  </section>
+
+  <!-- ============ Abb. 4 Sweep ============ -->
+  <section id="sweep">
+    <div class="fig-head"><span class="fig-no">ABB. 4</span><h2>Konfidenz-Schwelle → Macro-F1</h2></div>
+    <p class="fig-cap">Vorhersagen unter der Schwelle werden auf invalid gesetzt (sicherer Default, gleiche Semantik
+      wie der Gemini-Prompt). tfidf_svm fehlt — LinearSVC liefert kein predict_proba. Der Einbruch ab 0.5 beim Sieger
+      ist die eine überschriebene true-Nachricht (n=1-Artefakt).</p>
+    <div class="panel sweep-panel" id="sweeppanel"></div>
+    <details class="data-table"><summary>Rohdaten (TAB. 2)</summary><div id="sweeptable"></div></details>
+  </section>
+
+  <!-- ============ Tab. 3 Fehlklassifikationen ============ -->
+  <section id="misses">
+    <div class="fig-head"><span class="fig-no">TAB. 3</span><h2>Fehlklassifikationen im Wortlaut</h2></div>
+    <p class="fig-cap">Jede falsch eingeordnete echte Nachricht. Der einzige Fehler des Siegers —
+      <i>„Gruzefix.... Nullinger“</i> — ist eine Insider-Absage, ohne Gesprächskontext aus dem Text allein nicht erkennbar.</p>
+    <div class="miss-tabs" role="tablist" id="misstabs"></div>
+    <div class="miss-list" id="misslist"></div>
+  </section>
+
+  <!-- ============ Anmerkungen ============ -->
+  <section>
+    <div class="notes">
+      <h2>Bekannte Einschränkungen — der 0.99 nicht blind trauen</h2>
+      <ol>
+        <li><strong>Implizites Test-Set-Tuning:</strong> Hyperparameter-Wahl und die synthetischen v2/v3-Nachlieferungen
+          orientierten sich an beobachteten Testfehlern — das Testset ist in die Modellentwicklung eingeflossen.</li>
+        <li><strong>n=1 für true:</strong> eine einzige echte Zusage im Testset. Erst wenn <code>ml_messages</code>
+          echte Zusagen gesammelt hat, wird die Klasse messbar.</li>
+        <li><strong>Schwelle unkalibriert:</strong> aus demselben Grund. Der eigentliche Abnahmetest ist der
+          <strong>Shadow-Modus</strong>: Modell läuft parallel zu Gemini, nur Gemini entscheidet,
+          Abweichungen werden wöchentlich gesichtet.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    <span>reproduzieren: <code>uv run scripts/evaluate.py</code></span>
+    <span>export: <code>scripts/export_weights.py → classifier-service/model/model.json.gz</code></span>
+    <span>details: <code>ml-classifier/README.md</code></span>
+  </footer>
+
+</div>
+<div id="tip" role="status"></div>
+
+<script>
+/* ================= Daten (evaluate.py, 29.07.2026) ================= */
+const CLASSES = ["true", "false", "invalid"];
+const SUPPORT = { "true": 1, "false": 54, "invalid": 16 };
+
+const MODELS = [
+  {
+    id: "tfidf_logreg", hex: "#c98500", winner: true,
+    desc: "char-n-Gramme (2–4) + LogReg · deployed als 165-KB-JSON in pure Go",
+    acc: 0.99, macro: 0.987,
+    report: {
+      "true":    { p: 1.00, r: 1.00, f1: 1.00 },
+      "false":   { p: 1.00, r: 0.98, f1: 0.99 },
+      "invalid": { p: 0.94, r: 1.00, f1: 0.97 },
+    },
+    cm:  [[1,0,0],[0,53,1],[0,0,16]],
+    sweep: [[0.0,0.987,0],[0.4,0.987,0],[0.5,0.632,2],[0.6,0.609,4],[0.7,0.598,5],[0.8,0.520,13]],
+    misses: [
+      { t: "false", p: "invalid", text: "Gruzefix.... Nullinger" },
+    ],
+  },
+  {
+    id: "minilm_ft", hex: "#199e70", winner: false,
+    desc: "MiniLM full-finetuned (alle 117M Param., 4 Epochen) · A/B zu minilm_logreg",
+    acc: 0.97, macro: 0.974,
+    report: {
+      "true":    { p: 1.00, r: 1.00, f1: 1.00 },
+      "false":   { p: 1.00, r: 0.96, f1: 0.98 },
+      "invalid": { p: 0.89, r: 1.00, f1: 0.94 },
+    },
+    cm:  [[1,0,0],[0,52,2],[0,0,16]],
+    sweep: [[0.0,0.974,0],[0.4,0.974,0],[0.5,0.974,0],[0.6,0.962,1],[0.7,0.620,2],[0.8,0.620,2]],
+    misses: [
+      { t: "false", p: "invalid", text: "Gruzefix.... Nullinger" },
+      { t: "false", p: "invalid", text: "Nein wir haben zu😒" },
+    ],
+  },
+  {
+    id: "tfidf_svm", hex: "#d55181", winner: false,
+    desc: "gleiche Features + LinearSVC · Baseline, keine Konfidenzen",
+    acc: 0.97, macro: 0.86,
+    report: {
+      "true":    { p: 0.50, r: 1.00, f1: 0.67 },
+      "false":   { p: 1.00, r: 0.98, f1: 0.99 },
+      "invalid": { p: 0.94, r: 0.94, f1: 0.94 },
+    },
+    cm:  [[1,0,0],[0,53,1],[1,0,15]],
+    sweep: null,
+    misses: [
+      { t: "false",   p: "invalid", text: "Gruzefix.... Nullinger" },
+      { t: "invalid", p: "true",    text: "Sogi doch!" },
+    ],
+  },
+  {
+    id: "minilm_logreg", hex: "#3987e5", winner: false,
+    desc: "MiniLM-Satz-Embeddings (frozen, 384-dim) + LogReg · kennt kein Bairisch",
+    acc: 0.89, macro: 0.57,
+    report: {
+      "true":    { p: 0.00, r: 0.00, f1: 0.00 },
+      "false":   { p: 0.94, r: 0.94, f1: 0.94 },
+      "invalid": { p: 0.80, r: 0.75, f1: 0.77 },
+    },
+    cm:  [[0,0,1],[1,51,2],[1,3,12]],
+    sweep: [[0.0,0.573,0],[0.4,0.562,1],[0.5,0.562,1],[0.6,0.516,8],[0.7,0.464,19],[0.8,0.383,31]],
+    misses: [
+      { t: "false",   p: "invalid", text: "Muss mich auch entschuldigen, muss mich im Online-Portal registrieren um noch Karten für d…" },
+      { t: "false",   p: "invalid", text: "Gruzefix.... Nullinger" },
+      { t: "false",   p: "true",    text: "Muss mich heut abmelden. Evtl komm ich später noch an Sprung ✌🏻" },
+      { t: "invalid", p: "false",   text: "Auf jeden Fall. Es gibt gottseidank an Aperol stand... Nix schlimmeres wie Lammsbräu... Wa…" },
+      { t: "invalid", p: "true",    text: "Sogi doch!" },
+      { t: "true",    p: "invalid", text: "Bei mir wirds bissi später ✌🏻" },
+      { t: "invalid", p: "false",   text: "Zu spät" },
+      { t: "invalid", p: "false",   text: "Muss ich morgen korrigieren 😅" },
+    ],
+  },
+];
+
+const fmt = (v, d = 2) => v.toFixed(d);
+
+/* ================= Tooltip ================= */
+const tip = document.getElementById("tip");
+function showTip(html, ev) { tip.innerHTML = html; tip.classList.add("on"); moveTip(ev); }
+function moveTip(ev) {
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.classList.remove("on"); }
+
+/* ================= Abb. 1 Rangliste ================= */
+{
+  const root = document.getElementById("lb");
+  const sorted = [...MODELS].sort((a, b) => b.macro - a.macro);
+  for (const m of sorted) {
+    const row = document.createElement("div");
+    row.className = "lb-row";
+    const pct = m.macro * 100;
+    row.innerHTML = `
+      <div class="lb-name"><span class="chip" style="background:${m.hex}"></span>${m.id}
+        ${m.winner ? '<span class="lb-badge">deployed</span>' : ""}</div>
+      <div class="lb-track">
+        <svg viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Macro-F1 ${m.id}: ${fmt(m.macro)}">
+          <line x1="0" y1="41" x2="100" y2="41" class="grid-line"/>
+          ${[0,25,50,75,100].map(t => `<line x1="${t === 100 ? 99.9 : t}" y1="38" x2="${t === 100 ? 99.9 : t}" y2="44" class="grid-line"/>`).join("")}
+          <rect x="0" y="26" width="${pct}" height="11" fill="${m.hex}" opacity="${m.winner ? 1 : 0.62}"/>
+          <rect x="${Math.max(0, pct - 0.9)}" y="23" width="0.9" height="17" fill="${m.hex}"/>
+        </svg>
+        <span class="lb-val num"><b>${fmt(m.macro, 3)}</b> · Acc ${fmt(m.acc)}</span>
+      </div>
+      <div class="lb-meta">${m.desc}</div>`;
+    row.querySelector(".lb-track").addEventListener("mousemove", ev =>
+      showTip(`<div class="t-head">${m.id}</div>
+        <div class="t-row"><span>Macro-F1</span><b>${fmt(m.macro, 3)}</b></div>
+        <div class="t-row"><span>Accuracy</span><b>${fmt(m.acc)}</b></div>
+        <div class="t-row"><span>Fehler</span><b>${m.misses.length} / 71</b></div>`, ev));
+    row.querySelector(".lb-track").addEventListener("mouseleave", hideTip);
+    root.appendChild(row);
+  }
+}
+
+/* ================= Tab. 1 Metriken ================= */
+{
+  let html = `<table class="metrics">
+    <tr><th>Modell / Klasse</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th><th>Acc</th><th>Macro-F1</th></tr>`;
+  for (const m of MODELS) {
+    html += `<tr class="model-row">
+      <td><span class="chip" style="background:${m.hex}"></span>${m.id}</td>
+      <td class="dim">–</td><td class="dim">–</td><td class="dim">–</td>
+      <td>71</td><td>${fmt(m.acc)}</td><td>${fmt(m.macro, 3)}</td></tr>`;
+    for (const c of CLASSES) {
+      const r = m.report[c];
+      const warn = c === "true" ? ' class="warn"' : "";
+      html += `<tr>
+        <td style="padding-left:24px; color:var(--ink-3)">└ ${c}</td>
+        <td${warn}>${fmt(r.p)}</td><td${warn}>${fmt(r.r)}</td><td${warn}>${fmt(r.f1)}</td>
+        <td class="dim">${SUPPORT[c]}</td><td class="dim"></td><td class="dim"></td></tr>`;
+    }
+  }
+  html += `</table>
+    <p class="tbl-note">Macro-F1 = ungewichtetes Mittel der drei Klassen-F1. <span style="color:var(--rose)">rot</span> = n=1, nicht belastbar.</p>`;
+  document.getElementById("metrictable").innerHTML = html;
+}
+
+/* ================= Abb. 2 Dot-Plot ================= */
+{
+  const legend = document.getElementById("dot-legend");
+  for (const m of MODELS) {
+    const s = document.createElement("span");
+    s.innerHTML = `<i style="background:${m.hex}"></i>${m.id}`;
+    legend.appendChild(s);
+  }
+
+  const W = 900, H = 220, L = 100, R = 30, T = 12, B = 34;
+  const plotW = W - L - R, plotH = H - T - B;
+  const y = i => T + plotH * (i + 0.5) / CLASSES.length;
+  const x = v => L + v * plotW;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="F1 pro Klasse und Modell" style="width:100%; height:auto; display:block;">`;
+  for (const g of [0, 0.25, 0.5, 0.75, 1]) {
+    svg += `<line x1="${x(g)}" y1="${T}" x2="${x(g)}" y2="${T + plotH}" class="grid-line"/>
+            <text x="${x(g)}" y="${H - 12}" text-anchor="middle" class="axis-label">${fmt(g)}</text>`;
+  }
+  CLASSES.forEach((c, i) => {
+    svg += `<text x="${L - 16}" y="${y(i) + 4}" text-anchor="end" style="font-size:16px; font-weight:600;" fill="var(--ink)">${c}</text>
+            <text x="${L - 16}" y="${y(i) + 19}" text-anchor="end" class="axis-label">n=${SUPPORT[c]}</text>
+            <line x1="${L}" y1="${y(i)}" x2="${L + plotW}" y2="${y(i)}" class="grid-line"/>`;
+    const pts = MODELS.map(m => ({ m, v: m.report[c].f1 })).sort((a, b) => a.v - b.v);
+    svg += `<line x1="${x(pts[0].v)}" y1="${y(i)}" x2="${x(pts[pts.length-1].v)}" y2="${y(i)}" stroke="var(--ink-3)" stroke-width="1.5" opacity=".5"/>`;
+    for (const { m, v } of pts) {
+      svg += `<circle cx="${x(v)}" cy="${y(i)}" r="6" fill="${m.hex}" stroke="var(--bg)" stroke-width="2"
+        data-m="${m.id}" data-c="${c}" data-v="${v}" style="cursor:default"/>`;
+    }
+  });
+  svg += `</svg>`;
+  const wrap = document.getElementById("dotplot");
+  wrap.innerHTML = svg;
+  wrap.querySelectorAll("circle").forEach(c => {
+    c.addEventListener("mousemove", ev => showTip(
+      `<div class="t-head">${c.dataset.m}</div>
+       <div class="t-row"><span>F1 · ${c.dataset.c}</span><b>${fmt(+c.dataset.v)}</b></div>
+       <div class="t-row"><span>Support</span><b>n=${SUPPORT[c.dataset.c]}</b></div>`, ev));
+    c.addEventListener("mouseleave", hideTip);
+  });
+}
+
+/* ================= Abb. 3 Confusion ================= */
+{
+  const root = document.getElementById("cms");
+  for (const m of MODELS) {
+    const total = m.cm.flat().reduce((a, b) => a + b, 0);
+    const max = Math.max(...m.cm.flat());
+    const fig = document.createElement("figure");
+    fig.className = "cm";
+    let rows = `<tr><th></th>${CLASSES.map(c => `<th>${c}</th>`).join("")}</tr>`;
+    m.cm.forEach((row, i) => {
+      rows += `<tr><th class="rowh">${CLASSES[i]}</th>` + row.map((v, j) => {
+        const strength = v === 0 ? 0 : 0.14 + 0.86 * (v / max);
+        const bg = v === 0 ? "var(--surface-2)"
+          : `color-mix(in oklab, ${m.hex} ${Math.round(strength * 100)}%, var(--surface-2))`;
+        const ink = strength > 0.55 ? "#131009" : "var(--ink)";
+        const err = i !== j && v > 0;
+        return `<td class="${err ? "err" : ""}" style="background:${bg}; color:${ink}"
+          data-t="${CLASSES[i]}" data-p="${CLASSES[j]}" data-v="${v}" data-err="${err}">${v}</td>`;
+      }).join("") + `</tr>`;
+    });
+    fig.innerHTML = `
+      <figcaption><span class="chip" style="width:8px;height:8px;background:${m.hex};display:inline-block"></span>${m.id}</figcaption>
+      <div class="cm-sub">acc=${fmt(m.acc)} · ${m.misses.length} Fehler / ${total}</div>
+      <table>${rows}</table>
+      <div class="cm-axes">Zeile = wahr · Spalte = vorhergesagt</div>`;
+    fig.querySelectorAll("td").forEach(td => {
+      td.addEventListener("mousemove", ev => showTip(
+        `<div class="t-head">${m.id}</div>
+         <div class="t-row"><span>wahr</span><b>${td.dataset.t}</b></div>
+         <div class="t-row"><span>vorhergesagt</span><b>${td.dataset.p}</b></div>
+         <div class="t-row"><span>Nachrichten</span><b>${td.dataset.v}</b></div>
+         ${td.dataset.err === "true" ? '<div class="t-row"><span style="color:var(--rose)">Fehlklassifikation</span></div>' : ""}`, ev));
+      td.addEventListener("mouseleave", hideTip);
+    });
+    root.appendChild(fig);
+  }
+}
+
+/* ================= Abb. 4 Sweep ================= */
+{
+  const W = 900, H = 320, L = 60, R = 150, T = 16, B = 44;
+  const plotW = W - L - R, plotH = H - T - B;
+  const xs = [0.0, 0.4, 0.5, 0.6, 0.7, 0.8];
+  const x = v => L + (v / 0.8) * plotW;
+  const yMin = 0.3, yMax = 1.0;
+  const y = v => T + plotH * (1 - (v - yMin) / (yMax - yMin));
+  const series = MODELS.filter(m => m.sweep);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Macro-F1 über Konfidenz-Schwelle">`;
+  for (let g = 0.3; g <= 1.001; g += 0.1) {
+    svg += `<line x1="${L}" y1="${y(g)}" x2="${L + plotW}" y2="${y(g)}" class="grid-line"/>
+            <text x="${L - 10}" y="${y(g) + 4}" text-anchor="end" class="axis-label">${fmt(g, 1)}</text>`;
+  }
+  for (const v of xs) {
+    svg += `<line x1="${x(v)}" y1="${T + plotH}" x2="${x(v)}" y2="${T + plotH + 5}" stroke="var(--line)" stroke-width="1"/>
+            <text x="${x(v)}" y="${H - 16}" text-anchor="middle" class="axis-label">${fmt(v, 1)}</text>`;
+  }
+  svg += `<text x="${L + plotW / 2}" y="${H - 1}" text-anchor="middle" class="axis-label">Konfidenz-Schwelle (darunter → invalid)</text>`;
+
+  for (const m of series) {
+    const pts = m.sweep.map(([t, f]) => `${x(t)},${y(f)}`).join(" ");
+    svg += `<polyline points="${pts}" fill="none" stroke="${m.hex}" stroke-width="2" stroke-linejoin="round"/>`;
+    for (const [t, f] of m.sweep) {
+      svg += `<rect x="${x(t) - 3.5}" y="${y(f) - 3.5}" width="7" height="7" fill="${m.hex}" stroke="var(--bg)" stroke-width="1.5"/>`;
+    }
+    const last = m.sweep[m.sweep.length - 1];
+    svg += `<text x="${x(last[0]) + 14}" y="${y(last[1]) + 4}" style="font-size:15.5px; font-weight:600;" fill="${m.hex}">${m.id}</text>`;
+  }
+  svg += `<line id="xh" x1="0" y1="${T}" x2="0" y2="${T + plotH}" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 4" opacity="0"/>`;
+  svg += `<rect id="hit" x="${L}" y="${T}" width="${plotW}" height="${plotH}" fill="transparent"/>`;
+  svg += `</svg>`;
+
+  const panel = document.getElementById("sweeppanel");
+  panel.innerHTML = svg;
+  const svgEl = panel.querySelector("svg"), xh = panel.querySelector("#xh");
+  panel.querySelector("#hit").addEventListener("mousemove", ev => {
+    const r = svgEl.getBoundingClientRect();
+    const mx = (ev.clientX - r.left) / r.width * W;
+    let best = xs[0];
+    for (const v of xs) if (Math.abs(x(v) - mx) < Math.abs(x(best) - mx)) best = v;
+    xh.setAttribute("x1", x(best)); xh.setAttribute("x2", x(best)); xh.setAttribute("opacity", "1");
+    const rows = series.map(m => {
+      const p = m.sweep.find(([t]) => t === best);
+      return `<div class="t-row"><span><i style="display:inline-block;width:7px;height:7px;background:${m.hex};margin-right:6px"></i>${m.id}</span>
+        <b>${fmt(p[1], 3)}</b></div>
+        <div class="t-row" style="font-size:14.5px"><span>überschrieben</span><b>${p[2]}</b></div>`;
+    }).join("");
+    showTip(`<div class="t-head">Schwelle ${fmt(best, 1)}</div>${rows}`, ev);
+  });
+  panel.querySelector("#hit").addEventListener("mouseleave", () => { xh.setAttribute("opacity", "0"); hideTip(); });
+
+  let tbl = `<table><tr><th>Schwelle</th>${series.map(m => `<th>${m.id}</th><th>überschr.</th>`).join("")}</tr>`;
+  for (const v of xs) {
+    tbl += `<tr><td>${fmt(v, 1)}</td>` + series.map(m => {
+      const p = m.sweep.find(([t]) => t === v);
+      return `<td>${fmt(p[1], 3)}</td><td>${p[2]}</td>`;
+    }).join("") + `</tr>`;
+  }
+  document.getElementById("sweeptable").innerHTML = tbl + "</table>";
+}
+
+/* ================= Tab. 3 Fehlklassifikationen ================= */
+{
+  const tabs = document.getElementById("misstabs");
+  const list = document.getElementById("misslist");
+  const order = [...MODELS].sort((a, b) => a.misses.length - b.misses.length);
+
+  function render(id) {
+    tabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.id === id));
+    const m = MODELS.find(m => m.id === id);
+    if (!m.misses.length) {
+      list.innerHTML = `<div class="miss-empty">Keine Fehlklassifikationen.</div>`;
+      return;
+    }
+    list.innerHTML = m.misses.map(x => `
+      <div class="miss-item">
+        <div class="miss-flow"><b>${x.t}</b><span class="arr">→</span><b>${x.p}</b></div>
+        <div class="miss-text">„${x.text}“</div>
+      </div>`).join("");
+  }
+  for (const m of order) {
+    const b = document.createElement("button");
+    b.role = "tab"; b.dataset.id = m.id;
+    b.textContent = `${m.id} [${m.misses.length}]`;
+    b.addEventListener("click", () => render(m.id));
+    tabs.appendChild(b);
+  }
+  render(order[0].id);
+}
+</script>
+</body>
+</html>

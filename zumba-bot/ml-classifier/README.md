@@ -197,6 +197,7 @@ uv sync --group embeddings     # einmalig; ohne die Gruppe wird minilm überspru
 uv run scripts/export_real.py      # DB → data/real.jsonl (DB_HOST etc. per Env)
 uv run scripts/merge_synthetic.py  # synthetic_*.jsonl → data/synthetic.jsonl
 uv run scripts/train.py            # Training + CV, Modelle → models/*.joblib
+uv run scripts/finetune_minilm.py  # MiniLM end-to-end finetunen → models/minilm_ft{,.joblib}
 uv run scripts/evaluate.py         # Bewertung auf dem goldenen Testset
 ```
 

@@ -24,6 +24,58 @@ def load_jsonl(path: Path) -> tuple[list[str], list[str]]:
     return texts, labels
 
 
+class FinetunedMiniLM:
+    """Finetuntes MiniLM (models/minilm_ft/, siehe finetune_minilm.py) hinter der
+    sklearn-Pipeline-API, damit evaluate.py es wie die joblib-Kandidaten behandelt.
+
+    Gleicher Trick wie MiniLMEncoder: das joblib-Artefakt speichert keine Gewichte,
+    beim Laden wird aus dem safetensors-Verzeichnis neu geladen.
+    """
+
+    DIR = MODELS / "minilm_ft"
+    BATCH = 64
+    MAX_LEN = 64
+
+    def __init__(self):
+        self._load()
+
+    def _load(self):
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        self.tok = AutoTokenizer.from_pretrained(self.DIR)
+        self.model = AutoModelForSequenceClassification.from_pretrained(self.DIR).eval()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model.to(self.device)
+        cfg = self.model.config
+        self.classes_ = [cfg.id2label[i] for i in range(cfg.num_labels)]
+
+    def predict_proba(self, X):
+        import numpy as np
+        import torch
+
+        out = []
+        with torch.no_grad():
+            for i in range(0, len(X), self.BATCH):
+                enc = self.tok(list(X[i:i + self.BATCH]), truncation=True,
+                               max_length=self.MAX_LEN, padding=True,
+                               return_tensors="pt").to(self.device)
+                probs = torch.softmax(self.model(**enc).logits, dim=-1)
+                out.append(probs.cpu().numpy())
+        return np.concatenate(out)
+
+    def predict(self, X):
+        import numpy as np
+
+        return [self.classes_[i] for i in np.argmax(self.predict_proba(X), axis=1)]
+
+    def __getstate__(self):
+        return {}
+
+    def __setstate__(self, state):
+        self._load()
+
+
 class MiniLMEncoder:
     """Frozen-Sentence-Embeddings als sklearn-Transformer."""
 
