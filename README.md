@@ -1,4 +1,4 @@
-# Stammtisch-Automatisierung („Zumba“)
+# Zumba-Bot
 
 Ein WhatsApp-Bot für einen wöchentlichen Donnerstags-Stammtisch: er erkennt Ab- und Zusagen
 in der Gruppe, schreibt sie nach Postgres und beantwortet `statistik`-Anfragen mit einer
