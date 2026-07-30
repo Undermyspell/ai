@@ -76,6 +76,13 @@
   ],
   "packageRules": [
     {
+      "description": "Go module dependencies are managed manually, not by Renovate",
+      "matchManagers": [
+        "gomod"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Auto-merge n8n updates in staging environment only",
       "matchFileNames": [
         "zumba-bot/deployment/environments/staging/values.yaml"
