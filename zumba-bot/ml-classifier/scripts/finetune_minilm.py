@@ -5,7 +5,8 @@ aber statt frozen Encoder + LogReg werden alle Gewichte mittrainiert; der
 Klassifikations-Head (Linear 384 -> 3) startet zufällig. Direkter A/B-Vergleich:
 rettet Domänen-Anpassung den Dialekt-Nachteil des vortrainierten Netzes?
 
-Setup wie bei den anderen Kandidaten: Training NUR auf data/synthetic.jsonl,
+Setup wie bei den anderen Kandidaten: Training auf data/synthetic.jsonl plus dem
+"train"-Anteil aus data/real.jsonl,
 das goldene Testset (real.jsonl) wird hier nie angefasst. Klassen-Gewichte in
 der Loss analog zu class_weight="balanced" bei den sklearn-Kandidaten.
 
@@ -37,7 +38,11 @@ def main() -> None:
     torch.manual_seed(SEED)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    texts, labels = load_jsonl(DATA / "synthetic.jsonl")
+    # Gleiche Trainingsmenge wie train.py: Synthetik + der "train"-Anteil der
+    # echten Nachrichten. Sonst waeren die Kandidaten nicht vergleichbar.
+    Xs, ys = load_jsonl(DATA / "synthetic.jsonl")
+    Xr, yr = load_jsonl(DATA / "real.jsonl", splits={"train"})
+    texts, labels = Xs + Xr, ys + yr
     y = torch.tensor([LABELS.index(l) for l in labels])
     print(f"Training: {len(texts)} synthetische Nachrichten auf {device} "
           f"({ {l: labels.count(l) for l in LABELS} })")

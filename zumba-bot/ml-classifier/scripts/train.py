@@ -1,9 +1,12 @@
 """Trainiert die Klassifikator-Kandidaten.
 
 Setup:
-- Training: NUR synthetische Daten (data/synthetic.jsonl)
-- Goldenes Testset: NUR echte Nachrichten (data/real.jsonl) — wird hier nie angefasst,
-  nur evaluate.py liest es. Damit misst die Eval den Transfer Synthetik -> Realwelt.
+- Training: data/synthetic.jsonl + die "train"-Records aus data/real.jsonl
+  (von Hand verifizierte Nachrichten und der Trainingsanteil der Absagen).
+- Goldenes Testset: die "test"-Records aus data/real.jsonl — werden hier nie
+  angefasst, nur evaluate.py liest sie.
+Die Zuordnung macht common.split_for über einen Hash des normalisierten Textes;
+derselbe Satz landet damit nie gleichzeitig in Training und Test.
 
 Kandidaten:
 - tfidf_svm:    TF-IDF char-n-grams (2-5) + LinearSVC (Baseline, kein predict_proba)
@@ -60,9 +63,14 @@ def candidates() -> dict[str, Pipeline]:
 
 
 def main() -> None:
-    X, y = load_jsonl(DATA / "synthetic.jsonl")
-    print(f"Training: {len(X)} synthetische Nachrichten "
-          f"({ {l: y.count(l) for l in LABELS} })", file=sys.stderr)
+    Xs, ys = load_jsonl(DATA / "synthetic.jsonl")
+    Xr, yr = load_jsonl(DATA / "real.jsonl", splits={"train"})
+    X, y = Xs + Xr, ys + yr
+    print(f"Training: {len(Xs)} synthetische + {len(Xr)} echte Nachrichten "
+          f"= {len(X)} ({ {l: y.count(l) for l in LABELS} })", file=sys.stderr)
+    if Xr:
+        print(f"  echte Trainingsdaten: "
+              f"{ {l: yr.count(l) for l in LABELS} }", file=sys.stderr)
 
     MODELS.mkdir(exist_ok=True)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)

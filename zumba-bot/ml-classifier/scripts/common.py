@@ -4,6 +4,7 @@ MiniLMEncoder muss hier (importierbares Modul) liegen, nicht in einem
 __main__-Skript — sonst können die joblib-Artefakte nicht wieder geladen werden.
 """
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -13,12 +14,55 @@ MODELS = ROOT / "models"
 
 LABELS = ["true", "false", "invalid"]
 
+# Anteil (in Prozent), der ins Testset geht — je nach Herkunft der Nachricht.
+# Verifizierte sind das wertvollste Signal und die einzige echte Quelle für
+# true/invalid, deshalb geht der Großteil ins Training und nur 30% in den Holdout.
+TEST_PCT_VERIFIED = 30
+TEST_PCT_ABWESENHEIT = 20
 
-def load_jsonl(path: Path) -> tuple[list[str], list[str]]:
+
+def bucket(norm_text: str) -> int:
+    """Stabiler Bucket 0-99 aus dem normalisierten Text.
+
+    Bewusst ein Hash und kein Zufalls-Split: eine Nachricht landet dadurch immer
+    auf derselben Seite, auch wenn der Datensatz wächst — sonst wären Metriken
+    über die Zeit nicht vergleichbar. Und weil der Split eine reine Funktion des
+    Textes ist, kann derselbe Satz nie gleichzeitig in Training und Test landen,
+    selbst wenn die Dedup irgendwo durchrutscht. Leakage ist damit strukturell
+    ausgeschlossen, nicht nur prozedural vermieden.
+    """
+    return int(hashlib.sha1(norm_text.encode("utf-8")).hexdigest(), 16) % 100
+
+
+def split_for(norm_text: str, origin: str, verified: bool) -> str:
+    """Ordnet einen Record "train", "test" oder "monitor" zu.
+
+    monitor = unverifizierte Gemini-/Bot-Label. Die gehören weder ins Training
+    (sonst lernt das Modell Geminis Fehler) noch in die Hauptmetrik (sonst misst
+    man Übereinstimmung mit Gemini statt Korrektheit) — sie werden nur separat
+    ausgewiesen, bis sie im Admin-UI bewertet wurden.
+    """
+    if verified:
+        return "test" if bucket(norm_text) < TEST_PCT_VERIFIED else "train"
+    if origin == "stammtisch_abwesenheit":
+        # Strukturell verlässlich (jede Zeile ist eine persistierte Absage),
+        # aber label-degeneriert: ausschließlich "false".
+        return "test" if bucket(norm_text) < TEST_PCT_ABWESENHEIT else "train"
+    return "monitor"
+
+
+def load_jsonl(path: Path, splits: set[str] | None = None
+               ) -> tuple[list[str], list[str]]:
+    """Lädt Texte + Label. splits filtert auf das split-Feld (None = alles).
+
+    synthetic.jsonl hat kein split-Feld; dort greift der Filter nie.
+    """
     texts, labels = [], []
     with path.open(encoding="utf-8") as f:
         for line in f:
             rec = json.loads(line)
+            if splits is not None and rec.get("split") not in splits:
+                continue
             texts.append(rec["text"])
             labels.append(rec["label"])
     return texts, labels

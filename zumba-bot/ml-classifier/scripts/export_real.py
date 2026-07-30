@@ -19,6 +19,8 @@ from pathlib import Path
 
 import psycopg2
 
+from common import split_for
+
 OUT = Path(__file__).resolve().parent.parent / "data" / "real.jsonl"
 
 
@@ -94,6 +96,11 @@ def main() -> None:
                 if key not in rows or (verified and not rows[key]["verified"]):
                     rows[key] = rec
 
+    # Split erst hier, nach der quellenübergreifenden Dedup: pro Text existiert
+    # genau ein Record, und der Bucket hängt nur am Text (siehe common.split_for).
+    for key, rec in rows.items():
+        rec["split"] = split_for(key, rec["origin"], rec["verified"])
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8") as f:
         for rec in rows.values():
@@ -104,6 +111,32 @@ def main() -> None:
         counts[rec["label"]] = counts.get(rec["label"], 0) + 1
     print(f"{len(rows)} Nachrichten -> {OUT}", file=sys.stderr)
     print(f"Labels: {counts}", file=sys.stderr)
+
+    print("\nSplit (Zeile = Herkunft):", file=sys.stderr)
+    print(f"  {'':26s} {'train':>6s} {'test':>6s} {'monitor':>8s}", file=sys.stderr)
+    for origin in ("stammtisch_abwesenheit", "bot_trace", "ml_messages",
+                   "ml_test_messages"):
+        sel = [r for r in rows.values() if r["origin"] == origin]
+        if not sel:
+            continue
+        n = {s: sum(1 for r in sel if r["split"] == s)
+             for s in ("train", "test", "monitor")}
+        print(f"  {origin:26s} {n['train']:6d} {n['test']:6d} {n['monitor']:8d}",
+              file=sys.stderr)
+    print(f"  {'GESAMT':26s} "
+          f"{sum(1 for r in rows.values() if r['split'] == 'train'):6d} "
+          f"{sum(1 for r in rows.values() if r['split'] == 'test'):6d} "
+          f"{sum(1 for r in rows.values() if r['split'] == 'monitor'):8d}",
+          file=sys.stderr)
+
+    test_labels = {l: sum(1 for r in rows.values()
+                          if r["split"] == "test" and r["label"] == l)
+                   for l in ("true", "false", "invalid")}
+    print(f"\nTestset nach Label: {test_labels}", file=sys.stderr)
+    thin = [l for l, n in test_labels.items() if n < 5]
+    if thin:
+        print(f"WARNUNG: Klasse(n) {', '.join(thin)} mit <5 Testfällen — "
+              f"Macro-F1 darauf ist noch nicht belastbar.", file=sys.stderr)
 
 
 if __name__ == "__main__":
