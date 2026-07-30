@@ -6,7 +6,7 @@
 <title>Eval-Protokoll · Stammtisch-Klassifikator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Archivo:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=Anton&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: dark;
@@ -18,19 +18,32 @@
     --line-soft: #241e17;
     --ink:       #ece5d8;
     --ink-2:     #a89d89;
-    --ink-3:     #756b5c;
+    --ink-3:     #8c8272;
     --amber:     #c98500;   /* tfidf_logreg */
     --blue:      #3987e5;   /* minilm_logreg */
     --rose:      #d55181;   /* tfidf_svm / Fehler-Marker */
     --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
     --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background:
+    /* Theme-Tokens: von den Skins unten überschrieben */
+    --display: var(--mono);      /* Schrift für Überschriften */
+    --radius: 0px;               /* Eckenradius aller Flächen */
+    --radius-sm: 0px;
+    --on-accent: #131009;        /* Textfarbe auf Akzentfläche */
+    --panel-bg: var(--surface);
+    --panel-shadow: none;
+    --glow: none;
+    --page-bg:
       repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 28px),
       repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 28px),
       var(--bg);
+    --head-transform: uppercase;
+    --head-spacing: .12em;
+    --head-weight: 600;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page-bg);
+    background-attachment: fixed;
     color: var(--ink);
     font-family: var(--sans);
     font-size: 18.5px;
@@ -42,7 +55,7 @@
   .page { max-width: 1300px; margin: 0 auto; padding: 40px clamp(16px, 3vw, 40px) 80px; }
 
   /* ---------- Protokoll-Kopf ---------- */
-  .prot-head { border: 1px solid var(--line); background: var(--surface); position: relative; }
+  .prot-head { border: 1px solid var(--line); background: var(--panel-bg); position: relative; border-radius: var(--radius); box-shadow: var(--panel-shadow); }
   .corner { position: absolute; width: 9px; height: 9px; border: 0 solid var(--ink-3); }
   .corner.tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
   .corner.tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
@@ -50,7 +63,7 @@
   .corner.br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
 
   .prot-title { padding: 18px 22px 14px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; justify-content: space-between; }
-  .prot-title h1 { font-family: var(--mono); font-size: 19.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+  .prot-title h1 { font-family: var(--display); font-size: 19.5px; font-weight: var(--head-weight); letter-spacing: var(--head-spacing); text-transform: var(--head-transform); text-wrap: balance; }
   .prot-title h1::before { content: "▮ "; color: var(--amber); }
   .prot-title .run { font-family: var(--mono); font-size: 15.5px; color: var(--ink-3); }
   .prot-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
@@ -58,11 +71,11 @@
   .prot-meta > div:last-child { border-right: 0; }
   .prot-meta dt { font-family: var(--mono); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
   .prot-meta dd { font-family: var(--mono); font-size: 16.5px; margin-top: 3px; color: var(--ink); }
-  .prot-note { border-top: 1px solid var(--line); padding: 12px 22px; font-size: 16.5px; color: var(--ink-2); max-width: none; }
+  .prot-note { border-top: 1px solid var(--line); padding: 14px 22px 16px; font-size: 16.5px; color: var(--ink-2); max-width: 46rem; }
   .prot-note b { color: var(--ink); font-weight: 600; }
 
   /* ---------- Ergebnis-Register ---------- */
-  .result-strip { margin-top: 28px; border: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto auto auto; background: var(--surface); }
+  .result-strip { margin-top: 28px; border: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1.9fr) repeat(3, minmax(150px, auto)); background: var(--panel-bg); border-radius: var(--radius); box-shadow: var(--panel-shadow); overflow: hidden; }
   .result-strip > div { padding: 14px 22px; border-right: 1px solid var(--line-soft); }
   .result-strip > div:last-child { border-right: 0; }
   .rs-label { font-family: var(--mono); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
@@ -76,16 +89,18 @@
   section { margin-top: 56px; }
   .fig-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; }
   .fig-head .fig-no { font-family: var(--mono); font-size: 15.5px; font-weight: 600; letter-spacing: .1em; color: var(--amber); white-space: nowrap; }
-  .fig-head h2 { font-family: var(--mono); font-size: 17px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .fig-head h2 { font-family: var(--display); font-size: 17px; font-weight: var(--head-weight); letter-spacing: var(--head-spacing); text-transform: var(--head-transform); }
   .fig-head::after { content: ""; flex: 1; border-bottom: 1px dashed var(--line); transform: translateY(-4px); }
-  .fig-cap { font-size: 16.5px; color: var(--ink-2); max-width: 76ch; margin-bottom: 20px; }
+  .fig-cap { font-size: 16.5px; color: var(--ink-2); max-width: 44rem; margin-bottom: 20px; }
   .fig-cap .err-key i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--rose); vertical-align: 1px; margin: 0 3px; }
 
-  .panel { border: 1px solid var(--line); background: var(--surface); position: relative; padding: 26px; }
+  .panel { border: 1px solid var(--line); background: var(--panel-bg); position: relative; padding: 26px; border-radius: var(--radius); box-shadow: var(--panel-shadow); }
   .chart-wrap { overflow-x: auto; }
 
   svg text { font-family: var(--mono); }
   .axis-label { font-size: 14.5px; fill: var(--ink-3); }
+  .cls-label { font-size: 16px; }
+  .series-label { font-size: 15.5px; font-weight: 600; }
   .grid-line { stroke: var(--line-soft); stroke-width: 1; }
 
   /* Rangliste */
@@ -120,7 +135,7 @@
 
   /* Confusion */
   .cm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
-  .cm { border: 1px solid var(--line); background: var(--surface); padding: 18px; }
+  .cm { border: 1px solid var(--line); background: var(--panel-bg); padding: 18px; border-radius: var(--radius); box-shadow: var(--panel-shadow); }
   .cm figcaption { font-family: var(--mono); font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .cm .cm-sub { font-family: var(--mono); font-size: 14.5px; color: var(--ink-3); margin: 2px 0 14px; }
   .cm table { border-collapse: collapse; width: 100%; }
@@ -151,10 +166,11 @@
     background: none; border: 0; border-right: 1px solid var(--line);
     padding: 8px 18px; cursor: pointer;
   }
+  .miss-tabs { border-radius: var(--radius) var(--radius) 0 0; overflow: hidden; }
   .miss-tabs button:last-child { border-right: 0; }
   .miss-tabs button:hover { color: var(--ink); background: var(--surface-2); }
   .miss-tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--ink); box-shadow: inset 0 2px 0 var(--amber); }
-  .miss-list { border: 1px solid var(--line); background: var(--surface); }
+  .miss-list { border: 1px solid var(--line); background: var(--panel-bg); border-radius: 0 var(--radius) var(--radius) var(--radius); box-shadow: var(--panel-shadow); }
   .miss-item { display: grid; grid-template-columns: 200px 1fr; gap: 18px; padding: 11px 18px; }
   .miss-item + .miss-item { border-top: 1px dashed var(--line-soft); }
   .miss-flow { font-family: var(--mono); font-size: 15.5px; color: var(--ink-3); white-space: nowrap; }
@@ -165,28 +181,34 @@
   @media (max-width: 640px) { .miss-item { grid-template-columns: 1fr; gap: 3px; } }
 
   /* Anmerkungen */
-  .notes { border: 1px solid var(--line); border-left: 3px solid var(--rose); background: var(--surface); padding: 20px 24px; }
-  .notes h2 { font-family: var(--mono); font-size: 16px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 14px; }
+  .notes {
+    border: 1px solid var(--line); border-left-color: var(--rose);
+    background:
+      linear-gradient(100deg, color-mix(in oklab, var(--rose) 10%, transparent), transparent 44%),
+      var(--panel-bg);
+    padding: 20px 24px; border-radius: var(--radius); box-shadow: var(--panel-shadow);
+  }
+  .notes h2 { font-family: var(--display); font-size: 16px; font-weight: var(--head-weight); letter-spacing: var(--head-spacing); text-transform: var(--head-transform); margin-bottom: 14px; }
   .notes h2::before { content: "⚠ "; color: var(--rose); }
-  .notes ol { margin-left: 18px; display: grid; gap: 10px; max-width: 80ch; }
+  .notes ol { margin-left: 18px; display: grid; gap: 10px; max-width: 44rem; }
   .notes li { color: var(--ink-2); font-size: 17px; }
   .notes li::marker { color: var(--rose); font-family: var(--mono); font-size: 15.5px; }
   .notes li strong { color: var(--ink); font-weight: 600; }
   .notes code { font-family: var(--mono); font-size: 15.5px; background: var(--surface-2); padding: 1px 5px; }
 
   /* ---------- Methodik / Glossar ---------- */
-  .gloss { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line); background: var(--surface); }
+  .gloss { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line); background: var(--panel-bg); border-radius: var(--radius); box-shadow: var(--panel-shadow); overflow: hidden; }
   .gloss > div { padding: 18px 22px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
   .gloss > div:nth-child(2n) { border-right: 0; }
   .gloss > div:nth-last-child(-n+2) { border-bottom: 0; }
   .gloss dt { font-family: var(--mono); font-size: 16px; font-weight: 600; display: flex; align-items: baseline; gap: 10px; }
   .gloss dt .tag { font-size: 12.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--line); padding: 0 6px; }
-  .gloss dd { font-size: 16.5px; color: var(--ink-2); margin-top: 6px; max-width: 58ch; }
+  .gloss dd { font-size: 16.5px; color: var(--ink-2); margin-top: 6px; max-width: 40rem; }
   .gloss dd b { color: var(--ink); font-weight: 600; }
   .gloss dd .mono { font-size: 15px; }
   @media (max-width: 760px) { .gloss { grid-template-columns: 1fr; } .gloss > div { border-right: 0; } .gloss > div:nth-last-child(-n+2) { border-bottom: 1px solid var(--line-soft); } .gloss > div:last-child { border-bottom: 0; } }
 
-  .arch { border: 1px solid var(--line); background: var(--surface); }
+  .arch { border: 1px solid var(--line); background: var(--panel-bg); border-radius: var(--radius); box-shadow: var(--panel-shadow); overflow: hidden; }
   .arch-legend { display: flex; flex-wrap: wrap; gap: 16px 28px; padding: 12px 22px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 14.5px; color: var(--ink-2); }
   .arch-legend .sw { display: inline-block; width: 14px; height: 11px; vertical-align: -1px; margin-right: 7px; }
   .arch-row { padding: 16px 22px 18px; }
@@ -194,13 +216,13 @@
   .arch-title { font-family: var(--mono); font-size: 15.5px; font-weight: 600; letter-spacing: .06em; }
   .arch-title .who { color: var(--ink-3); font-weight: 400; margin-left: 10px; }
   .pipe { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px 0; margin-top: 10px; }
-  .stage { font-family: var(--mono); font-size: 15px; padding: 7px 12px; border: 1px solid var(--line); color: var(--ink-2); display: flex; flex-direction: column; justify-content: center; }
+  .stage { font-family: var(--mono); font-size: 15px; padding: 7px 12px; border: 1px solid var(--line); color: var(--ink-2); display: flex; flex-direction: column; justify-content: center; border-radius: var(--radius-sm); }
   .stage small { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
   .stage.trained { border-color: var(--amber); color: var(--ink); }
   .stage.trained small { color: color-mix(in oklab, var(--amber) 70%, var(--ink-3)); }
   .stage.frozen { border-style: dashed; border-color: #4a6d99; }
   .pipe .arrow { align-self: center; font-family: var(--mono); color: var(--ink-3); padding: 0 8px; font-size: 15.5px; }
-  .arch-note { font-size: 16px; color: var(--ink-3); margin-top: 10px; max-width: 84ch; }
+  .arch-note { font-size: 16px; color: var(--ink-3); margin-top: 10px; max-width: 46rem; }
   .arch-note b { color: var(--ink-2); font-weight: 600; }
 
   footer { margin-top: 56px; border-top: 1px solid var(--line); padding-top: 16px;
@@ -220,17 +242,489 @@
   #tip .t-row { color: var(--ink-2); display: flex; gap: 14px; justify-content: space-between; }
   #tip .t-row b { color: var(--ink); font-weight: 500; }
 
+  #tip { border-radius: var(--radius-sm); box-shadow: var(--tip-shadow); }
+
+  /* Zweiter Titelteil: im Protokoll-Skin Fließsatz, sonst eigene Zeile im Leitton */
+  .prot-title h1 .t2 { color: inherit; font-style: normal; }
+  html:not([data-skin="protokoll"]) .prot-title h1 .sep { display: none; }
+  html:not([data-skin="protokoll"]) .prot-title h1 .t2 { display: block; }
+
+  html { scroll-behavior: smooth; }
+  section, header { scroll-margin-top: 76px; }
+  a { color: var(--amber); }
+  :where(a, button, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 3px;
+  }
+
+  /* ================================================================
+     Design-Umschalter · vier Welten, Auswahl bleibt gemerkt
+     Der Punkt links im Knopf zeigt den Leitton der jeweiligen Welt,
+     der Umschalter ist damit selbst die Legende.
+     ================================================================ */
+  .skinbar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+    margin: 0 0 26px; padding: 8px 10px;
+    background: color-mix(in oklab, var(--bg) 94%, transparent);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+  .skinbar .sb-spacer { flex: 1; }
+  .skinbar .sb-label {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-3); padding: 0 10px 0 6px;
+  }
+  .skinbar button {
+    font-family: var(--sans); font-size: 13.5px; font-weight: 500;
+    color: var(--ink-2); background: transparent; border: 1px solid transparent;
+    padding: 6px 13px; cursor: pointer; border-radius: calc(var(--radius-sm) - 2px);
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    transition: color .14s ease, background .14s ease, border-color .14s ease;
+  }
+  .skinbar button i {
+    width: 10px; height: 10px; border-radius: 50%; flex: none;
+    border: 2px solid var(--sw); background: transparent;
+    transition: background .14s ease;
+  }
+  .skinbar button[data-skin-btn="protokoll"] { --sw: #c98500; }
+  .skinbar button[data-skin-btn="neuro"]     { --sw: #4da3ff; }
+  .skinbar button[data-skin-btn="nova"]      { --sw: #c471f5; }
+  .skinbar button[data-skin-btn="abyss"]     { --sw: #e8b64c; }
+  .skinbar button:hover { color: var(--ink); background: color-mix(in oklab, var(--ink) 9%, transparent); }
+  .skinbar button[aria-pressed="true"] {
+    color: var(--ink); background: color-mix(in oklab, var(--sw) 18%, transparent);
+    border-color: color-mix(in oklab, var(--sw) 55%, transparent);
+  }
+  .skinbar button[aria-pressed="true"] i { background: var(--sw); }
+  @media (max-width: 760px) {
+    .skinbar { position: static; margin-bottom: 18px; padding: 7px 4px; }
+    .skinbar .sb-label, .skinbar .sb-spacer { display: none; }
+    .skinbar button { padding: 8px 11px; font-size: 13px; }
+  }
+
+  /* ================================================================
+     Sprungnavigation · in jedem Skin vorhanden, je Welt anders gebaut:
+     Protokoll = Registerzeile, NeuroLab = Pillenreihe,
+     Abyss = Goldlinie, Nova = Seitenleiste (ab 1200px).
+     ================================================================ */
+  .sidenav {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px;
+    margin: 26px 0 0; padding: 10px 0;
+    border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft);
+  }
+  .sidenav .sn-brand, .sidenav .sn-sub, .sidenav .sn-card { display: none; }
+  .sidenav a {
+    display: inline-flex; align-items: baseline; gap: 7px;
+    padding: 5px 10px; text-decoration: none; color: var(--ink-2);
+    font-family: var(--sans); font-size: 15px; border-radius: var(--radius-sm);
+    transition: background .14s ease, color .14s ease;
+  }
+  .sidenav a small {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; color: var(--ink-3);
+  }
+  .sidenav a:hover { color: var(--ink); background: color-mix(in oklab, var(--ink) 8%, transparent); }
+  .sidenav a[aria-current="true"] { color: var(--ink); background: color-mix(in oklab, var(--amber) 16%, transparent); }
+  .sidenav a[aria-current="true"] small { color: var(--amber); }
+
+  html[data-skin="neuro"] .sidenav a { border: 1px solid transparent; border-radius: 999px; }
+  html[data-skin="neuro"] .sidenav a[aria-current="true"] { border-color: color-mix(in oklab, var(--amber) 40%, transparent); }
+  html[data-skin="abyss"] .sidenav { border-top-color: color-mix(in oklab, var(--amber) 30%, transparent); border-bottom: 0; }
+  html[data-skin="abyss"] .sidenav a { text-transform: uppercase; letter-spacing: .06em; font-size: 13.5px; }
+  html[data-skin="protokoll"] .sidenav a { border-radius: 0; }
+
+  .page { padding-top: 0; }
+
+  /* Ein einziger Motion-Moment: der Weltenwechsel. Die Abschnitte
+     kommen gestaffelt zurück, danach ist die Seite still. */
+  @keyframes skin-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+  html[data-swapping] .page > *,
+  html[data-swapping] .sidenav {
+    animation: skin-in .62s cubic-bezier(.16, 1, .3, 1) both;
+    animation-delay: calc(var(--i, 0) * 42ms);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    html[data-swapping] .page > *, html[data-swapping] .sidenav { animation: none; }
+  }
+
+  /* ================================================================
+     SKIN 1 · neuro
+     Feeling: Diagnostik-Leuchtkasten. Kaltes Blau vor Marineschwarz,
+     Werte stehen wie Befunde auf einer Filmfolie.
+     Archivo (grotesk, technisch) trägt Titel und Fließtext.
+     ================================================================ */
+  html[data-skin="neuro"] {
+    --bg:        #050d1a;
+    --surface:   #0b1929;
+    --surface-2: #122234;
+    --line:      #1d3a59;
+    --line-soft: #152c47;
+    --ink:       #eaf3fd;
+    --ink-2:     #a4bcd6;
+    --ink-3:     #7492b0;
+    --amber:     #4da3ff;
+    --blue:      #2ee6c6;
+    --rose:      #ff7089;
+    --sans: "Archivo", "Segoe UI", sans-serif;
+    --display: "Archivo", sans-serif;
+    --radius: 14px; --radius-sm: 10px;
+    --on-accent: #03101f;
+    --focus: #7cc0ff;
+    --head-transform: none; --head-spacing: -.018em; --head-weight: 600;
+    --panel-bg: linear-gradient(180deg, #0d1d30 0%, #0a1626 100%);
+    --panel-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 20px 44px -30px rgba(0,0,0,.95);
+    --tip-shadow: 0 12px 30px -14px rgba(0,0,0,.8);
+    --page-bg:
+      radial-gradient(1200px 640px at 80% -14%, rgba(77,163,255,.22), transparent 62%),
+      radial-gradient(720px 460px at 4% 2%, rgba(46,230,198,.08), transparent 64%),
+      linear-gradient(180deg, #071426 0%, #050d1a 44%, #040a15 100%);
+  }
+  html[data-skin="neuro"] .prot-head { overflow: hidden; }
+  html[data-skin="neuro"] .prot-head::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    background: radial-gradient(620px 240px at 90% -10%, rgba(77,163,255,.20), transparent 72%);
+  }
+  html[data-skin="neuro"] .corner { display: none; }
+  html[data-skin="neuro"] .prot-title { position: relative; z-index: 1; padding: 28px 30px 22px; }
+  html[data-skin="neuro"] .prot-title h1 {
+    font-size: clamp(25px, 2.6vw, 33px); line-height: 1.16; max-width: 26ch;
+  }
+  html[data-skin="neuro"] .prot-title h1::before { content: none; }
+  html[data-skin="neuro"] .prot-title h1 .t2 { color: var(--amber); font-style: normal; }
+  html[data-skin="neuro"] .prot-title .run {
+    font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: #9fd0ff;
+    border: 1px solid color-mix(in oklab, var(--amber) 42%, transparent);
+    background: color-mix(in oklab, var(--amber) 13%, transparent);
+    padding: 6px 13px; border-radius: 999px;
+  }
+  html[data-skin="neuro"] .prot-meta > div { border-right-style: solid; }
+  html[data-skin="neuro"] .rs-val { font-size: clamp(26px, 2.4vw, 32px); letter-spacing: -.02em; }
+  html[data-skin="neuro"] .fig-head { gap: 12px; margin-bottom: 6px; }
+  html[data-skin="neuro"] .fig-head .fig-no {
+    font-size: 12px; letter-spacing: .14em; padding: 5px 11px; border-radius: 999px;
+    color: #9fd0ff;
+    background: color-mix(in oklab, var(--amber) 14%, transparent);
+    border: 1px solid color-mix(in oklab, var(--amber) 32%, transparent);
+  }
+  html[data-skin="neuro"] .fig-head h2 { font-size: clamp(18px, 1.7vw, 22px); }
+  html[data-skin="neuro"] .fig-head::after { border-bottom-style: solid; border-color: var(--line-soft); }
+  html[data-skin="neuro"] .cm { transition: transform .18s cubic-bezier(.16,1,.3,1), box-shadow .18s ease, border-color .18s ease; }
+  html[data-skin="neuro"] .cm:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--amber) 48%, var(--line));
+    box-shadow: 0 18px 38px -22px rgba(77,163,255,.75);
+  }
+  html[data-skin="neuro"] .miss-tabs {
+    border-radius: 999px; border-color: var(--line); padding: 4px; gap: 2px;
+    background: var(--surface); overflow: visible; margin-bottom: 12px;
+  }
+  html[data-skin="neuro"] .miss-tabs button { border-right: 0; border-radius: 999px; padding: 7px 17px; }
+  html[data-skin="neuro"] .miss-tabs button[aria-selected="true"] {
+    background: var(--amber); color: var(--on-accent); box-shadow: none; font-weight: 600;
+  }
+  html[data-skin="neuro"] .miss-list { border-radius: var(--radius); }
+  html[data-skin="neuro"] .lb-badge { border-radius: 999px; padding: 2px 10px; letter-spacing: .08em; }
+  html[data-skin="neuro"] .stage.frozen { border-color: var(--blue); }
+  /* Matrixzellen als einzelne Befund-Kacheln, nicht als Gitter */
+  html[data-skin="neuro"] .cm td { border: 2px solid var(--surface); border-radius: 7px; }
+  html[data-skin="neuro"] .cm figcaption { letter-spacing: -.01em; }
+  html[data-skin="neuro"] table.metrics th {
+    font-family: var(--sans); font-size: 12.5px; letter-spacing: .1em; color: var(--ink-2);
+  }
+  html[data-skin="neuro"] table.metrics tr.model-row td { background: color-mix(in oklab, var(--amber) 8%, transparent); }
+  html[data-skin="neuro"] table.metrics tr.model-row td:first-child { border-radius: 8px 0 0 8px; }
+  html[data-skin="neuro"] table.metrics tr.model-row td:last-child { border-radius: 0 8px 8px 0; }
+
+  /* ================================================================
+     SKIN 2 · nova
+     Feeling: Studiowand bei Nacht. Violett trägt ganze Flächen,
+     links läuft eine Werkschau-Navigation mit.
+     Bricolage Grotesque als Stimme, Figtree als Fließtext.
+     ================================================================ */
+  html[data-skin="nova"] {
+    --bg:        #0b0715;
+    --surface:   #181231;
+    --surface-2: #221942;
+    --line:      #362a5e;
+    --line-soft: #2a2049;
+    --ink:       #f5f0ff;
+    --ink-2:     #bdb0dd;
+    --ink-3:     #9285b8;
+    --amber:     #c471f5;
+    --blue:      #56c7ff;
+    --rose:      #ff6bb3;
+    --sans: "Figtree", "Segoe UI", sans-serif;
+    --display: "Bricolage Grotesque", sans-serif;
+    --radius: 20px; --radius-sm: 13px;
+    --on-accent: #190a26;
+    --focus: #ffa8dc;
+    --head-transform: none; --head-spacing: -.02em; --head-weight: 800;
+    --panel-bg: #181231;
+    --panel-shadow: 0 26px 54px -38px rgba(196,113,245,.7), 0 2px 0 rgba(255,255,255,.03) inset;
+    --tip-shadow: 0 18px 40px -18px rgba(0,0,0,.85);
+    --page-bg:
+      radial-gradient(680px 640px at -10% 10%, rgba(255,107,179,.16), transparent 64%),
+      radial-gradient(820px 720px at 110% 76%, rgba(139,92,246,.22), transparent 66%),
+      linear-gradient(180deg, #0d0919 0%, #0b0715 100%);
+  }
+  html[data-skin="nova"] .corner { display: none; }
+  html[data-skin="nova"] .prot-title { padding: 30px 32px 24px; }
+  html[data-skin="nova"] .prot-title h1 {
+    font-size: clamp(27px, 2.7vw, 36px); line-height: 1.08; max-width: 25ch;
+  }
+  html[data-skin="nova"] .prot-title h1::before { content: none; }
+  html[data-skin="nova"] .prot-title h1 .t2 { color: var(--amber); font-style: normal; }
+  html[data-skin="nova"] .prot-title .run {
+    font-size: 12.5px; color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px;
+  }
+  html[data-skin="nova"] .result-strip {
+    border: 0;
+    background: linear-gradient(103deg, #a81561 0%, #7d29c9 54%, #4436c9 100%);
+  }
+  html[data-skin="nova"] .result-strip { grid-template-columns: repeat(3, 1fr); }
+  html[data-skin="nova"] .result-strip > div { border-right-color: rgba(255,255,255,.24); }
+  html[data-skin="nova"] .result-strip .finding {
+    grid-column: 1 / -1; order: 2; border-right: 0;
+    border-top: 1px solid rgba(255,255,255,.24); max-width: 46rem;
+  }
+  html[data-skin="nova"] .result-strip .finding { color: #f3e4ff; }
+  html[data-skin="nova"] .result-strip .finding b { color: #fff; }
+  html[data-skin="nova"] .rs-label { color: #f3e4ff; }
+  html[data-skin="nova"] .rs-val { color: #fff; font-size: clamp(26px, 2.4vw, 32px); }
+  html[data-skin="nova"] .rs-val small { color: #f3e4ff; }
+  html[data-skin="nova"] .fig-head { display: block; }
+  html[data-skin="nova"] .fig-head::after { content: none; }
+  html[data-skin="nova"] .fig-head .fig-no { font-size: 12px; letter-spacing: .18em; color: var(--rose); }
+  html[data-skin="nova"] .fig-head h2 { font-size: clamp(21px, 2.1vw, 27px); margin-top: 1px; }
+  html[data-skin="nova"] .miss-tabs {
+    border: 0; gap: 8px; padding: 0; width: auto; margin-bottom: 14px; overflow: visible;
+  }
+  html[data-skin="nova"] .miss-tabs button {
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 18px; background: var(--surface);
+  }
+  html[data-skin="nova"] .miss-tabs button[aria-selected="true"] {
+    background: linear-gradient(103deg, #d6247e, #9b3ff0); color: #fff; border-color: transparent;
+    box-shadow: 0 10px 24px -14px rgba(214,36,126,.9);
+  }
+  html[data-skin="nova"] .miss-list { border-radius: var(--radius); }
+  html[data-skin="nova"] .lb-badge {
+    border-radius: 999px; padding: 2px 11px; color: #fff;
+    background: linear-gradient(103deg, #d6247e, #9b3ff0);
+  }
+  html[data-skin="nova"] .notes { border-left: 1px solid var(--line); }
+  html[data-skin="nova"] .stage { background: var(--surface-2); }
+  html[data-skin="nova"] .stage.trained { border-color: var(--amber); }
+  html[data-skin="nova"] .stage.frozen { border-color: var(--blue); }
+
+  /* Werkschau-Navigation (nur Nova) */
+  @media (min-width: 1200px) {
+    html[data-skin="nova"] .sidenav {
+      display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 3px;
+      position: fixed; top: 0; left: 0; bottom: 0; width: 244px; z-index: 20;
+      margin: 0; padding: 26px 16px 20px; overflow-y: auto;
+      background: linear-gradient(180deg, #150f2b 0%, #0d091c 100%);
+      border: 0; border-right: 1px solid var(--line);
+    }
+    html[data-skin="nova"] .sidenav .sn-brand,
+    html[data-skin="nova"] .sidenav .sn-card { display: flex; }
+    html[data-skin="nova"] .sidenav .sn-sub { display: block; }
+    html[data-skin="nova"] .sidenav a { padding: 9px 12px; border-radius: 12px; font-size: 15px; }
+    html[data-skin="nova"] .sidenav a small { min-width: 44px; }
+    html[data-skin="nova"] body { padding-left: 244px; }
+    html[data-skin="nova"] .page { max-width: 1180px; }
+  }
+  .sidenav .sn-brand {
+    align-items: center; gap: 11px; padding: 0 12px 3px;
+    font-family: var(--display); font-size: 16.5px; font-weight: 800; color: var(--ink);
+    letter-spacing: -.01em;
+  }
+  .sidenav .sn-brand svg { width: 34px; height: 34px; flex: none; border-radius: 11px; }
+  .sidenav .sn-sub {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-3);
+    padding: 0 12px 20px; letter-spacing: .1em; text-transform: uppercase;
+  }
+  .sidenav a {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px; border-radius: 12px; text-decoration: none;
+    color: var(--ink-2); font-size: 15px; font-family: var(--sans);
+    transition: background .14s ease, color .14s ease;
+  }
+  .sidenav a small {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: .06em; min-width: 44px;
+  }
+  .sidenav a:hover { background: var(--surface-2); color: var(--ink); }
+  .sidenav a[aria-current="true"] {
+    background: linear-gradient(103deg, rgba(214,36,126,.26), rgba(155,63,240,.26));
+    color: var(--ink);
+  }
+  .sidenav a[aria-current="true"] small { color: #ff9fd0; }
+  .sidenav .sn-card {
+    margin-top: auto; flex-direction: column; border: 1px solid var(--line); border-radius: 16px; padding: 15px;
+    background: linear-gradient(140deg, rgba(214,36,126,.2), rgba(91,75,240,.2));
+    font-size: 13.5px; color: var(--ink-2); line-height: 1.5;
+  }
+  .sidenav .sn-card b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 5px; }
+  .sidenav .sn-card code { font-family: var(--mono); font-size: 12px; color: var(--ink); }
+
+  /* ================================================================
+     SKIN 3 · abyss
+     Feeling: Tiefsee. Licht fällt von oben durchs Wasser, die Panels
+     schweben als Glasplatten darin, Gold markiert jeden Fundort.
+     Anton (schwer, kondensiert) als Plakatstimme.
+     ================================================================ */
+  html[data-skin="abyss"] {
+    --bg:        #01101f;
+    --surface:   rgba(9, 33, 58, .78);
+    --surface-2: rgba(15, 46, 78, .86);
+    --line:      #17517f;
+    --line-soft: #103f66;
+    --ink:       #e2f0ff;
+    --ink-2:     #9dc0de;
+    --ink-3:     #7ba0c0;
+    --amber:     #f0c059;
+    --blue:      #4cc2ff;
+    --rose:      #ff7d99;
+    --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --display: "Anton", "Archivo", sans-serif;
+    --radius: 10px; --radius-sm: 7px;
+    --on-accent: #1a1405;
+    --focus: #ffd98a;
+    --head-transform: uppercase; --head-spacing: .07em; --head-weight: 400;
+    --panel-bg: rgba(8, 30, 54, .72);
+    --panel-shadow: 0 0 0 1px rgba(76,194,255,.08) inset, 0 22px 52px -34px rgba(0,0,0,.98);
+    --tip-shadow: 0 16px 34px -16px rgba(0,0,0,.9);
+    --page-bg:
+      conic-gradient(from 196deg at 52% -18%, transparent 0deg, rgba(76,194,255,.14) 11deg, transparent 24deg,
+                     rgba(76,194,255,.09) 38deg, transparent 55deg, rgba(76,194,255,.13) 72deg, transparent 90deg),
+      radial-gradient(1000px 520px at 50% -8%, rgba(76,194,255,.2), transparent 70%),
+      linear-gradient(180deg, #05304f 0%, #021c33 32%, #01101f 72%, #010a16 100%);
+  }
+  html[data-skin="abyss"] .prot-head,
+  html[data-skin="abyss"] .result-strip,
+  html[data-skin="abyss"] .panel { backdrop-filter: blur(10px) saturate(130%); }
+  html[data-skin="abyss"] .corner { border-color: var(--amber); width: 12px; height: 12px; }
+  html[data-skin="abyss"] .prot-title { padding: 26px 28px 20px; }
+  html[data-skin="abyss"] .prot-title h1 {
+    font-size: clamp(26px, 2.7vw, 36px); line-height: 1.05; max-width: 25ch; font-weight: 400;
+  }
+  html[data-skin="abyss"] .prot-title h1::before { content: none; }
+  html[data-skin="abyss"] .prot-title h1 .t2 { color: var(--amber); font-style: normal; }
+  html[data-skin="abyss"] .prot-title .run { color: #8fd4ff; letter-spacing: .08em; }
+  html[data-skin="abyss"] .fig-head .fig-no {
+    color: var(--amber); font-family: var(--display); font-size: 14px; letter-spacing: .18em;
+  }
+  html[data-skin="abyss"] .fig-head h2 { font-size: clamp(16px, 1.6vw, 20px); }
+  html[data-skin="abyss"] .fig-head::after {
+    border-bottom: 0; height: 1px; flex: 1; transform: translateY(-3px);
+    background: linear-gradient(90deg, color-mix(in oklab, var(--amber) 60%, transparent), transparent 72%);
+  }
+  html[data-skin="abyss"] .rs-val { color: var(--ink); }
+  html[data-skin="abyss"] .result-strip .finding b { color: var(--amber); }
+  html[data-skin="abyss"] .cm { transition: border-color .18s ease, box-shadow .18s ease; }
+  html[data-skin="abyss"] .cm:hover {
+    border-color: color-mix(in oklab, var(--blue) 62%, var(--line));
+    box-shadow: 0 20px 44px -26px rgba(76,194,255,.65);
+  }
+  /* Confusion-Matrizen als Glasplatten mit Fundmarken an den Ecken,
+     Zellen ohne eigenes Gitter — die Farbe traegt die Struktur. */
+  html[data-skin="abyss"] .cm {
+    border-radius: 0; position: relative;
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--amber) 5%, transparent), transparent 40%),
+      var(--panel-bg);
+  }
+  html[data-skin="abyss"] .cm::before,
+  html[data-skin="abyss"] .cm::after {
+    content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--amber);
+  }
+  html[data-skin="abyss"] .cm::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+  html[data-skin="abyss"] .cm::after { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+  html[data-skin="abyss"] .cm figcaption {
+    font-family: var(--display); font-weight: 400; letter-spacing: .06em; text-transform: uppercase;
+    padding-bottom: 8px; border-bottom: 1px solid color-mix(in oklab, var(--amber) 32%, transparent);
+  }
+  html[data-skin="abyss"] .cm .cm-sub { margin-top: 6px; }
+  html[data-skin="abyss"] .cm td { border-color: transparent; }
+  html[data-skin="abyss"] table.metrics th {
+    font-family: var(--display); font-weight: 400; font-size: 13px; letter-spacing: .12em;
+    color: var(--amber); border-bottom-color: color-mix(in oklab, var(--amber) 34%, transparent);
+  }
+  html[data-skin="abyss"] .miss-tabs {
+    border: 0; border-bottom: 1px solid color-mix(in oklab, var(--amber) 26%, transparent);
+    border-radius: 0; padding: 0; overflow: visible;
+  }
+  html[data-skin="abyss"] .miss-tabs button {
+    border-right: 0; text-transform: uppercase; letter-spacing: .07em; font-size: 13.5px;
+    font-family: var(--display); font-weight: 400; padding: 9px 16px;
+  }
+  html[data-skin="abyss"] .miss-tabs button[aria-selected="true"] {
+    background: transparent; color: var(--amber); box-shadow: inset 0 -2px 0 var(--amber);
+  }
+  html[data-skin="abyss"] .miss-list { border-radius: 0; }
+  html[data-skin="abyss"] .panel { border-top: 1px solid color-mix(in oklab, var(--amber) 22%, transparent); }
+  html[data-skin="abyss"] .lb-badge { letter-spacing: .14em; }
+  html[data-skin="abyss"] .stage.frozen { border-color: var(--blue); }
+  html[data-skin="abyss"] footer { border-top-color: color-mix(in oklab, var(--amber) 32%, transparent); }
+
+  /* ================================================================
+     Gezeichnetes Warn-Icon statt Textglyphe (alle Skins außer dem
+     Protokoll, dessen Welt aus Schriftzeichen besteht)
+     ================================================================ */
+  html:not([data-skin="protokoll"]) .notes h2::before {
+    content: ""; display: inline-block; width: 18px; height: 18px;
+    vertical-align: -3px; margin-right: 9px; background: var(--rose);
+    -webkit-mask: var(--icon-warn) center / contain no-repeat;
+            mask: var(--icon-warn) center / contain no-repeat;
+  }
+  :root {
+    --icon-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.9 18.2A2 2 0 0 0 3.6 21.2h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+    --tip-shadow: 3px 8px 22px -8px rgba(0,0,0,.75);
+    --focus: var(--amber);
+  }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
+<!--
+  THESIS: Ein Eval-Protokoll, das vier Welten tragen kann, ohne eine Zahl zu
+  verlieren. Kein Theme-Toggle als Farbfilter — jeder Skin bringt eigene Schrift,
+  eigene Flächenlogik und eigene Diagramm-Palette mit; die Struktur bleibt.
+  OWN-WORLD: protokoll = Laborausdruck, Bernstein auf Millimeterraster, Mono.
+  neuro = Diagnostik-Leuchtkasten, Marineblau + Signalblau, Archivo.
+  nova = Studiowand bei Nacht, Violett/Magenta über ganze Flächen, Werkschau-
+  Navigation, Bricolage Grotesque + Figtree. abyss = Tiefsee, Glasplatten im
+  Streulicht, Gold als Fundmarke, Anton.
+  STORY: Der Leser prüft Kandidaten, sieht die Streuung, liest die Fehlgriffe im
+  Wortlaut — und wählt die Welt, in der er das gern tut.
+  FIRST VIEWPORT: Protokollkopf mit Run-Marke und Setup-Warnung, direkt darunter
+  die Ergebniszeile (CV-Macro-F1, Holdout, true↔false); Umschalter oben rechts.
+  FORM: brief-gepinnt aus drei Referenzbildern, Feeling statt 1:1-Layout.
+  FINISH: unreviewed und undokumentiert ist unfertig; dieser Build endet mit
+  Finish-Review, Verdict und DESIGN.md.
+-->
+
 <div class="page">
+
+  <!-- ============ Design-Umschalter ============ -->
+  <div class="skinbar" role="group" aria-label="Design wählen">
+    <span class="sb-label">Design</span>
+    <button type="button" data-skin-btn="protokoll" aria-pressed="false"><i></i>Protokoll</button>
+    <button type="button" data-skin-btn="neuro" aria-pressed="false"><i></i>NeuroLab</button>
+    <button type="button" data-skin-btn="nova" aria-pressed="false"><i></i>Nova</button>
+    <button type="button" data-skin-btn="abyss" aria-pressed="false"><i></i>Abyss</button>
+  </div>
 
   <!-- ============ Protokoll-Kopf ============ -->
   <header class="prot-head">
     <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
     <div class="prot-title">
-      <h1>Eval-Protokoll · Stammtisch-Klassifikator</h1>
+      <h1>Eval-Protokoll<span class="sep"> · </span><span class="t2">Stammtisch-Klassifikator</span></h1>
       <span class="run">RUN 2026-07-30 · scripts/train.py + scripts/evaluate.py</span>
     </div>
     <dl class="prot-meta">
@@ -259,6 +753,33 @@
     <div><div class="rs-label">Holdout</div><div class="rs-val num">12/12 <small>ohne true-Klasse</small></div></div>
     <div><div class="rs-label">true↔false</div><div class="rs-val num">0</div></div>
   </div>
+
+  <!-- ============ Sprungnavigation (Nova-Skin) ============ -->
+  <nav class="sidenav" aria-label="Abschnitte">
+    <div class="sn-brand">
+      <svg viewBox="0 0 34 34" aria-hidden="true">
+        <rect width="34" height="34" rx="11" fill="url(#snGrad)"/>
+        <g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+          <path d="M9 24V15"/><path d="M14.3 24V10"/><path d="M19.7 24v-6"/><path d="M25 24v-11"/>
+        </g>
+        <defs>
+          <linearGradient id="snGrad" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#d6247e"/><stop offset="1" stop-color="#9b3ff0"/>
+          </linearGradient>
+        </defs>
+      </svg>Eval-Protokoll</div>
+    <div class="sn-sub">RUN 2026-07-30</div>
+    <a href="#glossar"><small>REF. A</small>Glossar</a>
+    <a href="#architektur"><small>REF. B</small>Architektur</a>
+    <a href="#split"><small>REF. C</small>Datensplit</a>
+    <a href="#leaderboard"><small>ABB. 1</small>Rangliste</a>
+    <a href="#metrics"><small>TAB. 1</small>Kennzahlen</a>
+    <a href="#classes"><small>ABB. 2</small>F1 je Klasse</a>
+    <a href="#confusion"><small>ABB. 3</small>Confusion</a>
+    <a href="#sweep"><small>ABB. 4</small>Schwelle</a>
+    <a href="#misses"><small>TAB. 3</small>Fehlgriffe</a>
+    <div class="sn-card"><b>Deployed</b>tfidf_logreg · CV-Macro-F1 0.960 · <code>model.json.gz</code> 165 KB</div>
+  </nav>
 
   <!-- ============ Methodik: Glossar ============ -->
   <section id="glossar">
@@ -497,7 +1018,7 @@
   </footer>
 
 </div>
-<div id="tip" role="status"></div>
+<div id="tip" aria-hidden="true"></div>
 
 <script>
 /* ================= Daten (train.py + evaluate.py, 30.07.2026) =================
@@ -579,6 +1100,25 @@ const MODELS = [
 ];
 
 const fmt = (v, d = 2) => v.toFixed(d);
+/* Die SVGs haben eine feste viewBox und werden auf die Panelbreite
+   skaliert. Auf dem Telefon schrumpft damit auch die Schrift auf ~6px,
+   also bekommen schmale Viewports groessere Randbreiten und
+   Schriftgroessen IN viewBox-Einheiten. */
+const narrow = () => innerWidth < 760;
+
+/* Relative Helligkeit nach WCAG. Die Confusion-Zellen mischen die
+   Modellfarbe in die Flaeche; ob die Zahl hell oder dunkel stehen muss,
+   haengt an der Helligkeit der MISCHUNG, nicht am Mischanteil: Gold bei
+   43 % ist hell, Blau bei 43 % ist dunkel. */
+function luminance(hex) {
+  const h = hex.replace("#", "");
+  const ch = [0, 2, 4].map(i => {
+    const c = parseInt(h.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+const SURFACE_L = 0.02;   /* alle Skins sind dunkel; Flaeche ~ 2 % */
 
 /* ================= Tooltip ================= */
 const tip = document.getElementById("tip");
@@ -593,8 +1133,9 @@ function moveTip(ev) {
 function hideTip() { tip.classList.remove("on"); }
 
 /* ================= Abb. 1 Rangliste ================= */
-{
+function renderLeaderboard() {
   const root = document.getElementById("lb");
+  root.innerHTML = "";
   // ohne CV (minilm_ft) ans Ende, sonst absteigend nach CV-Macro-F1
   const sorted = [...MODELS].sort((a, b) => (b.cv ?? -1) - (a.cv ?? -1));
   for (const m of sorted) {
@@ -632,7 +1173,7 @@ function hideTip() { tip.classList.remove("on"); }
 }
 
 /* ================= Tab. 1 Metriken ================= */
-{
+function renderMetrics() {
   let html = `<table class="metrics">
     <tr><th>Modell / Klasse</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th><th>Acc</th><th>Macro (belegt)</th></tr>`;
   for (const m of MODELS) {
@@ -655,15 +1196,18 @@ function hideTip() { tip.classList.remove("on"); }
 }
 
 /* ================= Abb. 2 Dot-Plot ================= */
-{
+function renderDotplot() {
   const legend = document.getElementById("dot-legend");
+  legend.innerHTML = "";
   for (const m of MODELS) {
     const s = document.createElement("span");
     s.innerHTML = `<i style="background:${m.hex}"></i>${m.id}`;
     legend.appendChild(s);
   }
 
-  const W = 900, H = 220, L = 100, R = 30, T = 12, B = 34;
+  const nw = narrow();
+  const W = 900, H = nw ? 350 : 220, L = nw ? 190 : 100, R = nw ? 40 : 30, T = 12, B = nw ? 66 : 34;
+  const fsAxis = nw ? 30 : 14.5, fsCls = nw ? 34 : 16;
   const plotW = W - L - R, plotH = H - T - B;
   const y = i => T + plotH * (i + 0.5) / CLASSES.length;
   const x = v => L + v * plotW;
@@ -671,16 +1215,23 @@ function hideTip() { tip.classList.remove("on"); }
   let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="F1 pro Klasse und Modell" style="width:100%; height:auto; display:block;">`;
   for (const g of [0, 0.25, 0.5, 0.75, 1]) {
     svg += `<line x1="${x(g)}" y1="${T}" x2="${x(g)}" y2="${T + plotH}" class="grid-line"/>
-            <text x="${x(g)}" y="${H - 12}" text-anchor="middle" class="axis-label">${fmt(g)}</text>`;
+            <text x="${x(g)}" y="${H - (nw ? 22 : 12)}" text-anchor="middle" class="axis-label" style="font-size:${fsAxis}px">${fmt(g)}</text>`;
   }
   CLASSES.forEach((c, i) => {
-    svg += `<text x="${L - 16}" y="${y(i) + 4}" text-anchor="end" style="font-size:16px; font-weight:600;" fill="var(--ink)">${c}</text>
-            <text x="${L - 16}" y="${y(i) + 19}" text-anchor="end" class="axis-label">n=${SUPPORT[c]}</text>
+    svg += `<text x="${L - 16}" y="${y(i) + 4}" text-anchor="end" class="cls-label" style="font-size:${fsCls}px; font-weight:600;" fill="var(--ink)">${c}</text>
+            <text x="${L - 16}" y="${y(i) + (nw ? 34 : 19)}" text-anchor="end" class="axis-label" style="font-size:${fsAxis}px">n=${SUPPORT[c]}</text>
             <line x1="${L}" y1="${y(i)}" x2="${L + plotW}" y2="${y(i)}" class="grid-line"/>`;
     const pts = MODELS.map(m => ({ m, v: m.report[c].f1 })).sort((a, b) => a.v - b.v);
     svg += `<line x1="${x(pts[0].v)}" y1="${y(i)}" x2="${x(pts[pts.length-1].v)}" y2="${y(i)}" stroke="var(--ink-3)" stroke-width="1.5" opacity=".5"/>`;
+    /* Gleiche Werte lagen exakt uebereinander — sichtbar blieb nur der
+       letzte. Deckungsgleiche Punkte werden deshalb vertikal gefaechert. */
+    const seen = new Map();
     for (const { m, v } of pts) {
-      svg += `<circle cx="${x(v)}" cy="${y(i)}" r="6" fill="${m.hex}" stroke="var(--bg)" stroke-width="2"
+      const k = v.toFixed(3);
+      const n = seen.get(k) || 0;
+      seen.set(k, n + 1);
+      const dy = n === 0 ? 0 : (n % 2 ? 1 : -1) * Math.ceil(n / 2) * (nw ? 20 : 13);
+      svg += `<circle cx="${x(v)}" cy="${y(i) + dy}" r="6" fill="${m.hex}" stroke="var(--bg)" stroke-width="2"
         data-m="${m.id}" data-c="${c}" data-v="${v}" style="cursor:default"/>`;
     }
   });
@@ -697,8 +1248,9 @@ function hideTip() { tip.classList.remove("on"); }
 }
 
 /* ================= Abb. 3 Confusion ================= */
-{
+function renderConfusion() {
   const root = document.getElementById("cms");
+  root.innerHTML = "";
   for (const m of MODELS) {
     const total = m.cm.flat().reduce((a, b) => a + b, 0);
     const max = Math.max(...m.cm.flat());
@@ -710,7 +1262,8 @@ function hideTip() { tip.classList.remove("on"); }
         const strength = v === 0 ? 0 : 0.14 + 0.86 * (v / max);
         const bg = v === 0 ? "var(--surface-2)"
           : `color-mix(in oklab, ${m.hex} ${Math.round(strength * 100)}%, var(--surface-2))`;
-        const ink = strength > 0.55 ? "#131009" : "var(--ink)";
+        const mixL = strength * luminance(m.hex) + (1 - strength) * SURFACE_L;
+        const ink = mixL > 0.3 ? "var(--on-accent)" : "var(--ink)";
         const err = i !== j && v > 0;
         return `<td class="${err ? "err" : ""}" style="background:${bg}; color:${ink}"
           data-t="${CLASSES[i]}" data-p="${CLASSES[j]}" data-v="${v}" data-err="${err}">${v}</td>`;
@@ -735,10 +1288,19 @@ function hideTip() { tip.classList.remove("on"); }
 }
 
 /* ================= Abb. 4 Sweep ================= */
-{
-  const W = 900, H = 320, L = 60, R = 150, T = 16, B = 44;
+function renderSweep() {
+  const nw = narrow();
+  const nSeries = MODELS.filter(m => m.sweep).length;
+  /* schmal: Legende steht ueber dem Diagramm, der Plot beginnt darunter */
+  const W = 900, L = nw ? 92 : 60, R = nw ? 30 : 150;
+  const T = nw ? 30 + nSeries * 34 : 16, B = nw ? 104 : 44;
+  const H = (nw ? 300 : 260) + T + B - (nw ? T : 0) + (nw ? T : 0);
+  const fsAxis = nw ? 30 : 14.5, fsSeries = nw ? 32 : 15.5;
   const plotW = W - L - R, plotH = H - T - B;
+  /* Auf schmalen Viewports nur jede zweite Schwelle beschriften — sonst
+     ueberlappen die Zahlen. Die Kurve selbst behaelt alle Stuetzpunkte. */
   const xs = [0.0, 0.4, 0.5, 0.6, 0.7, 0.8];
+  const xsLabeled = nw ? [0.0, 0.4, 0.6, 0.8] : xs;
   const x = v => L + (v / 0.8) * plotW;
   const yMin = 0.3, yMax = 1.0;
   const y = v => T + plotH * (1 - (v - yMin) / (yMax - yMin));
@@ -747,13 +1309,15 @@ function hideTip() { tip.classList.remove("on"); }
   let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Macro-F1 über Konfidenz-Schwelle">`;
   for (let g = 0.3; g <= 1.001; g += 0.1) {
     svg += `<line x1="${L}" y1="${y(g)}" x2="${L + plotW}" y2="${y(g)}" class="grid-line"/>
-            <text x="${L - 10}" y="${y(g) + 4}" text-anchor="end" class="axis-label">${fmt(g, 1)}</text>`;
+            <text x="${L - 10}" y="${y(g) + 4}" text-anchor="end" class="axis-label" style="font-size:${fsAxis}px">${fmt(g, 1)}</text>`;
   }
   for (const v of xs) {
-    svg += `<line x1="${x(v)}" y1="${T + plotH}" x2="${x(v)}" y2="${T + plotH + 5}" stroke="var(--line)" stroke-width="1"/>
-            <text x="${x(v)}" y="${H - 16}" text-anchor="middle" class="axis-label">${fmt(v, 1)}</text>`;
+    svg += `<line x1="${x(v)}" y1="${T + plotH}" x2="${x(v)}" y2="${T + plotH + 5}" stroke="var(--line)" stroke-width="1"/>`;
+    if (xsLabeled.includes(v)) {
+      svg += `<text x="${x(v)}" y="${T + plotH + (nw ? 40 : 28)}" text-anchor="middle" class="axis-label" style="font-size:${fsAxis}px">${fmt(v, 1)}</text>`;
+    }
   }
-  svg += `<text x="${L + plotW / 2}" y="${H - 1}" text-anchor="middle" class="axis-label">Konfidenz-Schwelle (darunter → invalid)</text>`;
+  svg += `<text x="${L + plotW / 2}" y="${H - (nw ? 16 : 1)}" text-anchor="middle" class="axis-label" style="font-size:${fsAxis}px">Konfidenz-Schwelle (darunter → invalid)</text>`;
 
   for (const m of series) {
     const pts = m.sweep.map(([t, f]) => `${x(t)},${y(f)}`).join(" ");
@@ -762,7 +1326,13 @@ function hideTip() { tip.classList.remove("on"); }
       svg += `<rect x="${x(t) - 3.5}" y="${y(f) - 3.5}" width="7" height="7" fill="${m.hex}" stroke="var(--bg)" stroke-width="1.5"/>`;
     }
     const last = m.sweep[m.sweep.length - 1];
-    svg += `<text x="${x(last[0]) + 14}" y="${y(last[1]) + 4}" style="font-size:15.5px; font-weight:600;" fill="${m.hex}">${m.id}</text>`;
+    if (nw) {
+      const idx = series.indexOf(m);
+      svg += `<rect x="${L}" y="${16 + idx * 34}" width="18" height="7" fill="${m.hex}"/>
+              <text x="${L + 28}" y="${25 + idx * 34}" class="series-label" style="font-size:${fsSeries}px" fill="${m.hex}">${m.id}</text>`;
+    } else {
+      svg += `<text x="${x(last[0]) + 14}" y="${y(last[1]) + 4}" class="series-label" fill="${m.hex}">${m.id}</text>`;
+    }
   }
   svg += `<line id="xh" x1="0" y1="${T}" x2="0" y2="${T + plotH}" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 4" opacity="0"/>`;
   svg += `<rect id="hit" x="${L}" y="${T}" width="${plotW}" height="${plotH}" fill="transparent"/>`;
@@ -798,13 +1368,21 @@ function hideTip() { tip.classList.remove("on"); }
 }
 
 /* ================= Tab. 3 Fehlklassifikationen ================= */
-{
+let missTab = null;   /* ueberlebt den Skinwechsel */
+
+function renderMisses() {
   const tabs = document.getElementById("misstabs");
   const list = document.getElementById("misslist");
+  tabs.innerHTML = "";
   const order = [...MODELS].sort((a, b) => a.misses.length - b.misses.length);
 
   function render(id) {
-    tabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.id === id));
+    missTab = id;
+    tabs.querySelectorAll("button").forEach(b => {
+      const on = b.dataset.id === id;
+      b.setAttribute("aria-selected", String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
     const m = MODELS.find(m => m.id === id);
     if (!m.misses.length) {
       list.innerHTML = `<div class="miss-empty">Keine Fehlklassifikationen.</div>`;
@@ -818,12 +1396,105 @@ function hideTip() { tip.classList.remove("on"); }
   }
   for (const m of order) {
     const b = document.createElement("button");
-    b.role = "tab"; b.dataset.id = m.id;
+    b.role = "tab"; b.dataset.id = m.id; b.type = "button";
+    b.setAttribute("aria-controls", "misslist");
     b.textContent = `${m.id} [${m.misses.length}]`;
     b.addEventListener("click", () => render(m.id));
+    b.addEventListener("keydown", ev => {
+      const dir = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+      if (!dir) return;
+      ev.preventDefault();
+      const all = [...tabs.querySelectorAll("button")];
+      const next = all[(all.indexOf(b) + dir + all.length) % all.length];
+      render(next.dataset.id); next.focus();
+    });
     tabs.appendChild(b);
   }
-  render(order[0].id);
+  /* Start auf dem ersten Modell MIT Fehlgriffen: die leere Tafel war
+     der haeufigste Anblick, obwohl der Abschnitt genau den einen Satz zeigt. */
+  const start = (missTab && MODELS.some(m => m.id === missTab)) ? missTab
+    : (order.find(m => m.misses.length) || order[0]).id;
+  render(start);
+}
+
+/* ================= Design-Skins =================
+   Jeder Skin bringt eine eigene Modell-Palette mit; die SVGs zeichnen aus
+   m.hex, deshalb wird MODELS beim Wechsel umgefaerbt und alles neu gerendert. */
+const SKINS = {
+  protokoll: { tfidf_logreg: "#c98500", tfidf_svm: "#d55181", minilm_ft: "#199e70", minilm_logreg: "#3987e5" },
+  neuro:     { tfidf_logreg: "#4da3ff", tfidf_svm: "#ff7089", minilm_ft: "#2ee6c6", minilm_logreg: "#ffa63d" },
+  nova:      { tfidf_logreg: "#a855f7", tfidf_svm: "#ec4899", minilm_ft: "#22d3ee", minilm_logreg: "#60a5fa" },
+  abyss:     { tfidf_logreg: "#e8b64c", tfidf_svm: "#ff6b8a", minilm_ft: "#31d0aa", minilm_logreg: "#38b6ff" },
+};
+const DEFAULT_SKIN = "protokoll";
+
+function renderAll() {
+  renderLeaderboard();
+  renderMetrics();
+  renderDotplot();
+  renderConfusion();
+  renderSweep();
+  renderMisses();
+}
+
+const root = document.documentElement;
+let swapTimer = null;
+
+/* Der einzige inszenierte Moment der Seite: beim Weltenwechsel kommen die
+   Abschnitte gestaffelt zurueck. Danach bewegt sich nichts mehr von allein. */
+function playSwap() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const items = [...document.querySelectorAll(".page > *"), ...document.querySelectorAll(".sidenav")];
+  items.forEach((el, i) => el.style.setProperty("--i", Math.min(i, 14)));
+  root.removeAttribute("data-swapping");
+  void document.body.offsetWidth;               /* Reflow: Animation neu starten */
+  root.setAttribute("data-swapping", "");
+  clearTimeout(swapTimer);
+  swapTimer = setTimeout(() => root.removeAttribute("data-swapping"), 1400);
+}
+
+function applySkin(name, animate) {
+  const skin = SKINS[name] ? name : DEFAULT_SKIN;
+  root.dataset.skin = skin;
+  for (const m of MODELS) m.hex = SKINS[skin][m.id];
+  document.querySelectorAll("[data-skin-btn]").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.skinBtn === skin)));
+  hideTip();
+  renderAll();
+  if (animate) playSwap();
+  try { localStorage.setItem("evalSkin", skin); } catch (e) { /* privater Modus */ }
+}
+
+document.querySelectorAll("[data-skin-btn]").forEach(b =>
+  b.addEventListener("click", () => applySkin(b.dataset.skinBtn, true)));
+
+let stored = null;
+try { stored = localStorage.getItem("evalSkin"); } catch (e) { /* privater Modus */ }
+applySkin(stored || DEFAULT_SKIN, false);
+
+/* Diagramm-Geometrie haengt an der Viewportbreite: beim Wechsel ueber die
+   Schwelle neu zeichnen, sonst bleiben die Telefon-Randbreiten am Desktop. */
+let wasNarrow = narrow();
+addEventListener("resize", () => {
+  if (narrow() === wasNarrow) return;
+  wasNarrow = narrow();
+  renderDotplot(); renderSweep();
+});
+
+/* Sprungnavigation: aktiven Abschnitt markieren (nur im Nova-Skin sichtbar) */
+{
+  const links = [...document.querySelectorAll(".sidenav a")];
+  const targets = links.map(a => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  if (targets.length && "IntersectionObserver" in window) {
+    const seen = new Set();
+    const obs = new IntersectionObserver(entries => {
+      for (const e of entries) e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
+      const first = targets.find(t => seen.has(t.id));
+      links.forEach(a => a.setAttribute("aria-current",
+        String(!!first && a.getAttribute("href") === "#" + first.id)));
+    }, { rootMargin: "-80px 0px -65% 0px" });
+    targets.forEach(t => obs.observe(t));
+  }
 }
 </script>
 </body>
