@@ -74,7 +74,7 @@ classifier:
   enabled: true
   image:
     repository: zumba-classifier
-    tag: "0.1.1"
+    tag: "0.1.2"
     pullPolicy: IfNotPresent
 
 # admin-ui aktivieren (lokales Image; BOT_URL zeigt per ConfigMap auf den Bot).
