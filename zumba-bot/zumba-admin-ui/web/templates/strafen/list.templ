@@ -87,35 +87,37 @@ templ ListRegion(vm PageVM) {
 }
 
 templ row(r Row, stichtag string) {
-	<div class="excluded-row">
-		<span class="marker"></span>
+	<div class="excluded-row strafen-row">
+		<span class={ "marker", templ.KV("offen", r.Status == penalty.StatusOffen), templ.KV("beglichen", r.Status == penalty.StatusBeglichen) }></span>
 		<div>
 			<div class="label">
 				{ r.UserName } – { strconv.Itoa(r.Betrag) }€
 				if r.Status == penalty.StatusBeglichen {
-					<span class="badge">beglichen</span>
+					<span class="badge beglichen">beglichen</span>
 				}
 				if r.Sichtbar {
-					<span class="badge">im Report</span>
+					<span class="badge report">im Report</span>
 				}
 			</div>
 			<div class="iso">{ beschreibung(r) }</div>
 		</div>
-		if r.Status == penalty.StatusOffen {
+		<div class="strafen-actions">
+			if r.Status == penalty.StatusOffen {
+				<button
+					class="btn-secondary btn-sm"
+					hx-post={ fmt.Sprintf("/strafen/%d/begleichen?stichtag=%s", r.ID, stichtag) }
+					hx-target="#strafen-region"
+					hx-swap="outerHTML"
+				>Beglichen</button>
+			}
 			<button
-				class="btn-secondary btn-sm"
-				hx-post={ fmt.Sprintf("/strafen/%d/begleichen?stichtag=%s", r.ID, stichtag) }
+				class="btn-danger btn-sm"
+				hx-delete={ fmt.Sprintf("/strafen/%d?stichtag=%s", r.ID, stichtag) }
 				hx-target="#strafen-region"
 				hx-swap="outerHTML"
-			>Beglichen</button>
-		}
-		<button
-			class="btn-danger btn-sm"
-			hx-delete={ fmt.Sprintf("/strafen/%d?stichtag=%s", r.ID, stichtag) }
-			hx-target="#strafen-region"
-			hx-swap="outerHTML"
-			hx-confirm="Strafe wirklich löschen? Normalerweise werden Strafen nur beglichen – Löschen ist für Testeinträge gedacht und startet den Fehltage-Zähler neu."
-		>Löschen</button>
+				hx-confirm="Strafe wirklich löschen? Normalerweise werden Strafen nur beglichen – Löschen ist für Testeinträge gedacht und startet den Fehltage-Zähler neu."
+			>Löschen</button>
+		</div>
 	</div>
 }
 

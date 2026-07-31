@@ -882,6 +882,15 @@ h3 { font-size: 17px; line-height: 1.25; }
 }
 .excluded-row .btn-danger { margin-left: auto; }
 
+/* Strafen page */
+.strafen-actions { display: flex; gap: var(--space-2); justify-self: end; }
+.strafen-row .btn-danger { margin-left: 0; }
+.strafen-row .marker.offen { background: var(--danger); }
+.strafen-row .marker.beglichen { background: var(--success); }
+.strafen-row .label .badge { margin-left: var(--space-2); }
+.badge.beglichen { background: var(--success-soft); color: var(--success); }
+.badge.report { background: var(--accent-soft); color: var(--accent-strong); }
+
 /* Bot-test page */
 .bot-test { display: flex; flex-direction: column; gap: var(--space-4); }
 .kind-switch { display: flex; gap: var(--space-2); flex-wrap: wrap; }
