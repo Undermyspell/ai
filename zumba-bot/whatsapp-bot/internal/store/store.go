@@ -22,8 +22,9 @@ type Stat struct {
 
 // Store kapselt die DB-Operationen des Workflows.
 type Store interface {
-	// UserStats liefert die Rangliste (n8n: "Get Per user stats").
-	UserStats(ctx context.Context) ([]Stat, error)
+	// UserStats liefert die Rangliste zum Stichtag asOf (n8n: "Get Per user
+	// stats"; im Original bis current_date – asOf=heute ist identisch).
+	UserStats(ctx context.Context, asOf time.Time) ([]Stat, error)
 	// MarkAbsent trägt eine Absage ein (n8n: "Insert or update rows", UPSERT).
 	MarkAbsent(ctx context.Context, userID string, date time.Time, message string) error
 	// MarkPresent entfernt eine Absage (n8n: "Delete table or rows").

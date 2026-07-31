@@ -17,7 +17,7 @@ user_thursdays AS (
     FROM startdates s
     CROSS JOIN LATERAL generate_series(
         s.effective_start_date,
-        current_date,
+        $1::date,
         interval '1 day'
     ) d(day)
     LEFT JOIN excluded_days ed
@@ -38,7 +38,7 @@ per_thursday AS (
         SELECT day
         FROM generate_series(
             s.effective_start_date,
-            current_date,
+            $1::date,
             interval '1 day'
         ) day
         LEFT JOIN excluded_days ed
@@ -107,6 +107,7 @@ JOIN user_thursdays ut
 LEFT JOIN public.stammtisch_abwesenheit a
     ON a."userId" = u."userId"
     AND a.date >= ut.effective_start_date
+    AND a.date <= $1::date
 LEFT JOIN excluded_days ed
     ON ed.date = a.date
 LEFT JOIN user_streak us

@@ -24,7 +24,7 @@ type fakeStore struct {
 	penaltyInputCalls int
 }
 
-func (f *fakeStore) UserStats(context.Context) ([]store.Stat, error) {
+func (f *fakeStore) UserStats(context.Context, time.Time) ([]store.Stat, error) {
 	f.statsCalled = true
 	return []store.Stat{{Name: "A", Attendance: 1, Away: 0, Percent: 100}}, nil
 }

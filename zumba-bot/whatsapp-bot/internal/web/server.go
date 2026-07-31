@@ -207,7 +207,7 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 
 // runStats baut den Ranglisten-Text und protokolliert Berechnung + Versand.
 func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, rec *tracestore.Recorder) string {
-	stats, err := s.store.UserStats(ctx)
+	stats, err := s.store.UserStats(ctx, s.today())
 	if err != nil {
 		rec.Step(tracestore.NodeBuildStats, tracestore.OutcomeError, "Statistik berechnen", err.Error())
 		log.Printf("⚠️  UserStats: %v", err)
@@ -271,7 +271,7 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 // zum Stichtag asOf) und sendet ihn bei send=true an die konfigurierte
 // Zumba-Gruppe. Nur echte Versände persistieren neu erkannte Strafen-Marker.
 func (s *Server) weeklyText(ctx context.Context, send bool, asOf time.Time) string {
-	stats, err := s.store.UserStats(ctx)
+	stats, err := s.store.UserStats(ctx, asOf)
 	if err != nil {
 		log.Printf("⚠️  UserStats: %v", err)
 		return ""
@@ -372,7 +372,7 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 
 	// Optional: Statistik-Vorschau in einem alternativen Design rendern (nur Testseite).
 	if out.Path == "statistik" && style != "" && style != "klassik" {
-		if stats, err := s.store.UserStats(r.Context()); err != nil {
+		if stats, err := s.store.UserStats(r.Context(), s.today()); err != nil {
 			log.Printf("⚠️  UserStats(style %s): %v", style, err)
 		} else {
 			out.Message = report.BuildByStyle(style, stats)

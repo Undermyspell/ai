@@ -21,8 +21,8 @@ func NewPostgres(p *db.Postgres) *Postgres {
 	return &Postgres{db: p}
 }
 
-func (s *Postgres) UserStats(ctx context.Context) ([]Stat, error) {
-	rows, err := s.db.QueryContext(ctx, statsQuery)
+func (s *Postgres) UserStats(ctx context.Context, asOf time.Time) ([]Stat, error) {
+	rows, err := s.db.QueryContext(ctx, statsQuery, asOf)
 	if err != nil {
 		return nil, fmt.Errorf("UserStats: %w", err)
 	}
