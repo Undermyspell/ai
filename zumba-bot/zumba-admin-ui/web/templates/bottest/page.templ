@@ -29,7 +29,7 @@ templ Page(vm PageVM) {
 			@kindButton("absage", "Absage", vm.DefaultKind)
 			@kindButton("zusage", "Zusage", vm.DefaultKind)
 		</div>
-		<form hx-post="/bot-test/run" hx-target="#bot-response" hx-swap="innerHTML">
+		<form hx-post="/bot-test/run" hx-target="#bot-response" hx-swap="innerHTML" hx-include="#weekly-date">
 			<textarea id="bot-json" name="payload" rows="18" spellcheck="false">{ vm.DefaultJSON }</textarea>
 			<div class="style-row">
 				<label for="bot-style">Statistik-Design</label>
@@ -69,7 +69,7 @@ templ Page(vm PageVM) {
 			>📅 Wochenreport testen</button>
 			<label class="weekly-hint" for="weekly-date">Stichtag:</label>
 			<input type="date" id="weekly-date" name="date"/>
-			<span class="weekly-hint">Nutzt den gewählten Modus (Dry-Run = nur Vorschau im UI). Der Stichtag simuliert den Versandtag der Nachricht (Rangliste + Strafen) – erzwingt Dry-Run.</span>
+			<span class="weekly-hint">Nutzt den gewählten Modus (Dry-Run = nur Vorschau im UI). Der Stichtag simuliert den Versandtag der Nachricht (Rangliste + Strafen) und gilt für beide Buttons – beim Wochenreport erzwingt er Dry-Run.</span>
 		</div>
 		<div id="bot-response" class="bot-response"></div>
 	</div>

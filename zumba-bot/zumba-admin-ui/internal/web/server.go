@@ -586,6 +586,10 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	if style := r.FormValue("style"); style != "" && style != "klassik" {
 		url += "&style=" + style
 	}
+	// Stichtag gilt auch für den Statistik-Pfad des /test-Endpoints.
+	if date := r.FormValue("date"); date != "" {
+		url += "&date=" + date
+	}
 	s.proxyBot(w, r, url, strings.NewReader(payload))
 }
 

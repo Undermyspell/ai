@@ -28,7 +28,7 @@ func penaltyFixture() penalty.Input {
 func TestStatistikEnthaeltStrafenblock(t *testing.T) {
 	s, st, snd := newTestServer(classifier.Invalid, time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC))
 	st.penaltyInput = penaltyFixture()
-	s.run(context.Background(), groupMsg("statistik"), false, false)
+	s.run(context.Background(), groupMsg("statistik"), false, false, s.today())
 	if !strings.Contains(snd.text, "── 💸 *STRAFEN* ──") {
 		t.Fatalf("Strafenblock fehlt:\n%s", snd.text)
 	}

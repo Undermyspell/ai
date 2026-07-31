@@ -103,7 +103,8 @@ type Outcome struct {
 // run verarbeitet ein Event und protokolliert jeden Entscheidungspunkt im
 // Recorder. bypassGuards überspringt die Donnerstag-/Gruppen-Prüfung (Test-Pfad).
 // dryRun berechnet das Ergebnis, ohne zu senden oder in die DB zu schreiben.
-func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuards, dryRun bool, recs ...*tracestore.Recorder) Outcome {
+// asOf ist der (ggf. simulierte) Verarbeitungstag – im echten Betrieb heute.
+func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuards, dryRun bool, asOf time.Time, recs ...*tracestore.Recorder) Outcome {
 	rec := tracestore.NewRecorder()
 	if len(recs) > 0 && recs[0] != nil {
 		rec = recs[0]
@@ -115,7 +116,7 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 	// Verzweigung 1: "statistik"
 	if strings.EqualFold(strings.TrimSpace(msg), "statistik") {
 		rec.Step(tracestore.NodeCheckStatistik, tracestore.OutcomePass, `"statistik"?`, "ja")
-		text := s.runStats(ctx, ev.RemoteJid(), dryRun, rec)
+		text := s.runStats(ctx, ev.RemoteJid(), dryRun, asOf, rec)
 		return Outcome{Path: "statistik", Message: text, Recipient: ev.RemoteJid(), DryRun: dryRun}
 	}
 	rec.Step(tracestore.NodeCheckStatistik, tracestore.OutcomeInfo, `"statistik"?`, "nein")
@@ -163,7 +164,7 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 	}
 
 	userID := ev.UserID()
-	today := s.today()
+	today := asOf
 	out := Outcome{
 		Path:           "classify",
 		Classification: string(c.Result),
@@ -205,15 +206,16 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 	return out
 }
 
-// runStats baut den Ranglisten-Text und protokolliert Berechnung + Versand.
-func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, rec *tracestore.Recorder) string {
-	stats, err := s.store.UserStats(ctx, s.today())
+// runStats baut den Ranglisten-Text zum Stichtag asOf und protokolliert
+// Berechnung + Versand.
+func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asOf time.Time, rec *tracestore.Recorder) string {
+	stats, err := s.store.UserStats(ctx, asOf)
 	if err != nil {
 		rec.Step(tracestore.NodeBuildStats, tracestore.OutcomeError, "Statistik berechnen", err.Error())
 		log.Printf("⚠️  UserStats: %v", err)
 		return ""
 	}
-	text := report.BuildWithStrafen(stats, s.strafenBlock(ctx, s.today(), !dryRun))
+	text := report.BuildWithStrafen(stats, s.strafenBlock(ctx, asOf, !dryRun))
 	rec.Step(tracestore.NodeBuildStats, tracestore.OutcomePass, "Statistik berechnen", fmt.Sprintf("%d Nutzer", len(stats)))
 	if dryRun {
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeInfo, "An Gruppe senden", "Dry-Run – nicht gesendet")
@@ -326,7 +328,7 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rec := tracestore.NewRecorder()
-	out := s.run(r.Context(), ev, false, false, rec)
+	out := s.run(r.Context(), ev, false, false, s.today(), rec)
 	w.WriteHeader(http.StatusOK)
 	s.recordTrace(r.Context(), ev, body, out, rec)
 }
@@ -365,14 +367,25 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 	preview := q.Get("preview") == "true" && s.PreviewJID != ""
 	style := q.Get("style")
 
+	// ?date=YYYY-MM-DD simuliert den Verarbeitungstag (Statistik-Stichtag).
+	asOf := s.today()
+	if ds := q.Get("date"); ds != "" {
+		d, err := time.ParseInLocation("2006-01-02", ds, s.location)
+		if err != nil {
+			http.Error(w, "ungültiges date (YYYY-MM-DD)", http.StatusBadRequest)
+			return
+		}
+		asOf = d
+	}
+
 	// Die Testseite löst NIE einen Versand an die echte Gruppe oder DB-Writes aus:
 	// run() läuft hier immer als Dry-Run. Echter Gruppen-Versand passiert
 	// ausschließlich über echte Statistik-Webhooks und den Wochenreport-CronJob.
-	out := s.run(r.Context(), ev, true, true, tracestore.NewRecorder())
+	out := s.run(r.Context(), ev, true, true, asOf, tracestore.NewRecorder())
 
 	// Optional: Statistik-Vorschau in einem alternativen Design rendern (nur Testseite).
 	if out.Path == "statistik" && style != "" && style != "klassik" {
-		if stats, err := s.store.UserStats(r.Context(), s.today()); err != nil {
+		if stats, err := s.store.UserStats(r.Context(), asOf); err != nil {
 			log.Printf("⚠️  UserStats(style %s): %v", style, err)
 		} else {
 			out.Message = report.BuildByStyle(style, stats)
