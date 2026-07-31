@@ -117,28 +117,21 @@ templ Row(m store.MLMessage) {
 					<span class="ml-verdict ml-verdict-bad">Gemini ✗</span>
 				}
 			} else {
-				if m.GeminiLabel != "" {
+				<span class="ml-source">Richtig ist:</span>
+				for _, l := range []string{"true", "false", "invalid"} {
 					<button
 						type="button"
-						class="ml-verify-btn ml-true"
-						hx-post={ verifyHref(m.ID, m.GeminiLabel) }
+						class={ "ml-verify-btn", "ml-" + l }
+						hx-post={ verifyHref(m.ID, l) }
 						hx-target={ "#" + rowID(m.ID) }
 						hx-swap="outerHTML"
-					>✓ Passt (wie Gemini)</button>
-					<span class="ml-source">falsch — richtig ist:</span>
-				} else {
-					<span class="ml-source">Richtig ist:</span>
-				}
-				for _, l := range []string{"true", "false", "invalid"} {
-					if l != m.GeminiLabel {
-						<button
-							type="button"
-							class={ "ml-verify-btn", "ml-" + l }
-							hx-post={ verifyHref(m.ID, l) }
-							hx-target={ "#" + rowID(m.ID) }
-							hx-swap="outerHTML"
-						>{ labelText(l) }</button>
-					}
+					>
+						if l == m.GeminiLabel {
+							{ "✓ " + labelText(l) + " (wie Gemini)" }
+						} else {
+							{ labelText(l) }
+						}
+					</button>
 				}
 			}
 		</div>

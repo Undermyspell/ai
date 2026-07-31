@@ -84,12 +84,15 @@ templ Row(t store.MLTestMessage) {
 		</div>
 		if t.ExpectedLabel == nil {
 			<div class="ml-verify">
-				<button type="button" class="ml-verify-btn ml-true" hx-post={ judgeHref(t.ID, t.ModelLabel) } hx-target={ "#" + rowID(t.ID) } hx-swap="outerHTML">✓ Passt</button>
-				<span class="ml-source">falsch — richtig ist:</span>
+				<span class="ml-source">Richtig ist:</span>
 				for _, l := range []string{"true", "false", "invalid"} {
-					if l != t.ModelLabel {
-						<button type="button" class={ "ml-verify-btn", "ml-" + l } hx-post={ judgeHref(t.ID, l) } hx-target={ "#" + rowID(t.ID) } hx-swap="outerHTML">{ labelText(l) }</button>
-					}
+					<button type="button" class={ "ml-verify-btn", "ml-" + l } hx-post={ judgeHref(t.ID, l) } hx-target={ "#" + rowID(t.ID) } hx-swap="outerHTML">
+						if l == t.ModelLabel {
+							{ "✓ " + labelText(l) + " (wie Modell)" }
+						} else {
+							{ labelText(l) }
+						}
+					</button>
 				}
 			</div>
 		}
