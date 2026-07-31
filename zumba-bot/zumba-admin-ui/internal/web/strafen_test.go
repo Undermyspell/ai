@@ -88,7 +88,7 @@ func TestStrafenSeitePersistiertAutoStrafe(t *testing.T) {
 		_ = spy.InsertAbsence(context.TODO(), "u01", mustDate(d), nil)
 	}
 	srv := New(spy, testCfg(), false).Routes()
-	req := httptest.NewRequest("GET", "/strafen?stichtag=2026-01-29", nil)
+	req := httptest.NewRequest("GET", "/strafen", nil)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {

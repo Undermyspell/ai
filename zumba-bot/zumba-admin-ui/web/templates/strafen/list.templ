@@ -25,8 +25,6 @@ type Row struct {
 }
 
 type PageVM struct {
-	Stichtag      string // ISO – simuliertes Abfragedatum
-	StichtagHeute bool
 	Users         []store.User
 	Thursdays     []time.Time // gültige Donnerstage (ohne Sperrtage), neueste zuerst
 	Rows          []Row
@@ -43,17 +41,9 @@ templ Page(vm PageVM) {
 			Begleichen friert den Zähler ein – die nächste Serie zählt von vorn.
 		</p>
 	</div>
-	<form class="excluded-form enter" method="get" action="/strafen">
-		<label for="stichtag">Stichtag simulieren</label>
-		<input type="date" id="stichtag" name="stichtag" value={ vm.Stichtag }/>
-		<button type="submit" class="btn-secondary">Anzeigen</button>
-		if !vm.StichtagHeute {
-			<a href="/strafen" class="btn-secondary">Heute</a>
-		}
-	</form>
 	<form
 		class="excluded-form enter"
-		hx-post={ "/strafen?stichtag=" + vm.Stichtag }
+		hx-post="/strafen"
 		hx-target="#strafen-region"
 		hx-swap="outerHTML"
 	>
@@ -85,14 +75,14 @@ templ ListRegion(vm PageVM) {
 		} else {
 			<div class="list enter">
 				for _, r := range vm.Rows {
-					@row(r, vm.Stichtag)
+					@row(r)
 				}
 			</div>
 		}
 	</div>
 }
 
-templ row(r Row, stichtag string) {
+templ row(r Row) {
 	<div class="excluded-row strafen-row">
 		<span class={ "marker", templ.KV("offen", r.Status == penalty.StatusOffen), templ.KV("beglichen", r.Status == penalty.StatusBeglichen) }></span>
 		<div>
@@ -111,14 +101,14 @@ templ row(r Row, stichtag string) {
 			if r.Status == penalty.StatusOffen {
 				<button
 					class="btn-secondary btn-sm"
-					hx-post={ fmt.Sprintf("/strafen/%d/begleichen?stichtag=%s", r.ID, stichtag) }
+					hx-post={ fmt.Sprintf("/strafen/%d/begleichen", r.ID) }
 					hx-target="#strafen-region"
 					hx-swap="outerHTML"
 				>Beglichen</button>
 			}
 			<button
 				class="btn-danger btn-sm"
-				hx-delete={ fmt.Sprintf("/strafen/%d?stichtag=%s", r.ID, stichtag) }
+				hx-delete={ fmt.Sprintf("/strafen/%d", r.ID) }
 				hx-target="#strafen-region"
 				hx-swap="outerHTML"
 				hx-confirm="Strafe wirklich löschen? Normalerweise werden Strafen nur beglichen – Löschen ist für Testeinträge gedacht und startet den Fehltage-Zähler neu."

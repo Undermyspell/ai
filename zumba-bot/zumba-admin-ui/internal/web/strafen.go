@@ -12,23 +12,12 @@ import (
 	"github.com/michael/zumba-admin-ui/web/templates/strafen"
 )
 
-// stichtagFrom liest das simulierte Abfragedatum (?stichtag=YYYY-MM-DD),
-// Default heute. Damit lässt sich prüfen, welche Strafen ein Report zu einem
-// beliebigen Zeitpunkt ausweisen würde (z. B. Beglichen-Fenster bis zum
-// Folgedonnerstag).
-func stichtagFrom(r *http.Request) time.Time {
-	if s := r.URL.Query().Get("stichtag"); s != "" {
-		if d, err := timeutil.ParseISO(s); err == nil {
-			return d
-		}
-	}
-	return timeutil.StartOfDay(time.Now())
-}
-
-// strafenVM bewertet alle Strafen zum Stichtag. Neu erkannte Fehltage-Strafen
-// werden dabei idempotent persistiert (Marker), damit sie sofort begleich-/
-// löschbar sind – dieselbe Erkennung läuft auch im Bot beim echten Report.
-func (s *Server) strafenVM(ctx context.Context, stichtag time.Time) (strafen.PageVM, error) {
+// strafenVM bewertet alle Strafen zum heutigen Tag (Stichtag-Simulation gibt
+// es nur auf der Bot-Test-Seite über den Wochenreport-Endpoint). Neu erkannte
+// Fehltage-Strafen werden idempotent persistiert (Marker), damit sie sofort
+// begleich-/löschbar sind – dieselbe Erkennung läuft auch im Bot beim Report.
+func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
+	stichtag := timeutil.StartOfDay(time.Now())
 	users, err := s.store.ListUsers(ctx)
 	if err != nil {
 		return strafen.PageVM{}, err
@@ -91,8 +80,6 @@ func (s *Server) strafenVM(ctx context.Context, stichtag time.Time) (strafen.Pag
 	}
 
 	vm := strafen.PageVM{
-		Stichtag:      timeutil.FormatISO(stichtag),
-		StichtagHeute: timeutil.FormatISO(stichtag) == timeutil.FormatISO(time.Now()),
 		Users:         users,
 		Thursdays:     thursdays,
 		NoShowDefault: penalty.NoShowDefault,
@@ -117,7 +104,7 @@ func (s *Server) strafenVM(ctx context.Context, stichtag time.Time) (strafen.Pag
 }
 
 func (s *Server) handleStrafen(w http.ResponseWriter, r *http.Request) {
-	vm, err := s.strafenVM(r.Context(), stichtagFrom(r))
+	vm, err := s.strafenVM(r.Context())
 	if err != nil {
 		s.fail(w, "strafen", err)
 		return
@@ -191,7 +178,7 @@ func (s *Server) handleDeleteStrafe(w http.ResponseWriter, r *http.Request) {
 
 // renderStrafenRegion rendert nur die Liste (HTMX-Swap-Ziel).
 func (s *Server) renderStrafenRegion(w http.ResponseWriter, r *http.Request) {
-	vm, err := s.strafenVM(r.Context(), stichtagFrom(r))
+	vm, err := s.strafenVM(r.Context())
 	if err != nil {
 		s.fail(w, "strafen", err)
 		return
