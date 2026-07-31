@@ -28,6 +28,7 @@ type PageVM struct {
 	Stichtag      string // ISO – simuliertes Abfragedatum
 	StichtagHeute bool
 	Users         []store.User
+	Thursdays     []time.Time // gültige Donnerstage (ohne Sperrtage), neueste zuerst
 	Rows          []Row
 	NoShowDefault int
 }
@@ -62,7 +63,12 @@ templ Page(vm PageVM) {
 				<option value={ u.ID }>{ u.Name }</option>
 			}
 		</select>
-		<input type="date" name="datum" required aria-label="Donnerstag des No-Shows"/>
+		<select name="datum" required aria-label="Donnerstag des No-Shows">
+			<option value="" disabled selected>Donnerstag wählen…</option>
+			for _, d := range vm.Thursdays {
+				<option value={ timeutil.FormatISO(d) }>{ timeutil.FormatDE(d) }</option>
+			}
+		</select>
 		<input type="number" name="betrag" min="1" value={ strconv.Itoa(vm.NoShowDefault) } aria-label="Betrag in Euro"/>
 		<button type="submit" class="btn-primary">No-Show-Strafe anlegen</button>
 	</form>

@@ -46,6 +46,11 @@ func (s *Server) strafenVM(ctx context.Context, stichtag time.Time) (strafen.Pag
 	if err != nil {
 		return strafen.PageVM{}, err
 	}
+	// Für das No-Show-Formular: nur echte Stammtisch-Donnerstage anbieten.
+	thursdays, err := s.store.ListThursdays(ctx, period)
+	if err != nil {
+		return strafen.PageVM{}, err
+	}
 
 	input := func(rows []penalty.Row) penalty.Input {
 		byUser := make(map[string][]time.Time)
@@ -89,6 +94,7 @@ func (s *Server) strafenVM(ctx context.Context, stichtag time.Time) (strafen.Pag
 		Stichtag:      timeutil.FormatISO(stichtag),
 		StichtagHeute: timeutil.FormatISO(stichtag) == timeutil.FormatISO(time.Now()),
 		Users:         users,
+		Thursdays:     thursdays,
 		NoShowDefault: penalty.NoShowDefault,
 	}
 	for _, e := range entries {
