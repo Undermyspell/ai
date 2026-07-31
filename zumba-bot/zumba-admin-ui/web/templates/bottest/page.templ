@@ -67,8 +67,9 @@ templ Page(vm PageVM) {
 				hx-target="#bot-response"
 				hx-swap="innerHTML"
 			>📅 Wochenreport testen</button>
-			<input type="date" name="date" aria-label="Stichtag für den Strafenblock"/>
-			<span class="weekly-hint">Nutzt den gewählten Modus (Dry-Run = nur Vorschau im UI). Optionaler Stichtag simuliert das Abfragedatum des Strafenblocks – erzwingt Dry-Run.</span>
+			<label class="weekly-hint" for="weekly-date">Stichtag:</label>
+			<input type="date" id="weekly-date" name="date"/>
+			<span class="weekly-hint">Nutzt den gewählten Modus (Dry-Run = nur Vorschau im UI). Der Stichtag simuliert den Versandtag des Strafenblocks – erzwingt Dry-Run.</span>
 		</div>
 		<div id="bot-response" class="bot-response"></div>
 	</div>
