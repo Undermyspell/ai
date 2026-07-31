@@ -93,7 +93,7 @@ postgres:
     retentionDays: 90
     image:
       repository: rclone/rclone
-      tag: "1.74.4"
+      tag: "1.75.0"
       pullPolicy: IfNotPresent
 
 ingress:
