@@ -1,0 +1,137 @@
+package strafen
+
+import (
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/penalty"
+	"github.com/michael/zumba-admin-ui/internal/store"
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
+)
+
+// Row ist eine bewertete Strafe für die Anzeige (gelöschte sind schon gefiltert).
+type Row struct {
+	ID          int64
+	UserName    string
+	Art         penalty.Art
+	Datum       time.Time // fehltage: Serienstart; noshow: Tag
+	Tage        int       // nur fehltage
+	Betrag      int       // Euro
+	Status      penalty.Status
+	BeglichenAm *time.Time
+	SichtbarBis *time.Time // beglichen: letzter Report-Tag (Folgedonnerstag)
+	Sichtbar    bool       // erscheint im Report zum Stichtag
+}
+
+type PageVM struct {
+	Stichtag      string // ISO – simuliertes Abfragedatum
+	StichtagHeute bool
+	Users         []store.User
+	Rows          []Row
+	NoShowDefault int
+}
+
+templ Page(vm PageVM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Strafen</div>
+		<h1>Strafenkasse</h1>
+		<p class="meta">
+			Automatisch: ab { strconv.Itoa(penalty.MinFehltage) } Fehltagen in Folge { strconv.Itoa(penalty.BasisBetrag) }€, jeder weitere +{ strconv.Itoa(penalty.ProTagBetrag) }€.
+			Manuell: nicht abgemeldet und nicht gekommen ({ strconv.Itoa(penalty.NoShowDefault) }€).
+			Begleichen friert den Zähler ein – die nächste Serie zählt von vorn.
+		</p>
+	</div>
+	<form class="excluded-form enter" method="get" action="/strafen">
+		<label for="stichtag">Stichtag simulieren</label>
+		<input type="date" id="stichtag" name="stichtag" value={ vm.Stichtag }/>
+		<button type="submit" class="btn-secondary">Anzeigen</button>
+		if !vm.StichtagHeute {
+			<a href="/strafen" class="btn-secondary">Heute</a>
+		}
+	</form>
+	<form
+		class="excluded-form enter"
+		hx-post={ "/strafen?stichtag=" + vm.Stichtag }
+		hx-target="#strafen-region"
+		hx-swap="outerHTML"
+	>
+		<select name="userId" required aria-label="Mitglied">
+			<option value="" disabled selected>Mitglied wählen…</option>
+			for _, u := range vm.Users {
+				<option value={ u.ID }>{ u.Name }</option>
+			}
+		</select>
+		<input type="date" name="datum" required aria-label="Donnerstag des No-Shows"/>
+		<input type="number" name="betrag" min="1" value={ strconv.Itoa(vm.NoShowDefault) } aria-label="Betrag in Euro"/>
+		<button type="submit" class="btn-primary">No-Show-Strafe anlegen</button>
+	</form>
+	@ListRegion(vm)
+}
+
+templ ListRegion(vm PageVM) {
+	<div id="strafen-region">
+		if len(vm.Rows) == 0 {
+			<div class="empty">
+				<div class="icon">🎉</div>
+				<p>Keine Strafen. Brave Truppe.</p>
+			</div>
+		} else {
+			<div class="list enter">
+				for _, r := range vm.Rows {
+					@row(r, vm.Stichtag)
+				}
+			</div>
+		}
+	</div>
+}
+
+templ row(r Row, stichtag string) {
+	<div class="excluded-row">
+		<span class="marker"></span>
+		<div>
+			<div class="label">
+				{ r.UserName } – { strconv.Itoa(r.Betrag) }€
+				if r.Status == penalty.StatusBeglichen {
+					<span class="badge">beglichen</span>
+				}
+				if r.Sichtbar {
+					<span class="badge">im Report</span>
+				}
+			</div>
+			<div class="iso">{ beschreibung(r) }</div>
+		</div>
+		if r.Status == penalty.StatusOffen {
+			<button
+				class="btn-secondary btn-sm"
+				hx-post={ fmt.Sprintf("/strafen/%d/begleichen?stichtag=%s", r.ID, stichtag) }
+				hx-target="#strafen-region"
+				hx-swap="outerHTML"
+			>Beglichen</button>
+		}
+		<button
+			class="btn-danger btn-sm"
+			hx-delete={ fmt.Sprintf("/strafen/%d?stichtag=%s", r.ID, stichtag) }
+			hx-target="#strafen-region"
+			hx-swap="outerHTML"
+			hx-confirm="Strafe wirklich löschen? Normalerweise werden Strafen nur beglichen – Löschen ist für Testeinträge gedacht und startet den Fehltage-Zähler neu."
+		>Löschen</button>
+	</div>
+}
+
+func beschreibung(r Row) string {
+	var s string
+	switch r.Art {
+	case penalty.ArtNoShow:
+		s = fmt.Sprintf("Nicht abgemeldet am %s", timeutil.FormatDEShort(r.Datum))
+	default:
+		s = fmt.Sprintf("%d Fehltage in Folge seit %s", r.Tage, timeutil.FormatDEShort(r.Datum))
+	}
+	if r.Status == penalty.StatusBeglichen && r.BeglichenAm != nil {
+		s += fmt.Sprintf(" · beglichen am %s", timeutil.FormatDEShort(*r.BeglichenAm))
+		if r.SichtbarBis != nil {
+			s += fmt.Sprintf(" (im Report bis %s)", timeutil.FormatDEShort(*r.SichtbarBis))
+		}
+	}
+	return s
+}

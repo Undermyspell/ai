@@ -7,6 +7,7 @@ import (
 
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
+	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
 
@@ -17,6 +18,10 @@ type fakeStore struct {
 	absentUserID  string
 	absentMessage string
 	presentUserID string
+
+	penaltyInput      penalty.Input // von PenaltyInputs geliefert
+	autoStrafen       []string      // "userID|YYYY-MM-DD" der InsertAutoStrafe-Aufrufe
+	penaltyInputCalls int
 }
 
 func (f *fakeStore) UserStats(context.Context) ([]store.Stat, error) {
@@ -30,6 +35,14 @@ func (f *fakeStore) MarkAbsent(_ context.Context, userID string, _ time.Time, ms
 }
 func (f *fakeStore) MarkPresent(_ context.Context, userID string, _ time.Time) error {
 	f.presentUserID = userID
+	return nil
+}
+func (f *fakeStore) PenaltyInputs(context.Context) (penalty.Input, error) {
+	f.penaltyInputCalls++
+	return f.penaltyInput, nil
+}
+func (f *fakeStore) InsertAutoStrafe(_ context.Context, userID string, datum time.Time) error {
+	f.autoStrafen = append(f.autoStrafen, userID+"|"+datum.Format("2006-01-02"))
 	return nil
 }
 

@@ -8,7 +8,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
 
@@ -28,9 +30,21 @@ func BuildWeekly(rows []store.Stat) string {
 	return WeeklyNote + Build(rows)
 }
 
-// Build erzeugt den WhatsApp-Text. rows wird in DB-Reihenfolge erwartet
-// (ORDER BY attendance_count DESC, attend_percentage DESC).
+// BuildWeeklyWithStrafen ist BuildWeekly inkl. Strafenblock.
+func BuildWeeklyWithStrafen(rows []store.Stat, strafenBlock string) string {
+	return WeeklyNote + BuildWithStrafen(rows, strafenBlock)
+}
+
+// Build erzeugt den WhatsApp-Text ohne Strafenblock (Styles/Tests).
 func Build(rows []store.Stat) string {
+	return BuildWithStrafen(rows, "")
+}
+
+// BuildWithStrafen erzeugt den WhatsApp-Text; ein nicht-leerer strafenBlock
+// (siehe StrafenBlock) wird zwischen Rangliste und Abschlusszeile eingefügt.
+// rows wird in DB-Reihenfolge erwartet
+// (ORDER BY attendance_count DESC, attend_percentage DESC).
+func BuildWithStrafen(rows []store.Stat, strafenBlock string) string {
 	if len(rows) == 0 {
 		return "🍻 *ZUMBA STATS*\n\n_Keine Daten._"
 	}
@@ -132,9 +146,63 @@ func Build(rows []store.Stat) string {
 			u.medal, u.Name, bar, u.Attendance, u.Away, fmtNum(u.Percent), streakLabel, startDateText))
 	}
 	b.WriteString(strings.Join(lines, "\n"))
+	if strafenBlock != "" {
+		b.WriteString("\n\n")
+		b.WriteString(strafenBlock)
+	}
 	b.WriteString("\n\n🤖🍺 *Automatisch erstellt vom Zumba-Bot*")
 
 	return b.String()
+}
+
+// StrafenBlock rendert den Strafen-Abschnitt für den Stichtag asOf: offene
+// Strafen immer, beglichene bis einschließlich zum Folgedonnerstag der
+// Begleichung, gelöschte nie. Ohne sichtbare Strafen gibt es die
+// "Keine offenen Strafen"-Zeile.
+func StrafenBlock(entries []penalty.Entry, asOf time.Time) string {
+	var visible []penalty.Entry
+	for _, e := range entries {
+		if penalty.VisibleAt(e, asOf) {
+			visible = append(visible, e)
+		}
+	}
+	// Offene zuerst, innerhalb der Gruppen stabil (Assess sortiert nach Name).
+	sort.SliceStable(visible, func(i, j int) bool {
+		oi, oj := visible[i].Status == penalty.StatusOffen, visible[j].Status == penalty.StatusOffen
+		return oi && !oj
+	})
+
+	var b strings.Builder
+	b.WriteString("── 💸 *STRAFEN* ──\n")
+	if len(visible) == 0 {
+		b.WriteString("\n_Keine offenen Strafen_ 🎉")
+		return b.String()
+	}
+	for _, e := range visible {
+		b.WriteString("\n")
+		b.WriteString(strafenLine(e))
+	}
+	return b.String()
+}
+
+// strafenLine baut die Zeile einer Strafe; die Klammer weist die Strafart aus.
+func strafenLine(e penalty.Entry) string {
+	var grund string
+	switch e.Art {
+	case penalty.ArtNoShow:
+		grund = fmt.Sprintf("nicht abgemeldet, %s", fmtDate(e.Datum))
+	default:
+		grund = fmt.Sprintf("%dx in Folge gefehlt", e.Tage)
+	}
+	if e.Status == penalty.StatusBeglichen {
+		return fmt.Sprintf("✅ *%s* – %d€ beglichen (%s)", e.Name, e.Betrag, grund)
+	}
+	return fmt.Sprintf("⚠️ *%s* – %d€ (%s)", e.Name, e.Betrag, grund)
+}
+
+// fmtDate rendert "12.3." (DE, ohne führende Nullen).
+func fmtDate(t time.Time) string {
+	return fmt.Sprintf("%d.%d.", t.Day(), int(t.Month()))
 }
 
 func barChart(percent float64, length int) string {

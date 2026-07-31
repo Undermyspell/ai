@@ -41,6 +41,10 @@ func main() {
 		if err := pgStore.EnsureMLTestSchema(context.Background()); err != nil {
 			log.Printf("⚠️  ml_test_messages Schema: %v", err)
 		}
+		// Strafen-Tabelle (auch der Bot legt sie idempotent an).
+		if err := pgStore.EnsureStrafenSchema(context.Background()); err != nil {
+			log.Printf("⚠️  strafen Schema: %v", err)
+		}
 		st = pgStore
 		defer pg.Close()
 	}

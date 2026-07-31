@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/michael/zumba-admin-ui/internal/penalty"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
 
@@ -17,6 +18,8 @@ type Mock struct {
 	users        []User
 	absences     []Absence   // only entries for valid Thursdays
 	excludedDays []time.Time // Thursdays
+	strafen      []penalty.Row
+	nextStrafeID int64
 }
 
 func NewMock(p timeutil.Period) *Mock {
@@ -421,3 +424,63 @@ func (m *Mock) ListMLTests(_ context.Context, limit int) ([]MLTestMessage, error
 func (m *Mock) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }
 
 func (m *Mock) DeleteMLTest(_ context.Context, _ int64) error { return nil }
+
+// --- Strafen: Mock (in-memory; Auto-Strafen entstehen wie im echten Betrieb
+// aus den generierten Abwesenheiten) ---
+
+func (m *Mock) ListStrafen(_ context.Context) ([]penalty.Row, error) {
+	out := make([]penalty.Row, len(m.strafen))
+	copy(out, m.strafen)
+	sort.SliceStable(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	return out, nil
+}
+
+func (m *Mock) InsertAutoStrafe(_ context.Context, userID string, datum time.Time) error {
+	for _, r := range m.strafen {
+		if r.Art == penalty.ArtFehltage && r.UserID == userID &&
+			timeutil.FormatISO(r.Datum) == timeutil.FormatISO(datum) {
+			return nil
+		}
+	}
+	m.nextStrafeID++
+	m.strafen = append(m.strafen, penalty.Row{
+		ID: m.nextStrafeID, UserID: userID, Art: penalty.ArtFehltage,
+		Datum: timeutil.StartOfDay(datum), Status: penalty.StatusOffen,
+		CreatedAt: time.Now(),
+	})
+	return nil
+}
+
+func (m *Mock) InsertNoShowStrafe(_ context.Context, userID string, datum time.Time, betrag int) error {
+	m.nextStrafeID++
+	m.strafen = append(m.strafen, penalty.Row{
+		ID: m.nextStrafeID, UserID: userID, Art: penalty.ArtNoShow,
+		Datum: timeutil.StartOfDay(datum), Betrag: betrag,
+		Status: penalty.StatusOffen, CreatedAt: time.Now(),
+	})
+	return nil
+}
+
+func (m *Mock) BegleicheStrafe(_ context.Context, id int64) error {
+	for i := range m.strafen {
+		if m.strafen[i].ID == id && m.strafen[i].Status == penalty.StatusOffen {
+			now := time.Now()
+			m.strafen[i].Status = penalty.StatusBeglichen
+			m.strafen[i].BeglichenAm = &now
+			return nil
+		}
+	}
+	return fmt.Errorf("BegleicheStrafe: keine offene Strafe %d", id)
+}
+
+func (m *Mock) LoescheStrafe(_ context.Context, id int64) error {
+	for i := range m.strafen {
+		if m.strafen[i].ID == id && m.strafen[i].Status != penalty.StatusGeloescht {
+			now := time.Now()
+			m.strafen[i].Status = penalty.StatusGeloescht
+			m.strafen[i].GeloeschtAm = &now
+			return nil
+		}
+	}
+	return fmt.Errorf("LoescheStrafe: Strafe %d nicht gefunden", id)
+}

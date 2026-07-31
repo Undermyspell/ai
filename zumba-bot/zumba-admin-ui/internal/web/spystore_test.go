@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/michael/zumba-admin-ui/internal/penalty"
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
@@ -16,6 +17,11 @@ type spyStore struct {
 	deletedExcluded  string
 	users            []store.User
 	absences         []store.Absence
+
+	strafen          []penalty.Row
+	nextStrafeID     int64
+	beglichenStrafe  int64
+	geloeschteStrafe int64
 }
 
 func newSpyStore() *spyStore {
@@ -54,7 +60,7 @@ func (s *spyStore) DeleteExcludedDay(_ context.Context, date time.Time) error {
 }
 
 func (s *spyStore) ListTraces(_ context.Context, _ int) ([]store.Trace, error) { return nil, nil }
-func (s *spyStore) GetTrace(_ context.Context, _ int64) (*store.Trace, error)   { return nil, nil }
+func (s *spyStore) GetTrace(_ context.Context, _ int64) (*store.Trace, error)  { return nil, nil }
 
 func mustDate(s string) time.Time {
 	d, err := timeutil.ParseISO(s)
@@ -81,3 +87,48 @@ func (s *spyStore) ListMLTests(_ context.Context, _ int) ([]store.MLTestMessage,
 func (s *spyStore) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }
 
 func (s *spyStore) DeleteMLTest(_ context.Context, _ int64) error { return nil }
+
+func (s *spyStore) ListStrafen(_ context.Context) ([]penalty.Row, error) { return s.strafen, nil }
+func (s *spyStore) InsertAutoStrafe(_ context.Context, userID string, datum time.Time) error {
+	for _, r := range s.strafen {
+		if r.Art == penalty.ArtFehltage && r.UserID == userID && timeutil.FormatISO(r.Datum) == timeutil.FormatISO(datum) {
+			return nil
+		}
+	}
+	s.nextStrafeID++
+	s.strafen = append(s.strafen, penalty.Row{
+		ID: s.nextStrafeID, UserID: userID, Art: penalty.ArtFehltage,
+		Datum: datum, Status: penalty.StatusOffen,
+	})
+	return nil
+}
+func (s *spyStore) InsertNoShowStrafe(_ context.Context, userID string, datum time.Time, betrag int) error {
+	s.nextStrafeID++
+	s.strafen = append(s.strafen, penalty.Row{
+		ID: s.nextStrafeID, UserID: userID, Art: penalty.ArtNoShow,
+		Datum: datum, Betrag: betrag, Status: penalty.StatusOffen,
+	})
+	return nil
+}
+func (s *spyStore) BegleicheStrafe(_ context.Context, id int64) error {
+	s.beglichenStrafe = id
+	now := time.Now()
+	for i := range s.strafen {
+		if s.strafen[i].ID == id {
+			s.strafen[i].Status = penalty.StatusBeglichen
+			s.strafen[i].BeglichenAm = &now
+		}
+	}
+	return nil
+}
+func (s *spyStore) LoescheStrafe(_ context.Context, id int64) error {
+	s.geloeschteStrafe = id
+	now := time.Now()
+	for i := range s.strafen {
+		if s.strafen[i].ID == id {
+			s.strafen[i].Status = penalty.StatusGeloescht
+			s.strafen[i].GeloeschtAm = &now
+		}
+	}
+	return nil
+}

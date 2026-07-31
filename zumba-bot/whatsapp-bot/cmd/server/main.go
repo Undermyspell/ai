@@ -39,6 +39,11 @@ func main() {
 	log.Printf("✅ Connected to PostgreSQL '%s' on %s:%s", cfg.DB.Name, cfg.DB.Host, cfg.DB.Port)
 
 	st := store.NewPostgres(pg)
+	// Strafen-Tabelle (Marker für Fehltage-Strafen; No-Shows pflegt das
+	// Admin-UI). Beide Services legen sie idempotent an.
+	if err := st.EnsureStrafenSchema(context.Background()); err != nil {
+		log.Printf("⚠️  strafen Schema: %v", err)
+	}
 	cl := classifier.NewGemini(cfg.Gemini.APIKey, cfg.Gemini.Model, cfg.Gemini.FallbackModel)
 
 	var snd web.Sender

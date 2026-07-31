@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/michael/zumba-admin-ui/internal/penalty"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
 
@@ -68,6 +69,20 @@ type Store interface {
 	// JudgeMLTest hinterlegt das erwartete Label ("passt" = Modell-Label).
 	JudgeMLTest(ctx context.Context, id int64, expectedLabel string) error
 	DeleteMLTest(ctx context.Context, id int64) error
+
+	// Strafen-Feature. ListStrafen liefert ALLE Zeilen (inkl. beglichen und
+	// geloescht – Lösch-/Begleich-Zeitpunkte resetten den Fehltage-Zähler).
+	ListStrafen(ctx context.Context) ([]penalty.Row, error)
+	// InsertAutoStrafe persistiert den Marker einer erkannten Fehltage-Strafe
+	// (idempotent auf userId + Serienstart).
+	InsertAutoStrafe(ctx context.Context, userID string, datum time.Time) error
+	// InsertNoShowStrafe legt eine manuelle Strafe an (nicht abgemeldet).
+	InsertNoShowStrafe(ctx context.Context, userID string, datum time.Time, betrag int) error
+	// BegleicheStrafe setzt status=beglichen + beglichen_am=now().
+	BegleicheStrafe(ctx context.Context, id int64) error
+	// LoescheStrafe ist ein Soft-Delete (status=geloescht): die Zeile bleibt
+	// als Reset-Marker erhalten, taucht aber nirgends mehr auf.
+	LoescheStrafe(ctx context.Context, id int64) error
 }
 
 // MLTestMessage ist ein manuell eingegebener Testfall aus dem Admin-UI.

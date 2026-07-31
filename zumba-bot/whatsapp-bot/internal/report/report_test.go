@@ -3,7 +3,9 @@ package report
 import (
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
 
@@ -83,5 +85,56 @@ func TestFmtNum(t *testing.T) {
 func TestBuildEmpty(t *testing.T) {
 	if got := Build(nil); got == "" {
 		t.Error("Build(nil) should not panic or return empty")
+	}
+}
+
+func TestBuildWithStrafenPlatzierung(t *testing.T) {
+	rows := []store.Stat{{Name: "Anna", Attendance: 10, Percent: 100}}
+	asOf := time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC) // Donnerstag
+	entries := []penalty.Entry{
+		{Name: "Ben", Art: penalty.ArtFehltage, Tage: 6, Betrag: 30, Status: penalty.StatusOffen},
+		{Name: "Carl", Art: penalty.ArtNoShow, Betrag: 50, Status: penalty.StatusOffen,
+			Datum: time.Date(2026, 7, 23, 0, 0, 0, 0, time.UTC)},
+	}
+	got := BuildWithStrafen(rows, StrafenBlock(entries, asOf))
+
+	blockIdx := strings.Index(got, "── 💸 *STRAFEN* ──")
+	rangIdx := strings.Index(got, "── *RANGLISTE* ──")
+	footIdx := strings.Index(got, "🤖🍺 *Automatisch erstellt vom Zumba-Bot*")
+	if blockIdx == -1 || rangIdx == -1 || footIdx == -1 {
+		t.Fatalf("Abschnitte fehlen:\n%s", got)
+	}
+	if !(rangIdx < blockIdx && blockIdx < footIdx) {
+		t.Errorf("Strafenblock nicht zwischen Rangliste und Abschlusszeile:\n%s", got)
+	}
+	for _, want := range []string{
+		"⚠️ *Ben* – 30€ (6x in Folge gefehlt)",
+		"⚠️ *Carl* – 50€ (nicht abgemeldet, 23.7.)",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("Zeile fehlt: %q\n%s", want, got)
+		}
+	}
+}
+
+func TestStrafenBlockLeer(t *testing.T) {
+	block := StrafenBlock(nil, time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC))
+	if !strings.Contains(block, "_Keine offenen Strafen_") {
+		t.Errorf("Leermeldung fehlt: %q", block)
+	}
+}
+
+func TestStrafenBlockBeglichenNurImFenster(t *testing.T) {
+	beglichen := time.Date(2026, 7, 24, 18, 0, 0, 0, time.UTC) // Freitag
+	e := penalty.Entry{Name: "Dora", Art: penalty.ArtFehltage, Tage: 5, Betrag: 25,
+		Status: penalty.StatusBeglichen, BeglichenAm: &beglichen}
+
+	inWindow := StrafenBlock([]penalty.Entry{e}, time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC))
+	if !strings.Contains(inWindow, "✅ *Dora* – 25€ beglichen (5x in Folge gefehlt)") {
+		t.Errorf("beglichene Strafe fehlt am Folgedonnerstag: %q", inWindow)
+	}
+	after := StrafenBlock([]penalty.Entry{e}, time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC))
+	if strings.Contains(after, "Dora") {
+		t.Errorf("beglichene Strafe nach dem Folgedonnerstag noch sichtbar: %q", after)
 	}
 }

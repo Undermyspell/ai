@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"time"
+
+	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
 )
 
 // Stat ist eine Zeile der Per-User-Statistik (entspricht den Spalten von
@@ -26,4 +28,11 @@ type Store interface {
 	MarkAbsent(ctx context.Context, userID string, date time.Time, message string) error
 	// MarkPresent entfernt eine Absage (n8n: "Delete table or rows").
 	MarkPresent(ctx context.Context, userID string, date time.Time) error
+
+	// PenaltyInputs liefert alles, was penalty.Assess braucht (User mit
+	// Abwesenheiten, Sperrtage, alle strafen-Zeilen).
+	PenaltyInputs(ctx context.Context) (penalty.Input, error)
+	// InsertAutoStrafe persistiert den Marker einer erkannten Fehltage-Strafe
+	// (idempotent: userId + erster Fehltag der Serie).
+	InsertAutoStrafe(ctx context.Context, userID string, datum time.Time) error
 }

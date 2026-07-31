@@ -62,6 +62,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /excluded", s.handleAddExcluded)
 	mux.HandleFunc("DELETE /excluded/{date}", s.handleDeleteExcluded)
 	mux.HandleFunc("POST /toggle-absence", s.handleToggleAbsence)
+	mux.HandleFunc("GET /strafen", s.handleStrafen)
+	mux.HandleFunc("POST /strafen", s.handleAddStrafe)
+	mux.HandleFunc("POST /strafen/{id}/begleichen", s.handleBegleicheStrafe)
+	mux.HandleFunc("DELETE /strafen/{id}", s.handleDeleteStrafe)
 	mux.HandleFunc("GET /bot-test", s.handleBotTest)
 	mux.HandleFunc("GET /bot-test/example/{kind}", s.handleBotTestExample)
 	mux.HandleFunc("POST /bot-test/run", s.handleBotTestRun)
@@ -562,10 +566,15 @@ func modeQuery(mode string) string {
 	return "?dryRun=true"
 }
 
-// handleBotTestWeekly ruft den Wochenreport-Endpoint des Bots im gewählten Modus auf.
+// handleBotTestWeekly ruft den Wochenreport-Endpoint des Bots im gewählten Modus
+// auf. Ein optionales date=YYYY-MM-DD simuliert den Stichtag des Strafenblocks
+// (der Bot erzwingt dann Dry-Run, sofern nicht Vorschau).
 func (s *Server) handleBotTestWeekly(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	url := strings.TrimRight(s.cfg.BotURL, "/") + "/weekly-report" + modeQuery(r.FormValue("mode"))
+	if date := r.FormValue("date"); date != "" {
+		url += "&date=" + date
+	}
 	s.proxyBot(w, r, url, nil)
 }
 

@@ -15,6 +15,7 @@ import (
 
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
+	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/report"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 	"github.com/michael/zumba-whatsapp-bot/internal/tracestore"
@@ -212,7 +213,7 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, rec
 		log.Printf("⚠️  UserStats: %v", err)
 		return ""
 	}
-	text := report.Build(stats)
+	text := report.BuildWithStrafen(stats, s.strafenBlock(ctx, s.today(), !dryRun))
 	rec.Step(tracestore.NodeBuildStats, tracestore.OutcomePass, "Statistik berechnen", fmt.Sprintf("%d Nutzer", len(stats)))
 	if dryRun {
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeInfo, "An Gruppe senden", "Dry-Run – nicht gesendet")
@@ -230,13 +231,28 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, rec
 
 // handleWeekly versendet den automatischen Wochenreport an die Zumba-Gruppe
 // (per CronJob donnerstags 21:00 aufgerufen). ?dryRun=true berechnet den Text
-// nur und sendet nicht – für den Test-Button im Admin-UI.
+// nur und sendet nicht – für den Test-Button im Admin-UI. ?date=YYYY-MM-DD
+// simuliert den Stichtag des Strafenblocks (nur Strafen – die Rangliste
+// rechnet weiterhin bis heute) und erzwingt Dry-Run, sofern nicht Vorschau.
 func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	dryRun := q.Get("dryRun") == "true"
 	preview := q.Get("preview") == "true" && s.PreviewJID != ""
 
-	text := s.weeklyText(r.Context(), !(dryRun || preview))
+	asOf := s.today()
+	if ds := q.Get("date"); ds != "" {
+		d, err := time.ParseInLocation("2006-01-02", ds, s.location)
+		if err != nil {
+			http.Error(w, "ungültiges date (YYYY-MM-DD)", http.StatusBadRequest)
+			return
+		}
+		asOf = d
+		if !preview {
+			dryRun = true // simulierter Stichtag geht nie an die Gruppe
+		}
+	}
+
+	text := s.weeklyText(r.Context(), !(dryRun || preview), asOf)
 	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: dryRun || preview}
 	if preview && text != "" {
 		if err := s.sender.SendText(r.Context(), s.PreviewJID, text); err != nil {
@@ -251,15 +267,16 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(out)
 }
 
-// weeklyText baut den Wochenreport-Text (mit Hinweis-Header) und sendet ihn bei
-// send=true an die konfigurierte Zumba-Gruppe.
-func (s *Server) weeklyText(ctx context.Context, send bool) string {
+// weeklyText baut den Wochenreport-Text (mit Hinweis-Header und Strafenblock
+// zum Stichtag asOf) und sendet ihn bei send=true an die konfigurierte
+// Zumba-Gruppe. Nur echte Versände persistieren neu erkannte Strafen-Marker.
+func (s *Server) weeklyText(ctx context.Context, send bool, asOf time.Time) string {
 	stats, err := s.store.UserStats(ctx)
 	if err != nil {
 		log.Printf("⚠️  UserStats: %v", err)
 		return ""
 	}
-	text := report.BuildWeekly(stats)
+	text := report.BuildWeeklyWithStrafen(stats, s.strafenBlock(ctx, asOf, send))
 	if send {
 		if err := s.sender.SendText(ctx, s.groupJID, text); err != nil {
 			log.Printf("⚠️  SendText(Wochenreport, %s): %v", s.groupJID, err)
@@ -268,6 +285,32 @@ func (s *Server) weeklyText(ctx context.Context, send bool) string {
 		}
 	}
 	return text
+}
+
+// strafenBlock berechnet alle Strafen zum Stichtag asOf und rendert den
+// Report-Abschnitt. persist=true schreibt Marker für neu erkannte
+// Fehltage-Strafen (nur echte Läufe – nie Dry-Run/Vorschau). Bei Fehlern
+// entfällt der Block, der Report geht trotzdem raus.
+func (s *Server) strafenBlock(ctx context.Context, asOf time.Time, persist bool) string {
+	in, err := s.store.PenaltyInputs(ctx)
+	if err != nil {
+		log.Printf("⚠️  PenaltyInputs: %v (Strafenblock entfällt)", err)
+		return ""
+	}
+	entries := penalty.Assess(in, asOf)
+	if persist {
+		for _, e := range entries {
+			if e.ID != 0 {
+				continue
+			}
+			if err := s.store.InsertAutoStrafe(ctx, e.UserID, e.Datum); err != nil {
+				log.Printf("⚠️  InsertAutoStrafe(%s, %s): %v", e.UserID, e.Datum.Format("2006-01-02"), err)
+			} else {
+				log.Printf("💸 Auto-Strafe persistiert: %s ab %s (%d€)", e.Name, e.Datum.Format("2006-01-02"), e.Betrag)
+			}
+		}
+	}
+	return report.StrafenBlock(entries, asOf)
 }
 
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
