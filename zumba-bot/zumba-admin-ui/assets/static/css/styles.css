@@ -868,10 +868,17 @@ h3 { font-size: 17px; line-height: 1.25; }
   display: flex; gap: var(--space-3); flex-wrap: wrap;
   align-items: center; margin-bottom: var(--space-5);
 }
-.excluded-form input[type="date"] {
+.excluded-form input[type="date"],
+.excluded-form input[type="number"],
+.excluded-form select,
+.weekly-test input[type="date"] {
   background: var(--bg-elev); color: var(--ink);
   border: 1px solid var(--rule-strong); border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3); font-family: var(--font-body);
+}
+.excluded-form input[type="number"] { width: 90px; }
+.excluded-form input:focus, .excluded-form select:focus, .weekly-test input:focus {
+  outline: 2px solid var(--accent-soft); border-color: var(--accent);
 }
 .excluded-row .btn-danger { margin-left: auto; }
 
