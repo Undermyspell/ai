@@ -39,39 +39,31 @@ templ FullHouse(fh viewmodels.FullHouseView) {
 	</div>
 }
 
-// TwinCard renders one twin pair
-templ TwinCard(pair viewmodels.TwinPair, emoji string, title string, gradient string, delay string) {
-	<div class={ "animate-on-enter animate-scale-in " + delay + " " + gradient + " rounded-xl p-5 w-full max-w-md" }>
-		<div class="text-sm text-schaum/60 mb-2">{ emoji } { title }</div>
-		<div class="flex items-center justify-center gap-3 text-xl font-bold text-schaum">
-			<span>{ pair.Emoji1 } { pair.Name1 }</span>
-			<span class="text-biergold">&amp;</span>
-			<span>{ pair.Emoji2 } { pair.Name2 }</span>
-		</div>
-		<div class="text-sm text-schaum/60 mt-2 text-center">{ pair.Detail }</div>
+// FunCardView renders one generic finding card
+templ FunCardView(card viewmodels.FunCard) {
+	<div class={ "animate-on-enter animate-scale-in " + card.DelayClass + " " + card.Gradient + " rounded-xl p-5 w-full max-w-md" }>
+		<div class="text-sm text-schaum/60 mb-2">{ card.Emoji } { card.Title }</div>
+		<div class="text-xl font-bold text-schaum">{ card.Headline }</div>
+		<div class="text-sm text-schaum/60 mt-2">{ card.Detail }</div>
+		if card.Quote != "" {
+			<div class="text-schaum/90 italic mt-2">"{ card.Quote }"</div>
+		}
 	</div>
 }
 
-// Twins slide - absence twins and the changing of the guard
-templ Twins(twins viewmodels.TwinsView) {
-	<div class="slide flex-col items-center justify-center h-screen px-4 text-center" data-duration="7000">
+// FunCards renders a titled slide of finding cards
+templ FunCards(emoji string, title string, subtitle string, cards []viewmodels.FunCard) {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto text-center" data-duration="8000">
 		<div class="animate-on-enter animate-scale-in">
-			<span class="text-7xl mb-4 block">👯</span>
+			<span class="text-6xl mb-3 block">{ emoji }</span>
 		</div>
-		<h2 class="animate-on-enter animate-fade-in-up delay-200 text-2xl md:text-3xl font-bold text-biergold text-glow mb-8">
-			Dynamische Duos
+		<h2 class="animate-on-enter animate-fade-in-up delay-100 text-2xl md:text-3xl font-bold text-biergold text-glow mb-1">
+			{ title }
 		</h2>
+		<p class="animate-on-enter animate-fade-in delay-200 text-schaum/50 text-sm mb-6">{ subtitle }</p>
 		<div class="space-y-4 w-full flex flex-col items-center">
-			if twins.HasZwillinge {
-				@TwinCard(twins.Zwillinge, "👯", "Die Absage-Zwillinge", "bg-gradient-to-r from-purple-500/25 to-pink-500/15", "delay-400")
-			}
-			if twins.HasWachabloesung {
-				@TwinCard(twins.Wachabloesung, "🔄", "Die Wachablösung", "bg-gradient-to-r from-blue-500/25 to-cyan-500/15", "delay-700")
-			}
-			if !twins.HasZwillinge && !twins.HasWachabloesung {
-				<p class="animate-on-enter animate-fade-in delay-400 text-xl text-schaum/70">
-					Keine auffälligen Paare – ihr fehlt schön gleichmäßig verteilt. 🤷
-				</p>
+			for _, card := range cards {
+				@FunCardView(card)
 			}
 		</div>
 	</div>

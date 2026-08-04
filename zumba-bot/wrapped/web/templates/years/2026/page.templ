@@ -19,10 +19,21 @@ templ Page(vm viewmodels.PageViewModel) {
 		@slides.Streaks(vm.AttendanceStreaks, vm.CancellationStreaks)
 		@slides.ExcuseCategories(vm.CategoryStats)
 		@slides.BestExcuses(vm.BestExcuses, vm.RecycledExcuses)
+		if len(vm.ForensikCards) > 0 {
+			@slides.FunCards("🔍", "Ausreden-Forensik", "Die Textanalyse des Jahres", vm.ForensikCards)
+		}
 		@slides.AttendanceHeatmap(vm.AttendanceHeatmapMonths, vm.AttendanceHeatmapInsight)
+		if len(vm.MuffelCards) > 0 {
+			@slides.FunCards("🌦️", "Die Muffel des Jahres", "Saisonale Ausfallerscheinungen", vm.MuffelCards)
+		}
 		@slides.Thursdays(vm.BestThursdays, vm.WorstThursdays)
 		@slides.FullHouse(vm.FullHouse)
-		@slides.Twins(vm.Twins)
+		if len(vm.DuoCards) > 0 {
+			@slides.FunCards("👯", "Dynamische Duos", "Wer hängt mit wem zusammen?", vm.DuoCards)
+		}
+		if len(vm.SquadCards) > 0 {
+			@slides.FunCards("🦸", "Die Einsatz-Typen", "Wer trägt den Laden?", vm.SquadCards)
+		}
 		@slides.AISummary(vm.AIStats)
 		@slides.PersonalityTypes(vm.PersonalityTypes)
 		@slides.Quiz(vm.Quiz)

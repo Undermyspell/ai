@@ -10,10 +10,13 @@ templ SlideNavigation() {
 			constructor() {
 				this.currentSlide = 0;
 				this.slides = [];
-				this.timer = null;
 				this.progressInterval = null;
+				this.elapsed = 0;
 				this.isPaused = false;
 				this.slideDuration = 5000;
+				this.holdTimer = null;
+				this.isHolding = false;
+				this.suppressClick = false;
 				this.init();
 			}
 
@@ -54,8 +57,38 @@ templ SlideNavigation() {
 
 			setupEventListeners() {
 				document.addEventListener("click", (e) => {
+					if (this.suppressClick) {
+						this.suppressClick = false;
+						return;
+					}
 					if (e.target.closest("#nav-dots")) return;
 					this.nextSlide();
+				});
+
+				// Hold-to-pause (Instagram-style): press and hold freezes the
+				// progress, release resumes. A hold suppresses the tap-advance.
+				document.addEventListener("pointerdown", (e) => {
+					if (e.target.closest("#nav-dots") || e.target.closest("button")) return;
+					this.holdTimer = setTimeout(() => {
+						this.isHolding = true;
+						this.pauseProgress();
+					}, 200);
+				});
+				const endHold = () => {
+					clearTimeout(this.holdTimer);
+					this.holdTimer = null;
+					if (this.isHolding) {
+						this.isHolding = false;
+						this.suppressClick = true;
+						setTimeout(() => { this.suppressClick = false; }, 350);
+						this.resumeProgress();
+					}
+				};
+				document.addEventListener("pointerup", endHold);
+				document.addEventListener("pointercancel", endHold);
+				// No long-press context menu / text selection while holding
+				document.addEventListener("contextmenu", (e) => {
+					if (this.isHolding) e.preventDefault();
 				});
 
 				document.addEventListener("keydown", (e) => {
@@ -194,18 +227,34 @@ templ SlideNavigation() {
 				if (this.isPaused) return;
 
 				this.resetTimer();
-				let elapsed = 0;
+				this.runProgress();
+			}
+
+			// runProgress ticks the progress bar from the current elapsed time.
+			// pauseProgress/resumeProgress freeze and continue it mid-slide.
+			runProgress() {
 				const progressBar = document.getElementById("progress-bar");
-
 				this.progressInterval = setInterval(() => {
-					elapsed += 100;
-					const progress = (elapsed / this.slideDuration) * 100;
-					progressBar.style.width = `${progress}%`;
+					this.elapsed += 100;
+					const progress = (this.elapsed / this.slideDuration) * 100;
+					progressBar.style.width = `${Math.min(progress, 100)}%`;
+					if (this.elapsed >= this.slideDuration) {
+						this.nextSlide();
+					}
 				}, 100);
+			}
 
-				this.timer = setTimeout(() => {
-					this.nextSlide();
-				}, this.slideDuration);
+			pauseProgress() {
+				if (this.progressInterval) {
+					clearInterval(this.progressInterval);
+					this.progressInterval = null;
+				}
+			}
+
+			resumeProgress() {
+				if (!this.progressInterval && !this.isPaused) {
+					this.runProgress();
+				}
 			}
 
 			stopAutoNavigation() {
@@ -215,14 +264,11 @@ templ SlideNavigation() {
 			}
 
 			resetTimer() {
-				if (this.timer) {
-					clearTimeout(this.timer);
-					this.timer = null;
-				}
 				if (this.progressInterval) {
 					clearInterval(this.progressInterval);
 					this.progressInterval = null;
 				}
+				this.elapsed = 0;
 				const progressBar = document.getElementById("progress-bar");
 				progressBar.style.width = "0%";
 			}

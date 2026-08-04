@@ -35,8 +35,11 @@ type PageViewModel struct {
 	// Full house Thursdays (everyone attended)
 	FullHouse FullHouseView
 
-	// Absence twins
-	Twins TwinsView
+	// Fun-card slides (rendered only when non-empty)
+	DuoCards      []FunCard // Zwillinge, Wachablösung, Unzertrennliche, Magnet & Schreck, Copy-Paste-Duo
+	SquadCards    []FunCard // Dreamteam, Retter in der Not, Mitläufer
+	ForensikCards []FunCard // Romanautor, Minimalist, Emoji-König
+	MuffelCards   []FunCard // Sommermuffel, Wintermuffel
 
 	// Quiz (interactive reveal)
 	Quiz QuizView
@@ -191,20 +194,16 @@ type FullHouseView struct {
 	More   int      // dates beyond the shown ones
 }
 
-// TwinPair is a pair of users for the twins slide
-type TwinPair struct {
-	Name1, Emoji1 string
-	Name2, Emoji2 string
-	Count         int    // shared absence Thursdays (Zwillinge) or combined absences (Wachablösung)
-	Detail        string // explanatory line
-}
-
-// TwinsView contains both twin findings
-type TwinsView struct {
-	HasZwillinge     bool
-	Zwillinge        TwinPair
-	HasWachabloesung bool
-	Wachabloesung    TwinPair
+// FunCard is a generic finding card: a category label, the people/values
+// involved, and an explanatory line
+type FunCard struct {
+	Emoji      string // category emoji, e.g. "👯"
+	Title      string // e.g. "Die Absage-Zwillinge"
+	Headline   string // e.g. "🎵 Martin & 💻 Sebastian"
+	Detail     string // e.g. "8× am selben Donnerstag gefehlt"
+	Quote      string // optional: verbatim message, rendered italic
+	Gradient   string // background gradient classes
+	DelayClass string
 }
 
 // QuizView contains one interactive quiz question with hidden answer

@@ -59,8 +59,11 @@ func Build(data *EvalData, year string) viewmodels.PageViewModel {
 	// Build full house Thursdays
 	vm.FullHouse = buildFullHouse(data.ThursdayStats)
 
-	// Build absence twins
-	vm.Twins = buildTwins(data.Cancellations, data.UserStats)
+	// Build fun-card slides (duos, squad, forensics, muffel)
+	vm.DuoCards = buildDuoCards(data.Cancellations, data.UserStats, data.ThursdayStats)
+	vm.SquadCards = buildSquadCards(data.Cancellations, data.UserStats, data.ThursdayStats)
+	vm.ForensikCards = buildForensikCards(data.Cancellations, data.UserStats)
+	vm.MuffelCards = buildMuffelCards(data.Cancellations, data.UserStats)
 
 	// Build quiz
 	vm.Quiz = buildQuiz(data.UserStats)
@@ -551,68 +554,6 @@ func buildFullHouse(stats []models.ThursdayStat) viewmodels.FullHouseView {
 		dates = dates[:5]
 	}
 	view.Dates = dates
-	return view
-}
-
-// buildTwins finds the pair most often absent on the same Thursday and the
-// pair with the most combined absences that never overlapped
-func buildTwins(cancellations []models.Cancellation, users []models.UserStats) viewmodels.TwinsView {
-	emojiByName := make(map[string]string, len(users))
-	for _, u := range users {
-		emojiByName[u.Name] = u.Emoji
-	}
-
-	// Absence date sets per user name
-	datesByUser := make(map[string]map[string]bool)
-	for _, c := range cancellations {
-		if datesByUser[c.UserName] == nil {
-			datesByUser[c.UserName] = make(map[string]bool)
-		}
-		datesByUser[c.UserName][c.Date.Format("2006-01-02")] = true
-	}
-
-	names := make([]string, 0, len(datesByUser))
-	for n := range datesByUser {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-
-	var view viewmodels.TwinsView
-	bestShared, bestCombined := 0, 0
-
-	for i := 0; i < len(names); i++ {
-		for j := i + 1; j < len(names); j++ {
-			a, b := datesByUser[names[i]], datesByUser[names[j]]
-			shared := 0
-			for d := range a {
-				if b[d] {
-					shared++
-				}
-			}
-			if shared >= 2 && shared > bestShared {
-				bestShared = shared
-				view.HasZwillinge = true
-				view.Zwillinge = viewmodels.TwinPair{
-					Name1: names[i], Emoji1: emojiByName[names[i]],
-					Name2: names[j], Emoji2: emojiByName[names[j]],
-					Count:  shared,
-					Detail: fmt.Sprintf("%d× am selben Donnerstag gefehlt", shared),
-				}
-			}
-			// Wachablösung: both absent often, but never together
-			if shared == 0 && len(a) >= 3 && len(b) >= 3 && len(a)+len(b) > bestCombined {
-				bestCombined = len(a) + len(b)
-				view.HasWachabloesung = true
-				view.Wachabloesung = viewmodels.TwinPair{
-					Name1: names[i], Emoji1: emojiByName[names[i]],
-					Name2: names[j], Emoji2: emojiByName[names[j]],
-					Count:  bestCombined,
-					Detail: fmt.Sprintf("zusammen %d Absagen – aber nie am selben Tag", bestCombined),
-				}
-			}
-		}
-	}
-
 	return view
 }
 
