@@ -13,8 +13,7 @@ metadata:
   name: k3s-server
   namespace: system-upgrade
 spec:
-  # Erste Stufe: v1.34.3 → v1.35.6. Danach auf v1.36.2+k3s1 bumpen.
-  version: v1.35.6+k3s1
+  version: v1.36.2+k3s1
   serviceAccountName: system-upgrade
   concurrency: 1
   # Single-Node: cordon reicht — ein Drain würde alle Pods evakuieren,
