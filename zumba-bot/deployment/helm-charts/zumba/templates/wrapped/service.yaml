@@ -1,0 +1,18 @@
+{{- if .Values.wrapped.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zumba.fullname" . }}-wrapped
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.wrapped.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.wrapped.service.type }}
+  ports:
+    - port: {{ .Values.wrapped.service.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "zumba.wrapped.selectorLabels" . | nindent 4 }}
+{{- end }}

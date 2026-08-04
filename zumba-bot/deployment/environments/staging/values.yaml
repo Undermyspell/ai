@@ -86,3 +86,12 @@ adminUi:
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io
+
+wrapped:
+  enabled: true
+  image:
+    repository: zumba-wrapped
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  ingress:
+    host: zumba-wrapped-stage.192.168.178.46.nip.io

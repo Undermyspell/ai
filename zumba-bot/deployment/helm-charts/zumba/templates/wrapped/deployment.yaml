@@ -1,0 +1,62 @@
+{{- if .Values.wrapped.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zumba.fullname" . }}-wrapped
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.wrapped.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      {{- include "zumba.wrapped.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zumba.wrapped.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z {{ include "zumba.fullname" . }}-postgres {{ .Values.postgres.service.port }}; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      containers:
+      - name: wrapped
+        image: "{{ .Values.wrapped.image.repository }}:{{ .Values.wrapped.image.tag }}"
+        imagePullPolicy: {{ .Values.wrapped.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "zumba.fullname" . }}-wrapped
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: DB_POSTGRESDB_PASSWORD
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.wrapped.resources | nindent 10 }}
+{{- end }}

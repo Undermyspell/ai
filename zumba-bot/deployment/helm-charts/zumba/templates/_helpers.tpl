@@ -143,3 +143,19 @@ classifier selector labels
 {{ include "zumba.selectorLabels" . }}
 app.kubernetes.io/component: classifier
 {{- end }}
+
+{{/*
+wrapped specific labels
+*/}}
+{{- define "zumba.wrapped.labels" -}}
+{{ include "zumba.labels" . }}
+app.kubernetes.io/component: wrapped
+{{- end }}
+
+{{/*
+wrapped selector labels
+*/}}
+{{- define "zumba.wrapped.selectorLabels" -}}
+{{ include "zumba.selectorLabels" . }}
+app.kubernetes.io/component: wrapped
+{{- end }}

@@ -1,0 +1,18 @@
+{{- if and .Values.wrapped.enabled .Values.wrapped.ingress.enabled -}}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "zumba.fullname" . }}-wrapped
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.wrapped.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`{{ .Values.wrapped.ingress.host }}`)
+      kind: Rule
+      services:
+        - name: {{ include "zumba.fullname" . }}-wrapped
+          port: {{ .Values.wrapped.service.port }}
+{{- end }}

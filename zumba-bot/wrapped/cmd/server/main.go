@@ -39,6 +39,10 @@ func main() {
 	// Routes
 	http.HandleFunc("/", handler.HandleIndex)
 	http.HandleFunc("/2026", handler.Handle2026)
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
 	fsys, _ := fs.Sub(assets.Static, "static")
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(fsys))))
 

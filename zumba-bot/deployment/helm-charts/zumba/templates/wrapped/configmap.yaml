@@ -1,0 +1,17 @@
+{{- if .Values.wrapped.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "zumba.fullname" . }}-wrapped
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.wrapped.labels" . | nindent 4 }}
+data:
+  PORT: {{ .Values.wrapped.service.port | quote }}
+  DB_HOST: {{ include "zumba.fullname" . }}-postgres
+  DB_PORT: {{ .Values.wrapped.env.DB_PORT | quote }}
+  DB_NAME: {{ .Values.wrapped.env.DB_NAME | quote }}
+  DB_USER: {{ .Values.wrapped.env.DB_USER | quote }}
+  DB_SSLMODE: {{ .Values.wrapped.env.DB_SSLMODE | quote }}
+  TZ: {{ .Values.wrapped.env.TZ | quote }}
+{{- end }}

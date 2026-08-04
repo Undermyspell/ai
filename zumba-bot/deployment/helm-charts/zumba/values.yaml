@@ -243,3 +243,30 @@ adminUi:
   ingress:
     enabled: true
     host: zumba-admin.example.com  # per-environment überschreiben
+
+# Stammtisch Wrapped (Jahresrückblick, read-only auf zumba-DB)
+wrapped:
+  enabled: false
+  image:
+    repository: ghcr.io/undermyspell/zumba-wrapped  # ggf. an Registry anpassen
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+  env:
+    DB_NAME: zumba
+    DB_PORT: "5432"
+    DB_USER: n8n
+    DB_SSLMODE: disable
+    TZ: Europe/Berlin
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: true
+    host: zumba-wrapped.example.com  # per-environment überschreiben
