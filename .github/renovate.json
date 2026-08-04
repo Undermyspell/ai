@@ -72,6 +72,31 @@
       ],
       "depNameTemplate": "argoproj/argo-cd",
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Update k3s version in system-upgrade plan",
+      "managerFilePatterns": [
+        "zumba-bot/deployment/system-upgrade/k3s-server-plan.yaml"
+      ],
+      "matchStrings": [
+        "version:\\s*(?<currentValue>v[\\d.]+\\+k3s\\d+)"
+      ],
+      "depNameTemplate": "k3s-io/k3s",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\+k3s(?<build>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update system-upgrade-controller version in kustomization.yaml",
+      "managerFilePatterns": [
+        "zumba-bot/deployment/system-upgrade/kustomization.yaml"
+      ],
+      "matchStrings": [
+        "https://github\\.com/rancher/system-upgrade-controller/releases/download/(?<currentValue>v[\\d.]+)/"
+      ],
+      "depNameTemplate": "rancher/system-upgrade-controller",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [
@@ -160,6 +185,35 @@
       "labels": [
         "dependencies",
         "argocd",
+        "infrastructure",
+        "manual-review"
+      ]
+    },
+    {
+      "description": "k3s updates: manual review, one minor per step (merge triggers the node upgrade!)",
+      "matchPackageNames": [
+        "k3s-io/k3s"
+      ],
+      "groupName": "k3s",
+      "automerge": false,
+      "separateMinorPatch": true,
+      "separateMultipleMinor": true,
+      "labels": [
+        "dependencies",
+        "k3s",
+        "infrastructure",
+        "manual-review"
+      ]
+    },
+    {
+      "description": "system-upgrade-controller updates require manual review",
+      "matchPackageNames": [
+        "rancher/system-upgrade-controller"
+      ],
+      "groupName": "system-upgrade-controller",
+      "automerge": false,
+      "labels": [
+        "dependencies",
         "infrastructure",
         "manual-review"
       ]
