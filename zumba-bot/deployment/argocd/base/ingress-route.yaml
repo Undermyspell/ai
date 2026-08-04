@@ -22,3 +22,31 @@ spec:
           scheme: h2c
   tls:
     certResolver: default
+---
+# HTTP → HTTPS: ohne diese Route liefert der web-Entrypoint 404
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: argocd-redirect-https
+  namespace: argocd
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argocd-server-http
+  namespace: argocd
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`argocd.pi.home`) || Host(`argocd.192.168.178.46.nip.io`)
+      middlewares:
+        - name: argocd-redirect-https
+      services:
+        - name: argocd-server
+          port: 80

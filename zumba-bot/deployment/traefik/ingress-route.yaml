@@ -12,3 +12,32 @@ spec:
       services:
         - name: api@internal
           kind: TraefikService
+---
+# Root → /dashboard/ (das Dashboard existiert nur unter diesem Pfad)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-dashboard-root-redirect
+  namespace: kube-system
+spec:
+  redirectRegex:
+    regex: "^(https?://[^/]+)/?$"
+    replacement: "${1}/dashboard/"
+    permanent: false
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard-root
+  namespace: kube-system
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: (Host(`traefik.pi.home`) || Host(`traefik.192.168.178.46.nip.io`)) && Path(`/`)
+      middlewares:
+        - name: traefik-dashboard-root-redirect
+      services:
+        - name: api@internal
+          kind: TraefikService
