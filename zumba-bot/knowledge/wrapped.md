@@ -3,7 +3,7 @@
 Der Jahresrückblick des Stammtischs, inspiriert von Spotify Wrapped: eine
 mobile-first Slide-Show, die das Stammtisch-Jahr in Zahlen, Rankings, Awards
 und Gossip erzählt. Zielgruppe: die Gruppe selbst, geteilt via WhatsApp.
-Live: http://zumba-wrapped-stage.192.168.178.46.nip.io/2026
+Läuft im Cluster unter eigenem Hostnamen (siehe Staging-Values), Route `/2026`.
 
 ## Auswertungszeitraum
 

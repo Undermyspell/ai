@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Fachliche Doku zuerst lesen**: `knowledge/` beschreibt Domäne und Features pro Teilbereich (README, whatsapp-bot, admin-ui, wrapped, strafen, deployment) — der schnellste Einstieg. Diese Datei hier ergänzt die technischen/Code-Konventionen. Keine echten Mitgliedsnamen in Doku-Dateien.
+**Fachliche Doku zuerst lesen**: `knowledge/` beschreibt Domäne und Features pro Teilbereich (README, whatsapp-bot, admin-ui, wrapped, strafen, deployment) — der schnellste Einstieg. Diese Datei hier ergänzt die technischen/Code-Konventionen. In `knowledge/` gilt: keine echten Mitgliedsnamen, keine internen Hostnamen/IPs — konkrete Hosts nur in den Values-Dateien.
 
 ## Repository layout
 

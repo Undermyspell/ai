@@ -31,10 +31,9 @@ SealedSecrets. Chart und Umgebungen müssen deshalb zusammen im
 | zumba-classifier | ML-Schattenmodell für den Klassifikator-Vergleich |
 | wrapped | Jahresrückblick (seit 08/2026) |
 
-Erreichbarkeit (Heimnetz, HTTP über Traefik-IngressRoutes):
-- n8n: `zumba-stage.pi.home`
-- Admin-UI: `zumba-admin-stage.192.168.178.46.nip.io`
-- Wrapped: `zumba-wrapped-stage.192.168.178.46.nip.io`
+Erreichbarkeit: nur im Heimnetz, HTTP über Traefik-IngressRoutes. n8n,
+Admin-UI und Wrapped haben je einen eigenen Hostnamen — die konkreten Hosts
+stehen pro Umgebung in `environments/<env>/values.yaml` (nicht in der Doku).
 
 ## Image-Versorgung (Besonderheit: keine Registry)
 
