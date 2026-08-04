@@ -491,9 +491,10 @@ func getTitle(stats *models.UserStats) (string, string) {
 	return "Der Unsichtbare", "🫥"
 }
 
-// GetAwards returns special awards
+// GetAwards returns special awards (same categories as the real evaluator)
 func GetAwards() []models.Award {
 	userStats := CalculateUserStats()
+	thursdays := GetThursdays2026()
 
 	// Find streak master
 	streakMaster := userStats[0]
@@ -519,41 +520,92 @@ func GetAwards() []models.Award {
 		}
 	}
 
-	return []models.Award{
+	awards := []models.Award{
 		{
 			Emoji:    "👑",
 			Title:    "Stammtisch-König",
-			Subtitle: "Höchste Teilnahme 2026",
+			Subtitle: "Höchste Anwesenheitsquote",
 			Winner:   userStats[0],
 			Color:    "from-yellow-500/30 to-amber-600/20",
 		},
 		{
-			Emoji:    "🥈",
-			Title:    "Fast immer da",
-			Subtitle: "Zweithöchste Teilnahme",
-			Winner:   userStats[1],
-			Color:    "from-gray-400/30 to-gray-500/20",
-		},
-		{
 			Emoji:    "🔥",
-			Title:    "Streak-Master",
-			Subtitle: "Längste Anwesenheits-Serie",
+			Title:    "Streak-Meister",
+			Subtitle: "Längste Anwesenheitsserie",
 			Winner:   streakMaster,
 			Color:    "from-orange-500/30 to-red-500/20",
 		},
 		{
 			Emoji:    "🎨",
-			Title:    "Ausreden-Künstler",
-			Subtitle: "Kreativste Entschuldigungen",
+			Title:    "Kreativster Absager",
+			Subtitle: "Die besten Ausreden",
 			Winner:   excuseArtist,
 			Color:    "from-purple-500/30 to-pink-500/20",
 		},
-		{
-			Emoji:    "🚀",
-			Title:    "Potenzial 2027",
-			Subtitle: "Raum nach oben",
-			Winner:   userStats[len(userStats)-1],
-			Color:    "from-blue-500/30 to-cyan-500/20",
-		},
 	}
+
+	// Comeback: longest finished cancellation streak (user returned)
+	if len(thursdays) > 0 {
+		lastThursday := thursdays[len(thursdays)-1]
+		var comeback *models.UserStats
+		maxStreak := 0
+		for i := range userStats {
+			u := &userStats[i]
+			if u.MaxCancellationStreak >= 3 && u.MaxCancellationStreak > maxStreak &&
+				!u.MaxCancellationStreakEnd.IsZero() && u.MaxCancellationStreakEnd.Before(lastThursday) {
+				maxStreak = u.MaxCancellationStreak
+				comeback = u
+			}
+		}
+		if comeback != nil {
+			awards = append(awards, models.Award{
+				Emoji:    "🦅",
+				Title:    "Comeback des Jahres",
+				Subtitle: "Lange weg – und wieder da",
+				Winner:   *comeback,
+				Color:    "from-green-500/30 to-emerald-600/20",
+			})
+		}
+	}
+
+	// Rising star: biggest improvement second half vs. first half
+	if len(thursdays) >= 8 {
+		half := len(thursdays) / 2
+		firstHalf := make(map[string]bool, half)
+		for i, t := range thursdays {
+			if i < half {
+				firstHalf[t.Format("2006-01-02")] = true
+			}
+		}
+		var rising *models.UserStats
+		bestDelta := 0
+		for i := range userStats {
+			u := &userStats[i]
+			miss1, miss2 := 0, 0
+			for _, c := range u.Cancellations {
+				if firstHalf[c.Date.Format("2006-01-02")] {
+					miss1++
+				} else {
+					miss2++
+				}
+			}
+			rate1 := ((half - miss1) * 100) / half
+			rate2 := (((len(thursdays) - half) - miss2) * 100) / (len(thursdays) - half)
+			if rate2-rate1 > bestDelta {
+				bestDelta = rate2 - rate1
+				rising = u
+			}
+		}
+		if rising != nil && bestDelta >= 10 {
+			awards = append(awards, models.Award{
+				Emoji:    "🌟",
+				Title:    "Rising Star",
+				Subtitle: "Beste Entwicklung im Jahresverlauf",
+				Winner:   *rising,
+				Color:    "from-blue-500/30 to-cyan-500/20",
+			})
+		}
+	}
+
+	return awards
 }

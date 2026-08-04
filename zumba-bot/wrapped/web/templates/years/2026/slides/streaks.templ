@@ -6,21 +6,6 @@ import (
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
-// StreaksIntro slide
-templ StreaksIntro() {
-	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
-		<div class="animate-on-enter animate-scale-in">
-			<span class="text-7xl mb-4 block animate-fire">🔥</span>
-		</div>
-		<h2 class="animate-on-enter animate-fade-in-up delay-300 text-3xl md:text-4xl font-bold text-biergold text-glow mb-4">
-			Streaks &amp; Serien
-		</h2>
-		<p class="animate-on-enter animate-fade-in delay-500 text-xl text-schaum/70">
-			Wer hielt am längsten durch?
-		</p>
-	</div>
-}
-
 // AttendanceStreakCard renders a single attendance streak card
 templ AttendanceStreakCard(user viewmodels.StreakUser) {
 	<div class={ "animate-on-enter animate-scale-in " + user.DelayClass + " bg-gradient-to-r from-orange-500/30 to-red-500/20 rounded-xl p-4 flex items-center gap-4" }>

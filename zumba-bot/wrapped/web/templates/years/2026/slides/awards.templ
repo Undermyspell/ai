@@ -77,6 +77,12 @@ templ Finale(confetti viewmodels.ConfettiView) {
 		<p class="animate-on-enter animate-fade-in delay-700 text-xl text-schaum/70 mb-8 z-10">
 			🍺 2027 wird noch stärker – donnerstags! 🍺
 		</p>
+		<button
+			onclick="event.stopPropagation(); shareWrapped()"
+			class="animate-on-enter animate-fade-in delay-1200 z-10 bg-biergold text-holz font-bold rounded-full px-8 py-3 text-lg active:scale-95 transition-transform mb-6"
+		>
+			📲 Als Bild teilen
+		</button>
 		<div class="animate-on-enter animate-fade-in-up delay-1000 z-10">
 			<div class="flex gap-4 text-4xl">
 				<span class="animate-bounce delay-100">🎉</span>

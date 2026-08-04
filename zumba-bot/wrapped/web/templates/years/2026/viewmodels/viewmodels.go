@@ -20,14 +20,11 @@ type PageViewModel struct {
 	CancellationStreaks []StreakUser
 
 	// Excuses
-	CategoryStats []CategoryStat
-	BestExcuses   []Excuse
+	CategoryStats   []CategoryStat
+	BestExcuses     []Excuse
+	RecycledExcuses []RecycledExcuse
 
-	// Heatmap
-	HeatmapMonths  []HeatmapMonth
-	HeatmapInsight HeatmapInsight
-
-	// Attendance Heatmap (average attendance rate per month)
+	// Attendance Heatmap (average attendance rate + cancellations per month)
 	AttendanceHeatmapMonths  []AttendanceHeatmapMonth
 	AttendanceHeatmapInsight AttendanceHeatmapInsight
 
@@ -35,16 +32,23 @@ type PageViewModel struct {
 	BestThursdays  []ThursdayCard
 	WorstThursdays []ThursdayCard
 
+	// Full house Thursdays (everyone attended)
+	FullHouse FullHouseView
+
+	// Absence twins
+	Twins TwinsView
+
+	// Quiz (interactive reveal)
+	Quiz QuizView
+
 	// Strafen (penalties)
 	Strafen StrafenView
 
 	// AI Summary (data for client-side randomization)
 	AIStats AIStats
 
-	// Personal slides
-	PersonalTop5    []PersonalCard
-	PersonalMid5    []PersonalCard
-	PersonalBottom5 []PersonalCard
+	// Share card data (JSON consumed by the canvas renderer)
+	ShareJSON string
 
 	// Personality types
 	PersonalityTypes []PersonalityType
@@ -67,16 +71,18 @@ type YearStatsView struct {
 
 // RankedUser contains pre-calculated display data for ranking cards
 type RankedUser struct {
-	Rank           int
-	RankDisplay    string // "🥇", "🥈", "🥉", or "#4" etc.
-	Name           string
-	Emoji          string
-	Title          string
-	TitleEmoji     string
-	AttendanceRate int
-	BarColor       string // "bg-green-500", "bg-biergold", "bg-orange-500", "bg-red-400"
-	TierBgColor    string // gradient class for tier
-	DelayClass     string // "delay-200", "delay-300", etc.
+	Rank            int
+	RankDisplay     string // "🥇", "🥈", "🥉", or "#4" etc.
+	Name            string
+	Emoji           string
+	Title           string
+	TitleEmoji      string
+	AttendanceRate  int
+	BarColor        string // "bg-green-500", "bg-biergold", "bg-orange-500", "bg-red-400"
+	TierBgColor     string // gradient class for tier
+	FunFact         string // e.g. "👑 Nie abgesagt!"
+	PersonalMessage string // e.g. "Legende! 🏆"
+	DelayClass      string // "delay-200", "delay-300", etc.
 }
 
 // StreakUser contains data for streak displays
@@ -106,26 +112,19 @@ type Excuse struct {
 	DelayClass string
 }
 
-// HeatmapMonth contains pre-calculated heatmap cell data
-type HeatmapMonth struct {
-	Label      string // "Jan", "Feb", etc.
+// RecycledExcuse is a message a user sent verbatim more than once
+type RecycledExcuse struct {
+	UserName   string
+	Message    string
 	Count      int
-	BgColor    string // "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500/50", "bg-holz-light/30"
 	DelayClass string
-}
-
-// HeatmapInsight contains worst/best month data
-type HeatmapInsight struct {
-	WorstMonth string
-	WorstCount int
-	BestMonth  string
-	BestCount  int
 }
 
 // AttendanceHeatmapMonth contains pre-calculated attendance rate heatmap cell data
 type AttendanceHeatmapMonth struct {
 	Label      string // "Jan", "Feb", etc.
 	Rate       int    // Average attendance rate 0-100
+	Count      int    // Cancellations in that month
 	BgColor    string // color class based on rate
 	DelayClass string
 }
@@ -174,6 +173,7 @@ type StrafenView struct {
 	HasStrafen bool
 	TotalSum   int // Euro, counter target
 	TotalCount int
+	MassBier   int // TotalSum / 5 € — what the Kasse buys in Maß
 	TopPayers  []StrafenUserView
 }
 
@@ -183,17 +183,36 @@ type AIStats struct {
 	SummaryHTML string
 }
 
-// PersonalCard contains data for personal slide cards
-type PersonalCard struct {
-	Name            string
-	Emoji           string
-	TitleEmoji      string
-	AttendanceRate  int
-	BarColor        string
-	FunFact         string
-	PersonalMessage string
-	TierBgColor     string
-	DelayClass      string
+// FullHouseView contains the "everyone attended" stats
+type FullHouseView struct {
+	HasAny bool
+	Count  int
+	Dates  []string // formatted, at most 5
+	More   int      // dates beyond the shown ones
+}
+
+// TwinPair is a pair of users for the twins slide
+type TwinPair struct {
+	Name1, Emoji1 string
+	Name2, Emoji2 string
+	Count         int    // shared absence Thursdays (Zwillinge) or combined absences (Wachablösung)
+	Detail        string // explanatory line
+}
+
+// TwinsView contains both twin findings
+type TwinsView struct {
+	HasZwillinge     bool
+	Zwillinge        TwinPair
+	HasWachabloesung bool
+	Wachabloesung    TwinPair
+}
+
+// QuizView contains one interactive quiz question with hidden answer
+type QuizView struct {
+	Question     string
+	AnswerName   string
+	AnswerEmoji  string
+	AnswerDetail string
 }
 
 // PersonalityType contains pre-grouped personality type data

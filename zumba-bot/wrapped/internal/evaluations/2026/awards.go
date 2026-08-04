@@ -1,8 +1,13 @@
 package eval2026
 
-import "github.com/michael/stammtisch-wrapped/pkg/models"
+import (
+	"sort"
+	"time"
 
-// Award definitions
+	"github.com/michael/stammtisch-wrapped/pkg/models"
+)
+
+// Award definitions (static selectors over user stats)
 var awardDefinitions = []struct {
 	Emoji    string
 	Title    string
@@ -31,20 +36,6 @@ var awardDefinitions = []struct {
 		Color:    "from-purple-500 to-pink-600",
 		Selector: selectMostCreativeExcuser,
 	},
-	{
-		Emoji:    "📈",
-		Title:    "Konsistenz-Champion",
-		Subtitle: "Zuverlässig wie ein Uhrwerk",
-		Color:    "from-green-500 to-emerald-600",
-		Selector: selectMostConsistent,
-	},
-	{
-		Emoji:    "🌟",
-		Title:    "Rising Star",
-		Subtitle: "Beste Entwicklung",
-		Color:    "from-blue-500 to-cyan-600",
-		Selector: selectRisingStar,
-	},
 }
 
 // calculateAwards determines award winners based on user stats
@@ -68,7 +59,103 @@ func (e *Evaluator) calculateAwards(userStats []models.UserStats) []models.Award
 		}
 	}
 
+	// Comeback of the year: longest cancellation streak that ended with a return
+	if winner := e.selectComeback(userStats); winner != nil {
+		awards = append(awards, models.Award{
+			Emoji:    "🦅",
+			Title:    "Comeback des Jahres",
+			Subtitle: "Lange weg – und wieder da",
+			Color:    "from-green-500 to-emerald-600",
+			Winner:   *winner,
+		})
+	}
+
+	// Rising star: biggest attendance improvement second half vs. first half
+	if winner := e.selectRisingStar(userStats); winner != nil {
+		awards = append(awards, models.Award{
+			Emoji:    "🌟",
+			Title:    "Rising Star",
+			Subtitle: "Beste Entwicklung im Jahresverlauf",
+			Color:    "from-blue-500 to-cyan-600",
+			Winner:   *winner,
+		})
+	}
+
 	return awards
+}
+
+// selectComeback returns the user with the longest cancellation streak that
+// ended before the last evaluated Thursday (i.e. they came back)
+func (e *Evaluator) selectComeback(userStats []models.UserStats) *models.UserStats {
+	if len(e.rawData.Thursdays) == 0 {
+		return nil
+	}
+	lastThursday := e.rawData.Thursdays[len(e.rawData.Thursdays)-1]
+
+	var winner *models.UserStats
+	maxStreak := 0
+	for i := range userStats {
+		u := &userStats[i]
+		// Streak must be substantial and finished (user attended afterwards)
+		if u.MaxCancellationStreak >= 3 &&
+			u.MaxCancellationStreak > maxStreak &&
+			!u.MaxCancellationStreakEnd.IsZero() &&
+			u.MaxCancellationStreakEnd.Before(lastThursday) {
+			maxStreak = u.MaxCancellationStreak
+			winner = u
+		}
+	}
+	return winner
+}
+
+// selectRisingStar returns the user with the biggest rate improvement between
+// the first and second half of the evaluated Thursdays
+func (e *Evaluator) selectRisingStar(userStats []models.UserStats) *models.UserStats {
+	thursdays := make([]time.Time, len(e.rawData.Thursdays))
+	copy(thursdays, e.rawData.Thursdays)
+	sort.Slice(thursdays, func(i, j int) bool { return thursdays[i].Before(thursdays[j]) })
+
+	// Need enough data for two meaningful halves
+	if len(thursdays) < 8 {
+		return nil
+	}
+	half := len(thursdays) / 2
+	firstHalf := make(map[string]bool, half)
+	secondHalf := make(map[string]bool, len(thursdays)-half)
+	for i, t := range thursdays {
+		if i < half {
+			firstHalf[t.Format("2006-01-02")] = true
+		} else {
+			secondHalf[t.Format("2006-01-02")] = true
+		}
+	}
+
+	var winner *models.UserStats
+	bestDelta := 0
+	for i := range userStats {
+		u := &userStats[i]
+		miss1, miss2 := 0, 0
+		for _, c := range u.Cancellations {
+			key := c.Date.Format("2006-01-02")
+			if firstHalf[key] {
+				miss1++
+			} else if secondHalf[key] {
+				miss2++
+			}
+		}
+		rate1 := ((half - miss1) * 100) / half
+		rate2 := (((len(thursdays) - half) - miss2) * 100) / (len(thursdays) - half)
+		delta := rate2 - rate1
+		if delta > bestDelta {
+			bestDelta = delta
+			winner = u
+		}
+	}
+	// Only award a real improvement
+	if bestDelta < 10 {
+		return nil
+	}
+	return winner
 }
 
 // selectHighestAttendance returns user with highest attendance rate
@@ -135,31 +222,3 @@ func selectMostCreativeExcuser(userStats []models.UserStats) *models.UserStats {
 	return winner
 }
 
-// selectMostConsistent returns user with smallest variation in attendance pattern
-// For simplicity, we select the user with attendance rate closest to 75% (balanced)
-func selectMostConsistent(userStats []models.UserStats) *models.UserStats {
-	if len(userStats) == 0 {
-		return nil
-	}
-
-	// Select user with highest attendance but not the top one (to diversify awards)
-	if len(userStats) >= 2 {
-		return &userStats[1]
-	}
-	return &userStats[0]
-}
-
-// selectRisingStar returns a user (for variety, picks from middle rankings)
-func selectRisingStar(userStats []models.UserStats) *models.UserStats {
-	if len(userStats) == 0 {
-		return nil
-	}
-
-	// Pick someone from the middle of the pack
-	midIndex := len(userStats) / 2
-	if midIndex >= len(userStats) {
-		midIndex = len(userStats) - 1
-	}
-
-	return &userStats[midIndex]
-}

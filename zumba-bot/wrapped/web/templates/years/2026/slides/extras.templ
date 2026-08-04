@@ -1,0 +1,104 @@
+package slides
+
+import (
+	"fmt"
+
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+)
+
+// FullHouse slide - Thursdays where everyone attended
+templ FullHouse(fh viewmodels.FullHouseView) {
+	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="6000">
+		<div class="animate-on-enter animate-scale-in">
+			<span class="text-7xl mb-4 block">💯</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-200 text-2xl md:text-3xl font-bold text-biergold text-glow mb-4">
+			Volle Hütte
+		</h2>
+		if fh.HasAny {
+			<p class="animate-on-enter animate-fade-in delay-400 text-xl text-schaum mb-6">
+				<span class="text-4xl font-bold text-biergold" data-count-to={ fmt.Sprintf("%d", fh.Count) }>0</span>
+				<span class="text-schaum/70"> mal waren ALLE da</span>
+			</p>
+			<div class="animate-on-enter animate-fade-in-up delay-600 flex flex-wrap justify-center gap-2 max-w-md">
+				for _, d := range fh.Dates {
+					<span class="bg-biergold/20 rounded-full px-3 py-1 text-sm text-schaum">🍻 { d }</span>
+				}
+				if fh.More > 0 {
+					<span class="text-schaum/50 text-sm self-center">+{ fmt.Sprintf("%d", fh.More) } weitere</span>
+				}
+			</div>
+		} else {
+			<p class="animate-on-enter animate-fade-in delay-400 text-xl text-schaum/70 mb-2">
+				Kein einziges Mal waren alle gleichzeitig da.
+			</p>
+			<p class="animate-on-enter animate-fade-in delay-600 text-lg text-biergold">
+				2027 holen wir das nach! 🍻
+			</p>
+		}
+	</div>
+}
+
+// TwinCard renders one twin pair
+templ TwinCard(pair viewmodels.TwinPair, emoji string, title string, gradient string, delay string) {
+	<div class={ "animate-on-enter animate-scale-in " + delay + " " + gradient + " rounded-xl p-5 w-full max-w-md" }>
+		<div class="text-sm text-schaum/60 mb-2">{ emoji } { title }</div>
+		<div class="flex items-center justify-center gap-3 text-xl font-bold text-schaum">
+			<span>{ pair.Emoji1 } { pair.Name1 }</span>
+			<span class="text-biergold">&amp;</span>
+			<span>{ pair.Emoji2 } { pair.Name2 }</span>
+		</div>
+		<div class="text-sm text-schaum/60 mt-2 text-center">{ pair.Detail }</div>
+	</div>
+}
+
+// Twins slide - absence twins and the changing of the guard
+templ Twins(twins viewmodels.TwinsView) {
+	<div class="slide flex-col items-center justify-center h-screen px-4 text-center" data-duration="7000">
+		<div class="animate-on-enter animate-scale-in">
+			<span class="text-7xl mb-4 block">👯</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-200 text-2xl md:text-3xl font-bold text-biergold text-glow mb-8">
+			Dynamische Duos
+		</h2>
+		<div class="space-y-4 w-full flex flex-col items-center">
+			if twins.HasZwillinge {
+				@TwinCard(twins.Zwillinge, "👯", "Die Absage-Zwillinge", "bg-gradient-to-r from-purple-500/25 to-pink-500/15", "delay-400")
+			}
+			if twins.HasWachabloesung {
+				@TwinCard(twins.Wachabloesung, "🔄", "Die Wachablösung", "bg-gradient-to-r from-blue-500/25 to-cyan-500/15", "delay-700")
+			}
+			if !twins.HasZwillinge && !twins.HasWachabloesung {
+				<p class="animate-on-enter animate-fade-in delay-400 text-xl text-schaum/70">
+					Keine auffälligen Paare – ihr fehlt schön gleichmäßig verteilt. 🤷
+				</p>
+			}
+		</div>
+	</div>
+}
+
+// Quiz slide - interactive question with tap-to-reveal answer
+templ Quiz(quiz viewmodels.QuizView) {
+	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="15000">
+		<div class="animate-on-enter animate-scale-in">
+			<span class="text-7xl mb-4 block">🍀</span>
+		</div>
+		<h2 class="animate-on-enter animate-fade-in-up delay-200 text-2xl font-bold text-biergold text-glow mb-4">
+			Stammtisch-Quiz
+		</h2>
+		<p class="animate-on-enter animate-fade-in delay-400 text-xl text-schaum mb-8 max-w-md">
+			{ quiz.Question }
+		</p>
+		<button
+			onclick="event.stopPropagation(); revealQuizAnswer(this)"
+			class="animate-on-enter animate-fade-in-up delay-700 bg-biergold text-holz font-bold rounded-full px-8 py-3 text-lg active:scale-95 transition-transform"
+		>
+			Auflösen 🥁
+		</button>
+		<div class="quiz-answer hidden mt-8">
+			<div class="text-6xl mb-3">{ quiz.AnswerEmoji }</div>
+			<div class="text-3xl font-bold text-biergold text-glow mb-2">{ quiz.AnswerName }</div>
+			<div class="text-schaum/70">{ quiz.AnswerDetail }</div>
+		</div>
+	</div>
+}

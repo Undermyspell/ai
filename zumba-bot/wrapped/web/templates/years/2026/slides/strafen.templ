@@ -61,6 +61,11 @@ templ Strafen(strafen viewmodels.StrafenView) {
 					<span data-count-to={ fmt.Sprintf("%d", strafen.TotalSum) } data-count-suffix=" €">0 €</span>
 				</div>
 				<div class="text-sm text-schaum/60 mt-1">{ fmt.Sprintf("aus %d Strafen", strafen.TotalCount) }</div>
+				if strafen.MassBier > 0 {
+					<div class="animate-on-enter animate-fade-in delay-500 text-schaum/80 mt-2">
+						= <span class="text-biergold font-bold">{ fmt.Sprintf("%d Maß", strafen.MassBier) }</span> 🍺
+					</div>
+				}
 			</div>
 			<h2 class="animate-on-enter animate-fade-in delay-300 text-xl font-bold text-schaum mb-4">
 				🏆 Top-Zahler

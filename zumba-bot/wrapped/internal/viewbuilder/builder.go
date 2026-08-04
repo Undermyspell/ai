@@ -2,9 +2,11 @@
 package viewbuilder
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/michael/stammtisch-wrapped/pkg/models"
@@ -44,17 +46,24 @@ func Build(data *EvalData, year string) viewmodels.PageViewModel {
 	// Build Excuse Categories
 	vm.CategoryStats = buildCategoryStats(data.CategoryStats)
 
-	// Build Best Excuses (creative ones)
+	// Build Best Excuses (creative ones) + verbatim recycled ones
 	vm.BestExcuses = buildBestExcuses(data.Cancellations)
+	vm.RecycledExcuses = buildRecycledExcuses(data.Cancellations)
 
-	// Build Heatmap
-	vm.HeatmapMonths, vm.HeatmapInsight = buildHeatmap(data.MonthStats)
-
-	// Build Attendance Heatmap
-	vm.AttendanceHeatmapMonths, vm.AttendanceHeatmapInsight = buildAttendanceHeatmap(data.MonthlyAttendanceStats)
+	// Build Attendance Heatmap (rate colors + cancellation counts merged)
+	vm.AttendanceHeatmapMonths, vm.AttendanceHeatmapInsight = buildAttendanceHeatmap(data.MonthlyAttendanceStats, data.MonthStats)
 
 	// Build best/worst Thursdays
 	vm.BestThursdays, vm.WorstThursdays = buildThursdayTopFlop(data.ThursdayStats)
+
+	// Build full house Thursdays
+	vm.FullHouse = buildFullHouse(data.ThursdayStats)
+
+	// Build absence twins
+	vm.Twins = buildTwins(data.Cancellations, data.UserStats)
+
+	// Build quiz
+	vm.Quiz = buildQuiz(data.UserStats)
 
 	// Build Strafen
 	vm.Strafen = buildStrafen(data.StrafenStats, data.UserStats)
@@ -62,10 +71,8 @@ func Build(data *EvalData, year string) viewmodels.PageViewModel {
 	// Build AI Stats for client-side randomization
 	vm.AIStats = buildAIStats(data.UserStats, data.GlobalStats, data.MonthStats)
 
-	// Build Personal slides
-	vm.PersonalTop5 = buildPersonalCards(data.UserStats, 0, 5, "bg-gradient-to-r from-yellow-500/20 to-amber-600/10")
-	vm.PersonalMid5 = buildPersonalCards(data.UserStats, 5, 10, "bg-holz-light/40")
-	vm.PersonalBottom5 = buildPersonalCards(data.UserStats, 10, 15, "bg-holz-light/20")
+	// Build share card payload
+	vm.ShareJSON = buildShareJSON(year, data.GlobalStats, data.UserStats, data.StrafenStats)
 
 	// Build Personality Types
 	vm.PersonalityTypes = buildPersonalityTypes(data.UserStats)
@@ -105,16 +112,18 @@ func buildRankings(users []models.UserStats, start, end int, tier string) []view
 		idx := i - start // Index within this tier (0-4)
 
 		result = append(result, viewmodels.RankedUser{
-			Rank:           user.Rank,
-			RankDisplay:    getRankDisplay(user.Rank),
-			Name:           user.Name,
-			Emoji:          user.Emoji,
-			Title:          user.Title,
-			TitleEmoji:     user.TitleEmoji,
-			AttendanceRate: user.AttendanceRate,
-			BarColor:       getBarColor(user.AttendanceRate),
-			TierBgColor:    getTierBgColor(tier),
-			DelayClass:     fmt.Sprintf("delay-%d", idx*100+200),
+			Rank:            user.Rank,
+			RankDisplay:     getRankDisplay(user.Rank),
+			Name:            user.Name,
+			Emoji:           user.Emoji,
+			Title:           user.Title,
+			TitleEmoji:      user.TitleEmoji,
+			AttendanceRate:  user.AttendanceRate,
+			BarColor:        getBarColor(user.AttendanceRate),
+			TierBgColor:     getTierBgColor(tier),
+			FunFact:         getFunFact(user),
+			PersonalMessage: getPersonalMessage(user.AttendanceRate),
+			DelayClass:      fmt.Sprintf("delay-%d", idx*100+200),
 		})
 	}
 	return result
@@ -250,72 +259,9 @@ func periodMonths() []periodMonth {
 	return out
 }
 
-// buildHeatmap creates monthly heatmap data
-func buildHeatmap(ms models.MonthStats) ([]viewmodels.HeatmapMonth, viewmodels.HeatmapInsight) {
-	// Collect month data
-	type monthData struct {
-		label string
-		key   string
-		count int
-	}
-	data := make([]monthData, 12)
-	for i, m := range periodMonths() {
-		data[i] = monthData{
-			label: m.Label,
-			key:   m.Key,
-			count: ms[m.Key],
-		}
-	}
-
-	// Find max count
-	maxCount := 1
-	for _, d := range data {
-		if d.count > maxCount {
-			maxCount = d.count
-		}
-	}
-
-	// Build heatmap months
-	heatmapMonths := make([]viewmodels.HeatmapMonth, 12)
-	for i, d := range data {
-		heatmapMonths[i] = viewmodels.HeatmapMonth{
-			Label:      d.label,
-			Count:      d.count,
-			BgColor:    getHeatmapColor(d.count, maxCount),
-			DelayClass: fmt.Sprintf("delay-%d", i*50+200),
-		}
-	}
-
-	// Find worst and best months
-	var worst, best monthData
-	worst.count = -1
-	best.count = 999999
-
-	for _, d := range data {
-		if d.count > worst.count {
-			worst = d
-		}
-		if d.count > 0 && d.count < best.count {
-			best = d
-		}
-	}
-	// If no months have data, use first month for best
-	if best.count == 999999 {
-		best = data[0]
-	}
-
-	insight := viewmodels.HeatmapInsight{
-		WorstMonth: worst.label,
-		WorstCount: worst.count,
-		BestMonth:  best.label,
-		BestCount:  best.count,
-	}
-
-	return heatmapMonths, insight
-}
-
-// buildAttendanceHeatmap creates monthly attendance rate heatmap data
-func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats) ([]viewmodels.AttendanceHeatmapMonth, viewmodels.AttendanceHeatmapInsight) {
+// buildAttendanceHeatmap creates monthly heatmap data: cell color from the
+// attendance rate, cancellation count from MonthStats as secondary info
+func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats, ms models.MonthStats) ([]viewmodels.AttendanceHeatmapMonth, viewmodels.AttendanceHeatmapInsight) {
 	// Collect month data
 	type monthData struct {
 		label string
@@ -337,6 +283,7 @@ func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats) ([]viewmodels.Att
 		heatmapMonths[i] = viewmodels.AttendanceHeatmapMonth{
 			Label:      d.label,
 			Rate:       d.rate,
+			Count:      ms[d.key],
 			BgColor:    getAttendanceHeatmapColor(d.rate),
 			DelayClass: fmt.Sprintf("delay-%d", i*50+200),
 		}
@@ -433,6 +380,7 @@ func buildStrafen(stats models.StrafenStats, users []models.UserStats) viewmodel
 		HasStrafen: stats.TotalCount > 0,
 		TotalSum:   stats.TotalSum,
 		TotalCount: stats.TotalCount,
+		MassBier:   stats.TotalSum / 5,
 	}
 	if !view.HasStrafen {
 		return view
@@ -543,33 +491,174 @@ func buildAIStats(users []models.UserStats, gs models.GlobalStats, ms models.Mon
 	}
 }
 
-// buildPersonalCards creates personal slide cards
-func buildPersonalCards(users []models.UserStats, start, end int, tierBgColor string) []viewmodels.PersonalCard {
-	if end > len(users) {
-		end = len(users)
+// buildRecycledExcuses finds messages a user sent verbatim more than once
+func buildRecycledExcuses(cancellations []models.Cancellation) []viewmodels.RecycledExcuse {
+	type key struct {
+		user string
+		msg  string
 	}
-	if start >= end {
-		return nil
+	counts := make(map[key]int)
+	original := make(map[key]string)
+	for _, c := range cancellations {
+		msg := strings.TrimSpace(c.Message)
+		if msg == "" {
+			continue
+		}
+		k := key{user: c.UserName, msg: strings.ToLower(msg)}
+		counts[k]++
+		original[k] = msg
 	}
 
-	result := make([]viewmodels.PersonalCard, 0, end-start)
-	for i := start; i < end; i++ {
-		user := users[i]
-		idx := i - start
-
-		result = append(result, viewmodels.PersonalCard{
-			Name:            user.Name,
-			Emoji:           user.Emoji,
-			TitleEmoji:      user.TitleEmoji,
-			AttendanceRate:  user.AttendanceRate,
-			BarColor:        getBarColor(user.AttendanceRate),
-			FunFact:         getFunFact(user),
-			PersonalMessage: getPersonalMessage(user.AttendanceRate),
-			TierBgColor:     tierBgColor,
-			DelayClass:      fmt.Sprintf("delay-%d", idx*100+100),
-		})
+	var result []viewmodels.RecycledExcuse
+	for k, n := range counts {
+		if n >= 2 {
+			result = append(result, viewmodels.RecycledExcuse{
+				UserName: k.user,
+				Message:  original[k],
+				Count:    n,
+			})
+		}
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Count != result[j].Count {
+			return result[i].Count > result[j].Count
+		}
+		return result[i].UserName < result[j].UserName
+	})
+	if len(result) > 3 {
+		result = result[:3]
+	}
+	for i := range result {
+		result[i].DelayClass = fmt.Sprintf("delay-%d", i*200+1200)
 	}
 	return result
+}
+
+// buildFullHouse collects Thursdays where everyone attended
+func buildFullHouse(stats []models.ThursdayStat) viewmodels.FullHouseView {
+	var dates []string
+	for _, s := range stats {
+		if s.Total > 0 && s.Attendees == s.Total {
+			dates = append(dates, formatDateWithYear(s.Date))
+		}
+	}
+	view := viewmodels.FullHouseView{
+		HasAny: len(dates) > 0,
+		Count:  len(dates),
+	}
+	if len(dates) > 5 {
+		view.More = len(dates) - 5
+		dates = dates[:5]
+	}
+	view.Dates = dates
+	return view
+}
+
+// buildTwins finds the pair most often absent on the same Thursday and the
+// pair with the most combined absences that never overlapped
+func buildTwins(cancellations []models.Cancellation, users []models.UserStats) viewmodels.TwinsView {
+	emojiByName := make(map[string]string, len(users))
+	for _, u := range users {
+		emojiByName[u.Name] = u.Emoji
+	}
+
+	// Absence date sets per user name
+	datesByUser := make(map[string]map[string]bool)
+	for _, c := range cancellations {
+		if datesByUser[c.UserName] == nil {
+			datesByUser[c.UserName] = make(map[string]bool)
+		}
+		datesByUser[c.UserName][c.Date.Format("2006-01-02")] = true
+	}
+
+	names := make([]string, 0, len(datesByUser))
+	for n := range datesByUser {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	var view viewmodels.TwinsView
+	bestShared, bestCombined := 0, 0
+
+	for i := 0; i < len(names); i++ {
+		for j := i + 1; j < len(names); j++ {
+			a, b := datesByUser[names[i]], datesByUser[names[j]]
+			shared := 0
+			for d := range a {
+				if b[d] {
+					shared++
+				}
+			}
+			if shared >= 2 && shared > bestShared {
+				bestShared = shared
+				view.HasZwillinge = true
+				view.Zwillinge = viewmodels.TwinPair{
+					Name1: names[i], Emoji1: emojiByName[names[i]],
+					Name2: names[j], Emoji2: emojiByName[names[j]],
+					Count:  shared,
+					Detail: fmt.Sprintf("%d× am selben Donnerstag gefehlt", shared),
+				}
+			}
+			// Wachablösung: both absent often, but never together
+			if shared == 0 && len(a) >= 3 && len(b) >= 3 && len(a)+len(b) > bestCombined {
+				bestCombined = len(a) + len(b)
+				view.HasWachabloesung = true
+				view.Wachabloesung = viewmodels.TwinPair{
+					Name1: names[i], Emoji1: emojiByName[names[i]],
+					Name2: names[j], Emoji2: emojiByName[names[j]],
+					Count:  bestCombined,
+					Detail: fmt.Sprintf("zusammen %d Absagen – aber nie am selben Tag", bestCombined),
+				}
+			}
+		}
+	}
+
+	return view
+}
+
+// buildQuiz picks one quiz question answerable from the data
+func buildQuiz(users []models.UserStats) viewmodels.QuizView {
+	for _, u := range users {
+		if u.NeverCancelled {
+			return viewmodels.QuizView{
+				Question:     "Wer hat dieses Jahr kein einziges Mal abgesagt?",
+				AnswerName:   u.Name,
+				AnswerEmoji:  u.Emoji,
+				AnswerDetail: fmt.Sprintf("%d von %d Donnerstagen da – null Absagen.", u.AttendanceCount, u.AttendanceCount+u.CancellationCount),
+			}
+		}
+	}
+	if len(users) == 0 {
+		return viewmodels.QuizView{}
+	}
+	top := users[0]
+	return viewmodels.QuizView{
+		Question:     "Wer stand dieses Jahr am häufigsten am Tisch?",
+		AnswerName:   top.Name,
+		AnswerEmoji:  top.Emoji,
+		AnswerDetail: fmt.Sprintf("%d%% Anwesenheit, %d Donnerstage.", top.AttendanceRate, top.AttendanceCount),
+	}
+}
+
+// buildShareJSON serializes the key numbers for the client-side share card
+func buildShareJSON(year string, gs models.GlobalStats, users []models.UserStats, strafen models.StrafenStats) string {
+	topName := ""
+	if len(users) > 0 {
+		topName = users[0].Emoji + " " + users[0].Name
+	}
+	payload := map[string]any{
+		"year":       year,
+		"thursdays":  gs.TotalThursdays,
+		"users":      gs.TotalUsers,
+		"avgRate":    gs.AverageAttendanceRate,
+		"topUser":    topName,
+		"strafenSum": strafen.TotalSum,
+	}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
 }
 
 // buildPersonalityTypes groups users by personality type
@@ -727,25 +816,6 @@ func getTierBgColor(tier string) string {
 		return "bg-holz-light/40"
 	default:
 		return "bg-holz-light/20"
-	}
-}
-
-// getHeatmapColor returns the background color class based on intensity
-func getHeatmapColor(count, maxCount int) string {
-	if count == 0 {
-		return "bg-holz-light/30"
-	}
-
-	intensity := float64(count) / float64(maxCount)
-	switch {
-	case intensity > 0.75:
-		return "bg-red-500"
-	case intensity > 0.5:
-		return "bg-orange-500"
-	case intensity > 0.25:
-		return "bg-yellow-500"
-	default:
-		return "bg-green-500/50"
 	}
 }
 

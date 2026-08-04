@@ -6,21 +6,6 @@ import (
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
-// ExcusesIntro slide
-templ ExcusesIntro() {
-	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
-		<div class="animate-on-enter animate-scale-in">
-			<span class="text-7xl mb-4 block">🤡</span>
-		</div>
-		<h2 class="animate-on-enter animate-fade-in-up delay-300 text-3xl md:text-4xl font-bold text-biergold text-glow mb-4">
-			Ausreden Wrapped
-		</h2>
-		<p class="animate-on-enter animate-fade-in delay-500 text-xl text-schaum/70">
-			Die kreativsten Absagen 2026
-		</p>
-	</div>
-}
-
 // CategoryCard renders a single category stat card
 templ CategoryCard(cat viewmodels.CategoryStat) {
 	<div class={ "animate-on-enter animate-slide-left " + cat.DelayClass + " bg-holz-light/40 rounded-xl p-4" }>
@@ -67,9 +52,22 @@ templ ExcuseCard(excuse viewmodels.Excuse) {
 	</div>
 }
 
-// BestExcuses slide
-templ BestExcuses(excuses []viewmodels.Excuse) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-10 pb-6 overflow-y-auto" data-duration="8000">
+// RecycledExcuseCard renders one verbatim-repeated excuse
+templ RecycledExcuseCard(r viewmodels.RecycledExcuse) {
+	<div class={ "animate-on-enter animate-fade-in-up " + r.DelayClass + " bg-holz-light/40 rounded-xl p-4" }>
+		<div class="flex items-start gap-3">
+			<span class="text-2xl">♻️</span>
+			<div class="flex-1 min-w-0">
+				<p class="text-schaum italic truncate">"{ r.Message }"</p>
+				<p class="text-schaum/50 text-sm mt-2">— { r.UserName }, <span class="text-biergold font-bold">{ fmt.Sprintf("%d×", r.Count) }</span> wortgleich</p>
+			</div>
+		</div>
+	</div>
+}
+
+// BestExcuses slide - creative excuses plus verbatim recyclers
+templ BestExcuses(excuses []viewmodels.Excuse, recycled []viewmodels.RecycledExcuse) {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-10 pb-24 overflow-y-auto" data-duration="9000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-biergold mb-2">
 			🏆 Kreativste Ausreden 2026
 		</h2>
@@ -79,40 +77,16 @@ templ BestExcuses(excuses []viewmodels.Excuse) {
 				@ExcuseCard(excuse)
 			}
 		</div>
-	</div>
-}
-
-// HeatmapCell renders a single heatmap cell
-templ HeatmapCell(month viewmodels.HeatmapMonth) {
-	<div class={ "animate-on-enter animate-scale-in " + month.DelayClass + " " + month.BgColor + " rounded-lg p-3 text-center" }>
-		<div class="text-xs text-schaum/70">{ month.Label }</div>
-		<div class="text-lg font-bold text-schaum">{ fmt.Sprintf("%d", month.Count) }</div>
-	</div>
-}
-
-// Heatmap slide
-templ Heatmap(months []viewmodels.HeatmapMonth, insight viewmodels.HeatmapInsight) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto" data-duration="6000">
-		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-2">
-			🗓️ Absage-Heatmap 2026
-		</h2>
-		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-6">Wann wurde am meisten abgesagt?</p>
-		<div class="w-full max-w-md">
-			<div class="grid grid-cols-4 gap-2">
-				for _, month := range months {
-					@HeatmapCell(month)
+		if len(recycled) > 0 {
+			<h2 class="animate-on-enter animate-fade-in delay-1000 text-xl font-bold text-schaum mb-4 mt-8">
+				♻️ Ausreden-Recycling
+			</h2>
+			<div class="w-full max-w-md space-y-3">
+				for _, r := range recycled {
+					@RecycledExcuseCard(r)
 				}
 			</div>
-			<div class="flex justify-center gap-2 mt-4 text-xs text-schaum/50">
-				<span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500/50 rounded"></span> Wenig</span>
-				<span class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-500 rounded"></span> Mittel</span>
-				<span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded"></span> Viel</span>
-			</div>
-		</div>
-		<div class="animate-on-enter animate-fade-in-up delay-700 mt-6 text-center">
-			<p class="text-schaum/70">😰 Schlechtester Monat: <span class="text-red-400 font-bold">{ insight.WorstMonth }</span> mit { fmt.Sprintf("%d", insight.WorstCount) } Absagen</p>
-			<p class="text-schaum/70 mt-1">🎉 Bester Monat: <span class="text-green-400 font-bold">{ insight.BestMonth }</span> mit nur { fmt.Sprintf("%d", insight.BestCount) } Absagen</p>
-		</div>
+		}
 	</div>
 }
 
@@ -121,16 +95,17 @@ templ AttendanceHeatmapCell(month viewmodels.AttendanceHeatmapMonth) {
 	<div class={ "animate-on-enter animate-scale-in " + month.DelayClass + " " + month.BgColor + " rounded-lg p-3 text-center" }>
 		<div class="text-xs text-schaum/70">{ month.Label }</div>
 		<div class="text-lg font-bold text-schaum">{ fmt.Sprintf("%d%%", month.Rate) }</div>
+		<div class="text-[10px] text-schaum/60">{ fmt.Sprintf("%d Absagen", month.Count) }</div>
 	</div>
 }
 
-// AttendanceHeatmap slide - shows average attendance rate per month
+// AttendanceHeatmap slide - attendance rate per month, cancellations inline
 templ AttendanceHeatmap(months []viewmodels.AttendanceHeatmapMonth, insight viewmodels.AttendanceHeatmapInsight) {
 	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto" data-duration="6000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-2">
-			📊 Teilnahme-Heatmap 2026
+			📊 Das Jahr im Kalender
 		</h2>
-		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-6">Durchschnittliche Anwesenheit pro Monat</p>
+		<p class="animate-on-enter animate-fade-in delay-100 text-schaum/50 text-sm mb-6">Anwesenheitsquote und Absagen pro Monat</p>
 		<div class="w-full max-w-md">
 			<div class="grid grid-cols-4 gap-2">
 				for _, month := range months {

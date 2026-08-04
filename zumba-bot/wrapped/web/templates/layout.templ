@@ -239,6 +239,83 @@ templ SlideNavigation() {
 			}
 		}
 
+		// Quiz: reveal the hidden answer, pause auto-advance for reading time
+		function revealQuizAnswer(btn) {
+			const answer = btn.parentElement.querySelector(".quiz-answer");
+			if (!answer) return;
+			btn.classList.add("hidden");
+			answer.classList.remove("hidden");
+			answer.classList.add("animate-scale-in");
+			if (window.app) {
+				window.app.resetTimer();
+				window.app.startAutoNavigation();
+			}
+		}
+
+		// Share card: render key stats onto a canvas, then Web Share / download
+		async function shareWrapped() {
+			const dataEl = document.getElementById("share-data");
+			if (!dataEl) return;
+			const stats = JSON.parse(dataEl.dataset.share);
+
+			const w = 1080, h = 1350;
+			const canvas = document.createElement("canvas");
+			canvas.width = w;
+			canvas.height = h;
+			const ctx = canvas.getContext("2d");
+
+			// Background: wood gradient like the page
+			const bg = ctx.createLinearGradient(0, 0, w, h);
+			bg.addColorStop(0, "#1C1917");
+			bg.addColorStop(0.5, "#3D2314");
+			bg.addColorStop(1, "#5D3A2A");
+			ctx.fillStyle = bg;
+			ctx.fillRect(0, 0, w, h);
+
+			ctx.textAlign = "center";
+			ctx.fillStyle = "#F59E0B";
+			ctx.font = "bold 90px Georgia, serif";
+			ctx.fillText("🍺 STAMMTISCH", w / 2, 180);
+			ctx.fillText("WRAPPED " + stats.year, w / 2, 290);
+
+			ctx.font = "48px Georgia, serif";
+			ctx.fillStyle = "#FEF3C7";
+			const lines = [
+				["📅", stats.thursdays + " Donnerstage"],
+				["👥", stats.users + " Stammtischler"],
+				["📈", stats.avgRate + "% Ø Teilnahme"],
+				["👑", stats.topUser],
+				["💸", stats.strafenSum + " € Strafenkasse"],
+			];
+			let y = 480;
+			for (const [emoji, text] of lines) {
+				ctx.fillText(emoji + "  " + text, w / 2, y);
+				y += 130;
+			}
+
+			ctx.fillStyle = "rgba(254, 243, 199, 0.5)";
+			ctx.font = "36px Georgia, serif";
+			ctx.fillText("Prost auf euch alle! 🍻", w / 2, h - 100);
+
+			const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+			const file = new File([blob], `stammtisch-wrapped-${stats.year}.png`, { type: "image/png" });
+
+			if (navigator.canShare && navigator.canShare({ files: [file] })) {
+				try {
+					await navigator.share({ files: [file], title: "Stammtisch Wrapped " + stats.year });
+					return;
+				} catch (e) {
+					if (e.name === "AbortError") return;
+				}
+			}
+			// Fallback: download
+			const a = document.createElement("a");
+			a.href = URL.createObjectURL(blob);
+			a.download = file.name;
+			a.click();
+			URL.revokeObjectURL(a.href);
+		}
+
 		// Start app when DOM is ready
 		document.addEventListener("DOMContentLoaded", () => {
 			window.app = new StammtischWrapped();
