@@ -30,7 +30,7 @@ Startdaten von Mitgliedern werden auf frühestens 01.12.2025 geklemmt
 
 ### Tabellen (Postgres, DB `zumba`, Schema `public`)
 
-- `users` — `userId` (WhatsApp-JID, z. B. `4915…@s.whatsapp.net`), `userName`,
+- `users` — `userId` (WhatsApp-JID, Format `<nummer>@s.whatsapp.net`), `userName`,
   `startDate` (nullable). 15 Mitglieder (Stand 08/2026).
 - `stammtisch_abwesenheit` — eine Zeile pro Absage: `userId`, `date`,
   `message` (nullable — viele Absagen kommen ohne Text), `created_at`
