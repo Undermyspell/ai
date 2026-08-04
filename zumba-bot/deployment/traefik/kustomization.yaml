@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Nur die Dashboard-IngressRoute wird per GitOps verwaltet.
+# traefik-config.yaml ist bewusst NICHT enthalten: das ist die Referenz-Kopie
+# des k3s-Node-Manifests (/var/lib/rancher/k3s/server/manifests/), das der
+# k3s-Helm-Controller selbst anwendet — doppeltes Management gäbe Drift-Kämpfe.
+resources:
+  - ingress-route.yaml

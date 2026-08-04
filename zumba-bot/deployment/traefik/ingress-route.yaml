@@ -8,7 +8,7 @@ spec:
     - web
   routes:
     - kind: Rule
-      match: Host(`traefik.pi.home`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+      match: (Host(`traefik.pi.home`) || Host(`traefik.192.168.178.46.nip.io`)) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
       services:
         - name: api@internal
           kind: TraefikService
