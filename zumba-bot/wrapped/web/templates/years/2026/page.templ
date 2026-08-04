@@ -31,6 +31,9 @@ templ Page(vm viewmodels.PageViewModel) {
 		if len(vm.DuoCards) > 0 {
 			@slides.FunCards("👯", "Dynamische Duos", "Wer hängt mit wem zusammen?", vm.DuoCards)
 		}
+		if len(vm.SuspectCards) > 0 {
+			@slides.FunCards("🚨", "Verdächtige Duos", "Die Ermittlungsakte", vm.SuspectCards)
+		}
 		if len(vm.SquadCards) > 0 {
 			@slides.FunCards("🦸", "Die Einsatz-Typen", "Wer trägt den Laden?", vm.SquadCards)
 		}

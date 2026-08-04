@@ -36,7 +36,8 @@ type PageViewModel struct {
 	FullHouse FullHouseView
 
 	// Fun-card slides (rendered only when non-empty)
-	DuoCards      []FunCard // Zwillinge, Wachablösung, Unzertrennliche, Magnet & Schreck, Copy-Paste-Duo
+	DuoCards      []FunCard // Unzertrennliche, Zwillinge, Wachablösung, Ping-Pong
+	SuspectCards  []FunCard // Magnet & Schreck, Alibi-Duo, Copy-Paste-Duo, Todesduo
 	SquadCards    []FunCard // Dreamteam, Retter in der Not, Mitläufer
 	ForensikCards []FunCard // Romanautor, Minimalist, Emoji-König
 	MuffelCards   []FunCard // Sommermuffel, Wintermuffel

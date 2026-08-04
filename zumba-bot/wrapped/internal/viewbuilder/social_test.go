@@ -1,6 +1,7 @@
 package viewbuilder
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -40,7 +41,7 @@ func TestBuildDuoCardsZwillinge(t *testing.T) {
 		cancel("Ben", ts[1].Date, ""),
 	}
 
-	cards := buildDuoCards(cancels, testUsers(), ts)
+	cards, _ := buildDuoCards(cancels, testUsers(), ts)
 
 	var found bool
 	for _, c := range cards {
@@ -53,6 +54,86 @@ func TestBuildDuoCardsZwillinge(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("expected Absage-Zwillinge card")
+	}
+}
+
+func TestPingPongCard(t *testing.T) {
+	start := time.Date(2025, 12, 4, 0, 0, 0, 0, time.UTC)
+	ts := thursdaysFrom(start, 8)
+
+	// Anna and Ben alternate strictly for 6 weeks: A weg, B weg, A weg, ...
+	var cancels []models.Cancellation
+	for i := 0; i < 6; i++ {
+		if i%2 == 0 {
+			cancels = append(cancels, cancel("Anna", ts[i].Date, ""))
+		} else {
+			cancels = append(cancels, cancel("Ben", ts[i].Date, ""))
+		}
+	}
+
+	p := buildPresence(cancels, testUsers(), ts)
+	card, ok := pingPongCard(p)
+	if !ok {
+		t.Fatal("expected ping-pong card")
+	}
+	if card.Headline != "🍺 Anna & ⚽ Ben" {
+		t.Errorf("unexpected headline: %q", card.Headline)
+	}
+	if !strings.Contains(card.Detail, "6 Wochen") {
+		t.Errorf("expected 6-week rally, got %q", card.Detail)
+	}
+}
+
+func TestAlibiCard(t *testing.T) {
+	start := time.Date(2025, 12, 4, 0, 0, 0, 0, time.UTC)
+	ts := thursdaysFrom(start, 4)
+
+	cancels := []models.Cancellation{
+		{UserName: "Anna", Date: ts[0].Date, Message: "flach", Category: "gesundheit"},
+		{UserName: "Ben", Date: ts[0].Date, Message: "auch flach", Category: "gesundheit"},
+		{UserName: "Carl", Date: ts[0].Date, Message: "arbeit", Category: "arbeit"}, // andere Kategorie
+	}
+
+	p := buildPresence(cancels, testUsers(), ts)
+	card, ok := alibiCard(cancels, p)
+	if !ok {
+		t.Fatal("expected alibi card")
+	}
+	if card.Headline != "🍺 Anna & ⚽ Ben" {
+		t.Errorf("unexpected headline: %q", card.Headline)
+	}
+	if !strings.Contains(card.Detail, "Gesundheit") {
+		t.Errorf("expected category label in detail, got %q", card.Detail)
+	}
+}
+
+func TestTodesduoCard(t *testing.T) {
+	start := time.Date(2025, 12, 4, 0, 0, 0, 0, time.UTC)
+	// 8 Thursdays, normally 10 attendees; on the 3 shared-absence days only 4
+	ts := make([]models.ThursdayStat, 0, 8)
+	d := start
+	for i := range 8 {
+		att := 10
+		if i < 3 {
+			att = 4
+		}
+		ts = append(ts, models.ThursdayStat{Date: d, Attendees: att, Total: 12})
+		d = d.AddDate(0, 0, 7)
+	}
+
+	var cancels []models.Cancellation
+	for i := range 3 {
+		cancels = append(cancels, cancel("Anna", ts[i].Date, ""))
+		cancels = append(cancels, cancel("Ben", ts[i].Date, ""))
+	}
+
+	p := buildPresence(cancels, testUsers(), ts)
+	card, ok := todesduoCard(p, ts)
+	if !ok {
+		t.Fatal("expected todesduo card")
+	}
+	if card.Headline != "🍺 Anna & ⚽ Ben" {
+		t.Errorf("unexpected headline: %q", card.Headline)
 	}
 }
 

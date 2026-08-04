@@ -59,8 +59,8 @@ func Build(data *EvalData, year string) viewmodels.PageViewModel {
 	// Build full house Thursdays
 	vm.FullHouse = buildFullHouse(data.ThursdayStats)
 
-	// Build fun-card slides (duos, squad, forensics, muffel)
-	vm.DuoCards = buildDuoCards(data.Cancellations, data.UserStats, data.ThursdayStats)
+	// Build fun-card slides (duos, suspects, squad, forensics, muffel)
+	vm.DuoCards, vm.SuspectCards = buildDuoCards(data.Cancellations, data.UserStats, data.ThursdayStats)
 	vm.SquadCards = buildSquadCards(data.Cancellations, data.UserStats, data.ThursdayStats)
 	vm.ForensikCards = buildForensikCards(data.Cancellations, data.UserStats)
 	vm.MuffelCards = buildMuffelCards(data.Cancellations, data.UserStats)

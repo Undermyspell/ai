@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
@@ -60,11 +61,12 @@ func pairHeadline(p presenceData, a, b string) string {
 	return fmt.Sprintf("%s %s & %s %s", p.emoji[a], a, p.emoji[b], b)
 }
 
-// buildDuoCards computes all pair findings for the "Dynamische Duos" slide
-func buildDuoCards(cancellations []models.Cancellation, users []models.UserStats, thursdayStats []models.ThursdayStat) []viewmodels.FunCard {
+// buildDuoCards computes all pair findings and splits them into the
+// "Dynamische Duos" slide and the "Verdächtige Duos" slide
+func buildDuoCards(cancellations []models.Cancellation, users []models.UserStats, thursdayStats []models.ThursdayStat) (duos []viewmodels.FunCard, suspects []viewmodels.FunCard) {
 	p := buildPresence(cancellations, users, thursdayStats)
 	if len(p.thursdays) == 0 || len(p.names) < 2 {
-		return nil
+		return nil, nil
 	}
 
 	var cards []viewmodels.FunCard
@@ -129,20 +131,222 @@ func buildDuoCards(cancellations []models.Cancellation, users []models.UserStats
 		})
 	}
 
+	// Ping-Pong: longest strictly alternating presence run
+	if card, ok := pingPongCard(p); ok {
+		cards = append(cards, card)
+	}
+
+	// Suspects slide
+	var sus []viewmodels.FunCard
+
 	// Magnet & Schreck: B fehlt deutlich öfter, wenn A da ist
 	if card, ok := magnetCard(p); ok {
-		cards = append(cards, card)
+		sus = append(sus, card)
+	}
+
+	// Alibi-Duo: same day, same excuse category
+	if card, ok := alibiCard(cancellations, p); ok {
+		sus = append(sus, card)
 	}
 
 	// Copy-Paste-Duo: same verbatim excuse from two different users
 	if card, ok := copyPasteCard(cancellations, p); ok {
-		cards = append(cards, card)
+		sus = append(sus, card)
+	}
+
+	// Todesduo: when both are missing, the table stays empty
+	if card, ok := todesduoCard(p, thursdayStats); ok {
+		sus = append(sus, card)
 	}
 
 	for i := range cards {
 		cards[i].DelayClass = fmt.Sprintf("delay-%d", i*150+300)
 	}
-	return cards
+	for i := range sus {
+		sus[i].DelayClass = fmt.Sprintf("delay-%d", i*150+300)
+	}
+	return cards, sus
+}
+
+// pingPongCard finds the pair with the longest strictly alternating run:
+// week 1 A da / B weg, week 2 B da / A weg, and so on
+func pingPongCard(p presenceData) (viewmodels.FunCard, bool) {
+	bestRun, ba, bb := 0, "", ""
+	var bestStart, bestEnd string
+
+	for i := 0; i < len(p.names); i++ {
+		for j := i + 1; j < len(p.names); j++ {
+			a, b := p.names[i], p.names[j]
+			run, runStart := 0, ""
+			prevState := 0 // +1: A da/B weg, -1: B da/A weg, 0: beide/keiner
+			for _, d := range p.thursdays {
+				state := 0
+				if !p.absent[a][d] && p.absent[b][d] {
+					state = 1
+				} else if p.absent[a][d] && !p.absent[b][d] {
+					state = -1
+				}
+				switch {
+				case state == 0:
+					run, prevState = 0, 0
+					continue
+				case state == -prevState:
+					run++
+				default: // first week of a rally, or same side twice
+					run = 1
+					runStart = d
+				}
+				prevState = state
+				if run > bestRun {
+					bestRun, ba, bb = run, a, b
+					bestStart, bestEnd = runStart, d
+				}
+			}
+		}
+	}
+
+	if bestRun < 4 {
+		return viewmodels.FunCard{}, false
+	}
+	return viewmodels.FunCard{
+		Emoji: "🏓", Title: "Das Ping-Pong-Duo",
+		Headline: pairHeadline(p, ba, bb),
+		Detail: fmt.Sprintf("%d Wochen striktes Wechselspiel (%s – %s): einer geht, einer kommt",
+			bestRun, formatISO(bestStart), formatISO(bestEnd)),
+		Gradient: "bg-gradient-to-r from-lime-500/25 to-green-500/15",
+	}, true
+}
+
+// alibiCard finds the pair most often absent on the same day with the same
+// excuse category
+func alibiCard(cancellations []models.Cancellation, p presenceData) (viewmodels.FunCard, bool) {
+	// date -> user -> category (only categorized cancellations)
+	byDate := make(map[string]map[string]string)
+	for _, c := range cancellations {
+		if c.Category == "" {
+			continue
+		}
+		d := c.Date.Format("2006-01-02")
+		if byDate[d] == nil {
+			byDate[d] = make(map[string]string)
+		}
+		byDate[d][c.UserName] = c.Category
+	}
+
+	type pairKey struct{ a, b string }
+	count := make(map[pairKey]int)
+	lastDate := make(map[pairKey]string)
+	lastCat := make(map[pairKey]string)
+
+	for d, userCats := range byDate {
+		names := make([]string, 0, len(userCats))
+		for n := range userCats {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		for i := 0; i < len(names); i++ {
+			for j := i + 1; j < len(names); j++ {
+				if userCats[names[i]] != userCats[names[j]] {
+					continue
+				}
+				k := pairKey{names[i], names[j]}
+				count[k]++
+				if d > lastDate[k] {
+					lastDate[k] = d
+					lastCat[k] = userCats[names[i]]
+				}
+			}
+		}
+	}
+
+	best, bestCount := pairKey{}, 0
+	for k, n := range count {
+		if n > bestCount || (n == bestCount && k.a+k.b < best.a+best.b) {
+			best, bestCount = k, n
+		}
+	}
+	if bestCount == 0 {
+		return viewmodels.FunCard{}, false
+	}
+
+	label := lastCat[best]
+	if cat, ok := models.GetAllExcuseCategories()[label]; ok {
+		label = cat.Label
+	}
+	detail := fmt.Sprintf("am %s beide mit '%s' abgesagt – reiner Zufall, sicher 👀", formatISO(lastDate[best]), label)
+	if bestCount > 1 {
+		detail = fmt.Sprintf("%d× am selben Tag mit derselben Ausrede gefehlt – zuletzt am %s ('%s') 👀",
+			bestCount, formatISO(lastDate[best]), label)
+	}
+	return viewmodels.FunCard{
+		Emoji: "🕵️", Title: "Das Alibi-Duo",
+		Headline: pairHeadline(p, best.a, best.b),
+		Detail:   detail,
+		Gradient: "bg-gradient-to-r from-violet-500/25 to-fuchsia-500/15",
+	}, true
+}
+
+// todesduoCard finds the shared-absence pair whose missing hurts most: on
+// their common no-show days the table is emptiest
+func todesduoCard(p presenceData, thursdayStats []models.ThursdayStat) (viewmodels.FunCard, bool) {
+	attendeesByDay := make(map[string]int, len(thursdayStats))
+	totalAttendees := 0
+	for _, t := range thursdayStats {
+		attendeesByDay[t.Date.Format("2006-01-02")] = t.Attendees
+		totalAttendees += t.Attendees
+	}
+	if len(thursdayStats) == 0 {
+		return viewmodels.FunCard{}, false
+	}
+	overallAvg := float64(totalAttendees) / float64(len(thursdayStats))
+
+	bestAvg := 1e9
+	var ba, bb string
+	bestShared := 0
+	for i := 0; i < len(p.names); i++ {
+		for j := i + 1; j < len(p.names); j++ {
+			a, b := p.names[i], p.names[j]
+			shared, sum := 0, 0
+			for d := range p.absent[a] {
+				if p.absent[b][d] {
+					shared++
+					sum += attendeesByDay[d]
+				}
+			}
+			if shared < 3 {
+				continue
+			}
+			avg := float64(sum) / float64(shared)
+			if avg < bestAvg {
+				bestAvg, ba, bb, bestShared = avg, a, b, shared
+			}
+		}
+	}
+
+	// Must hurt beyond the mechanical -2 of the two of them being gone
+	if ba == "" || bestAvg > overallAvg-2.5 {
+		return viewmodels.FunCard{}, false
+	}
+	return viewmodels.FunCard{
+		Emoji: "☠️", Title: "Das Todesduo",
+		Headline: pairHeadline(p, ba, bb),
+		Detail: fmt.Sprintf("fehlen beide, sitzen im Schnitt nur noch %.1f am Tisch (Jahresschnitt: %.1f) – %d× passiert",
+			bestAvg, overallAvg, bestShared),
+		Gradient: "bg-gradient-to-r from-zinc-600/30 to-red-900/20",
+	}, true
+}
+
+// formatISO formats an ISO date (2006-01-02) as "2. Jan"
+func formatISO(iso string) string {
+	t, err := time.Parse("2006-01-02", iso)
+	if err != nil {
+		return iso
+	}
+	germanMonths := []string{
+		"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+		"Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+	}
+	return fmt.Sprintf("%d. %s", t.Day(), germanMonths[t.Month()-1])
 }
 
 // magnetCard finds the ordered pair (A, B) where B's absence rate is much
