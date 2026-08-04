@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: system-upgrade
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: system-upgrade
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Undermyspell/ai.git
+    targetRevision: HEAD
+    path: zumba-bot/deployment/system-upgrade
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: system-upgrade
+  syncPolicy:
+    automated:
+      prune: false      # Safety: Controller/Plan nie automatisch löschen
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true    # CRD aus dem Release ist groß
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2

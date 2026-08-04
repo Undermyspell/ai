@@ -1,0 +1,28 @@
+# k3s-Upgrade-Plan: DIE eine Zeile, die zählt, ist spec.version.
+# Update-Ablauf: Version bumpen → committen → pushen → ArgoCD synct den Plan
+# → Controller startet einen privilegierten Job auf dem Node, tauscht das
+# k3s-Binary (rancher/k3s-upgrade-Image) und startet den Dienst neu.
+# API ist dabei ~30-60s weg; laufende Container laufen weiter.
+#
+# Kubernetes-Konvention: eine Minor-Version pro Schritt
+# (v1.34 → v1.35 → v1.36), zwischen den Schritten Cluster prüfen.
+# Verfügbare Versionen: https://github.com/k3s-io/k3s/releases
+apiVersion: upgrade.cattle.io/v1
+kind: Plan
+metadata:
+  name: k3s-server
+  namespace: system-upgrade
+spec:
+  # Erste Stufe: v1.34.3 → v1.35.6. Danach auf v1.36.2+k3s1 bumpen.
+  version: v1.35.6+k3s1
+  serviceAccountName: system-upgrade
+  concurrency: 1
+  # Single-Node: cordon reicht — ein Drain würde alle Pods evakuieren,
+  # wohin sollen sie auf einem Ein-Node-Cluster auch hin.
+  cordon: true
+  nodeSelector:
+    matchExpressions:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+  upgrade:
+    image: rancher/k3s-upgrade
