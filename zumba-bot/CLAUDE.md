@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Fachliche Doku zuerst lesen**: `knowledge/` beschreibt Domäne und Features pro Teilbereich (README, whatsapp-bot, admin-ui, wrapped, strafen, deployment) — der schnellste Einstieg. Diese Datei hier ergänzt die technischen/Code-Konventionen. Keine echten Mitgliedsnamen in Doku-Dateien.
+
 ## Repository layout
 
 Four independent components share one repo, all centered on a self-hosted n8n + PostgreSQL + Evolution API (WhatsApp) stack used for the "Stammtisch" (weekly Thursday meetup) workflows:
