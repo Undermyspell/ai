@@ -18,6 +18,8 @@ type EvalData struct {
 	CategoryStats          models.CategoryStats
 	MonthStats             models.MonthStats
 	MonthlyAttendanceStats models.MonthlyAttendanceStats
+	ThursdayStats          []models.ThursdayStat
+	StrafenStats           models.StrafenStats
 	Awards                 []models.Award
 	Cancellations          []models.Cancellation
 }
@@ -50,6 +52,12 @@ func Build(data *EvalData, year string) viewmodels.PageViewModel {
 
 	// Build Attendance Heatmap
 	vm.AttendanceHeatmapMonths, vm.AttendanceHeatmapInsight = buildAttendanceHeatmap(data.MonthlyAttendanceStats)
+
+	// Build best/worst Thursdays
+	vm.BestThursdays, vm.WorstThursdays = buildThursdayTopFlop(data.ThursdayStats)
+
+	// Build Strafen
+	vm.Strafen = buildStrafen(data.StrafenStats, data.UserStats)
 
 	// Build AI Stats for client-side randomization
 	vm.AIStats = buildAIStats(data.UserStats, data.GlobalStats, data.MonthStats)
@@ -224,10 +232,26 @@ func buildBestExcuses(cancellations []models.Cancellation) []viewmodels.Excuse {
 	return creative
 }
 
+// periodMonth is one month of the wrapped period (Dec 2025 - Nov 2026)
+type periodMonth struct {
+	Key   string // e.g. "2025-12"
+	Label string // e.g. "Dez"
+}
+
+// periodMonths returns the 12 months of the wrapped period in chronological
+// order: Dez 2025, Jan 2026, ..., Nov 2026
+func periodMonths() []periodMonth {
+	labels := []string{"Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
+	out := make([]periodMonth, 0, 12)
+	out = append(out, periodMonth{Key: "2025-12", Label: "Dez"})
+	for i := 1; i <= 11; i++ {
+		out = append(out, periodMonth{Key: fmt.Sprintf("2026-%02d", i), Label: labels[i-1]})
+	}
+	return out
+}
+
 // buildHeatmap creates monthly heatmap data
 func buildHeatmap(ms models.MonthStats) ([]viewmodels.HeatmapMonth, viewmodels.HeatmapInsight) {
-	months := []string{"Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
-
 	// Collect month data
 	type monthData struct {
 		label string
@@ -235,12 +259,11 @@ func buildHeatmap(ms models.MonthStats) ([]viewmodels.HeatmapMonth, viewmodels.H
 		count int
 	}
 	data := make([]monthData, 12)
-	for i := 0; i < 12; i++ {
-		monthKey := fmt.Sprintf("2025-%02d", i+1)
+	for i, m := range periodMonths() {
 		data[i] = monthData{
-			label: months[i],
-			key:   monthKey,
-			count: ms[monthKey],
+			label: m.Label,
+			key:   m.Key,
+			count: ms[m.Key],
 		}
 	}
 
@@ -293,8 +316,6 @@ func buildHeatmap(ms models.MonthStats) ([]viewmodels.HeatmapMonth, viewmodels.H
 
 // buildAttendanceHeatmap creates monthly attendance rate heatmap data
 func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats) ([]viewmodels.AttendanceHeatmapMonth, viewmodels.AttendanceHeatmapInsight) {
-	months := []string{"Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
-
 	// Collect month data
 	type monthData struct {
 		label string
@@ -302,12 +323,11 @@ func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats) ([]viewmodels.Att
 		rate  int
 	}
 	data := make([]monthData, 12)
-	for i := 0; i < 12; i++ {
-		monthKey := fmt.Sprintf("2025-%02d", i+1)
+	for i, m := range periodMonths() {
 		data[i] = monthData{
-			label: months[i],
-			key:   monthKey,
-			rate:  mas[monthKey],
+			label: m.Label,
+			key:   m.Key,
+			rate:  mas[m.Key],
 		}
 	}
 
@@ -356,6 +376,118 @@ func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats) ([]viewmodels.Att
 	return heatmapMonths, insight
 }
 
+// buildThursdayTopFlop picks the 3 best and 3 worst attended Thursdays
+func buildThursdayTopFlop(stats []models.ThursdayStat) ([]viewmodels.ThursdayCard, []viewmodels.ThursdayCard) {
+	if len(stats) == 0 {
+		return nil, nil
+	}
+
+	best := make([]models.ThursdayStat, len(stats))
+	copy(best, stats)
+	sort.SliceStable(best, func(i, j int) bool {
+		if best[i].Attendees != best[j].Attendees {
+			return best[i].Attendees > best[j].Attendees
+		}
+		return best[i].Date.Before(best[j].Date)
+	})
+
+	worst := make([]models.ThursdayStat, len(stats))
+	copy(worst, stats)
+	sort.SliceStable(worst, func(i, j int) bool {
+		if worst[i].Attendees != worst[j].Attendees {
+			return worst[i].Attendees < worst[j].Attendees
+		}
+		return worst[i].Date.Before(worst[j].Date)
+	})
+
+	topMedals := []string{"🥇", "🥈", "🥉"}
+	flopMedals := []string{"💀", "🕸️", "🦗"}
+
+	buildCards := func(src []models.ThursdayStat, medals []string, delayOffset int) []viewmodels.ThursdayCard {
+		n := 3
+		if n > len(src) {
+			n = len(src)
+		}
+		cards := make([]viewmodels.ThursdayCard, 0, n)
+		for i := 0; i < n; i++ {
+			s := src[i]
+			cards = append(cards, viewmodels.ThursdayCard{
+				RankDisplay: medals[i],
+				DateDisplay: formatDateWithYear(s.Date),
+				Attendees:   s.Attendees,
+				Total:       s.Total,
+				Rate:        s.Rate,
+				BarColor:    getBarColor(s.Rate),
+				DelayClass:  fmt.Sprintf("delay-%d", i*150+delayOffset),
+			})
+		}
+		return cards
+	}
+
+	return buildCards(best, topMedals, 200), buildCards(worst, flopMedals, 700)
+}
+
+// buildStrafen aggregates penalty stats into the strafen slide view
+func buildStrafen(stats models.StrafenStats, users []models.UserStats) viewmodels.StrafenView {
+	view := viewmodels.StrafenView{
+		HasStrafen: stats.TotalCount > 0,
+		TotalSum:   stats.TotalSum,
+		TotalCount: stats.TotalCount,
+	}
+	if !view.HasStrafen {
+		return view
+	}
+
+	emojiByName := make(map[string]string, len(users))
+	for _, u := range users {
+		emojiByName[u.Name] = u.Emoji
+	}
+
+	medals := []string{"🥇", "🥈", "🥉"}
+	n := 3
+	if n > len(stats.UserTotals) {
+		n = len(stats.UserTotals)
+	}
+
+	for i := 0; i < n; i++ {
+		ut := stats.UserTotals[i]
+
+		entries := make([]viewmodels.StrafenEntryView, 0, len(ut.Entries))
+		for _, e := range ut.Entries {
+			ev := viewmodels.StrafenEntryView{
+				Betrag: fmt.Sprintf("%d €", e.Betrag),
+			}
+			if e.Art == "fehltage" {
+				ev.ArtEmoji = "🪑"
+				ev.Label = fmt.Sprintf("%d Wochen gefehlt", e.Tage)
+				ev.DateRange = formatDateRange(e.Start, e.End)
+			} else {
+				ev.ArtEmoji = "👻"
+				ev.Label = "No-Show"
+				ev.DateRange = formatDateWithYear(e.Start)
+			}
+			if e.Status == "beglichen" {
+				ev.StatusEmoji = "✅"
+			} else {
+				ev.StatusEmoji = "⏳"
+			}
+			entries = append(entries, ev)
+		}
+
+		view.TopPayers = append(view.TopPayers, viewmodels.StrafenUserView{
+			RankDisplay: medals[i],
+			Name:        ut.UserName,
+			Emoji:       emojiByName[ut.UserName],
+			Total:       fmt.Sprintf("%d €", ut.Total),
+			TotalEuro:   ut.Total,
+			Entries:     entries,
+			DelayClass:  fmt.Sprintf("delay-%d", i*200+400),
+		})
+	}
+
+	return view
+}
+
 // buildAIStats creates the pre-rendered AI summary (server-side randomization)
 func buildAIStats(users []models.UserStats, gs models.GlobalStats, ms models.MonthStats) viewmodels.AIStats {
 	topUser := ""
@@ -365,27 +497,30 @@ func buildAIStats(users []models.UserStats, gs models.GlobalStats, ms models.Mon
 		bottomUser = users[len(users)-1].Name
 	}
 
-	// Find worst/best month
-	monthNames := []string{"Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	// Find worst/best month within the wrapped period
+	fullNames := map[string]string{
+		"Jan": "Januar", "Feb": "Februar", "Mär": "März", "Apr": "April",
+		"Mai": "Mai", "Jun": "Juni", "Jul": "Juli", "Aug": "August",
+		"Sep": "September", "Okt": "Oktober", "Nov": "November", "Dez": "Dezember",
+	}
 	var worstMonth, bestMonth string
 	var worstCount, bestCount int
 	bestCount = 999999
 
-	for i := range 12 {
-		monthKey := fmt.Sprintf("2025-%02d", i+1)
-		count := ms[monthKey]
+	for _, m := range periodMonths() {
+		count := ms[m.Key]
 		if count > worstCount {
 			worstCount = count
-			worstMonth = monthNames[i]
+			worstMonth = fullNames[m.Label]
 		}
 		if count > 0 && count < bestCount {
 			bestCount = count
-			bestMonth = monthNames[i]
+			bestMonth = fullNames[m.Label]
 		}
 	}
 	if bestCount == 999999 {
 		bestCount = 0
-		bestMonth = monthNames[0]
+		bestMonth = "Dezember"
 	}
 
 	avgRate := gs.AverageAttendanceRate
@@ -393,9 +528,9 @@ func buildAIStats(users []models.UserStats, gs models.GlobalStats, ms models.Mon
 
 	// Pre-select one of the 3 summary variants server-side
 	summaries := []string{
-		fmt.Sprintf(`2025 war ein Jahr der Hingabe – mit einer durchschnittlichen Teilnahme von <span class="text-biergold font-bold">%d%%</span>. %s führte das Feld an, während %s noch Potenzial nach oben hat. Im %s war die Motivation am niedrigsten, aber im %s zeigte sich wahre Stammtisch-Treue!`,
+		fmt.Sprintf(`2026 war ein Jahr der Hingabe – mit einer durchschnittlichen Teilnahme von <span class="text-biergold font-bold">%d%%</span>. %s führte das Feld an, während %s noch Potenzial nach oben hat. Im %s war die Motivation am niedrigsten, aber im %s zeigte sich wahre Stammtisch-Treue!`,
 			avgRate, topUser, bottomUser, worstMonth, bestMonth),
-		fmt.Sprintf(`Der Stammtisch 2025: Eine Geschichte von Bier, Freundschaft und... kreativen Ausreden. <span class="text-biergold font-bold">%s</span> war der unerschütterliche Fels, während <span class="text-biergold font-bold">%s</span> eher spirituell dabei war. Der %s forderte uns heraus – aber wir haben durchgehalten!`,
+		fmt.Sprintf(`Der Stammtisch 2026: Eine Geschichte von Bier, Freundschaft und... kreativen Ausreden. <span class="text-biergold font-bold">%s</span> war der unerschütterliche Fels, während <span class="text-biergold font-bold">%s</span> eher spirituell dabei war. Der %s forderte uns heraus – aber wir haben durchgehalten!`,
 			topUser, bottomUser, worstMonth),
 		fmt.Sprintf(`Was für ein Jahr! <span class="text-biergold font-bold">%d</span> mal wurde am Stammtisch angestoßen. %s verpasste kaum einen Donnerstag, während %s den Begriff "Stammtisch" eher flexibel interpretierte. Der Sommer war stark, der %s war eine Herausforderung.`,
 			totalAttendances, topUser, bottomUser, worstMonth),
@@ -669,6 +804,18 @@ func getFunFact(user models.UserStats) string {
 	default:
 		return fmt.Sprintf("%dx gefehlt", user.CancellationCount)
 	}
+}
+
+// formatDateWithYear formats a single date for display (e.g., "12. Feb 2026")
+func formatDateWithYear(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	germanMonths := []string{
+		"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+		"Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+	}
+	return fmt.Sprintf("%d. %s %d", t.Day(), germanMonths[t.Month()-1], t.Year())
 }
 
 // formatDateRange formats a date range for display (e.g., "12. Jan - 9. Feb")

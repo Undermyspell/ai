@@ -15,9 +15,9 @@
 // Anforderung: 6x gefehlt → 30 € → abends beglichen → nächster Fehltag ist
 // Serie 1, nicht 35 €).
 //
-// HINWEIS: Dieses Package existiert wortgleich in whatsapp-bot und
-// zumba-admin-ui (eigene Go-Module, Docker-Builds kopieren nur das jeweilige
-// Service-Verzeichnis). Änderungen immer in beiden Kopien nachziehen –
+// HINWEIS: Dieses Package existiert wortgleich in whatsapp-bot,
+// zumba-admin-ui und wrapped (eigene Go-Module, Docker-Builds kopieren nur das
+// jeweilige Service-Verzeichnis). Änderungen immer in allen Kopien nachziehen –
 // gleiche Konvention wie bei stats.sql / Leaderboard-Query.
 package penalty
 

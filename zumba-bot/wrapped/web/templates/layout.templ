@@ -115,14 +115,17 @@ templ SlideNavigation() {
 			}
 
 			triggerAnimations(slideEl) {
-				const animatedElements = slideEl.querySelectorAll(".animate-on-enter");
+				const animatedElements = slideEl.querySelectorAll(".animate-on-enter, .animate-bar");
 				animatedElements.forEach((el) => {
 					el.style.animation = "none";
 					el.offsetHeight;
 					el.style.animation = "";
+				});
+				slideEl.querySelectorAll(".animate-on-enter").forEach((el) => {
+					// Fallback: reveal even if the CSS animation never ran
 					setTimeout(() => {
 						el.style.opacity = "1";
-					}, 2000);
+					}, 3000);
 				});
 
 				const counters = slideEl.querySelectorAll("[data-count-to]");
@@ -154,7 +157,15 @@ templ SlideNavigation() {
 				requestAnimationFrame(updateCounter);
 			}
 
+			hideTapHint() {
+				const hint = document.getElementById("tap-hint");
+				if (hint) {
+					hint.style.opacity = "0";
+				}
+			}
+
 			nextSlide() {
+				this.hideTapHint();
 				this.resetTimer();
 				if (this.currentSlide < this.totalSlides - 1) {
 					this.showSlide(this.currentSlide + 1);
@@ -273,11 +284,11 @@ templ Layout(title string, year string) {
 				<div id="progress-bar" class="progress-bar h-full bg-biergold" style="width: 0%"></div>
 			</div>
 			<!-- Navigation Dots -->
-			<div id="nav-dots" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex gap-2">
+			<div id="nav-dots" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex flex-wrap justify-center gap-1.5 max-w-[92vw]">
 				<!-- Dots werden dynamisch generiert -->
 			</div>
-			<!-- Skip/Tap Hint -->
-			<div class="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 text-schaum/50 text-xs">
+			<!-- Skip/Tap Hint (hidden after first interaction) -->
+			<div id="tap-hint" class="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 text-schaum/50 text-xs transition-opacity duration-500">
 				Tippen zum Weiter
 			</div>
 			<!-- Slides Container -->

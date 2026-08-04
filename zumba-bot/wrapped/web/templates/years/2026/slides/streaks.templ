@@ -53,7 +53,7 @@ templ CancellationStreakCard(user viewmodels.StreakUser) {
 
 // Streaks slide - Beste Streaks
 templ Streaks(attendanceStreaks []viewmodels.StreakUser, cancellationStreaks []viewmodels.StreakUser) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6" data-duration="7000">
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto" data-duration="7000">
 		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
 			🔥 Längste Anwesenheits-Streaks
 		</h2>

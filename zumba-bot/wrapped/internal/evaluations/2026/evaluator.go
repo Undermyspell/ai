@@ -22,6 +22,8 @@ type EvaluationResult struct {
 	CategoryStats          models.CategoryStats
 	MonthStats             models.MonthStats
 	MonthlyAttendanceStats models.MonthlyAttendanceStats
+	ThursdayStats          []models.ThursdayStat
+	StrafenStats           models.StrafenStats
 	Awards                 []models.Award
 	Cancellations          []models.Cancellation
 }
@@ -49,7 +51,13 @@ func (e *Evaluator) Evaluate() *EvaluationResult {
 	// Step 7: Calculate monthly attendance rates
 	monthlyAttendanceStats := e.calculateMonthlyAttendanceStats(cancellations)
 
-	// Step 8: Determine awards
+	// Step 8: Calculate per-Thursday attendance (best/worst Thursdays)
+	thursdayStats := e.calculateThursdayStats()
+
+	// Step 9: Evaluate penalties (strafen table + shared penalty domain logic)
+	strafenStats := e.calculateStrafenStats()
+
+	// Step 10: Determine awards
 	awards := e.calculateAwards(userStats)
 
 	return &EvaluationResult{
@@ -58,6 +66,8 @@ func (e *Evaluator) Evaluate() *EvaluationResult {
 		CategoryStats:          categoryStats,
 		MonthStats:             monthStats,
 		MonthlyAttendanceStats: monthlyAttendanceStats,
+		ThursdayStats:          thursdayStats,
+		StrafenStats:           strafenStats,
 		Awards:                 awards,
 		Cancellations:          cancellations,
 	}

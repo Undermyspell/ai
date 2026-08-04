@@ -1,11 +1,13 @@
 package data
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"sort"
 	"time"
 
+	"github.com/michael/stammtisch-wrapped/internal/penalty"
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 )
 
@@ -83,18 +85,20 @@ func GenerateCancellations() []models.Cancellation {
 		15: {"freizeit", "keine_lust"},
 	}
 
-	rand.Seed(42) // Fixed seed for consistent results
+	// Local seeded source: rand.Seed is a no-op since Go 1.24, and every call
+	// must return identical data so all slides describe the same mock year
+	rng := rand.New(rand.NewSource(42))
 	cancellations := []models.Cancellation{}
 
 	for _, date := range thursdays {
 		for _, user := range users {
 			rate := cancellationRates[user.ID]
-			if rand.Float64() < rate {
+			if rng.Float64() < rate {
 				// User cancels
 				favCats := favoriteCategories[user.ID]
-				catName := favCats[rand.Intn(len(favCats))]
+				catName := favCats[rng.Intn(len(favCats))]
 				category := categories[catName]
-				message := category.Examples[rand.Intn(len(category.Examples))]
+				message := category.Examples[rng.Intn(len(category.Examples))]
 
 				cancellations = append(cancellations, models.Cancellation{
 					Date:     date,
@@ -126,21 +130,25 @@ func CalculateUserStats() []models.UserStats {
 		attendanceRate := int(math.Round(float64(attendanceCount) / float64(totalThursdays) * 100))
 
 		// Calculate streaks
-		maxAttendanceStreak, maxCancellationStreak := calculateStreaks(thursdays, userCancellations)
+		attendanceStreak, cancellationStreak := calculateStreaks(thursdays, userCancellations)
 
 		// Find favorite excuse category
 		favoriteCategory := findFavoriteExcuseCategory(userCancellations)
 
 		userStats[i] = models.UserStats{
-			User:                   user,
-			CancellationCount:      cancellationCount,
-			AttendanceCount:        attendanceCount,
-			AttendanceRate:         attendanceRate,
-			MaxAttendanceStreak:    maxAttendanceStreak,
-			MaxCancellationStreak:  maxCancellationStreak,
-			NeverCancelled:         cancellationCount == 0,
-			FavoriteExcuseCategory: favoriteCategory,
-			Cancellations:          userCancellations,
+			User:                       user,
+			CancellationCount:          cancellationCount,
+			AttendanceCount:            attendanceCount,
+			AttendanceRate:             attendanceRate,
+			MaxAttendanceStreak:        attendanceStreak.count,
+			MaxAttendanceStreakStart:   attendanceStreak.start,
+			MaxAttendanceStreakEnd:     attendanceStreak.end,
+			MaxCancellationStreak:      cancellationStreak.count,
+			MaxCancellationStreakStart: cancellationStreak.start,
+			MaxCancellationStreakEnd:   cancellationStreak.end,
+			NeverCancelled:             cancellationCount == 0,
+			FavoriteExcuseCategory:     favoriteCategory,
+			Cancellations:              userCancellations,
 		}
 	}
 
@@ -261,6 +269,125 @@ func GetMonthlyAttendanceStats() models.MonthlyAttendanceStats {
 	return stats
 }
 
+// GetThursdayStats returns per-Thursday attendance derived from the mock cancellations
+func GetThursdayStats() []models.ThursdayStat {
+	users := GetUsers()
+	thursdays := GetThursdays2026()
+	cancellations := GenerateCancellations()
+	total := len(users)
+
+	cancellationsPerDay := make(map[string]int)
+	for _, c := range cancellations {
+		cancellationsPerDay[c.Date.Format("2006-01-02")]++
+	}
+
+	stats := make([]models.ThursdayStat, 0, len(thursdays))
+	for _, thursday := range thursdays {
+		attendees := total - cancellationsPerDay[thursday.Format("2006-01-02")]
+		stats = append(stats, models.ThursdayStat{
+			Date:      thursday,
+			Attendees: attendees,
+			Total:     total,
+			Rate:      (attendees * 100) / total,
+		})
+	}
+	return stats
+}
+
+// GetStrafenStats evaluates the mock absences with the shared penalty logic,
+// plus two hardcoded no-show penalties for variety
+func GetStrafenStats() models.StrafenStats {
+	users := GetUsers()
+	thursdays := GetThursdays2026()
+	cancellations := GenerateCancellations()
+
+	if len(thursdays) == 0 {
+		return models.StrafenStats{}
+	}
+	asOf := thursdays[len(thursdays)-1]
+
+	absencesByUser := make(map[int][]time.Time)
+	for _, c := range cancellations {
+		absencesByUser[c.UserID] = append(absencesByUser[c.UserID], c.Date)
+	}
+
+	start := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
+	userData := make([]penalty.UserData, 0, len(users))
+	for _, u := range users {
+		userData = append(userData, penalty.UserData{
+			UserID:         fmt.Sprint(u.ID),
+			Name:           u.Name,
+			EffectiveStart: start,
+			Absences:       absencesByUser[u.ID],
+		})
+	}
+
+	// Two manual no-show penalties for variety
+	noShowDate := thursdays[len(thursdays)/2]
+	rows := []penalty.Row{
+		{ID: 1, UserID: "8", Art: penalty.ArtNoShow, Datum: noShowDate, Betrag: penalty.NoShowDefault, Status: penalty.StatusOffen},
+		{ID: 2, UserID: "13", Art: penalty.ArtNoShow, Datum: noShowDate, Betrag: penalty.NoShowDefault, Status: penalty.StatusBeglichen, BeglichenAm: &asOf},
+	}
+
+	entries := penalty.Assess(penalty.Input{Users: userData, Rows: rows}, asOf)
+
+	excluded := map[string]bool{}
+	byUser := make(map[string]*models.StrafenUserTotal)
+	stats := models.StrafenStats{}
+
+	for _, entry := range entries {
+		if entry.Status == penalty.StatusGeloescht || entry.Betrag == 0 {
+			continue
+		}
+		me := models.StrafenEntry{
+			UserName: entry.Name,
+			Art:      string(entry.Art),
+			Betrag:   entry.Betrag,
+			Tage:     entry.Tage,
+			Start:    entry.Datum,
+			Status:   string(entry.Status),
+		}
+		if entry.Art == penalty.ArtFehltage {
+			seq := penalty.Thursdays(entry.Datum, asOf, excluded)
+			if entry.Tage > 0 && len(seq) >= entry.Tage {
+				me.End = seq[entry.Tage-1]
+			} else {
+				me.End = entry.Datum
+			}
+		}
+
+		ut, ok := byUser[entry.UserID]
+		if !ok {
+			ut = &models.StrafenUserTotal{UserName: entry.Name}
+			byUser[entry.UserID] = ut
+		}
+		ut.Total += me.Betrag
+		if entry.Art == penalty.ArtFehltage {
+			ut.FehltageCount++
+		} else {
+			ut.NoShowCount++
+		}
+		ut.Entries = append(ut.Entries, me)
+		stats.TotalSum += me.Betrag
+		stats.TotalCount++
+	}
+
+	for _, ut := range byUser {
+		sort.Slice(ut.Entries, func(i, j int) bool {
+			return ut.Entries[i].Start.Before(ut.Entries[j].Start)
+		})
+		stats.UserTotals = append(stats.UserTotals, *ut)
+	}
+	sort.Slice(stats.UserTotals, func(i, j int) bool {
+		if stats.UserTotals[i].Total != stats.UserTotals[j].Total {
+			return stats.UserTotals[i].Total > stats.UserTotals[j].Total
+		}
+		return stats.UserTotals[i].UserName < stats.UserTotals[j].UserName
+	})
+
+	return stats
+}
+
 // Helper functions
 
 func filterCancellationsByUser(cancellations []models.Cancellation, userID int) []models.Cancellation {
@@ -273,31 +400,42 @@ func filterCancellationsByUser(cancellations []models.Cancellation, userID int) 
 	return filtered
 }
 
-func calculateStreaks(thursdays []time.Time, userCancellations []models.Cancellation) (int, int) {
+type mockStreak struct {
+	count      int
+	start, end time.Time
+}
+
+func calculateStreaks(thursdays []time.Time, userCancellations []models.Cancellation) (mockStreak, mockStreak) {
 	cancellationMap := make(map[string]bool)
 	for _, c := range userCancellations {
 		cancellationMap[c.Date.Format("2006-01-02")] = true
 	}
 
-	currentAttendance := 0
-	maxAttendance := 0
-	currentCancellation := 0
-	maxCancellation := 0
+	var maxAttendance, maxCancellation mockStreak
+	var currentAttendance, currentCancellation mockStreak
 
 	for _, date := range thursdays {
 		dateStr := date.Format("2006-01-02")
 		if cancellationMap[dateStr] {
-			currentCancellation++
-			if currentCancellation > maxCancellation {
+			if currentCancellation.count == 0 {
+				currentCancellation.start = date
+			}
+			currentCancellation.count++
+			currentCancellation.end = date
+			if currentCancellation.count > maxCancellation.count {
 				maxCancellation = currentCancellation
 			}
-			currentAttendance = 0
+			currentAttendance = mockStreak{}
 		} else {
-			currentAttendance++
-			if currentAttendance > maxAttendance {
+			if currentAttendance.count == 0 {
+				currentAttendance.start = date
+			}
+			currentAttendance.count++
+			currentAttendance.end = date
+			if currentAttendance.count > maxAttendance.count {
 				maxAttendance = currentAttendance
 			}
-			currentCancellation = 0
+			currentCancellation = mockStreak{}
 		}
 	}
 

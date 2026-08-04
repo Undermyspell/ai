@@ -1,0 +1,44 @@
+package slides
+
+import (
+	"fmt"
+
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+)
+
+// ThursdayCardView renders a single best/worst Thursday card
+templ ThursdayCardView(card viewmodels.ThursdayCard, gradient string, accent string) {
+	<div class={ "animate-on-enter animate-scale-in " + card.DelayClass + " " + gradient + " rounded-xl p-4 flex items-center gap-4" }>
+		<div class="text-3xl">{ card.RankDisplay }</div>
+		<div class="flex-1 min-w-0">
+			<div class="font-bold text-schaum">{ card.DateDisplay }</div>
+			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d von %d", card.Attendees, card.Total) } am Tisch</div>
+			<div class="mt-2 h-2 rounded-full bg-holz-light/40 overflow-hidden">
+				<div class={ "h-full rounded-full animate-bar " + card.BarColor } style={ fmt.Sprintf("width: %d%%", card.Rate) }></div>
+			</div>
+		</div>
+		<div class={ "text-3xl font-bold " + accent }>{ fmt.Sprintf("%d", card.Attendees) }</div>
+	</div>
+}
+
+// Thursdays slide - best and worst attended Thursdays
+templ Thursdays(best []viewmodels.ThursdayCard, worst []viewmodels.ThursdayCard) {
+	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto" data-duration="8000">
+		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
+			🍻 Die legendärsten Donnerstage
+		</h2>
+		<div class="w-full max-w-md space-y-4">
+			for _, card := range best {
+				@ThursdayCardView(card, "bg-gradient-to-r from-biergold/30 to-amber-600/20", "text-biergold")
+			}
+		</div>
+		<h2 class="animate-on-enter animate-fade-in delay-500 text-xl font-bold text-schaum mb-6 mt-8">
+			🪦 Die einsamsten Donnerstage
+		</h2>
+		<div class="w-full max-w-md space-y-4">
+			for _, card := range worst {
+				@ThursdayCardView(card, "bg-gradient-to-r from-slate-500/30 to-slate-700/20", "text-slate-300")
+			}
+		</div>
+	</div>
+}

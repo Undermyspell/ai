@@ -31,6 +31,13 @@ type PageViewModel struct {
 	AttendanceHeatmapMonths  []AttendanceHeatmapMonth
 	AttendanceHeatmapInsight AttendanceHeatmapInsight
 
+	// Best/worst Thursdays
+	BestThursdays  []ThursdayCard
+	WorstThursdays []ThursdayCard
+
+	// Strafen (penalties)
+	Strafen StrafenView
+
 	// AI Summary (data for client-side randomization)
 	AIStats AIStats
 
@@ -129,6 +136,45 @@ type AttendanceHeatmapInsight struct {
 	BestRate   int
 	WorstMonth string
 	WorstRate  int
+}
+
+// ThursdayCard contains display data for a single best/worst Thursday
+type ThursdayCard struct {
+	RankDisplay string // "🥇", "🥈", "🥉" (top) or "💀", "🕸️", "🦗" (flop)
+	DateDisplay string // e.g. "12. Feb 2026"
+	Attendees   int
+	Total       int
+	Rate        int    // 0-100, used as bar width
+	BarColor    string // color class based on rate
+	DelayClass  string
+}
+
+// StrafenEntryView is one display-ready penalty line
+type StrafenEntryView struct {
+	ArtEmoji    string // "🪑" fehltage, "👻" noshow
+	Label       string // e.g. "6 Wochen gefehlt" or "No-Show"
+	DateRange   string // e.g. "12. Feb – 19. Mär" (fehltage) or "5. Mär" (noshow)
+	Betrag      string // e.g. "30 €"
+	StatusEmoji string // "✅" beglichen, "⏳" offen
+}
+
+// StrafenUserView contains display data for one penalty payer
+type StrafenUserView struct {
+	RankDisplay string
+	Name        string
+	Emoji       string
+	Total       string // e.g. "55 €"
+	TotalEuro   int    // raw euro value for counters
+	Entries     []StrafenEntryView
+	DelayClass  string
+}
+
+// StrafenView contains all penalty slide data
+type StrafenView struct {
+	HasStrafen bool
+	TotalSum   int // Euro, counter target
+	TotalCount int
+	TopPayers  []StrafenUserView
 }
 
 // AIStats contains pre-rendered AI summary (server-side selected)

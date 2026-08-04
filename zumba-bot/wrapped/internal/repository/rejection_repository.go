@@ -2,8 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"time"
+
+	"github.com/lib/pq"
 
 	"github.com/michael/stammtisch-wrapped/internal/database"
 )
@@ -170,6 +174,44 @@ func (r *RejectionRepository) GetThursdaysByDateRange(ctx context.Context, dateR
 	return thursdays, nil
 }
 
+// GetStrafenRows fetches all penalty rows. Deleted and settled rows are included
+// because they act as streak reset markers for the fehltage computation.
+// If the strafen table does not exist yet (bot/admin-ui create it on startup),
+// an empty slice is returned instead of an error.
+func (r *RejectionRepository) GetStrafenRows(ctx context.Context) ([]StrafenRow, error) {
+	query := `
+		SELECT id, "userId", art, datum, betrag, status, beglichen_am, geloescht_am
+		FROM strafen
+		ORDER BY "userId", datum
+	`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "42P01" { // undefined_table
+			log.Printf("⚠️ strafen table does not exist yet, skipping penalty stats")
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to query strafen: %w", err)
+	}
+	defer rows.Close()
+
+	var strafen []StrafenRow
+	for rows.Next() {
+		var s StrafenRow
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Art, &s.Datum, &s.Betrag, &s.Status, &s.BeglichenAm, &s.GeloeschtAm); err != nil {
+			return nil, fmt.Errorf("failed to scan strafen row: %w", err)
+		}
+		strafen = append(strafen, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating strafen rows: %w", err)
+	}
+
+	return strafen, nil
+}
+
 // GetRawDataByDateRange fetches all raw data needed for evaluations within a date range
 func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRange DateRange) (*RawData, error) {
 	users, err := r.GetAllUsers(ctx)
@@ -192,10 +234,16 @@ func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRan
 		return nil, fmt.Errorf("failed to get thursdays: %w", err)
 	}
 
+	strafenRows, err := r.GetStrafenRows(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get strafen rows: %w", err)
+	}
+
 	return &RawData{
 		Users:        users,
 		Rejections:   rejections,
 		ExcludedDays: excludedDays,
 		Thursdays:    thursdays,
+		StrafenRows:  strafenRows,
 	}, nil
 }

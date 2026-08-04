@@ -18,7 +18,7 @@ templ PersonalCardComponent(card viewmodels.PersonalCard) {
 			<div class="flex items-center gap-2 mt-1">
 				<div class="flex-1 bg-holz rounded-full h-1.5">
 					<div
-						class={ card.BarColor + " h-1.5 rounded-full" }
+						class={ card.BarColor + " h-1.5 rounded-full animate-bar" }
 						style={ fmt.Sprintf("width: %d%%", card.AttendanceRate) }
 					></div>
 				</div>

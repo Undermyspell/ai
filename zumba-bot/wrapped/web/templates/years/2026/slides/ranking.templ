@@ -19,7 +19,7 @@ templ Intro() {
 			WRAPPED
 		</h2>
 		<p class="animate-on-enter animate-fade-in delay-700 text-2xl text-biergold-dark">
-			2025
+			2026
 		</p>
 		<div class="animate-on-enter animate-fade-in delay-1000 mt-12">
 			<p class="text-schaum/70 text-lg">Dein Jahr in Zahlen</p>
@@ -124,7 +124,7 @@ templ RankingCard(user viewmodels.RankedUser) {
 			<div class="text-xs text-schaum/60 mb-2">{ user.TitleEmoji } { user.Title }</div>
 			<div class="w-full bg-holz rounded-full h-2">
 				<div
-					class={ user.BarColor + " h-2 rounded-full transition-all duration-1000" }
+					class={ user.BarColor + " h-2 rounded-full animate-bar" }
 					style={ fmt.Sprintf("width: %d%%", user.AttendanceRate) }
 				></div>
 			</div>

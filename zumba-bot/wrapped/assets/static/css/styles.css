@@ -153,6 +153,17 @@
     opacity: 0;
 }
 
+/* Bar grow-in (bars carry inline width; scaleX animates the reveal) */
+@keyframes barGrow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+.animate-bar {
+    transform-origin: left center;
+    animation: barGrow 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.4s backwards;
+}
+
 /* Slide transitions */
 .slide {
     display: none;
@@ -163,6 +174,41 @@
 .slide.active {
     display: flex;
     opacity: 1;
+    animation: slideEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slideEnter {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Mobile browsers: 100vh includes the collapsed URL bar; prefer dynamic viewport */
+@supports (height: 100dvh) {
+    .slide {
+        height: 100dvh;
+    }
+}
+
+/* Respect reduced motion: show everything, skip the show */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .animate-on-enter {
+        opacity: 1;
+    }
 }
 
 /* Progress bar */

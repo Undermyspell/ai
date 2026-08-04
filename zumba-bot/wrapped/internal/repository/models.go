@@ -21,10 +21,23 @@ type ExcludedDay struct {
 	Date time.Time
 }
 
+// StrafenRow represents a row from the strafen table (created by whatsapp-bot/admin-ui)
+type StrafenRow struct {
+	ID          int64
+	UserID      string
+	Art         string // "fehltage" | "noshow"
+	Datum       time.Time
+	Betrag      *int // nullable; only set for noshow
+	Status      string
+	BeglichenAm *time.Time
+	GeloeschtAm *time.Time
+}
+
 // RawData contains all raw data needed for evaluations
 type RawData struct {
 	Users        []RawUser
 	Rejections   []RawRejection
 	ExcludedDays []ExcludedDay
-	Thursdays    []time.Time // All valid Thursdays for the year (excluding excluded_days)
+	Thursdays    []time.Time  // All valid Thursdays for the year (excluding excluded_days)
+	StrafenRows  []StrafenRow // All penalty rows (incl. beglichen/geloescht — needed as reset markers)
 }

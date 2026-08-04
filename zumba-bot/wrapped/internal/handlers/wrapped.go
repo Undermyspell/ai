@@ -80,6 +80,8 @@ func (h *WrappedHandler) loadFromDatabase(ctx context.Context) *viewbuilder.Eval
 		CategoryStats:          result.CategoryStats,
 		MonthStats:             result.MonthStats,
 		MonthlyAttendanceStats: result.MonthlyAttendanceStats,
+		ThursdayStats:          result.ThursdayStats,
+		StrafenStats:           result.StrafenStats,
 		Awards:                 result.Awards,
 		Cancellations:          result.Cancellations,
 	}
@@ -100,6 +102,8 @@ func (h *WrappedHandler) loadFromMock() *viewbuilder.EvalData {
 		CategoryStats:          categoryStats,
 		MonthStats:             monthStats,
 		MonthlyAttendanceStats: data.GetMonthlyAttendanceStats(),
+		ThursdayStats:          data.GetThursdayStats(),
+		StrafenStats:           data.GetStrafenStats(),
 		Awards:                 awards,
 		Cancellations:          allCancellations,
 	}
