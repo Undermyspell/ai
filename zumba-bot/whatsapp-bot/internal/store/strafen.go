@@ -9,9 +9,10 @@ import (
 	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
 )
 
-// EnsureStrafenSchema legt die Strafen-Tabelle idempotent an. Die identische
-// DDL steht auch im zumba-admin-ui (beide Services schreiben in die Tabelle,
-// die Deploy-Reihenfolge ist offen) – Änderungen in beiden nachziehen.
+// EnsureStrafenSchema legt die Strafen-Tabelle idempotent an und migriert
+// kleinere Schema-Erweiterungen. Die identische DDL steht auch im
+// zumba-admin-ui (beide Services schreiben in die Tabellen, die
+// Deploy-Reihenfolge ist offen) – Änderungen in beiden nachziehen.
 func (s *Postgres) EnsureStrafenSchema(ctx context.Context) error {
 	const q = `
 		CREATE TABLE IF NOT EXISTS strafen (
@@ -27,7 +28,14 @@ func (s *Postgres) EnsureStrafenSchema(ctx context.Context) error {
 		  geloescht_am TIMESTAMPTZ
 		);
 		CREATE UNIQUE INDEX IF NOT EXISTS strafen_fehltage_unique
-		  ON strafen ("userId", datum) WHERE art = 'fehltage';`
+		  ON strafen ("userId", datum) WHERE art = 'fehltage';
+		-- Absage-Zeitpunkt für Wrapped 2027 ("kurzfristigste Absage"):
+		-- Altbestand bleibt bewusst NULL (Zeitpunkt unbekannt), Neueinträge
+		-- bekommen den Default – gilt für Bot, Admin-UI und n8n gleichermaßen.
+		ALTER TABLE public.stammtisch_abwesenheit
+		  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ;
+		ALTER TABLE public.stammtisch_abwesenheit
+		  ALTER COLUMN created_at SET DEFAULT now();`
 	_, err := s.db.ExecContext(ctx, q)
 	return err
 }
