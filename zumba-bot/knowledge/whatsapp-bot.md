@@ -15,8 +15,8 @@ genau drei möglichen Ergebnissen:
 
 | Ergebnis | Bedeutung | Wirkung |
 |---|---|---|
-| `true` | Absage für den kommenden Donnerstag | Zeile in `stammtisch_abwesenheit` wird angelegt (Upsert: erneute Absage aktualisiert nur den Text) |
-| `false` | Zusage bzw. Rücknahme einer Absage | Absage-Zeile für den Tag wird gelöscht |
+| `true` | Zusage bzw. Rücknahme einer Absage | Absage-Zeile für den Tag wird gelöscht |
+| `false` | Absage für den kommenden Donnerstag | Zeile in `stammtisch_abwesenheit` wird angelegt (Upsert: erneute Absage aktualisiert nur den Text) |
 | `invalid` | Normale Konversation, keine An-/Abmeldung | Nichts passiert |
 
 Fachliche Regeln:
