@@ -164,7 +164,7 @@
   .trenner { height: 2px; background: var(--kante); margin: 14px 0 6px; }
   .spaltenkopf {
     display: grid;
-    grid-template-columns: 26px 1fr 300px 74px;
+    grid-template-columns: 26px 1fr 192px 96px;
     gap: 12px;
     font-size: 10px;
     font-weight: 700;
@@ -178,7 +178,7 @@
 
   .zeile {
     display: grid;
-    grid-template-columns: 26px 1fr 300px 74px;
+    grid-template-columns: 26px 1fr 192px 96px;
     gap: 12px;
     align-items: center;
     padding: 5px 0;
@@ -187,8 +187,31 @@
   .zeile:last-child { border-bottom: none; }
   .platz { font-family: "Anton", sans-serif; font-size: 17px; color: var(--matt); }
   .zeile.spitze .platz { color: var(--stempel); }
-  .wer { font-family: "Caveat", cursive; font-size: 27px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .quote { font-family: "Caveat", cursive; font-size: 27px; text-align: right; color: var(--tinte); }
+  .wer { display: flex; align-items: baseline; gap: 13px; min-width: 0; }
+  /* Caveat ragt nach rechts über die Textbox – etwas Luft, sonst klebt der Stempel am Namen. */
+  .wer .nm { font-family: "Caveat", cursive; font-size: 27px; line-height: 1; padding-right: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Serien-Stempel: aufgedrückt wie der Rundenstempel, Zahl plus Richtung. */
+  .lauf {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 3px;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em;
+    padding: 2px 6px 3px;
+    border: 1.5px solid var(--serie);
+    border-radius: 3px;
+    color: var(--serie);
+    transform: rotate(-1.5deg);
+    white-space: nowrap;
+  }
+  .lauf.pause { border-color: var(--matt); color: var(--matt); border-style: dashed; }
+  .quote { font-family: "Caveat", cursive; font-size: 27px; line-height: 1.05; text-align: right; color: var(--tinte); }
+  .quote .bilanz {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--matt);
+    white-space: nowrap;
+  }
   .quote small { font-family: "Noto Sans", sans-serif; font-size: 12px; color: var(--deutlich); }
 
   /* Strichliste: je Fünferbündel vier Striche plus Querstrich. Die Striche
@@ -211,16 +234,6 @@
   .s:nth-child(2n) { transform: rotate(1.6deg); }
   .s:nth-child(3n) { transform: rotate(-1.8deg); }
   .rest { display: flex; gap: 3px; }
-  /* Laufende Pause: je Fehltermin ein durchgestrichener Platz. */
-  .kreuze { display: flex; gap: 6px; align-items: center; margin-left: 4px; }
-  .x { position: relative; width: 13px; height: 13px; opacity: 0.5; }
-  .x::before, .x::after {
-    content: ""; position: absolute; left: 0; top: 6px;
-    width: 15px; height: 2px; background: var(--strich);
-  }
-  .x::before { transform: rotate(38deg); }
-  .x::after { transform: rotate(-38deg); }
-  .fehlt { font-family: "Caveat", cursive; font-size: 20px; color: var(--matt); margin-left: 6px; white-space: nowrap; }
 
   /* Offene Rechnung. */
   .rechnung {
@@ -299,21 +312,23 @@
   <div class="trenner"></div>
   <div class="spaltenkopf">
     <div>Nr</div><div>Gast</div>
-    <div>Angeschrieben <span class="legende">— farbig = Serie, ✕ = Pause</span></div>
+    <div>Angeschrieben</div>
     <div class="r">Quote</div>
   </div>
 
   {{range .Users}}
   <div class="zeile{{if .Top3}} spitze{{end}}">
     <div class="platz">{{.Rank}}</div>
-    <div class="wer">{{.Name}}</div>
+    <div class="wer">
+      <span class="nm">{{.Name}}</span>
+      {{if gt .Streak 0}}<span class="lauf">▲ {{.StreakAbs}} in Folge</span>{{end}}
+      {{if lt .Streak 0}}<span class="lauf pause">▼ {{.StreakAbs}} verpasst</span>{{end}}
+    </div>
     <div class="striche">
       {{range .Bundles}}<span class="b5">{{range .Strokes}}<span class="s{{if .Serie}} serie{{end}}"></span>{{end}}<span class="quer{{if .Serie}} serie{{end}}"></span></span>{{end}}
       {{if .Rest}}<span class="rest">{{range .Rest}}<span class="s{{if .Serie}} serie{{end}}"></span>{{end}}</span>{{end}}
-      {{if .Pausen}}<span class="kreuze">{{range .Pausen}}<span class="x"></span>{{end}}</span>{{end}}
-      <span class="fehlt">{{.Attendance}} da · {{.Away}} nicht</span>
     </div>
-    <div class="quote">{{.Percent}}<small>%</small></div>
+    <div class="quote">{{.Percent}}<small>%</small><span class="bilanz">{{.Attendance}} da · {{.Away}} nicht</span></div>
   </div>
   {{end}}
   {{else}}
