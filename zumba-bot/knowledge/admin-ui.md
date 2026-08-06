@@ -46,7 +46,9 @@ mit simuliertem Datum.
 
 Die **Ausgabe** ist pro Request wählbar: „💬 Nachricht“ (Text, inkl.
 alternativer Statistik-Designs) oder „🖼️ Bild“ (PNG-Karte über den
-renderer-service, wird als WhatsApp-Bubble angezeigt). Der Modus „Vorschau
+renderer-service, wird als WhatsApp-Bubble angezeigt). Für das Bild gibt es
+zusätzlich die Design-Auswahl (Wrapped/Bierdeckel/Zeitung/Arena) — nur zum
+Ausprobieren, live läuft immer „Wrapped“. Der Modus „Vorschau
 an meine Nummer“ verschickt entsprechend Text oder Bild an die Testnummer —
 nie an die Gruppe.
 

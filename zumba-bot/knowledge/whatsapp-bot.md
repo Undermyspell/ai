@@ -71,6 +71,19 @@ unabhängige Schalter steuern den Live-Betrieb (beide auf Staging seit
 - **Wochenreport**: Helm `whatsappBot.weeklyReport.format: text|image`
   (hängt `?format=image` an die CronJob-URL)
 
+Neben dem Live-Design („Wrapped") gibt es drei weitere Bild-Designs, die
+**nur im Bot-Test** wählbar sind (Auswahl „Bild-Design", `?cardStyle=`) —
+Spielwiese, um Alternativen auszuprobieren:
+
+| Design | Idee |
+|---|---|
+| `wrapped` | Live: dunkle Karte im Wrapped-Look, Medaillen und Quotenbalken |
+| `bierdeckel` | Wirtshaus-Deckel: Strichliste in Fünferbündeln, Handschrift, Stempel, „offene Rechnung" |
+| `zeitung` | Sportteil des „Zumba-Anzeigers": Schlagzeile, Vorspann, Tabelle, Strafregister — ohne Emojis |
+| `arena` | LED-Anzeigetafel: ein leuchtendes Segment je Stammtisch, Strafenbank |
+
+Live läuft immer „Wrapped"; unbekannte Werte fallen darauf zurück.
+
 Schlägt Rendern oder Bild-Versand fehl, geht der Report **als Text** raus
 (Fallback — er muss immer ankommen). Der Wochenreport trägt auf der Karte
 einen Badge „📅 Automatischer Wochenreport“; zusätzlich unterscheidet die
