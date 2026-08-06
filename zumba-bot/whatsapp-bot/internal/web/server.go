@@ -320,7 +320,7 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 
 	var png []byte
 	if asImage && stats != nil {
-		png, err = s.renderCard(ctx, stats, entries, asOf, true)
+		png, err = s.renderCardStyled(ctx, q.Get("cardStyle"), stats, entries, asOf, true)
 		if err != nil {
 			// Reiner Dry-Run (Admin-UI): Fehler sichtbar machen. Bei echtem
 			// Versand/Vorschau geht der Report als Text-Fallback trotzdem raus.
@@ -368,13 +368,20 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(out)
 }
 
-// renderCard baut die Bild-Karte und lässt sie vom renderer-service als PNG
-// schießen. Fehlt der Renderer (RENDERER_URL leer), gibt es einen Fehler.
+// renderCard baut die Bild-Karte im Live-Design und lässt sie vom
+// renderer-service als PNG schießen.
 func (s *Server) renderCard(ctx context.Context, stats []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) ([]byte, error) {
+	return s.renderCardStyled(ctx, report.DefaultCardStyle, stats, entries, asOf, weekly)
+}
+
+// renderCardStyled rendert die Karte in einem wählbaren Design (nur die
+// Testseite nutzt etwas anderes als das Live-Design). Fehlt der Renderer
+// (RENDERER_URL leer), gibt es einen Fehler.
+func (s *Server) renderCardStyled(ctx context.Context, style string, stats []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) ([]byte, error) {
 	if s.Renderer == nil {
 		return nil, fmt.Errorf("kein Renderer konfiguriert (RENDERER_URL)")
 	}
-	html, err := report.BuildCardHTML(stats, entries, asOf, weekly)
+	html, err := report.BuildCardHTMLByStyle(style, stats, entries, asOf, weekly)
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +503,7 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 	var png []byte
 	if asImage && out.Path == "statistik" && out.stats != nil {
 		var err error
-		png, err = s.renderCard(r.Context(), out.stats, out.penalties, asOf, false)
+		png, err = s.renderCardStyled(r.Context(), q.Get("cardStyle"), out.stats, out.penalties, asOf, false)
 		if err != nil {
 			http.Error(w, "Bild-Rendering fehlgeschlagen: "+err.Error(), http.StatusBadGateway)
 			return

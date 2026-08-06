@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Playfair";
+    src: url("{{.Fonts.Playfair}}") format("woff2");
+    font-weight: 900;
+  }
+  :root {
+    --papier: #f2eee2;
+    --papier-tief: #e8e2d2;
+    --schwarz: #16150f;
+    --grau: #6a6558;
+    --linie: #bdb6a2;
+    --rot: #93231c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--papier);
+    color: var(--schwarz);
+    font-family: "Noto Serif", serif;
+    /* Papierton: leichte Ungleichmäßigkeit statt Flächenweiß. */
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(140,120,70,0.05) 0 30%, transparent 31%),
+      radial-gradient(circle at 88% 78%, rgba(140,120,70,0.04) 0 26%, transparent 27%);
+  }
+  .blatt { padding: 34px 40px 26px; }
+
+  /* Zeitungskopf */
+  .kopfleiste {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--grau);
+    display: flex; justify-content: space-between;
+    padding-bottom: 6px;
+  }
+  .titel {
+    border-top: 3px solid var(--schwarz);
+    border-bottom: 1px solid var(--schwarz);
+    padding: 12px 0 10px;
+    text-align: center;
+  }
+  .titel h1 {
+    font-family: "Playfair", "Noto Serif", serif;
+    font-weight: 900;
+    font-size: 54px;
+    line-height: 0.98;
+    letter-spacing: -0.015em;
+  }
+  .zeile2 {
+    border-bottom: 3px solid var(--schwarz);
+    padding: 5px 0 6px;
+    display: flex; justify-content: space-between;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--grau);
+  }
+
+  /* Aufmacher */
+  .aufmacher { padding: 18px 0 14px; border-bottom: 1px solid var(--linie); }
+  .dachzeile {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--rot);
+    margin-bottom: 6px;
+  }
+  .aufmacher h2 {
+    font-family: "Playfair", "Noto Serif", serif;
+    font-weight: 900;
+    font-size: 33px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 9px;
+    text-wrap: balance; /* keine Schusterjungen in der Schlagzeile */
+  }
+  .vorspann { font-size: 13.5px; line-height: 1.62; color: #2c2a22; }
+  .vorspann::first-letter {
+    font-family: "Playfair", serif;
+    font-weight: 900;
+    float: left;
+    font-size: 52px;
+    line-height: 0.82;
+    padding: 4px 8px 0 0;
+  }
+
+  /* Tabelle */
+  .tabellenkopf {
+    display: flex; align-items: baseline; gap: 12px;
+    margin: 18px 0 0;
+  }
+  .tabellenkopf h3 {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.3em; text-transform: uppercase;
+  }
+  .tabellenkopf .strich { flex: 1; height: 1px; background: var(--schwarz); }
+  .tabellenkopf .stand { font-family: "Noto Sans", sans-serif; font-size: 10px; color: var(--grau); letter-spacing: 0.1em; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  thead th {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--grau);
+    text-align: right;
+    padding: 0 0 5px;
+    border-bottom: 1px solid var(--schwarz);
+  }
+  thead th.l { text-align: left; }
+  tbody td {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--linie);
+    font-size: 14px;
+    text-align: right;
+  }
+  tbody td.l { text-align: left; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.spitze td { background: rgba(147, 35, 28, 0.045); }
+  .platz { width: 34px; font-family: "Playfair", serif; font-weight: 900; font-size: 16px; }
+  tr.spitze .platz { color: var(--rot); }
+  .name { font-weight: 700; }
+  .notiz {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10.5px;
+    color: var(--grau);
+    letter-spacing: 0.04em;
+    padding-left: 10px;
+  }
+  .quote { font-family: "Playfair", serif; font-weight: 900; font-size: 16px; width: 74px; }
+  /* Schmaler Quotenbalken – Zeitungsgrafik, keine Deko. */
+  .balken { width: 130px; padding-left: 14px; }
+  .balken .spur { height: 7px; background: rgba(22, 21, 15, 0.1); }
+  .balken .voll { height: 7px; background: var(--schwarz); }
+  tr.spitze .balken .voll { background: var(--rot); }
+
+  /* Strafregister */
+  .register {
+    margin-top: 20px;
+    border: 1px solid var(--schwarz);
+    padding: 12px 16px 14px;
+    background: rgba(22, 21, 15, 0.02);
+  }
+  .register h3 {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    padding-bottom: 6px; margin-bottom: 6px;
+    border-bottom: 1px solid var(--linie);
+  }
+  .eintrag {
+    display: flex; align-items: baseline; gap: 8px;
+    font-size: 13.5px;
+    padding: 3px 0;
+  }
+  .eintrag .wer { font-weight: 700; }
+  .eintrag .warum { font-family: "Noto Sans", sans-serif; font-size: 11px; color: var(--grau); flex: 1; }
+  .eintrag .summe { font-family: "Playfair", serif; font-weight: 900; font-size: 15px; }
+  .eintrag.beglichen { color: var(--grau); }
+  .eintrag.beglichen .summe { font-weight: 400; }
+  .keine { font-size: 13px; color: var(--grau); font-style: italic; }
+
+  .leer { padding: 40px 0; font-style: italic; color: var(--grau); }
+
+  footer {
+    margin-top: 18px;
+    border-top: 3px solid var(--schwarz);
+    padding-top: 7px;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--grau);
+    display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="blatt">
+  <div class="kopfleiste">
+    <span>{{if .WeeklyNote}}Wochenausgabe{{else}}Auf Zuruf{{end}}</span>
+    <span>Unabhängig seit der Weihnachtsfeier</span>
+    <span>Preis: eine Runde</span>
+  </div>
+  <div class="titel"><h1>Der Zumba-Anzeiger</h1></div>
+  <div class="zeile2">
+    <span>Stammtisch-Chronik</span>
+    <span>{{.DatumLang}}</span>
+    <span>{{if .Users}}Ausgabe Nr. {{.Total}}{{else}}Ohne Ausgabe{{end}}</span>
+  </div>
+
+  {{if .Users}}
+  <div class="aufmacher">
+    <div class="dachzeile">Tabellenspitze</div>
+    <h2>{{.GoatName}} führt die Rangliste mit {{.GoatPercent}} Prozent</h2>
+    <p class="vorspann">Nach {{.Total}} Stammtischen steht {{.GoatName}} unangefochten an der Spitze der Anwesenheitstabelle.{{if .MaxStreak}} Die längste laufende Serie hält {{.MaxStreakNames}} mit {{.MaxStreak}} Terminen in Folge.{{end}}{{if .MinStreak}} Für die längste Pause zeichnet {{.MinStreakNames}} verantwortlich: {{.MinStreak}} Donnerstage in Abwesenheit.{{end}} Gewertet werden ausschließlich reguläre Donnerstage; Sperrtage bleiben außer Betracht.</p>
+  </div>
+
+  <div class="tabellenkopf">
+    <h3>Die Tabelle</h3>
+    <div class="strich"></div>
+    <span class="stand">Stand {{.Datum}}</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="l">Pl.</th>
+        <th class="l">Name</th>
+        <th class="l"></th>
+        <th></th>
+        <th>Da</th>
+        <th>Fehlt</th>
+        <th>Quote</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Users}}
+      <tr{{if .Top3}} class="spitze"{{end}}>
+        <td class="l platz">{{.Rank}}</td>
+        <td class="l name">{{.Name}}</td>
+        <td class="l notiz">{{if gt .Streak 0}}Serie {{.StreakAbs}}{{else if lt .Streak 0}}Pause {{.StreakAbs}}{{end}}</td>
+        <td class="balken"><div class="spur"><div class="voll" style="width: {{printf "%.1f" .PercentVal}}%"></div></div></td>
+        <td>{{.Attendance}}</td>
+        <td>{{.Away}}</td>
+        <td class="quote">{{.Percent}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <div class="leer">Für diese Ausgabe liegen keine Daten vor.</div>
+  {{end}}
+
+  <div class="register">
+    <h3>Aus dem Strafregister</h3>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="eintrag{{if .Beglichen}} beglichen{{end}}">
+        <span class="wer">{{.Name}}</span>
+        <span class="warum">{{.Grund}}{{if .Beglichen}} — beglichen{{end}}</span>
+        <span class="summe">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="keine">Keine offenen Verfahren.</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>Gesetzt und gedruckt vom Zumba-Bot</span>
+    <span>{{.DatumLang}}</span>
+  </footer>
+</div>
+</body>
+</html>

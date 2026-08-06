@@ -7,6 +7,15 @@ type PageVM struct {
 
 type styleOption struct{ ID, Label string }
 
+// cardStyleOptions spiegelt report.CardStyles() im Bot — die Bild-Designs.
+// "wrapped" ist das Live-Design, der Rest ist reine Testspielwiese.
+var cardStyleOptions = []styleOption{
+	{"wrapped", "Wrapped (live)"},
+	{"bierdeckel", "Bierdeckel"},
+	{"zeitung", "Zeitung"},
+	{"arena", "Arena"},
+}
+
 // styleOptions spiegelt report.Styles() im Bot. "klassik" ist die Live-Nachricht.
 var styleOptions = []styleOption{
 	{"klassik", "Klassik (live)"},
@@ -50,7 +59,16 @@ templ Page(vm PageVM) {
 					<input type="radio" name="format" value="image"/>
 					<span>🖼️ Bild</span>
 				</label>
-				<span class="style-hint">Bild = PNG-Karte über den Renderer (nur „Statistik"/Wochenreport; Design-Auswahl gilt dann nicht).</span>
+				<span class="style-hint">Bild = PNG-Karte über den Renderer (nur „Statistik"/Wochenreport).</span>
+			</div>
+			<div class="style-row">
+				<label for="bot-card-style">Bild-Design</label>
+				<select id="bot-card-style" name="cardStyle" class="style-select">
+					for _, o := range cardStyleOptions {
+						<option value={ o.ID }>{ o.Label }</option>
+					}
+				</select>
+				<span class="style-hint">Nur für Ausgabe „Bild". Live läuft immer „Wrapped".</span>
 			</div>
 			<fieldset class="mode-switch">
 				<legend>Modus</legend>
@@ -75,7 +93,7 @@ templ Page(vm PageVM) {
 				type="button"
 				class="btn-secondary"
 				hx-get="/bot-test/weekly"
-				hx-include="[name='mode'],[name='date'],[name='format']"
+				hx-include="[name='mode'],[name='date'],[name='format'],[name='cardStyle']"
 				hx-target="#bot-response"
 				hx-swap="innerHTML"
 			>📅 Wochenreport testen</button>

@@ -22,16 +22,82 @@ import (
 //go:embed card.tmpl
 var cardTmplSrc string
 
-// Anton (latin-Subset inkl. Umlaute) als eingebetteter Display-Font: der
-// Renderer-Container hat keinen Netzzugriff, Google-Fonts-Links scheiden aus.
+//go:embed card-bierdeckel.tmpl
+var cardBierdeckelSrc string
+
+//go:embed card-zeitung.tmpl
+var cardZeitungSrc string
+
+//go:embed card-arena.tmpl
+var cardArenaSrc string
+
+// Display-Fonts als eingebettete latin-Subsets: der Renderer-Container hat
+// keinen Netzzugriff, Google-Fonts-Links scheiden aus. Im Container selbst
+// liegen nur Noto Sans/Serif, DejaVu Mono und Noto Color Emoji.
 //
 //go:embed assets/anton-latin.woff2
 var antonWoff2 []byte
 
-var cardTmpl = template.Must(template.New("card").Parse(cardTmplSrc))
+//go:embed assets/playfair-latin.woff2
+var playfairWoff2 []byte
+
+//go:embed assets/caveat-latin.woff2
+var caveatWoff2 []byte
 
 // CardWidth ist die Viewport-Breite, mit der die Karte gerendert werden muss.
 const CardWidth = 720
+
+// DefaultCardStyle ist das Design des Live-Betriebs (Gruppen-Statistik und
+// Wochenreport). Die übrigen Stile sind reine Bot-Test-Spielwiese.
+const DefaultCardStyle = "wrapped"
+
+// CardStyle ist ein auswählbares Design der Bild-Karte.
+type CardStyle struct {
+	ID    string
+	Label string
+
+	tmpl  *template.Template
+	fonts func(*cardFonts)
+}
+
+// CardStyles listet alle Bild-Designs; "wrapped" ist das Live-Design.
+func CardStyles() []CardStyle {
+	return []CardStyle{
+		{ID: "wrapped", Label: "Wrapped (live)", tmpl: parseCard("wrapped", cardTmplSrc), fonts: withAnton},
+		{ID: "bierdeckel", Label: "Bierdeckel", tmpl: parseCard("bierdeckel", cardBierdeckelSrc), fonts: withCaveat},
+		{ID: "zeitung", Label: "Zeitung", tmpl: parseCard("zeitung", cardZeitungSrc), fonts: withPlayfair},
+		{ID: "arena", Label: "Arena", tmpl: parseCard("arena", cardArenaSrc), fonts: withAnton},
+	}
+}
+
+func parseCard(name, src string) *template.Template {
+	return template.Must(template.New(name).Parse(src))
+}
+
+// cardFonts hält die base64-Data-URLs der eingebetteten Fonts. Jeder Stil
+// bekommt nur die, die sein Template braucht – sonst bläht das HTML unnötig.
+type cardFonts struct {
+	Anton    template.URL
+	Playfair template.URL
+	Caveat   template.URL
+}
+
+func fontURL(b []byte) template.URL {
+	return template.URL("data:font/woff2;base64," + base64.StdEncoding.EncodeToString(b))
+}
+
+// monatDE liefert deutsche Monatsnamen für das ausgeschriebene Datum
+// (time.Month.String() ist englisch).
+var monatDE = map[time.Month]string{
+	time.January: "Januar", time.February: "Februar", time.March: "März",
+	time.April: "April", time.May: "Mai", time.June: "Juni",
+	time.July: "Juli", time.August: "August", time.September: "September",
+	time.October: "Oktober", time.November: "November", time.December: "Dezember",
+}
+
+func withAnton(f *cardFonts)    { f.Anton = fontURL(antonWoff2) }
+func withPlayfair(f *cardFonts) { f.Playfair = fontURL(playfairWoff2) }
+func withCaveat(f *cardFonts)   { f.Caveat = fontURL(caveatWoff2); f.Anton = fontURL(antonWoff2) }
 
 type cardUser struct {
 	Medal      string // 🥇/🥈/🥉, sonst leer (dann zählt Rank)
@@ -41,8 +107,19 @@ type cardUser struct {
 	Away       int
 	Percent    string  // formatiert, ohne %-Zeichen
 	PercentVal float64 // für die Balkenbreite
-	StreakTag  string  // "🔥+4" / "❄️-2" / leer
+	Streak     int
+	StreakAbs  int    // Betrag der Serie (Designs setzen das Vorzeichen selbst)
+	StreakTag  string // "🔥+4" / "❄️-2" / leer
 	Top3       bool
+
+	// Bundles/Rest zerlegen die Anwesenheiten in Fünfer-Bündel und Rest,
+	// Lit/Dark sind ein Slot je Stammtisch (anwesend/gefehlt): go-Templates
+	// können nicht n-mal zählen, "bierdeckel" (Strichliste) und "arena"
+	// (LED-Segmente) rendern daraus ihre Balken.
+	Bundles []int
+	Rest    []int
+	Lit     []int
+	Dark    []int
 }
 
 type cardStrafe struct {
@@ -55,7 +132,8 @@ type cardStrafe struct {
 
 type cardData struct {
 	WeeklyNote bool
-	Datum      string
+	Datum      string // "6.8.2026"
+	DatumLang  string // "6. August 2026"
 	Total      int
 
 	GoatName    string
@@ -71,18 +149,34 @@ type cardData struct {
 	Users   []cardUser
 	Strafen []cardStrafe
 
-	AntonDataURL template.URL
+	Fonts cardFonts
 }
 
-// BuildCardHTML baut das self-contained HTML der Statistik-Karte. entries
-// dürfen leer sein (dann erscheint die "Keine offenen Strafen"-Zeile);
-// weekly stellt die Wochenreport-Kopfzeile voran.
+// BuildCardHTML baut die Karte im Live-Design (siehe DefaultCardStyle).
 func BuildCardHTML(rows []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) (string, error) {
-	data := cardData{
-		WeeklyNote:   weekly,
-		Datum:        fmt.Sprintf("%d.%d.%d", asOf.Day(), int(asOf.Month()), asOf.Year()),
-		AntonDataURL: template.URL("data:font/woff2;base64," + base64.StdEncoding.EncodeToString(antonWoff2)),
+	return BuildCardHTMLByStyle(DefaultCardStyle, rows, entries, asOf, weekly)
+}
+
+// BuildCardHTMLByStyle baut das self-contained HTML der Statistik-Karte im
+// gewählten Design (unbekannt/leer → Live-Design). entries dürfen leer sein
+// (dann erscheint die "Keine offenen Strafen"-Zeile); weekly stellt den
+// Wochenreport-Hinweis voran.
+func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) (string, error) {
+	styles := CardStyles()
+	sel := styles[0]
+	for _, s := range styles {
+		if s.ID == style {
+			sel = s
+			break
+		}
 	}
+
+	data := cardData{
+		WeeklyNote: weekly,
+		Datum:      fmt.Sprintf("%d.%d.%d", asOf.Day(), int(asOf.Month()), asOf.Year()),
+		DatumLang:  fmt.Sprintf("%d. %s %d", asOf.Day(), monatDE[asOf.Month()], asOf.Year()),
+	}
+	sel.fonts(&data.Fonts)
 
 	if len(rows) > 0 {
 		a := analyze(rows)
@@ -121,7 +215,11 @@ func BuildCardHTML(rows []store.Stat, entries []penalty.Entry, asOf time.Time, w
 				Medal: medal, Rank: u.rank, Name: u.Name,
 				Attendance: u.Attendance, Away: u.Away,
 				Percent: fmtNum(u.Percent), PercentVal: u.Percent,
-				StreakTag: tag, Top3: u.rank <= 3,
+				Streak: u.Streak, StreakAbs: abs(u.Streak), StreakTag: tag, Top3: u.rank <= 3,
+				Bundles: make([]int, u.Attendance/5),
+				Rest:    make([]int, u.Attendance%5),
+				Lit:     make([]int, u.Attendance),
+				Dark:    make([]int, u.Away),
 			})
 		}
 	}
@@ -155,8 +253,8 @@ func BuildCardHTML(rows []store.Stat, entries []penalty.Entry, asOf time.Time, w
 	}
 
 	var buf bytes.Buffer
-	if err := cardTmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("card template: %w", err)
+	if err := sel.tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("card template %q: %w", sel.ID, err)
 	}
 	return buf.String(), nil
 }

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  :root {
+    --tafel: #0a0c0f;
+    --gehaeuse: #15181d;
+    --led: #ffb31a;
+    --led-schwach: #4a3410;
+    --aus: #1b1f26;
+    --rot: #ff4433;
+    --gruen: #3ddc84;
+    --text: #dfe4ea;
+    --matt: #79818d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: #05070a;
+    color: var(--text);
+    font-family: "Noto Sans", sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Gehäuse der Anzeigetafel mit Rasterpunkten wie bei einer LED-Matrix. */
+  .tafel {
+    position: relative;
+    margin: 14px;
+    padding: 26px 28px 22px;
+    background:
+      radial-gradient(circle at 50% -10%, rgba(255, 179, 26, 0.10) 0 45%, transparent 46%),
+      linear-gradient(180deg, var(--gehaeuse) 0%, var(--tafel) 55%);
+    border: 1px solid #262b33;
+    border-radius: 6px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+  .tafel::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.045) 0.5px, transparent 0.6px);
+    background-size: 4px 4px;
+    pointer-events: none;
+  }
+
+  .weekly {
+    display: inline-block;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--tafel);
+    background: var(--led);
+    padding: 4px 10px;
+    margin-bottom: 14px;
+  }
+
+  header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 2px solid #262b33;
+    padding-bottom: 14px;
+  }
+  .liga {
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--led);
+  }
+  header h1 {
+    font-family: "Anton", sans-serif;
+    font-size: 46px; font-weight: 400; line-height: 0.96;
+    letter-spacing: 0.02em;
+    margin-top: 6px;
+    color: #fff;
+    text-shadow: 0 0 26px rgba(255, 179, 26, 0.35);
+  }
+  header h1 em { font-style: normal; color: var(--led); }
+  .uhr { text-align: right; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--matt); line-height: 1.9; }
+  .uhr b { color: var(--text); font-weight: 700; }
+
+  /* Drei Anzeigefelder oben. */
+  .felder { display: flex; gap: 10px; margin: 14px 0 16px; }
+  .feld {
+    flex: 1; min-width: 0;
+    background: #10131a;
+    border: 1px solid #242932;
+    border-left: 3px solid var(--led);
+    padding: 8px 12px 9px;
+  }
+  .feld.kalt { border-left-color: #4a90d9; }
+  .feld .was {
+    font-size: 9px; font-weight: 800;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--matt);
+  }
+  .feld .wer {
+    font-family: "Anton", sans-serif;
+    font-size: 19px; margin-top: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .feld .zahl { color: var(--led); }
+  .feld.kalt .zahl { color: #7ab6f0; }
+
+  /* Tabellenzeilen */
+  .kopfzeile, .zeile {
+    display: grid;
+    grid-template-columns: 30px 1fr 254px 56px 78px;
+    gap: 10px;
+    align-items: center;
+  }
+  .kopfzeile {
+    font-size: 9px; font-weight: 800;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--matt);
+    padding-bottom: 6px;
+    border-bottom: 1px solid #242932;
+  }
+  .kopfzeile .r { text-align: right; }
+  .zeile {
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(38, 43, 51, 0.6);
+  }
+  .zeile:last-child { border-bottom: none; }
+
+  .pos {
+    font-family: "Anton", sans-serif;
+    font-size: 16px;
+    text-align: center;
+    color: var(--matt);
+    border: 1px solid #2b313a;
+    padding: 1px 0 2px;
+  }
+  .zeile.fuehrend .pos { color: var(--tafel); background: var(--led); border-color: var(--led); }
+
+  .spieler { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .spieler .nm {
+    font-family: "Anton", sans-serif;
+    font-size: 18px; letter-spacing: 0.02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: #fff;
+  }
+  .trend { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; white-space: nowrap; }
+  .trend.auf { color: var(--gruen); }
+  .trend.ab { color: #4a90d9; }
+
+  /* Ein Segment je Stammtisch: leuchtend = anwesend. */
+  .segmente { display: flex; gap: 2px; align-items: center; }
+  .seg { width: 6px; height: 15px; }
+  .seg.an { background: var(--led); box-shadow: 0 0 6px rgba(255, 179, 26, 0.6); }
+  .seg.aus { background: var(--aus); }
+
+  .bilanz { text-align: right; font-size: 13px; font-weight: 700; color: var(--matt); }
+  .prozent {
+    font-family: "Anton", sans-serif;
+    font-size: 22px; text-align: right;
+    color: var(--led);
+    text-shadow: 0 0 14px rgba(255, 179, 26, 0.4);
+  }
+
+  /* Strafenbank */
+  .bank { margin-top: 18px; border-top: 2px solid #262b33; padding-top: 12px; }
+  .bank .kopf {
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--rot);
+    margin-bottom: 6px;
+  }
+  .strafe {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(38, 43, 51, 0.6);
+  }
+  .strafe:last-child { border-bottom: none; }
+  .strafe .marke {
+    width: 8px; height: 15px;
+    background: var(--rot);
+    box-shadow: 0 0 7px rgba(255, 68, 51, 0.55);
+  }
+  .strafe.frei .marke { background: var(--gruen); box-shadow: 0 0 7px rgba(61, 220, 132, 0.45); }
+  .strafe .nm { font-family: "Anton", sans-serif; font-size: 16px; color: #fff; }
+  .strafe .grund { flex: 1; color: var(--matt); font-size: 11.5px; letter-spacing: 0.04em; }
+  .strafe .betrag { font-family: "Anton", sans-serif; font-size: 18px; color: var(--rot); }
+  .strafe.frei .betrag { color: var(--matt); }
+  .sauber { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gruen); }
+
+  .leer { padding: 36px 0; letter-spacing: 0.2em; text-transform: uppercase; color: var(--matt); }
+
+  footer {
+    margin-top: 16px;
+    border-top: 1px solid #242932;
+    padding-top: 8px;
+    display: flex; justify-content: space-between;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: #5a6069;
+  }
+</style>
+</head>
+<body>
+<div class="tafel">
+  {{if .WeeklyNote}}<div class="weekly">Wochenreport · Do 21:00</div>{{end}}
+
+  <header>
+    <div>
+      <div class="liga">Zumba Arena</div>
+      <h1>MATCHDAY <em>{{.Total}}</em></h1>
+    </div>
+    <div class="uhr">
+      <div>Stand <b>{{.Datum}}</b></div>
+      {{if .Users}}<div>Leader <b>{{.GoatName}}</b></div>{{end}}
+    </div>
+  </header>
+
+  {{if .Users}}
+  <div class="felder">
+    <div class="feld">
+      <div class="was">Top-Quote</div>
+      <div class="wer">{{.GoatName}} <span class="zahl">{{.GoatPercent}}%</span></div>
+    </div>
+    {{if .MaxStreak}}
+    <div class="feld">
+      <div class="was">Beste Serie</div>
+      <div class="wer">{{.MaxStreakNames}} <span class="zahl">{{.MaxStreak}}</span></div>
+    </div>
+    {{end}}
+    {{if .MinStreak}}
+    <div class="feld kalt">
+      <div class="was">Längste Pause</div>
+      <div class="wer">{{.MinStreakNames}} <span class="zahl">{{.MinStreak}}</span></div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="kopfzeile">
+    <div>Pos</div><div>Spieler</div><div>Bilanz je Stammtisch</div><div class="r">Da:Weg</div><div class="r">Quote</div>
+  </div>
+
+  {{range .Users}}
+  <div class="zeile{{if .Top3}} fuehrend{{end}}">
+    <div class="pos">{{.Rank}}</div>
+    <div class="spieler">
+      <span class="nm">{{.Name}}</span>
+      {{if gt .Streak 0}}<span class="trend auf">▲{{.StreakAbs}}</span>{{end}}
+      {{if lt .Streak 0}}<span class="trend ab">▼{{.StreakAbs}}</span>{{end}}
+    </div>
+    <div class="segmente">
+      {{range .Lit}}<span class="seg an"></span>{{end}}
+      {{range .Dark}}<span class="seg aus"></span>{{end}}
+    </div>
+    <div class="bilanz">{{.Attendance}}:{{.Away}}</div>
+    <div class="prozent">{{.Percent}}</div>
+  </div>
+  {{end}}
+  {{else}}
+  <div class="leer">Keine Daten auf der Tafel</div>
+  {{end}}
+
+  <div class="bank">
+    <div class="kopf">Strafenbank</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="strafe{{if .Beglichen}} frei{{end}}">
+        <span class="marke"></span>
+        <span class="nm">{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+        <span class="betrag">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="sauber">Bank leer — keine offenen Strafen</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>Zumba-Bot · Live-Tabelle</span>
+    <span>{{.Datum}}</span>
+  </footer>
+</div>
+</body>
+</html>

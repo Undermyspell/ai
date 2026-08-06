@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Caveat";
+    src: url("{{.Fonts.Caveat}}") format("woff2");
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  :root {
+    --pappe: #e9ddc1;
+    --pappe-tief: #ded0ae;
+    --tinte: #22355c;      /* Kugelschreiber-Blau */
+    --stempel: #a6362b;    /* Stempelrot */
+    --kante: rgba(34, 53, 92, 0.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: #cbbb96;
+    font-family: "Noto Sans", sans-serif;
+    color: var(--tinte);
+  }
+
+  /* Der Deckel selbst: Pappe mit Prägekante und Druckring. */
+  .deckel {
+    position: relative;
+    margin: 18px;
+    padding: 30px 34px 26px;
+    border-radius: 14px;
+    background:
+      radial-gradient(circle at 78% 12%, rgba(120, 80, 30, 0.10) 0 22%, transparent 23%),
+      radial-gradient(circle at 12% 88%, rgba(120, 80, 30, 0.08) 0 18%, transparent 19%),
+      repeating-linear-gradient(46deg, rgba(255,255,255,0.16) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(-46deg, rgba(90,60,20,0.05) 0 1px, transparent 1px 5px),
+      linear-gradient(160deg, var(--pappe) 0%, var(--pappe-tief) 100%);
+    box-shadow: 0 2px 0 rgba(120, 90, 40, 0.35), 0 14px 26px rgba(60, 40, 10, 0.28);
+    overflow: hidden;
+  }
+  /* Umlaufender Druckring, wie ihn jeder Bierdeckel hat. */
+  .ring {
+    position: absolute;
+    inset: 12px;
+    border: 2px solid var(--kante);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  /* Glasabdruck oben rechts. */
+  .abdruck {
+    position: absolute;
+    top: -46px; right: -34px;
+    width: 190px; height: 190px;
+    border: 15px solid rgba(120, 75, 25, 0.10);
+    border-radius: 50%;
+  }
+
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .wirt { font-family: "Anton", sans-serif; }
+  .wirt .haus {
+    font-size: 12px;
+    letter-spacing: 0.34em;
+    color: rgba(34, 53, 92, 0.6);
+    font-family: "Noto Sans", sans-serif;
+    font-weight: 700;
+  }
+  .wirt h1 {
+    font-size: 44px;
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: 0.01em;
+    margin-top: 5px;
+  }
+  .wirt .unter {
+    font-family: "Caveat", cursive;
+    font-size: 23px;
+    color: rgba(34, 53, 92, 0.75);
+    margin-top: 2px;
+  }
+
+  /* Stempel: Anzahl Stammtische, leicht schief aufgedrückt. */
+  .stempel {
+    flex-shrink: 0;
+    transform: rotate(7deg);
+    border: 3px double var(--stempel);
+    border-radius: 6px;
+    color: var(--stempel);
+    padding: 6px 14px 8px;
+    text-align: center;
+    opacity: 0.88;
+    margin-top: 6px;
+  }
+  .stempel .zahl { font-family: "Anton", sans-serif; font-size: 34px; line-height: 1; }
+  .stempel .wort { font-size: 10px; letter-spacing: 0.24em; font-weight: 700; margin-top: 2px; }
+
+  .weekly {
+    display: inline-block;
+    font-family: "Caveat", cursive;
+    font-size: 21px;
+    color: var(--stempel);
+    border-bottom: 2px solid rgba(166, 54, 43, 0.4);
+    margin-bottom: 14px;
+  }
+
+  .notizen {
+    display: flex;
+    gap: 22px;
+    margin: 20px 0 6px;
+    font-family: "Caveat", cursive;
+    font-size: 22px;
+    line-height: 1.15;
+  }
+  .notiz { flex: 1; min-width: 0; }
+  .notiz .was {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(34, 53, 92, 0.55);
+    margin-bottom: 1px;
+  }
+  .notiz b { color: var(--stempel); }
+
+  .trenner { height: 2px; background: var(--kante); margin: 14px 0 6px; }
+  .spaltenkopf {
+    display: grid;
+    grid-template-columns: 26px 1fr 300px 74px;
+    gap: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(34, 53, 92, 0.55);
+    padding-bottom: 4px;
+  }
+  .spaltenkopf .r { text-align: right; }
+
+  .zeile {
+    display: grid;
+    grid-template-columns: 26px 1fr 300px 74px;
+    gap: 12px;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(34, 53, 92, 0.22);
+  }
+  .zeile:last-child { border-bottom: none; }
+  .platz { font-family: "Anton", sans-serif; font-size: 17px; color: rgba(34, 53, 92, 0.5); }
+  .zeile.spitze .platz { color: var(--stempel); }
+  .wer { font-family: "Caveat", cursive; font-size: 27px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .serie { font-family: "Noto Sans", sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(34, 53, 92, 0.5); }
+  .serie.pause { color: rgba(166, 54, 43, 0.6); }
+  .quote { font-family: "Caveat", cursive; font-size: 25px; text-align: right; }
+  .quote small { font-family: "Noto Sans", sans-serif; font-size: 11px; color: rgba(34, 53, 92, 0.5); }
+
+  /* Strichliste: je Fünferbündel vier Striche plus Querstrich. */
+  .striche { display: flex; align-items: center; flex-wrap: nowrap; gap: 9px; height: 24px; }
+  .b5 {
+    position: relative;
+    width: 17px; height: 22px;
+    background: repeating-linear-gradient(90deg, var(--tinte) 0 2px, transparent 2px 5px);
+  }
+  .b5::after {
+    content: "";
+    position: absolute;
+    left: -3px; top: 10px;
+    width: 24px; height: 2px;
+    background: var(--tinte);
+    transform: rotate(-21deg);
+  }
+  .b5:nth-child(2n) { transform: rotate(1.2deg); }
+  .b5:nth-child(3n) { transform: rotate(-1.4deg); }
+  .b1 { width: 2px; height: 22px; background: var(--tinte); margin-right: 3px; }
+  .b1:nth-child(2n) { transform: rotate(2deg); }
+  .fehlt { font-family: "Caveat", cursive; font-size: 20px; color: rgba(34, 53, 92, 0.45); margin-left: 4px; white-space: nowrap; }
+
+  /* Offene Rechnung. */
+  .rechnung {
+    margin-top: 18px;
+    border-top: 2px solid var(--kante);
+    padding-top: 10px;
+  }
+  .rechnung .kopf {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.24em;
+    text-transform: uppercase; color: var(--stempel); margin-bottom: 4px;
+  }
+  .posten {
+    display: flex; align-items: baseline; gap: 8px;
+    font-family: "Caveat", cursive; font-size: 22px;
+    padding: 2px 0;
+  }
+  .posten .grund { font-family: "Noto Sans", sans-serif; font-size: 12px; color: rgba(34, 53, 92, 0.55); flex: 1; }
+  .posten .betrag { font-family: "Anton", sans-serif; font-size: 19px; color: var(--stempel); }
+  .posten.bezahlt { opacity: 0.45; text-decoration: line-through; text-decoration-color: rgba(34,53,92,.4); }
+  .posten.bezahlt .betrag { color: rgba(34, 53, 92, 0.5); }
+  .sauber { font-family: "Caveat", cursive; font-size: 23px; color: rgba(34, 53, 92, 0.65); }
+
+  .leer { font-family: "Caveat", cursive; font-size: 26px; padding: 30px 0; }
+
+  footer {
+    margin-top: 16px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(34, 53, 92, 0.45);
+    display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="deckel">
+  <div class="ring"></div>
+  <div class="abdruck"></div>
+
+  {{if .WeeklyNote}}<div class="weekly">Wochenabrechnung, Donnerstag 21 Uhr</div>{{end}}
+
+  <header>
+    <div class="wirt">
+      <div class="haus">Stammtisch · Zumba</div>
+      <h1>DEIN DECKEL</h1>
+      <div class="unter">Strichliste seit der Weihnachtsfeier</div>
+    </div>
+    {{if .Users}}
+    <div class="stempel">
+      <div class="zahl">{{.Total}}</div>
+      <div class="wort">Runden</div>
+    </div>
+    {{end}}
+  </header>
+
+  {{if .Users}}
+  <div class="notizen">
+    <div class="notiz">
+      <span class="was">Bester Gast</span>
+      {{.GoatName}}, <b>{{.GoatPercent}}%</b>
+    </div>
+    {{if .MaxStreak}}
+    <div class="notiz">
+      <span class="was">Längste Serie</span>
+      {{.MaxStreakNames}}, <b>{{.MaxStreak}}x</b>
+    </div>
+    {{end}}
+    {{if .MinStreak}}
+    <div class="notiz">
+      <span class="was">Längste Pause</span>
+      {{.MinStreakNames}}, <b>{{.MinStreak}}x</b>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="trenner"></div>
+  <div class="spaltenkopf">
+    <div>Nr</div><div>Gast</div><div>Angeschrieben</div><div class="r">Quote</div>
+  </div>
+
+  {{range .Users}}
+  <div class="zeile{{if .Top3}} spitze{{end}}">
+    <div class="platz">{{.Rank}}</div>
+    <div class="wer">{{.Name}} {{if gt .Streak 0}}<span class="serie">Serie {{.StreakAbs}}</span>{{else if lt .Streak 0}}<span class="serie pause">Pause {{.StreakAbs}}</span>{{end}}</div>
+    <div class="striche">
+      {{range .Bundles}}<span class="b5"></span>{{end}}
+      {{range .Rest}}<span class="b1"></span>{{end}}
+      <span class="fehlt">{{.Attendance}} da · {{.Away}} nicht</span>
+    </div>
+    <div class="quote">{{.Percent}}<small>%</small></div>
+  </div>
+  {{end}}
+  {{else}}
+  <div class="leer">Noch nichts angeschrieben.</div>
+  {{end}}
+
+  <div class="rechnung">
+    <div class="kopf">Offene Rechnung</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="posten{{if .Beglichen}} bezahlt{{end}}">
+        <span>{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · bezahlt{{end}}</span>
+        <span class="betrag">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="sauber">Alles bezahlt. Prost!</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>Zumba-Bot · angeschrieben wird automatisch</span>
+    <span>{{.Datum}}</span>
+  </footer>
+</div>
+</body>
+</html>

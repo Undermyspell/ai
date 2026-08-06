@@ -469,6 +469,9 @@ func (s *Server) handleBotTestWeekly(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.FormValue("format") == "image" {
 		url += "&format=image"
+		if cs := r.FormValue("cardStyle"); cs != "" {
+			url += "&cardStyle=" + cs
+		}
 	}
 	s.proxyBot(w, r, url, nil)
 }
@@ -487,6 +490,9 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.FormValue("format") == "image" {
 		url += "&format=image"
+		if cs := r.FormValue("cardStyle"); cs != "" {
+			url += "&cardStyle=" + cs
+		}
 	}
 	s.proxyBot(w, r, url, strings.NewReader(payload))
 }
