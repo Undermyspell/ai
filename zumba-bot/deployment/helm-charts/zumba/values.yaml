@@ -192,6 +192,9 @@ whatsappBot:
     enabled: false          # per Umgebung auf true setzen
     schedule: "0 21 * * 4"  # Donnerstag 21:00
     timeZone: Europe/Berlin
+    # "text" = WhatsApp-Nachricht (Standard), "image" = PNG-Karte über den
+    # renderer-service (braucht renderer.enabled=true).
+    format: text
 
 # renderer: rendert die Statistik-Bild-Karte (HTML → PNG, headless Chromium).
 # Der whatsapp-bot bekommt bei enabled=true automatisch RENDERER_URL gesetzt

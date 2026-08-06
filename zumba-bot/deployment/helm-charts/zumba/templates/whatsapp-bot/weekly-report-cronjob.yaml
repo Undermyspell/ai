@@ -35,7 +35,7 @@ spec:
             - -c
             - |
               set -e
-              URL="http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}/weekly-report"
+              URL="http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}/weekly-report{{ if eq .Values.whatsappBot.weeklyReport.format "image" }}?format=image{{ end }}"
               echo "POST $URL"
               wget -q -O- --post-data="" --header="Content-Type: application/json" "$URL"
               echo "✅ Wochenreport ausgelöst"
