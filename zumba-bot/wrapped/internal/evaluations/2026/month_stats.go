@@ -16,52 +16,31 @@ func (e *Evaluator) calculateMonthStats(cancellations []models.Cancellation) mod
 	return stats
 }
 
-// calculateMonthlyAttendanceStats calculates average attendance rate per month
-// For each Thursday in a month, calculates (totalUsers - cancellations) / totalUsers
-// Then averages across all Thursdays in that month
-func (e *Evaluator) calculateMonthlyAttendanceStats(cancellations []models.Cancellation) models.MonthlyAttendanceStats {
+// calculateMonthlyAttendanceStats mittelt die Tagesraten aus den
+// SQL-ThursdayStats pro Monat. Die Raten berücksichtigen damit den
+// geklemmten Start jedes Users (vorher: fixer Nenner totalUsers — Monate
+// vor dem Eintritt eines Users wurden falsch gerechnet).
+func (e *Evaluator) calculateMonthlyAttendanceStats(thursdayStats []models.ThursdayStat) models.MonthlyAttendanceStats {
 	stats := make(models.MonthlyAttendanceStats)
-	totalUsers := len(e.rawData.Users)
 
-	if totalUsers == 0 {
-		return stats
-	}
-
-	// Build a map of cancellations per Thursday
-	cancellationsPerDay := make(map[string]int)
-	for _, c := range cancellations {
-		dateKey := c.Date.Format("2006-01-02")
-		cancellationsPerDay[dateKey]++
-	}
-
-	// Group Thursdays by month and calculate attendance for each
 	type monthData struct {
-		totalAttendance int
-		thursdayCount   int
+		rateSum       int
+		thursdayCount int
 	}
 	monthlyData := make(map[string]*monthData)
 
-	for _, thursday := range e.rawData.Thursdays {
-		monthKey := thursday.Format("2006-01")
-		dateKey := thursday.Format("2006-01-02")
-
+	for _, t := range thursdayStats {
+		monthKey := t.Date.Format("2006-01")
 		if monthlyData[monthKey] == nil {
 			monthlyData[monthKey] = &monthData{}
 		}
-
-		// Calculate attendance rate for this Thursday
-		cancellationsOnDay := cancellationsPerDay[dateKey]
-		attendees := totalUsers - cancellationsOnDay
-		attendanceRate := (attendees * 100) / totalUsers
-
-		monthlyData[monthKey].totalAttendance += attendanceRate
+		monthlyData[monthKey].rateSum += t.Rate
 		monthlyData[monthKey].thursdayCount++
 	}
 
-	// Calculate average attendance rate per month
 	for monthKey, data := range monthlyData {
 		if data.thursdayCount > 0 {
-			stats[monthKey] = data.totalAttendance / data.thursdayCount
+			stats[monthKey] = data.rateSum / data.thursdayCount
 		}
 	}
 

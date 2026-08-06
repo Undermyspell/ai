@@ -48,11 +48,11 @@ func (e *Evaluator) Evaluate() *EvaluationResult {
 	// Step 6: Calculate monthly statistics
 	monthStats := e.calculateMonthStats(cancellations)
 
-	// Step 7: Calculate monthly attendance rates
-	monthlyAttendanceStats := e.calculateMonthlyAttendanceStats(cancellations)
-
-	// Step 8: Calculate per-Thursday attendance (best/worst Thursdays)
+	// Step 7: Per-Thursday attendance (aus SQL, thursday_stats.sql)
 	thursdayStats := e.calculateThursdayStats()
+
+	// Step 8: Monthly attendance rates, abgeleitet aus den Tagesraten
+	monthlyAttendanceStats := e.calculateMonthlyAttendanceStats(thursdayStats)
 
 	// Step 9: Evaluate penalties (strafen table + shared penalty domain logic)
 	strafenStats := e.calculateStrafenStats()

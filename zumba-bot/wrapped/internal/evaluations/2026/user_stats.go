@@ -2,9 +2,7 @@ package eval2026
 
 import (
 	"sort"
-	"time"
 
-	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 )
 
@@ -29,85 +27,72 @@ var titleThresholds = []struct {
 	{0, "Seltener Gast", "👻"},
 }
 
-// calculateUserStats computes statistics for each user
+// calculateUserStats baut die User-Statistiken aus den SQL-Ergebnissen
+// zusammen: Anwesenheit/Rate aus der geteilten Leaderboard-Query, längste
+// Serien aus max_streaks.sql. In Go bleibt nur Präsentation (Titel, Emoji,
+// Lieblings-Ausrede) und die Zuordnung der klassifizierten Absagen.
 func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations []models.Cancellation) []models.UserStats {
-	// Build cancellation map per user: userId -> []dates
-	userCancellations := make(map[int][]time.Time)
-	userCancellationMessages := make(map[int][]models.Cancellation)
-
+	userCancellations := make(map[int][]models.Cancellation)
 	for _, c := range cancellations {
-		userCancellations[c.UserID] = append(userCancellations[c.UserID], c.Date)
-		userCancellationMessages[c.UserID] = append(userCancellationMessages[c.UserID], c)
+		userCancellations[c.UserID] = append(userCancellations[c.UserID], c)
+	}
+
+	// Längste Serien je User und Zustand (false = Anwesenheit, true = Absagen)
+	streaks := make(map[string]map[bool]streakOf, len(e.rawData.MaxStreaks))
+	for _, s := range e.rawData.MaxStreaks {
+		if streaks[s.UserID] == nil {
+			streaks[s.UserID] = make(map[bool]streakOf, 2)
+		}
+		streaks[s.UserID][s.Absent] = streakOf{Len: s.Len, Start: s.Start, End: s.End}
 	}
 
 	var userStats []models.UserStats
 
-	for i, user := range e.rawData.Users {
-		userID := i + 1 // 1-based ID
+	for _, row := range e.rawData.Leaderboard {
+		idx, ok := userLookup[row.UserID]
+		if !ok {
+			continue
+		}
+		userID := idx + 1 // 1-based ID, stabil über die Users-Reihenfolge
 
-		// A user is only active from their (clamped) start date; Thursdays
-		// before that must not count as attended.
-		start := penalty.ClampStart(user.StartDate)
-		totalThursdays := 0
-		for _, t := range e.rawData.Thursdays {
-			if !t.Before(start) {
-				totalThursdays++
+		// Absagen vor dem effektiven Start zählen nicht (SQL rechnet genauso).
+		msgs := userCancellations[userID][:0:0]
+		for _, c := range userCancellations[userID] {
+			if !c.Date.Before(row.EffectiveStart) {
+				msgs = append(msgs, c)
 			}
 		}
 
-		cancellationDates := userCancellations[userID][:0:0]
-		for _, d := range userCancellations[userID] {
-			if !d.Before(start) {
-				cancellationDates = append(cancellationDates, d)
-			}
-		}
-		cancellationCount := len(cancellationDates)
-		attendanceCount := totalThursdays - cancellationCount
+		rate := int(row.AttendPercent)
+		title, titleEmoji := getTitleForRate(rate)
+		att := streaks[row.UserID][false]
+		canc := streaks[row.UserID][true]
 
-		// Calculate attendance rate (0-100)
-		attendanceRate := 0
-		if totalThursdays > 0 {
-			attendanceRate = (attendanceCount * 100) / totalThursdays
-		}
-
-		// Calculate streaks
-		attendanceStreak, cancellationStreak := e.calculateStreaks(start, cancellationDates)
-
-		// Find favorite excuse category
-		favoriteCategory := findFavoriteCategory(userCancellationMessages[userID])
-
-		// Get title based on attendance rate
-		title, titleEmoji := getTitleForRate(attendanceRate)
-
-		// Get emoji for user
-		emoji := userEmojis[i%len(userEmojis)]
-
-		stats := models.UserStats{
+		userStats = append(userStats, models.UserStats{
 			User: models.User{
 				ID:    userID,
-				Name:  user.UserName,
-				Emoji: emoji,
+				Name:  row.UserName,
+				Emoji: userEmojis[idx%len(userEmojis)],
 			},
-			CancellationCount:          cancellationCount,
-			AttendanceCount:            attendanceCount,
-			AttendanceRate:             attendanceRate,
-			MaxAttendanceStreak:        attendanceStreak.Count,
-			MaxAttendanceStreakStart:   attendanceStreak.Start,
-			MaxAttendanceStreakEnd:     attendanceStreak.End,
-			MaxCancellationStreak:      cancellationStreak.Count,
-			MaxCancellationStreakStart: cancellationStreak.Start,
-			MaxCancellationStreakEnd:   cancellationStreak.End,
-			NeverCancelled:             cancellationCount == 0,
-			FavoriteExcuseCategory:     favoriteCategory,
+			CancellationCount:          row.AwayCount,
+			AttendanceCount:            row.AttendanceCount,
+			AttendanceRate:             rate,
+			MaxAttendanceStreak:        att.Len,
+			MaxAttendanceStreakStart:   att.Start,
+			MaxAttendanceStreakEnd:     att.End,
+			MaxCancellationStreak:      canc.Len,
+			MaxCancellationStreakStart: canc.Start,
+			MaxCancellationStreakEnd:   canc.End,
+			NeverCancelled:             row.AwayCount == 0,
+			FavoriteExcuseCategory:     findFavoriteCategory(msgs),
 			Title:                      title,
 			TitleEmoji:                 titleEmoji,
-			Cancellations:              userCancellationMessages[userID],
-		}
-
-		userStats = append(userStats, stats)
+			Cancellations:              msgs,
+		})
 	}
 
-	// Sort by attendance rate (descending), then by name
+	// Wrapped sortiert nach Rate (nicht nach absoluter Anwesenheit wie die
+	// Rangliste des Bots), dann Name — Präsentationsentscheidung, bleibt Go.
 	sort.Slice(userStats, func(i, j int) bool {
 		if userStats[i].AttendanceRate != userStats[j].AttendanceRate {
 			return userStats[i].AttendanceRate > userStats[j].AttendanceRate

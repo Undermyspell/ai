@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 	"log"
@@ -11,9 +12,16 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/michael/zumba-shared/domain"
+	sharedstore "github.com/michael/zumba-shared/store"
 
 	"github.com/michael/stammtisch-wrapped/internal/database"
 )
+
+//go:embed queries/max_streaks.sql
+var maxStreaksQ string
+
+//go:embed queries/thursday_stats.sql
+var thursdayStatsQ string
 
 // DateRange ist der Auswertungszeitraum – geteilter Typ aus dem shared-Modul
 // (EffectiveEnd kappt das Ende am heutigen Tag).
@@ -204,6 +212,44 @@ func getStrafenRows(ctx context.Context, q queryer, end time.Time) ([]StrafenRow
 	return strafen, nil
 }
 
+// getMaxStreaks liefert die längsten Serien je User (max_streaks.sql).
+func getMaxStreaks(ctx context.Context, q queryer, start, end time.Time) ([]MaxStreak, error) {
+	rows, err := q.QueryContext(ctx, maxStreaksQ, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query max streaks: %w", err)
+	}
+	defer rows.Close()
+
+	var out []MaxStreak
+	for rows.Next() {
+		var s MaxStreak
+		if err := rows.Scan(&s.UserID, &s.Absent, &s.Len, &s.Start, &s.End); err != nil {
+			return nil, fmt.Errorf("failed to scan max streak row: %w", err)
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+// getThursdayStats liefert die Anwesenheit je Donnerstag (thursday_stats.sql).
+func getThursdayStats(ctx context.Context, q queryer, start, end time.Time) ([]ThursdayAttendance, error) {
+	rows, err := q.QueryContext(ctx, thursdayStatsQ, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query thursday stats: %w", err)
+	}
+	defer rows.Close()
+
+	var out []ThursdayAttendance
+	for rows.Next() {
+		var t ThursdayAttendance
+		if err := rows.Scan(&t.Day, &t.Active, &t.Attendees); err != nil {
+			return nil, fmt.Errorf("failed to scan thursday stat row: %w", err)
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
 // GetRawDataByDateRange fetches all raw data needed for evaluations within a
 // date range. All fetches run in one read-only repeatable-read transaction so
 // the evaluation sees a consistent snapshot.
@@ -241,15 +287,33 @@ func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRan
 		return nil, fmt.Errorf("failed to get strafen rows: %w", err)
 	}
 
+	leaderboard, err := sharedstore.Leaderboard(ctx, tx, domain.Period{Start: dateRange.Start, End: dateRange.End})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
+	}
+
+	maxStreaks, err := getMaxStreaks(ctx, tx, dateRange.Start, effectiveEnd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get max streaks: %w", err)
+	}
+
+	thursdayStats, err := getThursdayStats(ctx, tx, dateRange.Start, effectiveEnd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get thursday stats: %w", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit read transaction: %w", err)
 	}
 
 	return &RawData{
-		Users:        users,
-		Rejections:   rejections,
-		ExcludedDays: excludedDays,
-		Thursdays:    thursdays,
-		StrafenRows:  strafenRows,
+		Users:         users,
+		Rejections:    rejections,
+		ExcludedDays:  excludedDays,
+		Thursdays:     thursdays,
+		StrafenRows:   strafenRows,
+		Leaderboard:   leaderboard,
+		MaxStreaks:    maxStreaks,
+		ThursdayStats: thursdayStats,
 	}, nil
 }

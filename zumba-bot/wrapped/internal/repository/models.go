@@ -1,6 +1,10 @@
 package repository
 
-import "time"
+import (
+	"time"
+
+	sharedstore "github.com/michael/zumba-shared/store"
+)
 
 // RawRejection represents a row from stammtisch_abwesenheit table
 type RawRejection struct {
@@ -33,6 +37,24 @@ type StrafenRow struct {
 	GeloeschtAm *time.Time
 }
 
+// MaxStreak ist die längste Serie eines Users in einem Zustand
+// (Absent=false: Anwesenheit, Absent=true: Absagen) — aus max_streaks.sql.
+type MaxStreak struct {
+	UserID string
+	Absent bool
+	Len    int
+	Start  time.Time
+	End    time.Time
+}
+
+// ThursdayAttendance ist die SQL-berechnete Anwesenheit eines Donnerstags
+// (aus thursday_stats.sql; Attendees = Aktive - Abgemeldete).
+type ThursdayAttendance struct {
+	Day       time.Time
+	Active    int
+	Attendees int
+}
+
 // RawData contains all raw data needed for evaluations
 type RawData struct {
 	Users        []RawUser
@@ -40,4 +62,9 @@ type RawData struct {
 	ExcludedDays []ExcludedDay
 	Thursdays    []time.Time  // All valid Thursdays for the year (excluding excluded_days)
 	StrafenRows  []StrafenRow // All penalty rows (incl. beglichen/geloescht — needed as reset markers)
+
+	// In SQL vorberechnete Auswertungen (gleiche Snapshot-Transaktion):
+	Leaderboard   []sharedstore.LeaderboardRow // geteilte Rangliste-Query (shared/store)
+	MaxStreaks    []MaxStreak                  // längste Serien je User
+	ThursdayStats []ThursdayAttendance         // Anwesenheit je Donnerstag
 }
