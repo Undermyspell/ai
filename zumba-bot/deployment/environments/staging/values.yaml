@@ -64,7 +64,7 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.2.3"
+    tag: "0.2.4"
     pullPolicy: IfNotPresent
   weeklyReport:
     enabled: true
@@ -82,7 +82,7 @@ adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.2.7"
+    tag: "0.2.8"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io
@@ -91,7 +91,7 @@ wrapped:
   enabled: true
   image:
     repository: zumba-wrapped
-    tag: "0.1.0"
+    tag: "0.1.1"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-wrapped-stage.192.168.178.46.nip.io
