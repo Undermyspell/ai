@@ -47,28 +47,17 @@ func (s *Server) handleMLVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.store.VerifyMLMessage(ctx, id, &label); err != nil {
+	// UPDATE ... RETURNING liefert die Zeile fürs Swap direkt mit.
+	m, err := s.store.VerifyMLMessage(ctx, id, &label)
+	if err != nil {
 		s.triggerToast(w, "error", "Speichern fehlgeschlagen.")
 		s.fail(w, "ml verify", err)
 		return
 	}
 
-	// Aktualisierte Zeile für das Swap holen (aus der ungefilterten Liste).
-	msgs, err := s.store.ListMLMessages(ctx, false, mlListLimit)
-	if err != nil {
-		s.fail(w, "ml reload", err)
-		return
-	}
-	for _, m := range msgs {
-		if m.ID == id {
-			s.triggerToast(w, "success", "Label gespeichert.")
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_ = mlshadow.Row(m).Render(ctx, w)
-			return
-		}
-	}
-	s.triggerToast(w, "error", "Eintrag nicht gefunden.")
-	http.Error(w, "not found", http.StatusNotFound)
+	s.triggerToast(w, "success", "Label gespeichert.")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = mlshadow.Row(*m).Render(ctx, w)
 }
 
 func (s *Server) handleMLDocs(w http.ResponseWriter, r *http.Request) {

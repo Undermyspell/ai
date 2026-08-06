@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -28,6 +29,12 @@ func (d DateRange) EffectiveEnd() time.Time {
 	return d.End
 }
 
+// queryer is satisfied by both *sql.DB and *sql.Tx so the fetch helpers can
+// run inside one read-only transaction.
+type queryer interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+}
+
 // RejectionRepository handles data access for rejection/absence data
 type RejectionRepository struct {
 	db *database.PostgresDB
@@ -38,15 +45,14 @@ func NewRejectionRepository(db *database.PostgresDB) *RejectionRepository {
 	return &RejectionRepository{db: db}
 }
 
-// GetAllUsers fetches all users from the database
-func (r *RejectionRepository) GetAllUsers(ctx context.Context) ([]RawUser, error) {
+func getAllUsers(ctx context.Context, q queryer) ([]RawUser, error) {
 	query := `
 		SELECT "userId", "userName", "startDate"
 		FROM users
 		ORDER BY "userName"
 	`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := q.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query users: %w", err)
 	}
@@ -68,10 +74,9 @@ func (r *RejectionRepository) GetAllUsers(ctx context.Context) ([]RawUser, error
 	return users, nil
 }
 
-// GetRejectionsByDateRange fetches all rejections within a date range (only Thursdays, excluding excluded_days)
-// The end date is capped at today to exclude future dates
-func (r *RejectionRepository) GetRejectionsByDateRange(ctx context.Context, dateRange DateRange) ([]RawRejection, error) {
-	effectiveEnd := dateRange.EffectiveEnd()
+// getRejections fetches all rejections within the date range (only Thursdays,
+// excluding excluded_days).
+func getRejections(ctx context.Context, q queryer, start, end time.Time) ([]RawRejection, error) {
 	query := `
 		SELECT "userId", date, message
 		FROM stammtisch_abwesenheit
@@ -81,7 +86,7 @@ func (r *RejectionRepository) GetRejectionsByDateRange(ctx context.Context, date
 		ORDER BY date, "userId"
 	`
 
-	rows, err := r.db.Query(ctx, query, dateRange.Start, effectiveEnd)
+	rows, err := q.QueryContext(ctx, query, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query rejections: %w", err)
 	}
@@ -103,10 +108,7 @@ func (r *RejectionRepository) GetRejectionsByDateRange(ctx context.Context, date
 	return rejections, nil
 }
 
-// GetExcludedDaysByDateRange fetches all excluded days within a date range
-// The end date is capped at today to exclude future dates
-func (r *RejectionRepository) GetExcludedDaysByDateRange(ctx context.Context, dateRange DateRange) ([]ExcludedDay, error) {
-	effectiveEnd := dateRange.EffectiveEnd()
+func getExcludedDays(ctx context.Context, q queryer, start, end time.Time) ([]ExcludedDay, error) {
 	query := `
 		SELECT date
 		FROM excluded_days
@@ -114,7 +116,7 @@ func (r *RejectionRepository) GetExcludedDaysByDateRange(ctx context.Context, da
 		ORDER BY date
 	`
 
-	rows, err := r.db.Query(ctx, query, dateRange.Start, effectiveEnd)
+	rows, err := q.QueryContext(ctx, query, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query excluded days: %w", err)
 	}
@@ -136,10 +138,8 @@ func (r *RejectionRepository) GetExcludedDaysByDateRange(ctx context.Context, da
 	return excludedDays, nil
 }
 
-// GetThursdaysByDateRange returns all Thursdays within a date range, excluding excluded_days
-// The end date is capped at today to exclude future Thursdays
-func (r *RejectionRepository) GetThursdaysByDateRange(ctx context.Context, dateRange DateRange) ([]time.Time, error) {
-	effectiveEnd := dateRange.EffectiveEnd()
+// getThursdays returns all Thursdays within the date range, excluding excluded_days.
+func getThursdays(ctx context.Context, q queryer, start, end time.Time) ([]time.Time, error) {
 	query := `
 		WITH all_thursdays AS (
 			SELECT d::date AS thursday
@@ -152,7 +152,7 @@ func (r *RejectionRepository) GetThursdaysByDateRange(ctx context.Context, dateR
 		ORDER BY thursday
 	`
 
-	rows, err := r.db.Query(ctx, query, dateRange.Start, effectiveEnd)
+	rows, err := q.QueryContext(ctx, query, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query thursdays: %w", err)
 	}
@@ -174,18 +174,20 @@ func (r *RejectionRepository) GetThursdaysByDateRange(ctx context.Context, dateR
 	return thursdays, nil
 }
 
-// GetStrafenRows fetches all penalty rows. Deleted and settled rows are included
-// because they act as streak reset markers for the fehltage computation.
-// If the strafen table does not exist yet (bot/admin-ui create it on startup),
-// an empty slice is returned instead of an error.
-func (r *RejectionRepository) GetStrafenRows(ctx context.Context) ([]StrafenRow, error) {
+// getStrafenRows fetches penalty rows up to the end date. Deleted and settled
+// rows are included because they act as streak reset markers for the fehltage
+// computation; rows after the evaluation window are irrelevant and filtered
+// in SQL. If the strafen table does not exist yet (bot/admin-ui create it on
+// startup), an empty slice is returned instead of an error.
+func getStrafenRows(ctx context.Context, q queryer, end time.Time) ([]StrafenRow, error) {
 	query := `
 		SELECT id, "userId", art, datum, betrag, status, beglichen_am, geloescht_am
 		FROM strafen
+		WHERE datum <= $1
 		ORDER BY "userId", datum
 	`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := q.QueryContext(ctx, query, end)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "42P01" { // undefined_table
@@ -212,31 +214,45 @@ func (r *RejectionRepository) GetStrafenRows(ctx context.Context) ([]StrafenRow,
 	return strafen, nil
 }
 
-// GetRawDataByDateRange fetches all raw data needed for evaluations within a date range
+// GetRawDataByDateRange fetches all raw data needed for evaluations within a
+// date range. All fetches run in one read-only repeatable-read transaction so
+// the evaluation sees a consistent snapshot.
 func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRange DateRange) (*RawData, error) {
-	users, err := r.GetAllUsers(ctx)
+	effectiveEnd := dateRange.EffectiveEnd()
+
+	tx, err := r.db.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	users, err := getAllUsers(ctx, tx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get users: %w", err)
 	}
 
-	rejections, err := r.GetRejectionsByDateRange(ctx, dateRange)
+	rejections, err := getRejections(ctx, tx, dateRange.Start, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rejections: %w", err)
 	}
 
-	excludedDays, err := r.GetExcludedDaysByDateRange(ctx, dateRange)
+	excludedDays, err := getExcludedDays(ctx, tx, dateRange.Start, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get excluded days: %w", err)
 	}
 
-	thursdays, err := r.GetThursdaysByDateRange(ctx, dateRange)
+	thursdays, err := getThursdays(ctx, tx, dateRange.Start, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get thursdays: %w", err)
 	}
 
-	strafenRows, err := r.GetStrafenRows(ctx)
+	strafenRows, err := getStrafenRows(ctx, tx, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get strafen rows: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit read transaction: %w", err)
 	}
 
 	return &RawData{

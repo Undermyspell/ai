@@ -12,8 +12,9 @@ type StreakResult struct {
 	End   time.Time
 }
 
-// calculateStreaks calculates max attendance and cancellation streaks for a user
-func (e *Evaluator) calculateStreaks(userID int, cancellationDates []time.Time) (attendance StreakResult, cancellation StreakResult) {
+// calculateStreaks calculates max attendance and cancellation streaks for a
+// user, considering only Thursdays from the user's effective start date on.
+func (e *Evaluator) calculateStreaks(start time.Time, cancellationDates []time.Time) (attendance StreakResult, cancellation StreakResult) {
 	if len(e.rawData.Thursdays) == 0 {
 		return StreakResult{}, StreakResult{}
 	}
@@ -37,6 +38,9 @@ func (e *Evaluator) calculateStreaks(userID int, cancellationDates []time.Time) 
 	currentCancellationCount := 0
 
 	for _, thursday := range thursdays {
+		if thursday.Before(start) {
+			continue
+		}
 		dateKey := thursday.Format("2006-01-02")
 		wasCancelled := cancellationSet[dateKey]
 

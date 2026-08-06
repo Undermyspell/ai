@@ -63,8 +63,7 @@ func pairHeadline(p presenceData, a, b string) string {
 
 // buildDuoCards computes all pair findings and splits them into the
 // "Dynamische Duos" slide and the "Verdächtige Duos" slide
-func buildDuoCards(cancellations []models.Cancellation, users []models.UserStats, thursdayStats []models.ThursdayStat) (duos []viewmodels.FunCard, suspects []viewmodels.FunCard) {
-	p := buildPresence(cancellations, users, thursdayStats)
+func buildDuoCards(p presenceData, cancellations []models.Cancellation, thursdayStats []models.ThursdayStat) (duos []viewmodels.FunCard, suspects []viewmodels.FunCard) {
 	if len(p.thursdays) == 0 || len(p.names) < 2 {
 		return nil, nil
 	}
@@ -437,8 +436,7 @@ func copyPasteCard(cancellations []models.Cancellation, p presenceData) (viewmod
 }
 
 // buildSquadCards computes Dreamteam, Retter in der Not and Mitläufer
-func buildSquadCards(cancellations []models.Cancellation, users []models.UserStats, thursdayStats []models.ThursdayStat) []viewmodels.FunCard {
-	p := buildPresence(cancellations, users, thursdayStats)
+func buildSquadCards(p presenceData, thursdayStats []models.ThursdayStat) []viewmodels.FunCard {
 	if len(p.thursdays) == 0 || len(p.names) < 3 {
 		return nil
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/michael/stammtisch-wrapped/data"
@@ -12,7 +13,13 @@ import (
 	"github.com/michael/stammtisch-wrapped/internal/repository"
 	"github.com/michael/stammtisch-wrapped/internal/viewbuilder"
 	year2026 "github.com/michael/stammtisch-wrapped/web/templates/years/2026"
+	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
+
+// cacheTTL bounds how long an evaluated page is served without hitting the
+// database. The underlying data changes at most weekly, while every render
+// runs the full evaluation pipeline — no need to redo that per request.
+const cacheTTL = 15 * time.Minute
 
 // Date range for 2026 Wrapped: 01.12.2025 - 30.11.2026
 var dateRange2026 = repository.DateRange{
@@ -24,6 +31,10 @@ var dateRange2026 = repository.DateRange{
 type WrappedHandler struct {
 	repo  *repository.RejectionRepository
 	useDB bool
+
+	mu       sync.Mutex
+	cachedVM *viewmodels.PageViewModel
+	cachedAt time.Time
 }
 
 // NewWrappedHandler creates a new handler with optional database connection
@@ -44,22 +55,33 @@ func (h *WrappedHandler) HandleIndex(w http.ResponseWriter, r *http.Request) {
 
 // Handle2026 renders the 2026 Wrapped page
 func (h *WrappedHandler) Handle2026(w http.ResponseWriter, r *http.Request) {
-	var evalData *viewbuilder.EvalData
-
-	if h.useDB {
-		evalData = h.loadFromDatabase(r.Context())
-	} else {
-		evalData = h.loadFromMock()
-	}
-
-	// Build view model using the viewbuilder
-	vm := viewbuilder.Build(evalData, "2026")
+	vm := h.viewModel(r.Context())
 
 	// Render the templ component
 	err := year2026.Page(vm).Render(r.Context(), w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// viewModel returns the page view model, served from a short-lived cache on
+// the DB path. The mock path stays uncached (dev only, and it randomizes).
+func (h *WrappedHandler) viewModel(ctx context.Context) viewmodels.PageViewModel {
+	if !h.useDB {
+		return viewbuilder.Build(h.loadFromMock(), "2026")
+	}
+
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.cachedVM != nil && time.Since(h.cachedAt) < cacheTTL {
+		return *h.cachedVM
+	}
+
+	vm := viewbuilder.Build(h.loadFromDatabase(ctx), "2026")
+	h.cachedVM = &vm
+	h.cachedAt = time.Now()
+	return vm
 }
 
 // loadFromDatabase loads data from PostgreSQL and evaluates it

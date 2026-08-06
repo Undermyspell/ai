@@ -41,7 +41,7 @@ func TestBuildDuoCardsZwillinge(t *testing.T) {
 		cancel("Ben", ts[1].Date, ""),
 	}
 
-	cards, _ := buildDuoCards(cancels, testUsers(), ts)
+	cards, _ := buildDuoCards(buildPresence(cancels, testUsers(), ts), cancels, ts)
 
 	var found bool
 	for _, c := range cards {

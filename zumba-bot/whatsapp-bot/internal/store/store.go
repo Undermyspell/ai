@@ -20,6 +20,12 @@ type Stat struct {
 	Streak         int
 }
 
+// AutoStrafe ist der Marker einer erkannten Fehltage-Strafe.
+type AutoStrafe struct {
+	UserID string
+	Datum  time.Time
+}
+
 // Store kapselt die DB-Operationen des Workflows.
 type Store interface {
 	// UserStats liefert die Rangliste zum Stichtag asOf (n8n: "Get Per user
@@ -30,10 +36,12 @@ type Store interface {
 	// MarkPresent entfernt eine Absage (n8n: "Delete table or rows").
 	MarkPresent(ctx context.Context, userID string, date time.Time) error
 
-	// PenaltyInputs liefert alles, was penalty.Assess braucht (User mit
-	// Abwesenheiten, Sperrtage, alle strafen-Zeilen).
-	PenaltyInputs(ctx context.Context) (penalty.Input, error)
-	// InsertAutoStrafe persistiert den Marker einer erkannten Fehltage-Strafe
-	// (idempotent: userId + erster Fehltag der Serie).
-	InsertAutoStrafe(ctx context.Context, userID string, datum time.Time) error
+	// PenaltyInputs liefert alles, was penalty.Assess zum Stichtag asOf
+	// braucht (User mit Abwesenheiten, Sperrtage, strafen-Zeilen). Die
+	// Queries sind auf [2025-12-01, asOf] begrenzt – außerhalb liegende
+	// Zeilen können das Ergebnis von Assess nicht beeinflussen.
+	PenaltyInputs(ctx context.Context, asOf time.Time) (penalty.Input, error)
+	// InsertAutoStrafen persistiert die Marker erkannter Fehltage-Strafen in
+	// einem Statement (idempotent: userId + erster Fehltag der Serie).
+	InsertAutoStrafen(ctx context.Context, marks []AutoStrafe) error
 }

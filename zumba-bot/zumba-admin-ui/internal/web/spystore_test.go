@@ -29,6 +29,15 @@ func newSpyStore() *spyStore {
 }
 
 func (s *spyStore) ListUsers(context.Context) ([]store.User, error) { return s.users, nil }
+func (s *spyStore) GetUser(_ context.Context, userID string) (*store.User, error) {
+	for i := range s.users {
+		if s.users[i].ID == userID {
+			u := s.users[i]
+			return &u, nil
+		}
+	}
+	return nil, nil
+}
 func (s *spyStore) ListThursdays(_ context.Context, _ timeutil.Period) ([]time.Time, error) {
 	return []time.Time{mustDate("2026-01-01")}, nil
 }
@@ -40,6 +49,42 @@ func (s *spyStore) ListAbsences(_ context.Context, _ timeutil.Period) ([]store.A
 }
 func (s *spyStore) Leaderboard(_ context.Context, _ timeutil.Period) ([]store.LeaderboardRow, error) {
 	return nil, nil
+}
+func (s *spyStore) UserLeaderboardRow(_ context.Context, _ timeutil.Period, _ string) (store.LeaderboardRow, error) {
+	return store.LeaderboardRow{}, nil
+}
+func (s *spyStore) ListUserAbsences(_ context.Context, _ timeutil.Period, userID string) ([]store.Absence, error) {
+	var out []store.Absence
+	for _, a := range s.absences {
+		if a.UserID == userID {
+			out = append(out, a)
+		}
+	}
+	return out, nil
+}
+func (s *spyStore) AbsencesOn(_ context.Context, date time.Time) ([]store.Absence, error) {
+	var out []store.Absence
+	for _, a := range s.absences {
+		if timeutil.FormatISO(a.Date) == timeutil.FormatISO(date) {
+			out = append(out, a)
+		}
+	}
+	return out, nil
+}
+func (s *spyStore) IsExcludedDay(_ context.Context, _ time.Time) (bool, error) { return false, nil }
+func (s *spyStore) ThursdayStrip(_ context.Context, _ timeutil.Period, _ int) ([]store.StripDay, error) {
+	return nil, nil
+}
+func (s *spyStore) ListDayAbsences(_ context.Context, _ timeutil.Period) ([]store.DayAbsences, error) {
+	return nil, nil
+}
+func (s *spyStore) ToggleAbsence(ctx context.Context, userID string, date time.Time) (bool, error) {
+	for _, a := range s.absences {
+		if a.UserID == userID && timeutil.FormatISO(a.Date) == timeutil.FormatISO(date) {
+			return false, s.DeleteAbsence(ctx, userID, date)
+		}
+	}
+	return true, s.InsertAbsence(ctx, userID, date, nil)
 }
 func (s *spyStore) InsertAbsence(_ context.Context, userID string, date time.Time, _ *string) error {
 	s.insertedAbsence = userID + "@" + timeutil.FormatISO(date)
@@ -76,7 +121,9 @@ func (s *spyStore) ListMLMessages(_ context.Context, _ bool, _ int) ([]store.MLM
 func (s *spyStore) MLShadowStats(_ context.Context) (store.MLShadowStats, error) {
 	return store.MLShadowStats{}, nil
 }
-func (s *spyStore) VerifyMLMessage(_ context.Context, _ int64, _ *string) error { return nil }
+func (s *spyStore) VerifyMLMessage(_ context.Context, id int64, correctedLabel *string) (*store.MLMessage, error) {
+	return &store.MLMessage{ID: id, Verified: true, CorrectedLabel: correctedLabel}, nil
+}
 
 func (s *spyStore) InsertMLTest(_ context.Context, _, _ string, _ float64) (int64, error) {
 	return 1, nil
@@ -84,7 +131,9 @@ func (s *spyStore) InsertMLTest(_ context.Context, _, _ string, _ float64) (int6
 func (s *spyStore) ListMLTests(_ context.Context, _ int) ([]store.MLTestMessage, error) {
 	return nil, nil
 }
-func (s *spyStore) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }
+func (s *spyStore) JudgeMLTest(_ context.Context, id int64, expectedLabel string) (*store.MLTestMessage, error) {
+	return &store.MLTestMessage{ID: id, ExpectedLabel: &expectedLabel}, nil
+}
 
 func (s *spyStore) DeleteMLTest(_ context.Context, _ int64) error { return nil }
 

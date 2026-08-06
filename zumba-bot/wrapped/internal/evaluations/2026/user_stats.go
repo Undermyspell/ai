@@ -4,6 +4,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/michael/stammtisch-wrapped/internal/penalty"
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 )
 
@@ -30,8 +31,6 @@ var titleThresholds = []struct {
 
 // calculateUserStats computes statistics for each user
 func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations []models.Cancellation) []models.UserStats {
-	totalThursdays := len(e.rawData.Thursdays)
-
 	// Build cancellation map per user: userId -> []dates
 	userCancellations := make(map[int][]time.Time)
 	userCancellationMessages := make(map[int][]models.Cancellation)
@@ -45,7 +44,23 @@ func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations 
 
 	for i, user := range e.rawData.Users {
 		userID := i + 1 // 1-based ID
-		cancellationDates := userCancellations[userID]
+
+		// A user is only active from their (clamped) start date; Thursdays
+		// before that must not count as attended.
+		start := penalty.ClampStart(user.StartDate)
+		totalThursdays := 0
+		for _, t := range e.rawData.Thursdays {
+			if !t.Before(start) {
+				totalThursdays++
+			}
+		}
+
+		cancellationDates := userCancellations[userID][:0:0]
+		for _, d := range userCancellations[userID] {
+			if !d.Before(start) {
+				cancellationDates = append(cancellationDates, d)
+			}
+		}
 		cancellationCount := len(cancellationDates)
 		attendanceCount := totalThursdays - cancellationCount
 
@@ -56,7 +71,7 @@ func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations 
 		}
 
 		// Calculate streaks
-		attendanceStreak, cancellationStreak := e.calculateStreaks(userID, cancellationDates)
+		attendanceStreak, cancellationStreak := e.calculateStreaks(start, cancellationDates)
 
 		// Find favorite excuse category
 		favoriteCategory := findFavoriteCategory(userCancellationMessages[userID])

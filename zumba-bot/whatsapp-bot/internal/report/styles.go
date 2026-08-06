@@ -6,7 +6,6 @@ package report
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
@@ -62,14 +61,9 @@ type analysis struct {
 func analyze(rows []store.Stat) analysis {
 	total := rows[0].Attendance + rows[0].Away // wie Build: aus erster DB-Zeile
 
-	users := make([]store.Stat, len(rows))
-	copy(users, rows)
-	sort.SliceStable(users, func(i, j int) bool {
-		if users[i].Attendance != users[j].Attendance {
-			return users[i].Attendance > users[j].Attendance
-		}
-		return users[i].Percent > users[j].Percent
-	})
+	// rows kommen bereits sortiert aus stats.sql
+	// (ORDER BY attendance_count DESC, attend_percentage DESC).
+	users := rows
 
 	medals := []string{"🥇", "🥈", "🥉"}
 	var (

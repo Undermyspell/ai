@@ -76,27 +76,17 @@ func (s *Server) handleMLTestJudge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.store.JudgeMLTest(ctx, id, label); err != nil {
+	// UPDATE ... RETURNING liefert die Zeile fürs Swap direkt mit.
+	t, err := s.store.JudgeMLTest(ctx, id, label)
+	if err != nil {
 		s.triggerToast(w, "error", "Speichern fehlgeschlagen.")
 		s.fail(w, "ml test judge", err)
 		return
 	}
 
-	tests, err := s.store.ListMLTests(ctx, mlTestLimit)
-	if err != nil {
-		s.fail(w, "ml tests reload", err)
-		return
-	}
-	for _, t := range tests {
-		if t.ID == id {
-			s.triggerToast(w, "success", "Bewertung gespeichert.")
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_ = mltest.Row(t).Render(ctx, w)
-			return
-		}
-	}
-	s.triggerToast(w, "error", "Eintrag nicht gefunden.")
-	http.Error(w, "not found", http.StatusNotFound)
+	s.triggerToast(w, "success", "Bewertung gespeichert.")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = mltest.Row(*t).Render(ctx, w)
 }
 
 // handleMLTestDelete löscht einen Testfall; die leere Antwort entfernt die

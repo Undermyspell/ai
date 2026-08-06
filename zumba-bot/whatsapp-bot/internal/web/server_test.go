@@ -37,12 +37,14 @@ func (f *fakeStore) MarkPresent(_ context.Context, userID string, _ time.Time) e
 	f.presentUserID = userID
 	return nil
 }
-func (f *fakeStore) PenaltyInputs(context.Context) (penalty.Input, error) {
+func (f *fakeStore) PenaltyInputs(context.Context, time.Time) (penalty.Input, error) {
 	f.penaltyInputCalls++
 	return f.penaltyInput, nil
 }
-func (f *fakeStore) InsertAutoStrafe(_ context.Context, userID string, datum time.Time) error {
-	f.autoStrafen = append(f.autoStrafen, userID+"|"+datum.Format("2006-01-02"))
+func (f *fakeStore) InsertAutoStrafen(_ context.Context, marks []store.AutoStrafe) error {
+	for _, m := range marks {
+		f.autoStrafen = append(f.autoStrafen, m.UserID+"|"+m.Datum.Format("2006-01-02"))
+	}
 	return nil
 }
 

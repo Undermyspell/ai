@@ -104,6 +104,16 @@ func (m *Mock) ListUsers(_ context.Context) ([]User, error) {
 	return out, nil
 }
 
+func (m *Mock) GetUser(_ context.Context, userID string) (*User, error) {
+	for i := range m.users {
+		if m.users[i].ID == userID {
+			u := m.users[i]
+			return &u, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *Mock) ListThursdays(_ context.Context, p timeutil.Period) ([]time.Time, error) {
 	excluded := make(map[string]bool, len(m.excludedDays))
 	for _, d := range m.excludedDays {
@@ -193,6 +203,107 @@ func (m *Mock) Leaderboard(ctx context.Context, p timeutil.Period) ([]Leaderboar
 	return rows, nil
 }
 
+func (m *Mock) UserLeaderboardRow(ctx context.Context, p timeutil.Period, userID string) (LeaderboardRow, error) {
+	rows, err := m.Leaderboard(ctx, p)
+	if err != nil {
+		return LeaderboardRow{}, err
+	}
+	for _, r := range rows {
+		if r.UserID == userID {
+			return r, nil
+		}
+	}
+	return LeaderboardRow{}, nil
+}
+
+func (m *Mock) ListUserAbsences(ctx context.Context, p timeutil.Period, userID string) ([]Absence, error) {
+	all, err := m.ListAbsences(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Absence, 0)
+	for _, a := range all {
+		if a.UserID == userID {
+			out = append(out, a)
+		}
+	}
+	return out, nil
+}
+
+func (m *Mock) AbsencesOn(_ context.Context, date time.Time) ([]Absence, error) {
+	iso := timeutil.FormatISO(date)
+	out := make([]Absence, 0)
+	for _, a := range m.absences {
+		if timeutil.FormatISO(a.Date) == iso {
+			out = append(out, a)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].UserID < out[j].UserID })
+	return out, nil
+}
+
+func (m *Mock) IsExcludedDay(_ context.Context, date time.Time) (bool, error) {
+	iso := timeutil.FormatISO(date)
+	for _, d := range m.excludedDays {
+		if timeutil.FormatISO(d) == iso {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (m *Mock) ThursdayStrip(_ context.Context, p timeutil.Period, limit int) ([]StripDay, error) {
+	excluded := make(map[string]bool, len(m.excludedDays))
+	for _, d := range m.excludedDays {
+		excluded[timeutil.FormatISO(d)] = true
+	}
+	away := make(map[string]int)
+	for _, a := range m.absences {
+		away[timeutil.FormatISO(a.Date)]++
+	}
+
+	today := timeutil.StartOfDay(time.Now())
+	var days []time.Time
+	for _, d := range generateThursdays(p.Start, p.EffectiveEnd()) {
+		if !d.After(today) {
+			days = append(days, d)
+		}
+	}
+	sort.Slice(days, func(i, j int) bool { return days[i].After(days[j]) })
+	if limit > 0 && len(days) > limit {
+		days = days[:limit]
+	}
+	for i, j := 0, len(days)-1; i < j; i, j = i+1, j-1 {
+		days[i], days[j] = days[j], days[i]
+	}
+
+	out := make([]StripDay, 0, len(days))
+	for _, d := range days {
+		k := timeutil.FormatISO(d)
+		out = append(out, StripDay{Date: d, Excluded: excluded[k], Away: away[k]})
+	}
+	return out, nil
+}
+
+func (m *Mock) ListDayAbsences(ctx context.Context, p timeutil.Period) ([]DayAbsences, error) {
+	thursdays, err := m.ListThursdays(ctx, p) // newest first, ohne Sperrtage
+	if err != nil {
+		return nil, err
+	}
+	byDate := make(map[string][]string)
+	for _, a := range m.absences {
+		k := timeutil.FormatISO(a.Date)
+		byDate[k] = append(byDate[k], a.UserID)
+	}
+	out := make([]DayAbsences, 0, len(thursdays))
+	for _, t := range thursdays {
+		ids := byDate[timeutil.FormatISO(t)]
+		sort.Strings(ids)
+		out = append(out, DayAbsences{Date: t, AbsentUserIDs: ids})
+	}
+	return out, nil
+}
+
 func (m *Mock) InsertAbsence(_ context.Context, userID string, date time.Time, message *string) error {
 	day := timeutil.StartOfDay(date)
 	for i := range m.absences {
@@ -215,6 +326,16 @@ func (m *Mock) DeleteAbsence(_ context.Context, userID string, date time.Time) e
 	}
 	m.absences = out
 	return nil
+}
+
+func (m *Mock) ToggleAbsence(ctx context.Context, userID string, date time.Time) (bool, error) {
+	iso := timeutil.FormatISO(date)
+	for _, a := range m.absences {
+		if a.UserID == userID && timeutil.FormatISO(a.Date) == iso {
+			return false, m.DeleteAbsence(ctx, userID, date)
+		}
+	}
+	return true, m.InsertAbsence(ctx, userID, date, nil)
 }
 
 func (m *Mock) InsertExcludedDay(_ context.Context, date time.Time) error {
@@ -395,7 +516,16 @@ func (m *Mock) MLShadowStats(_ context.Context) (MLShadowStats, error) {
 	return st, nil
 }
 
-func (m *Mock) VerifyMLMessage(_ context.Context, _ int64, _ *string) error { return nil }
+func (m *Mock) VerifyMLMessage(_ context.Context, id int64, correctedLabel *string) (*MLMessage, error) {
+	for _, msg := range sampleMLMessages() {
+		if msg.ID == id {
+			msg.Verified = true
+			msg.CorrectedLabel = correctedLabel
+			return &msg, nil
+		}
+	}
+	return nil, fmt.Errorf("VerifyMLMessage: Eintrag %d nicht gefunden", id)
+}
 
 // --- Manueller ML-Test: Mock ---
 
@@ -421,7 +551,16 @@ func (m *Mock) ListMLTests(_ context.Context, limit int) ([]MLTestMessage, error
 	return out, nil
 }
 
-func (m *Mock) JudgeMLTest(_ context.Context, _ int64, _ string) error { return nil }
+func (m *Mock) JudgeMLTest(ctx context.Context, id int64, expectedLabel string) (*MLTestMessage, error) {
+	tests, _ := m.ListMLTests(ctx, 0)
+	for _, t := range tests {
+		if t.ID == id {
+			t.ExpectedLabel = &expectedLabel
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("JudgeMLTest: Eintrag %d nicht gefunden", id)
+}
 
 func (m *Mock) DeleteMLTest(_ context.Context, _ int64) error { return nil }
 

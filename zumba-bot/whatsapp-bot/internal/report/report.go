@@ -49,17 +49,12 @@ func BuildWithStrafen(rows []store.Stat, strafenBlock string) string {
 		return "🍻 *ZUMBA STATS*\n\n_Keine Daten._"
 	}
 
-	// total: vor dem Sortieren aus der ersten DB-Zeile (wie im JS).
+	// total: aus der ersten DB-Zeile (wie im JS).
 	total := rows[0].Attendance + rows[0].Away
 
-	users := make([]store.Stat, len(rows))
-	copy(users, rows)
-	sort.SliceStable(users, func(i, j int) bool {
-		if users[i].Attendance != users[j].Attendance {
-			return users[i].Attendance > users[j].Attendance
-		}
-		return users[i].Percent > users[j].Percent
-	})
+	// rows kommen bereits sortiert aus stats.sql
+	// (ORDER BY attendance_count DESC, attend_percentage DESC).
+	users := rows
 
 	// Medaillen mit Gleichstand-Logik.
 	medals := []string{"🥇", "🥈", "🥉"}

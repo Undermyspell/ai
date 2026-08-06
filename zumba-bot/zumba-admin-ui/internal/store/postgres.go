@@ -3,9 +3,12 @@ package store
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/lib/pq"
 
 	"github.com/michael/zumba-admin-ui/internal/db"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
@@ -40,6 +43,19 @@ func (s *Postgres) ListUsers(ctx context.Context) ([]User, error) {
 		out = append(out, u)
 	}
 	return out, rows.Err()
+}
+
+func (s *Postgres) GetUser(ctx context.Context, userID string) (*User, error) {
+	const q = `SELECT "userId", "userName", "startDate" FROM users WHERE "userId" = $1`
+	var u User
+	err := s.db.QueryRowContext(ctx, q, userID).Scan(&u.ID, &u.Name, &u.StartDate)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("GetUser: %w", err)
+	}
+	return &u, nil
 }
 
 func (s *Postgres) ListThursdays(ctx context.Context, p timeutil.Period) ([]time.Time, error) {
@@ -119,11 +135,10 @@ func (s *Postgres) ListAbsences(ctx context.Context, p timeutil.Period) ([]Absen
 	return out, rows.Err()
 }
 
-// Leaderboard ports whatsapp-statistic.sql verbatim, parameterized over the
+// leaderboardQ ports whatsapp-statistic.sql verbatim, parameterized over the
 // evaluation period. Streak is signed (positive = current attendance run,
 // negative = current absence run).
-func (s *Postgres) Leaderboard(ctx context.Context, p timeutil.Period) ([]LeaderboardRow, error) {
-	const q = `
+const leaderboardQ = `
 WITH startdates AS (
     SELECT
         u."userId",
@@ -232,7 +247,18 @@ GROUP BY
     ut.thursday_count, ut.effective_start_date, us.streak
 ORDER BY attendance_count DESC, attend_percentage DESC, u."userName"
 `
-	rows, err := s.db.QueryContext(ctx, q, p.Start, p.End)
+
+func scanLeaderboardRow(rows *sql.Rows, r *LeaderboardRow) error {
+	return rows.Scan(
+		&r.UserID, &r.UserName, &r.StartDate,
+		&r.EffectiveStart, &r.ThursdayCount,
+		&r.AttendanceCount, &r.AwayCount,
+		&r.AttendPercent, &r.Streak,
+	)
+}
+
+func (s *Postgres) Leaderboard(ctx context.Context, p timeutil.Period) ([]LeaderboardRow, error) {
+	rows, err := s.db.QueryContext(ctx, leaderboardQ, p.Start, p.End)
 	if err != nil {
 		return nil, fmt.Errorf("Leaderboard: %w", err)
 	}
@@ -241,17 +267,161 @@ ORDER BY attendance_count DESC, attend_percentage DESC, u."userName"
 	var out []LeaderboardRow
 	for rows.Next() {
 		var r LeaderboardRow
-		if err := rows.Scan(
-			&r.UserID, &r.UserName, &r.StartDate,
-			&r.EffectiveStart, &r.ThursdayCount,
-			&r.AttendanceCount, &r.AwayCount,
-			&r.AttendPercent, &r.Streak,
-		); err != nil {
+		if err := scanLeaderboardRow(rows, &r); err != nil {
 			return nil, fmt.Errorf("Leaderboard scan: %w", err)
 		}
 		out = append(out, r)
 	}
 	return out, rows.Err()
+}
+
+// UserLeaderboardRow filtert die Leaderboard-CTE in SQL auf einen User, statt
+// alle Zeilen zu laden und in Go zu suchen.
+func (s *Postgres) UserLeaderboardRow(ctx context.Context, p timeutil.Period, userID string) (LeaderboardRow, error) {
+	q := `SELECT * FROM (` + leaderboardQ + `) b WHERE b."userId" = $3`
+	rows, err := s.db.QueryContext(ctx, q, p.Start, p.End, userID)
+	if err != nil {
+		return LeaderboardRow{}, fmt.Errorf("UserLeaderboardRow: %w", err)
+	}
+	defer rows.Close()
+
+	var r LeaderboardRow
+	if rows.Next() {
+		if err := scanLeaderboardRow(rows, &r); err != nil {
+			return LeaderboardRow{}, fmt.Errorf("UserLeaderboardRow scan: %w", err)
+		}
+	}
+	return r, rows.Err()
+}
+
+// ThursdayStrip aggregiert die Strip-Kacheln komplett in SQL: Donnerstage bis
+// heute (inkl. Sperrtage), Abmelde-Zahl je Tag, jüngste N, aufsteigend.
+func (s *Postgres) ThursdayStrip(ctx context.Context, p timeutil.Period, limit int) ([]StripDay, error) {
+	const q = `
+		WITH days AS (
+			SELECT d::date AS day
+			FROM generate_series($1::date, LEAST($2::date, current_date), interval '1 day') AS d
+			WHERE EXTRACT(DOW FROM d) = 4
+		),
+		recent AS (
+			SELECT day,
+			       EXISTS (SELECT 1 FROM excluded_days ed WHERE ed.date = day) AS excluded,
+			       (SELECT count(*) FROM stammtisch_abwesenheit a WHERE a.date = day)::int AS away
+			FROM days
+			ORDER BY day DESC
+			LIMIT CASE WHEN $3 > 0 THEN $3 END
+		)
+		SELECT day, excluded, away FROM recent ORDER BY day ASC`
+	rows, err := s.db.QueryContext(ctx, q, p.Start, p.End, limit)
+	if err != nil {
+		return nil, fmt.Errorf("ThursdayStrip: %w", err)
+	}
+	defer rows.Close()
+
+	var out []StripDay
+	for rows.Next() {
+		var d StripDay
+		if err := rows.Scan(&d.Date, &d.Excluded, &d.Away); err != nil {
+			return nil, fmt.Errorf("ThursdayStrip scan: %w", err)
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// ListDayAbsences gruppiert Abmeldungen je gültigem Donnerstag in SQL
+// (GROUP BY + array_agg statt Go-Maps), neueste zuerst.
+func (s *Postgres) ListDayAbsences(ctx context.Context, p timeutil.Period) ([]DayAbsences, error) {
+	const q = `
+		WITH days AS (
+			SELECT d::date AS day
+			FROM generate_series($1::date, LEAST($2::date, current_date), interval '1 day') AS d
+			WHERE EXTRACT(DOW FROM d) = 4
+			  AND d::date NOT IN (SELECT date FROM excluded_days)
+		)
+		SELECT day,
+		       COALESCE(array_agg(a."userId" ORDER BY a."userId")
+		                FILTER (WHERE a."userId" IS NOT NULL), '{}')
+		FROM days
+		LEFT JOIN stammtisch_abwesenheit a ON a.date = day
+		GROUP BY day
+		ORDER BY day DESC`
+	rows, err := s.db.QueryContext(ctx, q, p.Start, p.EffectiveEnd())
+	if err != nil {
+		return nil, fmt.Errorf("ListDayAbsences: %w", err)
+	}
+	defer rows.Close()
+
+	var out []DayAbsences
+	for rows.Next() {
+		var d DayAbsences
+		if err := rows.Scan(&d.Date, pq.Array(&d.AbsentUserIDs)); err != nil {
+			return nil, fmt.Errorf("ListDayAbsences scan: %w", err)
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// AbsencesOn liefert die Abmeldungen genau eines Datums.
+func (s *Postgres) AbsencesOn(ctx context.Context, date time.Time) ([]Absence, error) {
+	const q = `
+		SELECT "userId", date, message
+		FROM stammtisch_abwesenheit
+		WHERE date = $1
+		ORDER BY "userId"`
+	rows, err := s.db.QueryContext(ctx, q, date)
+	if err != nil {
+		return nil, fmt.Errorf("AbsencesOn: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Absence
+	for rows.Next() {
+		var a Absence
+		if err := rows.Scan(&a.UserID, &a.Date, &a.Message); err != nil {
+			return nil, fmt.Errorf("AbsencesOn scan: %w", err)
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
+// ListUserAbsences liefert die Abmeldungen eines Users im Zeitraum.
+func (s *Postgres) ListUserAbsences(ctx context.Context, p timeutil.Period, userID string) ([]Absence, error) {
+	const q = `
+		SELECT "userId", date, message
+		FROM stammtisch_abwesenheit
+		WHERE "userId" = $3
+		  AND date >= $1 AND date <= $2
+		  AND EXTRACT(DOW FROM date) = 4
+		  AND date NOT IN (SELECT date FROM excluded_days)
+		ORDER BY date DESC`
+	rows, err := s.db.QueryContext(ctx, q, p.Start, p.EffectiveEnd(), userID)
+	if err != nil {
+		return nil, fmt.Errorf("ListUserAbsences: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Absence
+	for rows.Next() {
+		var a Absence
+		if err := rows.Scan(&a.UserID, &a.Date, &a.Message); err != nil {
+			return nil, fmt.Errorf("ListUserAbsences scan: %w", err)
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
+// IsExcludedDay prüft einen einzelnen Tag per EXISTS.
+func (s *Postgres) IsExcludedDay(ctx context.Context, date time.Time) (bool, error) {
+	const q = `SELECT EXISTS (SELECT 1 FROM excluded_days WHERE date = $1)`
+	var excluded bool
+	if err := s.db.QueryRowContext(ctx, q, date).Scan(&excluded); err != nil {
+		return false, fmt.Errorf("IsExcludedDay: %w", err)
+	}
+	return excluded, nil
 }
 
 func (s *Postgres) InsertAbsence(ctx context.Context, userID string, date time.Time, message *string) error {
@@ -271,6 +441,24 @@ func (s *Postgres) DeleteAbsence(ctx context.Context, userID string, date time.T
 		return fmt.Errorf("DeleteAbsence: %w", err)
 	}
 	return nil
+}
+
+// ToggleAbsence kippt den Abmelde-Status ohne vorherigen Lese-Roundtrip:
+// DELETE zuerst – hat es getroffen, war der User abgemeldet und ist jetzt
+// anwesend; sonst wird die Abmeldung eingetragen.
+func (s *Postgres) ToggleAbsence(ctx context.Context, userID string, date time.Time) (bool, error) {
+	const del = `DELETE FROM public.stammtisch_abwesenheit WHERE "userId" = $1 AND date = $2`
+	res, err := s.db.ExecContext(ctx, del, userID, date)
+	if err != nil {
+		return false, fmt.Errorf("ToggleAbsence delete: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		return false, nil
+	}
+	if err := s.InsertAbsence(ctx, userID, date, nil); err != nil {
+		return false, fmt.Errorf("ToggleAbsence: %w", err)
+	}
+	return true, nil
 }
 
 func (s *Postgres) InsertExcludedDay(ctx context.Context, date time.Time) error {
@@ -408,16 +596,25 @@ func (s *Postgres) MLShadowStats(ctx context.Context) (MLShadowStats, error) {
 	return st, rows.Err()
 }
 
-func (s *Postgres) VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) error {
-	const q = `UPDATE ml_messages SET verified = true, corrected_label = $2 WHERE id = $1`
-	res, err := s.db.ExecContext(ctx, q, id, correctedLabel)
+func (s *Postgres) VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) (*MLMessage, error) {
+	const q = `
+		UPDATE ml_messages SET verified = true, corrected_label = $2
+		WHERE id = $1
+		RETURNING id, created_at, COALESCE(user_id,''), COALESCE(user_name,''), message,
+		          COALESCE(gemini_label,''), model_label, model_confidence, agree,
+		          verified, corrected_label`
+	var m MLMessage
+	err := s.db.QueryRowContext(ctx, q, id, correctedLabel).Scan(
+		&m.ID, &m.CreatedAt, &m.UserID, &m.UserName, &m.Message,
+		&m.GeminiLabel, &m.ModelLabel, &m.ModelConfidence, &m.Agree,
+		&m.Verified, &m.CorrectedLabel)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("VerifyMLMessage: Eintrag %d nicht gefunden", id)
+	}
 	if err != nil {
-		return fmt.Errorf("VerifyMLMessage: %w", err)
+		return nil, fmt.Errorf("VerifyMLMessage: %w", err)
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("VerifyMLMessage: Eintrag %d nicht gefunden", id)
-	}
-	return nil
+	return &m, nil
 }
 
 // --- Manueller ML-Test (ml_test_messages) ---
@@ -475,16 +672,21 @@ func (s *Postgres) ListMLTests(ctx context.Context, limit int) ([]MLTestMessage,
 	return out, rows.Err()
 }
 
-func (s *Postgres) JudgeMLTest(ctx context.Context, id int64, expectedLabel string) error {
-	const q = `UPDATE ml_test_messages SET expected_label = $2 WHERE id = $1`
-	res, err := s.db.ExecContext(ctx, q, id, expectedLabel)
+func (s *Postgres) JudgeMLTest(ctx context.Context, id int64, expectedLabel string) (*MLTestMessage, error) {
+	const q = `
+		UPDATE ml_test_messages SET expected_label = $2
+		WHERE id = $1
+		RETURNING id, created_at, message, model_label, model_confidence, expected_label`
+	var m MLTestMessage
+	err := s.db.QueryRowContext(ctx, q, id, expectedLabel).Scan(
+		&m.ID, &m.CreatedAt, &m.Message, &m.ModelLabel, &m.ModelConfidence, &m.ExpectedLabel)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("JudgeMLTest: Eintrag %d nicht gefunden", id)
+	}
 	if err != nil {
-		return fmt.Errorf("JudgeMLTest: %w", err)
+		return nil, fmt.Errorf("JudgeMLTest: %w", err)
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("JudgeMLTest: Eintrag %d nicht gefunden", id)
-	}
-	return nil
+	return &m, nil
 }
 
 func (s *Postgres) DeleteMLTest(ctx context.Context, id int64) error {

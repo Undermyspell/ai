@@ -1,8 +1,6 @@
 package eval2026
 
 import (
-	"time"
-
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 )
 
@@ -68,15 +66,4 @@ func (e *Evaluator) calculateMonthlyAttendanceStats(cancellations []models.Cance
 	}
 
 	return stats
-}
-
-// getThursdaysInMonth returns all Thursdays from rawData that fall in the given year/month
-func (e *Evaluator) getThursdaysInMonth(year int, month time.Month) []time.Time {
-	var result []time.Time
-	for _, t := range e.rawData.Thursdays {
-		if t.Year() == year && t.Month() == month {
-			result = append(result, t)
-		}
-	}
-	return result
 }

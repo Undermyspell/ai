@@ -98,6 +98,11 @@ type Outcome struct {
 	Reason         string `json:"reason"`
 	DryRun         bool   `json:"dryRun"`              // true: nichts gesendet/geschrieben, nur berechnet
 	PreviewTo      string `json:"previewTo,omitempty"` // gesetzt: Nachricht wurde als Vorschau an diese Nummer geschickt
+
+	// stats sind die bereits berechneten Ranglisten-Zeilen des Statistik-Pfads
+	// (nur intern, für alternative Render-Styles der Testseite – erspart einen
+	// zweiten UserStats-Query).
+	stats []store.Stat
 }
 
 // run verarbeitet ein Event und protokolliert jeden Entscheidungspunkt im
@@ -116,8 +121,8 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 	// Verzweigung 1: "statistik"
 	if strings.EqualFold(strings.TrimSpace(msg), "statistik") {
 		rec.Step(tracestore.NodeCheckStatistik, tracestore.OutcomePass, `"statistik"?`, "ja")
-		text := s.runStats(ctx, ev.RemoteJid(), dryRun, asOf, rec)
-		return Outcome{Path: "statistik", Message: text, Recipient: ev.RemoteJid(), DryRun: dryRun}
+		text, stats := s.runStats(ctx, ev.RemoteJid(), dryRun, asOf, rec)
+		return Outcome{Path: "statistik", Message: text, Recipient: ev.RemoteJid(), DryRun: dryRun, stats: stats}
 	}
 	rec.Step(tracestore.NodeCheckStatistik, tracestore.OutcomeInfo, `"statistik"?`, "nein")
 
@@ -208,18 +213,18 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 
 // runStats baut den Ranglisten-Text zum Stichtag asOf und protokolliert
 // Berechnung + Versand.
-func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asOf time.Time, rec *tracestore.Recorder) string {
+func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asOf time.Time, rec *tracestore.Recorder) (string, []store.Stat) {
 	stats, err := s.store.UserStats(ctx, asOf)
 	if err != nil {
 		rec.Step(tracestore.NodeBuildStats, tracestore.OutcomeError, "Statistik berechnen", err.Error())
 		log.Printf("⚠️  UserStats: %v", err)
-		return ""
+		return "", nil
 	}
 	text := report.BuildWithStrafen(stats, s.strafenBlock(ctx, asOf, !dryRun))
 	rec.Step(tracestore.NodeBuildStats, tracestore.OutcomePass, "Statistik berechnen", fmt.Sprintf("%d Nutzer", len(stats)))
 	if dryRun {
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeInfo, "An Gruppe senden", "Dry-Run – nicht gesendet")
-		return text
+		return text, stats
 	}
 	if err := s.sender.SendText(ctx, receiver, text); err != nil {
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "An Gruppe senden", err.Error())
@@ -228,7 +233,7 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asO
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomePass, "An Gruppe senden", "→ "+receiver)
 		log.Printf("📊 Statistik gesendet an %s", receiver)
 	}
-	return text
+	return text, stats
 }
 
 // handleWeekly versendet den automatischen Wochenreport an die Zumba-Gruppe
@@ -294,22 +299,23 @@ func (s *Server) weeklyText(ctx context.Context, send bool, asOf time.Time) stri
 // Fehltage-Strafen (nur echte Läufe – nie Dry-Run/Vorschau). Bei Fehlern
 // entfällt der Block, der Report geht trotzdem raus.
 func (s *Server) strafenBlock(ctx context.Context, asOf time.Time, persist bool) string {
-	in, err := s.store.PenaltyInputs(ctx)
+	in, err := s.store.PenaltyInputs(ctx, asOf)
 	if err != nil {
 		log.Printf("⚠️  PenaltyInputs: %v (Strafenblock entfällt)", err)
 		return ""
 	}
 	entries := penalty.Assess(in, asOf)
 	if persist {
+		var marks []store.AutoStrafe
 		for _, e := range entries {
 			if e.ID != 0 {
 				continue
 			}
-			if err := s.store.InsertAutoStrafe(ctx, e.UserID, e.Datum); err != nil {
-				log.Printf("⚠️  InsertAutoStrafe(%s, %s): %v", e.UserID, e.Datum.Format("2006-01-02"), err)
-			} else {
-				log.Printf("💸 Auto-Strafe persistiert: %s ab %s (%d€)", e.Name, e.Datum.Format("2006-01-02"), e.Betrag)
-			}
+			marks = append(marks, store.AutoStrafe{UserID: e.UserID, Datum: e.Datum})
+			log.Printf("💸 Auto-Strafe erkannt: %s ab %s (%d€)", e.Name, e.Datum.Format("2006-01-02"), e.Betrag)
+		}
+		if err := s.store.InsertAutoStrafen(ctx, marks); err != nil {
+			log.Printf("⚠️  InsertAutoStrafen (%d Marker): %v", len(marks), err)
 		}
 	}
 	return report.StrafenBlock(entries, asOf)
@@ -383,13 +389,10 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 	// ausschließlich über echte Statistik-Webhooks und den Wochenreport-CronJob.
 	out := s.run(r.Context(), ev, true, true, asOf, tracestore.NewRecorder())
 
-	// Optional: Statistik-Vorschau in einem alternativen Design rendern (nur Testseite).
-	if out.Path == "statistik" && style != "" && style != "klassik" {
-		if stats, err := s.store.UserStats(r.Context(), asOf); err != nil {
-			log.Printf("⚠️  UserStats(style %s): %v", style, err)
-		} else {
-			out.Message = report.BuildByStyle(style, stats)
-		}
+	// Optional: Statistik-Vorschau in einem alternativen Design rendern (nur
+	// Testseite). Nutzt die in run() bereits geladenen Stats – kein zweiter Query.
+	if out.Path == "statistik" && style != "" && style != "klassik" && out.stats != nil {
+		out.Message = report.BuildByStyle(style, out.stats)
 	}
 
 	if preview && out.Path == "statistik" && out.Message != "" {

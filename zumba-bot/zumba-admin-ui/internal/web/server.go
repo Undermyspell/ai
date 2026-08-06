@@ -112,7 +112,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	strip, err := s.buildStrip(ctx, period, 0) // alle Donnerstage – auf dem Dashboard auswählbar
+	strip, err := s.buildStrip(ctx, period, 0, len(board)) // alle Donnerstage – auf dem Dashboard auswählbar
 	if err != nil {
 		s.fail(w, "strip", err)
 		return
@@ -160,34 +160,20 @@ func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
 	period := s.period()
 	userId := r.PathValue("userId")
 
-	users, err := s.store.ListUsers(ctx)
+	user, err := s.store.GetUser(ctx, userId)
 	if err != nil {
-		s.fail(w, "users", err)
+		s.fail(w, "user", err)
 		return
-	}
-	var user *store.User
-	for i := range users {
-		if users[i].ID == userId {
-			user = &users[i]
-			break
-		}
 	}
 	if user == nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	board, err := s.store.Leaderboard(ctx, period)
+	stats, err := s.store.UserLeaderboardRow(ctx, period, userId)
 	if err != nil {
 		s.fail(w, "leaderboard", err)
 		return
-	}
-	var stats store.LeaderboardRow
-	for _, row := range board {
-		if row.UserID == userId {
-			stats = row
-			break
-		}
 	}
 
 	thursdays, err := s.store.ListThursdays(ctx, period)
@@ -195,16 +181,14 @@ func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "thursdays", err)
 		return
 	}
-	absences, err := s.store.ListAbsences(ctx, period)
+	absences, err := s.store.ListUserAbsences(ctx, period, userId)
 	if err != nil {
 		s.fail(w, "absences", err)
 		return
 	}
 	absenceMap := make(map[string]*string, len(absences))
 	for _, a := range absences {
-		if a.UserID == userId {
-			absenceMap[timeutil.FormatISO(a.Date)] = a.Message
-		}
+		absenceMap[timeutil.FormatISO(a.Date)] = a.Message
 	}
 
 	entries := make([]members.DetailEntry, 0, len(thursdays))
@@ -227,37 +211,24 @@ func (s *Server) handleDays(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "users", err)
 		return
 	}
-	thursdays, err := s.store.ListThursdays(ctx, period)
+	dayAbsences, err := s.store.ListDayAbsences(ctx, period)
 	if err != nil {
-		s.fail(w, "thursdays", err)
+		s.fail(w, "day absences", err)
 		return
 	}
-	absences, err := s.store.ListAbsences(ctx, period)
-	if err != nil {
-		s.fail(w, "absences", err)
-		return
-	}
-	strip, err := s.buildStrip(ctx, period, 12)
+	strip, err := s.buildStrip(ctx, period, 12, len(users))
 	if err != nil {
 		s.fail(w, "strip", err)
 		return
 	}
 
-	awayByDate := make(map[string][]string, len(thursdays))
-	for _, a := range absences {
-		k := timeutil.FormatISO(a.Date)
-		awayByDate[k] = append(awayByDate[k], a.UserID)
-	}
-
-	cards := make([]days.DayCard, 0, len(thursdays))
-	for _, t := range thursdays {
-		k := timeutil.FormatISO(t)
-		away := awayByDate[k]
+	cards := make([]days.DayCard, 0, len(dayAbsences))
+	for _, d := range dayAbsences {
 		cards = append(cards, days.DayCard{
-			Date:          t,
-			Attendance:    len(users) - len(away),
-			AwayCount:     len(away),
-			AbsentUserIDs: away,
+			Date:          d.Date,
+			Attendance:    len(users) - len(d.AbsentUserIDs),
+			AwayCount:     len(d.AbsentUserIDs),
+			AbsentUserIDs: d.AbsentUserIDs,
 		})
 	}
 
@@ -279,33 +250,22 @@ func (s *Server) handleDayDetail(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "users", err)
 		return
 	}
-	period := s.period()
-	excludedDays, err := s.store.ListExcludedDays(ctx, period)
+	isExcluded, err := s.store.IsExcludedDay(ctx, date)
 	if err != nil {
 		s.fail(w, "excluded", err)
 		return
 	}
-	isExcluded := false
-	for _, d := range excludedDays {
-		if timeutil.FormatISO(d) == dateStr {
-			isExcluded = true
-			break
-		}
-	}
 
 	var cells []days.Cell
 	if !isExcluded {
-		// Fetch absences for this specific date by filtering all in period.
-		all, err := s.store.ListAbsences(ctx, period)
+		dayAbsences, err := s.store.AbsencesOn(ctx, date)
 		if err != nil {
 			s.fail(w, "absences", err)
 			return
 		}
-		absMap := make(map[string]*string)
-		for _, a := range all {
-			if timeutil.FormatISO(a.Date) == dateStr {
-				absMap[a.UserID] = a.Message
-			}
+		absMap := make(map[string]*string, len(dayAbsences))
+		for _, a := range dayAbsences {
+			absMap[a.UserID] = a.Message
 		}
 		cells = make([]days.Cell, 0, len(users))
 		for _, u := range users {
@@ -388,73 +348,24 @@ func (s *Server) renderExcludedList(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// buildStrip baut die Donnerstags-Kacheln. limit == 0 => alle (Dashboard);
-// limit > 0 => nur die jüngsten N.
-func (s *Server) buildStrip(ctx context.Context, period timeutil.Period, limit int) ([]partials.ThursdayStripItem, error) {
-	thursdays, err := s.store.ListThursdays(ctx, period)
-	if err != nil {
-		return nil, err
-	}
-	excludedDays, err := s.store.ListExcludedDays(ctx, period)
-	if err != nil {
-		return nil, err
-	}
-	absences, err := s.store.ListAbsences(ctx, period)
-	if err != nil {
-		return nil, err
-	}
-	users, err := s.store.ListUsers(ctx)
+// buildStrip baut die Donnerstags-Kacheln aus einer einzigen SQL-Abfrage
+// (Union, Abmelde-Zahl, Limit und Sortierung passieren in der DB).
+// limit == 0 => alle (Dashboard); limit > 0 => nur die jüngsten N.
+func (s *Server) buildStrip(ctx context.Context, period timeutil.Period, limit, totalUsers int) ([]partials.ThursdayStripItem, error) {
+	days, err := s.store.ThursdayStrip(ctx, period, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	awayCounts := make(map[string]int)
-	for _, a := range absences {
-		awayCounts[timeutil.FormatISO(a.Date)]++
-	}
-	excludedSet := make(map[string]bool, len(excludedDays))
-	for _, d := range excludedDays {
-		excludedSet[timeutil.FormatISO(d)] = true
-	}
-
-	// Combine: take the most recent 12 days from union(thursdays, excluded), newest first, then reverse to oldest-first display.
-	all := make(map[string]time.Time, len(thursdays)+len(excludedDays))
-	for _, t := range thursdays {
-		all[timeutil.FormatISO(t)] = t
-	}
-	for _, t := range excludedDays {
-		all[timeutil.FormatISO(t)] = t
-	}
-	// Only keep Thursdays that are <= today.
-	today := timeutil.StartOfDay(time.Now())
-	dates := make([]time.Time, 0, len(all))
-	for _, t := range all {
-		if !t.After(today) && t.Weekday() == time.Thursday {
-			dates = append(dates, t)
-		}
-	}
-	sort.Slice(dates, func(i, j int) bool { return dates[i].After(dates[j]) })
-	if limit > 0 && len(dates) > limit {
-		dates = dates[:limit]
-	}
-	// reverse: oldest-left, newest-right
-	for i, j := 0, len(dates)-1; i < j; i, j = i+1, j-1 {
-		dates[i], dates[j] = dates[j], dates[i]
-	}
-
-	totalUsers := len(users)
-	out := make([]partials.ThursdayStripItem, 0, len(dates))
-	for _, t := range dates {
-		k := timeutil.FormatISO(t)
-		if excludedSet[k] {
-			out = append(out, partials.ThursdayStripItem{Date: t, Excluded: true})
+	out := make([]partials.ThursdayStripItem, 0, len(days))
+	for _, d := range days {
+		if d.Excluded {
+			out = append(out, partials.ThursdayStripItem{Date: d.Date, Excluded: true})
 			continue
 		}
-		away := awayCounts[k]
-		attended := totalUsers - away
 		out = append(out, partials.ThursdayStripItem{
-			Date: t,
-			Rate: partials.RateLabel(attended, totalUsers),
+			Date: d.Date,
+			Rate: partials.RateLabel(totalUsers-d.Away, totalUsers),
 		})
 	}
 	return out, nil
@@ -472,35 +383,15 @@ func (s *Server) handleToggleAbsence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	absences, err := s.store.ListAbsences(r.Context(), s.period())
+	nowAbsent, err := s.store.ToggleAbsence(r.Context(), userID, date)
 	if err != nil {
-		s.fail(w, "absences", err)
+		s.fail(w, "toggle absence", err)
 		return
 	}
-	currentlyAbsent := false
-	iso := timeutil.FormatISO(date)
-	for _, a := range absences {
-		if a.UserID == userID && timeutil.FormatISO(a.Date) == iso {
-			currentlyAbsent = true
-			break
-		}
-	}
-
-	var nowAbsent bool
-	if currentlyAbsent {
-		if err := s.store.DeleteAbsence(r.Context(), userID, date); err != nil {
-			s.fail(w, "delete absence", err)
-			return
-		}
-		nowAbsent = false
-		s.triggerToast(w, "success", "Als anwesend markiert.")
-	} else {
-		if err := s.store.InsertAbsence(r.Context(), userID, date, nil); err != nil {
-			s.fail(w, "insert absence", err)
-			return
-		}
-		nowAbsent = true
+	if nowAbsent {
 		s.triggerToast(w, "success", "Als abgemeldet markiert.")
+	} else {
+		s.triggerToast(w, "success", "Als anwesend markiert.")
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

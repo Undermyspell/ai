@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
 )
 
@@ -40,11 +42,15 @@ func (s *Postgres) EnsureStrafenSchema(ctx context.Context) error {
 	return err
 }
 
-// PenaltyInputs sammelt die Eingangsdaten für penalty.Assess: User (mit auf
-// 2025-12-01 geklemmtem Start), deren Abwesenheits-Donnerstage, Sperrtage und
-// alle strafen-Zeilen.
-func (s *Postgres) PenaltyInputs(ctx context.Context) (penalty.Input, error) {
+// PenaltyInputs sammelt die Eingangsdaten für penalty.Assess zum Stichtag
+// asOf: User (mit auf 2025-12-01 geklemmtem Start), deren
+// Abwesenheits-Donnerstage, Sperrtage und strafen-Zeilen. Alle Queries sind
+// auf [2025-12-01, asOf] begrenzt – Zeilen außerhalb können das Ergebnis
+// nicht beeinflussen (Assess betrachtet nur Donnerstage in diesem Fenster,
+// und Resets zukünftiger strafen-Zeilen liegen immer nach deren datum).
+func (s *Postgres) PenaltyInputs(ctx context.Context, asOf time.Time) (penalty.Input, error) {
 	var in penalty.Input
+	minStart := penalty.ClampStart(nil)
 
 	const usersQ = `SELECT "userId", "userName", "startDate" FROM public.users`
 	rows, err := s.db.QueryContext(ctx, usersQ)
@@ -75,8 +81,10 @@ func (s *Postgres) PenaltyInputs(ctx context.Context) (penalty.Input, error) {
 
 	const absQ = `
 		SELECT "userId", date FROM public.stammtisch_abwesenheit
-		WHERE EXTRACT(ISODOW FROM date) = 4`
-	arows, err := s.db.QueryContext(ctx, absQ)
+		WHERE EXTRACT(ISODOW FROM date) = 4
+		  AND date >= $1 AND date <= $2
+		  AND date NOT IN (SELECT date FROM excluded_days)`
+	arows, err := s.db.QueryContext(ctx, absQ, minStart, asOf)
 	if err != nil {
 		return in, fmt.Errorf("PenaltyInputs absences: %w", err)
 	}
@@ -97,8 +105,8 @@ func (s *Postgres) PenaltyInputs(ctx context.Context) (penalty.Input, error) {
 		return in, err
 	}
 
-	const exclQ = `SELECT date FROM excluded_days`
-	erows, err := s.db.QueryContext(ctx, exclQ)
+	const exclQ = `SELECT date FROM excluded_days WHERE date >= $1 AND date <= $2`
+	erows, err := s.db.QueryContext(ctx, exclQ, minStart, asOf)
 	if err != nil {
 		return in, fmt.Errorf("PenaltyInputs excluded: %w", err)
 	}
@@ -117,8 +125,9 @@ func (s *Postgres) PenaltyInputs(ctx context.Context) (penalty.Input, error) {
 	const strafenQ = `
 		SELECT id, "userId", art, datum, COALESCE(betrag, 0), status,
 		       created_at, beglichen_am, geloescht_am
-		FROM strafen`
-	srows, err := s.db.QueryContext(ctx, strafenQ)
+		FROM strafen
+		WHERE datum <= $1`
+	srows, err := s.db.QueryContext(ctx, strafenQ, asOf)
 	if err != nil {
 		return in, fmt.Errorf("PenaltyInputs strafen: %w", err)
 	}
@@ -147,13 +156,25 @@ func (s *Postgres) PenaltyInputs(ctx context.Context) (penalty.Input, error) {
 	return in, srows.Err()
 }
 
-func (s *Postgres) InsertAutoStrafe(ctx context.Context, userID string, datum time.Time) error {
+// InsertAutoStrafen persistiert alle Marker in einem Statement (eine
+// Round-Trip, atomar – kein Teilzustand bei Fehlern).
+func (s *Postgres) InsertAutoStrafen(ctx context.Context, marks []AutoStrafe) error {
+	if len(marks) == 0 {
+		return nil
+	}
+	userIDs := make([]string, len(marks))
+	datums := make([]string, len(marks))
+	for i, m := range marks {
+		userIDs[i] = m.UserID
+		datums[i] = m.Datum.Format("2006-01-02")
+	}
 	const q = `
 		INSERT INTO strafen ("userId", art, datum)
-		VALUES ($1, 'fehltage', $2)
+		SELECT u, 'fehltage', d
+		FROM unnest($1::text[], $2::date[]) AS t(u, d)
 		ON CONFLICT ("userId", datum) WHERE art = 'fehltage' DO NOTHING`
-	if _, err := s.db.ExecContext(ctx, q, userID, datum); err != nil {
-		return fmt.Errorf("InsertAutoStrafe: %w", err)
+	if _, err := s.db.ExecContext(ctx, q, pq.Array(userIDs), pq.Array(datums)); err != nil {
+		return fmt.Errorf("InsertAutoStrafen: %w", err)
 	}
 	return nil
 }

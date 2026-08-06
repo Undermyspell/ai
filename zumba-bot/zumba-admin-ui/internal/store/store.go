@@ -37,16 +37,48 @@ type LeaderboardRow struct {
 	Streak int
 }
 
+// StripDay ist eine Kachel des Donnerstags-Strips: Datum, Sperrtag-Flag und
+// Anzahl Abmeldungen – komplett in SQL aggregiert.
+type StripDay struct {
+	Date     time.Time
+	Excluded bool
+	Away     int
+}
+
+// DayAbsences sind die Abmeldungen eines gültigen Donnerstags (GROUP BY in SQL).
+type DayAbsences struct {
+	Date          time.Time
+	AbsentUserIDs []string
+}
+
 // Store is the interface used by handlers. Phase 2 adds the write methods.
 type Store interface {
 	ListUsers(ctx context.Context) ([]User, error)
+	// GetUser liefert einen einzelnen User (nil, wenn unbekannt).
+	GetUser(ctx context.Context, userID string) (*User, error)
 	ListThursdays(ctx context.Context, p timeutil.Period) ([]time.Time, error)
 	ListExcludedDays(ctx context.Context, p timeutil.Period) ([]time.Time, error)
+	// IsExcludedDay prüft einen einzelnen Tag (EXISTS statt Liste + Scan).
+	IsExcludedDay(ctx context.Context, date time.Time) (bool, error)
 	ListAbsences(ctx context.Context, p timeutil.Period) ([]Absence, error)
+	// AbsencesOn liefert nur die Abmeldungen eines Datums (WHERE date = $1).
+	AbsencesOn(ctx context.Context, date time.Time) ([]Absence, error)
+	// ListUserAbsences liefert nur die Abmeldungen eines Users im Zeitraum.
+	ListUserAbsences(ctx context.Context, p timeutil.Period, userID string) ([]Absence, error)
 	Leaderboard(ctx context.Context, p timeutil.Period) ([]LeaderboardRow, error)
+	// UserLeaderboardRow liefert die Leaderboard-Zeile eines einzelnen Users.
+	UserLeaderboardRow(ctx context.Context, p timeutil.Period, userID string) (LeaderboardRow, error)
+	// ThursdayStrip liefert die jüngsten Donnerstage (inkl. Sperrtage) bis
+	// heute mit Abmelde-Zahl, aufsteigend sortiert; limit 0 = alle.
+	ThursdayStrip(ctx context.Context, p timeutil.Period, limit int) ([]StripDay, error)
+	// ListDayAbsences gruppiert Abmeldungen je gültigem Donnerstag (neueste zuerst).
+	ListDayAbsences(ctx context.Context, p timeutil.Period) ([]DayAbsences, error)
 
 	InsertAbsence(ctx context.Context, userID string, date time.Time, message *string) error
 	DeleteAbsence(ctx context.Context, userID string, date time.Time) error
+	// ToggleAbsence kippt den Abmelde-Status (true = jetzt abgemeldet) ohne
+	// vorherigen Lese-Roundtrip.
+	ToggleAbsence(ctx context.Context, userID string, date time.Time) (bool, error)
 	InsertExcludedDay(ctx context.Context, date time.Time) error
 	DeleteExcludedDay(ctx context.Context, date time.Time) error
 
@@ -59,15 +91,17 @@ type Store interface {
 	ListMLMessages(ctx context.Context, onlyDisagree bool, limit int) ([]MLMessage, error)
 	MLShadowStats(ctx context.Context) (MLShadowStats, error)
 	// VerifyMLMessage markiert einen Eintrag als handgeprüft; correctedLabel
-	// ist das korrekte Label (nil = Gemini-Label war korrekt).
-	VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) error
+	// ist das korrekte Label (nil = Gemini-Label war korrekt). Liefert die
+	// aktualisierte Zeile (UPDATE ... RETURNING).
+	VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) (*MLMessage, error)
 
 	// Manueller ML-Test (ml_test_messages): über das UI eingetippte Nachrichten,
 	// vom classifier-service klassifiziert und per Hand bewertet.
 	InsertMLTest(ctx context.Context, message, modelLabel string, confidence float64) (int64, error)
 	ListMLTests(ctx context.Context, limit int) ([]MLTestMessage, error)
-	// JudgeMLTest hinterlegt das erwartete Label ("passt" = Modell-Label).
-	JudgeMLTest(ctx context.Context, id int64, expectedLabel string) error
+	// JudgeMLTest hinterlegt das erwartete Label ("passt" = Modell-Label) und
+	// liefert die aktualisierte Zeile (UPDATE ... RETURNING).
+	JudgeMLTest(ctx context.Context, id int64, expectedLabel string) (*MLTestMessage, error)
 	DeleteMLTest(ctx context.Context, id int64) error
 
 	// Strafen-Feature. ListStrafen liefert ALLE Zeilen (inkl. beglichen und
