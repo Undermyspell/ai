@@ -58,12 +58,25 @@ type fakeSender struct {
 	number string
 	text   string
 	called bool
+
+	imageNumber  string
+	imageCaption string
+	imagePNG     []byte
+	imageCalled  bool
 }
 
 func (f *fakeSender) SendText(_ context.Context, number, text string) error {
 	f.called = true
 	f.number = number
 	f.text = text
+	return nil
+}
+
+func (f *fakeSender) SendImage(_ context.Context, number, caption string, png []byte) error {
+	f.imageCalled = true
+	f.imageNumber = number
+	f.imageCaption = caption
+	f.imagePNG = png
 	return nil
 }
 

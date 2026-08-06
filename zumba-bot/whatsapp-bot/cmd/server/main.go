@@ -12,6 +12,7 @@ import (
 	"github.com/michael/zumba-whatsapp-bot/internal/config"
 	"github.com/michael/zumba-whatsapp-bot/internal/db"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
+	"github.com/michael/zumba-whatsapp-bot/internal/renderer"
 	"github.com/michael/zumba-whatsapp-bot/internal/shadow"
 	"github.com/michael/zumba-whatsapp-bot/internal/sink"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
@@ -63,6 +64,12 @@ func main() {
 	srv.PreviewJID = cfg.PreviewJID
 	if cfg.PreviewJID != "" {
 		log.Printf("📱 Vorschau-Modus aktiv → %s", cfg.PreviewJID)
+	}
+
+	// Bild-Karte: Statistik als PNG über den renderer-service.
+	if cfg.RendererURL != "" {
+		srv.Renderer = renderer.NewClient(cfg.RendererURL)
+		log.Printf("🖼  Bild-Karte aktiv (Renderer: %s)", cfg.RendererURL)
 	}
 
 	// Trace-Aufzeichnung (Gruppe + Donnerstag) in der zumba-DB.

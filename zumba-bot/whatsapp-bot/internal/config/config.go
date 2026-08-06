@@ -29,6 +29,10 @@ type Config struct {
 	// ML-Shadow-Modus (z.B. http://zumba-classifier:8080). Leer = Shadow aus.
 	ClassifierURL string
 
+	// RendererURL ist die Basis-URL des renderer-service, der die Statistik
+	// als PNG-Karte rendert (z.B. http://zumba-renderer:8080). Leer = Bild aus.
+	RendererURL string
+
 	// Location steuert die Donnerstag-Prüfung und das Tagesdatum für die DB-Writes.
 	Location *time.Location
 }
@@ -109,6 +113,7 @@ func Load() (Config, error) {
 		GroupJID:      getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
 		PreviewJID:    os.Getenv("PREVIEW_JID"),
 		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
+		RendererURL:   os.Getenv("RENDERER_URL"),
 		Location:      loc,
 	}
 

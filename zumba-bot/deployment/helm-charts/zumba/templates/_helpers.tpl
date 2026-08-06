@@ -145,6 +145,22 @@ app.kubernetes.io/component: classifier
 {{- end }}
 
 {{/*
+renderer specific labels
+*/}}
+{{- define "zumba.renderer.labels" -}}
+{{ include "zumba.labels" . }}
+app.kubernetes.io/component: renderer
+{{- end }}
+
+{{/*
+renderer selector labels
+*/}}
+{{- define "zumba.renderer.selectorLabels" -}}
+{{ include "zumba.selectorLabels" . }}
+app.kubernetes.io/component: renderer
+{{- end }}
+
+{{/*
 wrapped specific labels
 */}}
 {{- define "zumba.wrapped.labels" -}}

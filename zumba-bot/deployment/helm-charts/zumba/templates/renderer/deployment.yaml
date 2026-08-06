@@ -1,0 +1,42 @@
+{{- if .Values.renderer.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zumba.fullname" . }}-renderer
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.renderer.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      {{- include "zumba.renderer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zumba.renderer.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: renderer
+        image: "{{ .Values.renderer.image.repository }}:{{ .Values.renderer.image.tag }}"
+        imagePullPolicy: {{ .Values.renderer.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.renderer.resources | nindent 10 }}
+{{- end }}

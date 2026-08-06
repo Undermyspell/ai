@@ -64,10 +64,20 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.2.4"
+    tag: "0.2.5"
     pullPolicy: IfNotPresent
   weeklyReport:
     enabled: true
+
+# Statistik-Bild-Karte (HTML → PNG via headless Chromium). Auf true setzen,
+# sobald das zumba-renderer-Image auf dem Pi gebaut/importiert ist — der Bot
+# bekommt dann automatisch RENDERER_URL und kann ?format=image.
+renderer:
+  enabled: true
+  image:
+    repository: zumba-renderer
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
 
 # ML-Klassifikator im Shadow-Modus (Bot loggt Gemini vs. Modell in ml_messages).
 classifier:
@@ -82,7 +92,7 @@ adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.2.8"
+    tag: "0.2.9"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io

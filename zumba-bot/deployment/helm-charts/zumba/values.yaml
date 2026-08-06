@@ -193,6 +193,30 @@ whatsappBot:
     schedule: "0 21 * * 4"  # Donnerstag 21:00
     timeZone: Europe/Berlin
 
+# renderer: rendert die Statistik-Bild-Karte (HTML → PNG, headless Chromium).
+# Der whatsapp-bot bekommt bei enabled=true automatisch RENDERER_URL gesetzt
+# und kann die Statistik als Bild verschicken (?format=image).
+renderer:
+  enabled: false  # Auf true setzen, sobald ein Image gebaut/importiert wurde
+  image:
+    repository: zumba-renderer
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  # Chromium startet pro Render-Request (Wochenreport/Bot-Test) und braucht
+  # dann kurz ordentlich RAM; idle fast nichts.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi
+
+  service:
+    type: ClusterIP
+    port: 8080
+
 # classifier: eigenes ML-Modell (TF-IDF + LogReg, pure Go) im Shadow-Modus.
 # Der whatsapp-bot bekommt bei enabled=true automatisch CLASSIFIER_URL gesetzt
 # und protokolliert Gemini- vs. Modell-Label in ml_messages.

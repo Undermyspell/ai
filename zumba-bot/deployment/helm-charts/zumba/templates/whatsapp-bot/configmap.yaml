@@ -22,6 +22,10 @@ data:
   # ML-Shadow-Modus: eigenes Modell klassifiziert parallel zu Gemini (ml_messages)
   CLASSIFIER_URL: http://{{ include "zumba.fullname" . }}-classifier:{{ .Values.classifier.service.port }}
   {{- end }}
+  {{- if .Values.renderer.enabled }}
+  # Statistik-Bild-Karte: HTML → PNG über den renderer-service (?format=image)
+  RENDERER_URL: http://{{ include "zumba.fullname" . }}-renderer:{{ .Values.renderer.service.port }}
+  {{- end }}
   # ZUMBA_GROUP_JID + PREVIEW_JID kommen aus dem SealedSecret whatsapp-bot-secrets
   # (statische WhatsApp-Nummern werden als Secret behandelt, nicht im ConfigMap).
 {{- end }}

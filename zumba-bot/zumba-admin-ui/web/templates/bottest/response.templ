@@ -10,6 +10,7 @@ type ResponseVM struct {
 	UserID         string
 	DryRun         bool
 	PreviewTo      string
+	ImageBase64    string // PNG-Karte (format=image), base64 ohne data:-Präfix
 }
 
 templ Response(vm ResponseVM) {
@@ -20,9 +21,15 @@ templ Response(vm ResponseVM) {
 			<div class="badge dryrun">🧪 Dry-Run — nichts gesendet/geschrieben</div>
 		}
 		if vm.Path == "statistik" {
-			<div class="wa-bubble">
-				<pre>{ vm.Message }</pre>
-			</div>
+			if vm.ImageBase64 != "" {
+				<div class="wa-bubble wa-bubble-image">
+					<img class="wa-image" alt="Statistik-Karte" src={ templ.SafeURL("data:image/png;base64," + vm.ImageBase64) }/>
+				</div>
+			} else {
+				<div class="wa-bubble">
+					<pre>{ vm.Message }</pre>
+				</div>
+			}
 			if vm.PreviewTo != "" {
 				<div class="wa-meta">Als Vorschau an { vm.PreviewTo } gesendet (nicht an die Gruppe).</div>
 			} else if vm.DryRun {

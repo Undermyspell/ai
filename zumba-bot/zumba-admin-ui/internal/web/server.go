@@ -445,6 +445,7 @@ type botOutcome struct {
 	Reason         string `json:"reason"`
 	DryRun         bool   `json:"dryRun"`
 	PreviewTo      string `json:"previewTo"`
+	ImageBase64    string `json:"imageBase64"`
 }
 
 // modeQuery übersetzt den Modus der Bot-Test-Seite in den Query-Parameter des Bots.
@@ -466,6 +467,9 @@ func (s *Server) handleBotTestWeekly(w http.ResponseWriter, r *http.Request) {
 	if date := r.FormValue("date"); date != "" {
 		url += "&date=" + date
 	}
+	if r.FormValue("format") == "image" {
+		url += "&format=image"
+	}
 	s.proxyBot(w, r, url, nil)
 }
 
@@ -480,6 +484,9 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	// Stichtag gilt auch für den Statistik-Pfad des /test-Endpoints.
 	if date := r.FormValue("date"); date != "" {
 		url += "&date=" + date
+	}
+	if r.FormValue("format") == "image" {
+		url += "&format=image"
 	}
 	s.proxyBot(w, r, url, strings.NewReader(payload))
 }
@@ -513,7 +520,7 @@ func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, bo
 	_ = bottest.Response(bottest.ResponseVM{
 		Path: out.Path, Classification: out.Classification, Action: out.Action,
 		Message: out.Message, Recipient: out.Recipient, Date: out.Date, UserID: out.UserID,
-		DryRun: out.DryRun, PreviewTo: out.PreviewTo,
+		DryRun: out.DryRun, PreviewTo: out.PreviewTo, ImageBase64: out.ImageBase64,
 	}).Render(r.Context(), w)
 }
 

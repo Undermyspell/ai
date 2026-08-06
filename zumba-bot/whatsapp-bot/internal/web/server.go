@@ -5,6 +5,7 @@ package web
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,9 +27,15 @@ type Classifier interface {
 	Classify(ctx context.Context, message string) (classifier.Classification, error)
 }
 
-// Sender verschickt WhatsApp-Texte (entkoppelt für Tests).
+// Sender verschickt WhatsApp-Nachrichten (entkoppelt für Tests).
 type Sender interface {
 	SendText(ctx context.Context, number, text string) error
+	SendImage(ctx context.Context, number, caption string, png []byte) error
+}
+
+// Renderer rendert HTML zu einem PNG (renderer-service; nil = Bild-Karte aus).
+type Renderer interface {
+	PNG(ctx context.Context, html string, width int) ([]byte, error)
 }
 
 // Tracer persistiert einen aufgezeichneten Event-Trace (optional, nil = aus).
@@ -61,6 +68,9 @@ type Server struct {
 
 	// Shadow protokolliert den ML-Shadow-Modus (von main gesetzt; nil = aus).
 	Shadow ShadowRecorder
+
+	// Renderer rendert die Statistik-Bild-Karte (von main gesetzt; nil = aus).
+	Renderer Renderer
 }
 
 func New(st store.Store, cl Classifier, snd Sender, groupJID string, loc *time.Location) *Server {
@@ -99,10 +109,15 @@ type Outcome struct {
 	DryRun         bool   `json:"dryRun"`              // true: nichts gesendet/geschrieben, nur berechnet
 	PreviewTo      string `json:"previewTo,omitempty"` // gesetzt: Nachricht wurde als Vorschau an diese Nummer geschickt
 
-	// stats sind die bereits berechneten Ranglisten-Zeilen des Statistik-Pfads
-	// (nur intern, für alternative Render-Styles der Testseite – erspart einen
-	// zweiten UserStats-Query).
-	stats []store.Stat
+	// ImageBase64 ist die als PNG gerenderte Statistik-Karte (nur bei
+	// ?format=image; base64 ohne data:-Präfix).
+	ImageBase64 string `json:"imageBase64,omitempty"`
+
+	// stats/penalties sind die bereits berechneten Daten des Statistik-Pfads
+	// (nur intern, für alternative Render-Styles und die Bild-Karte der
+	// Testseite – erspart doppelte Queries).
+	stats     []store.Stat
+	penalties []penalty.Entry
 }
 
 // run verarbeitet ein Event und protokolliert jeden Entscheidungspunkt im
@@ -121,8 +136,8 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 	// Verzweigung 1: "statistik"
 	if strings.EqualFold(strings.TrimSpace(msg), "statistik") {
 		rec.Step(tracestore.NodeCheckStatistik, tracestore.OutcomePass, `"statistik"?`, "ja")
-		text, stats := s.runStats(ctx, ev.RemoteJid(), dryRun, asOf, rec)
-		return Outcome{Path: "statistik", Message: text, Recipient: ev.RemoteJid(), DryRun: dryRun, stats: stats}
+		text, stats, entries := s.runStats(ctx, ev.RemoteJid(), dryRun, asOf, rec)
+		return Outcome{Path: "statistik", Message: text, Recipient: ev.RemoteJid(), DryRun: dryRun, stats: stats, penalties: entries}
 	}
 	rec.Step(tracestore.NodeCheckStatistik, tracestore.OutcomeInfo, `"statistik"?`, "nein")
 
@@ -213,18 +228,19 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 
 // runStats baut den Ranglisten-Text zum Stichtag asOf und protokolliert
 // Berechnung + Versand.
-func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asOf time.Time, rec *tracestore.Recorder) (string, []store.Stat) {
+func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asOf time.Time, rec *tracestore.Recorder) (string, []store.Stat, []penalty.Entry) {
 	stats, err := s.store.UserStats(ctx, asOf)
 	if err != nil {
 		rec.Step(tracestore.NodeBuildStats, tracestore.OutcomeError, "Statistik berechnen", err.Error())
 		log.Printf("⚠️  UserStats: %v", err)
-		return "", nil
+		return "", nil, nil
 	}
-	text := report.BuildWithStrafen(stats, s.strafenBlock(ctx, asOf, !dryRun))
+	entries, perr := s.penalties(ctx, asOf, !dryRun)
+	text := report.BuildWithStrafen(stats, strafenBlock(entries, perr, asOf))
 	rec.Step(tracestore.NodeBuildStats, tracestore.OutcomePass, "Statistik berechnen", fmt.Sprintf("%d Nutzer", len(stats)))
 	if dryRun {
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeInfo, "An Gruppe senden", "Dry-Run – nicht gesendet")
-		return text, stats
+		return text, stats, entries
 	}
 	if err := s.sender.SendText(ctx, receiver, text); err != nil {
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "An Gruppe senden", err.Error())
@@ -233,7 +249,7 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asO
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomePass, "An Gruppe senden", "→ "+receiver)
 		log.Printf("📊 Statistik gesendet an %s", receiver)
 	}
-	return text, stats
+	return text, stats, entries
 }
 
 // handleWeekly versendet den automatischen Wochenreport an die Zumba-Gruppe
@@ -241,10 +257,13 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asO
 // nur und sendet nicht – für den Test-Button im Admin-UI. ?date=YYYY-MM-DD
 // simuliert den Stichtag des Strafenblocks (nur Strafen – die Rangliste
 // rechnet weiterhin bis heute) und erzwingt Dry-Run, sofern nicht Vorschau.
+// ?format=image rendert die Statistik zusätzlich als PNG-Karte und verschickt
+// bei echtem Versand/Vorschau das Bild statt des Texts.
 func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	dryRun := q.Get("dryRun") == "true"
 	preview := q.Get("preview") == "true" && s.PreviewJID != ""
+	asImage := q.Get("format") == "image"
 
 	asOf := s.today()
 	if ds := q.Get("date"); ds != "" {
@@ -258,11 +277,58 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 			dryRun = true // simulierter Stichtag geht nie an die Gruppe
 		}
 	}
+	send := !(dryRun || preview)
+	ctx := r.Context()
 
-	text := s.weeklyText(r.Context(), !(dryRun || preview), asOf)
-	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: dryRun || preview}
+	stats, err := s.store.UserStats(ctx, asOf)
+	if err != nil {
+		log.Printf("⚠️  UserStats: %v", err)
+		stats = nil
+	}
+	var (
+		text    string
+		entries []penalty.Entry
+	)
+	if stats != nil {
+		var perr error
+		entries, perr = s.penalties(ctx, asOf, send)
+		text = report.BuildWeeklyWithStrafen(stats, strafenBlock(entries, perr, asOf))
+	}
+
+	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: !send}
+
+	var png []byte
+	if asImage && stats != nil {
+		png, err = s.renderCard(ctx, stats, entries, asOf, true)
+		if err != nil {
+			http.Error(w, "Bild-Rendering fehlgeschlagen: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		out.ImageBase64 = base64.StdEncoding.EncodeToString(png)
+	}
+
+	caption := "📅 Automatischer Wochenreport · Stand " + asOf.Format("02.01.2006")
+	if send && text != "" {
+		var err error
+		if asImage {
+			err = s.sender.SendImage(ctx, s.groupJID, caption, png)
+		} else {
+			err = s.sender.SendText(ctx, s.groupJID, text)
+		}
+		if err != nil {
+			log.Printf("⚠️  Wochenreport-Versand(%s): %v", s.groupJID, err)
+		} else {
+			log.Printf("📅 Wochenreport gesendet an %s", s.groupJID)
+		}
+	}
 	if preview && text != "" {
-		if err := s.sender.SendText(r.Context(), s.PreviewJID, text); err != nil {
+		var err error
+		if asImage {
+			err = s.sender.SendImage(ctx, s.PreviewJID, caption, png)
+		} else {
+			err = s.sender.SendText(ctx, s.PreviewJID, text)
+		}
+		if err != nil {
 			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
 		} else {
 			out.PreviewTo = s.PreviewJID
@@ -274,35 +340,27 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(out)
 }
 
-// weeklyText baut den Wochenreport-Text (mit Hinweis-Header und Strafenblock
-// zum Stichtag asOf) und sendet ihn bei send=true an die konfigurierte
-// Zumba-Gruppe. Nur echte Versände persistieren neu erkannte Strafen-Marker.
-func (s *Server) weeklyText(ctx context.Context, send bool, asOf time.Time) string {
-	stats, err := s.store.UserStats(ctx, asOf)
+// renderCard baut die Bild-Karte und lässt sie vom renderer-service als PNG
+// schießen. Fehlt der Renderer (RENDERER_URL leer), gibt es einen Fehler.
+func (s *Server) renderCard(ctx context.Context, stats []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) ([]byte, error) {
+	if s.Renderer == nil {
+		return nil, fmt.Errorf("kein Renderer konfiguriert (RENDERER_URL)")
+	}
+	html, err := report.BuildCardHTML(stats, entries, asOf, weekly)
 	if err != nil {
-		log.Printf("⚠️  UserStats: %v", err)
-		return ""
+		return nil, err
 	}
-	text := report.BuildWeeklyWithStrafen(stats, s.strafenBlock(ctx, asOf, send))
-	if send {
-		if err := s.sender.SendText(ctx, s.groupJID, text); err != nil {
-			log.Printf("⚠️  SendText(Wochenreport, %s): %v", s.groupJID, err)
-		} else {
-			log.Printf("📅 Wochenreport gesendet an %s", s.groupJID)
-		}
-	}
-	return text
+	return s.Renderer.PNG(ctx, html, report.CardWidth)
 }
 
-// strafenBlock berechnet alle Strafen zum Stichtag asOf und rendert den
-// Report-Abschnitt. persist=true schreibt Marker für neu erkannte
-// Fehltage-Strafen (nur echte Läufe – nie Dry-Run/Vorschau). Bei Fehlern
-// entfällt der Block, der Report geht trotzdem raus.
-func (s *Server) strafenBlock(ctx context.Context, asOf time.Time, persist bool) string {
+// penalties berechnet alle Strafen zum Stichtag asOf. persist=true schreibt
+// Marker für neu erkannte Fehltage-Strafen (nur echte Läufe – nie
+// Dry-Run/Vorschau).
+func (s *Server) penalties(ctx context.Context, asOf time.Time, persist bool) ([]penalty.Entry, error) {
 	in, err := s.store.PenaltyInputs(ctx, asOf)
 	if err != nil {
 		log.Printf("⚠️  PenaltyInputs: %v (Strafenblock entfällt)", err)
-		return ""
+		return nil, err
 	}
 	entries := penalty.Assess(in, asOf)
 	if persist {
@@ -317,6 +375,15 @@ func (s *Server) strafenBlock(ctx context.Context, asOf time.Time, persist bool)
 		if err := s.store.InsertAutoStrafen(ctx, marks); err != nil {
 			log.Printf("⚠️  InsertAutoStrafen (%d Marker): %v", len(marks), err)
 		}
+	}
+	return entries, nil
+}
+
+// strafenBlock rendert den Report-Abschnitt; bei einem Berechnungsfehler
+// entfällt der Block komplett (der Report geht trotzdem raus).
+func strafenBlock(entries []penalty.Entry, err error, asOf time.Time) string {
+	if err != nil {
+		return ""
 	}
 	return report.StrafenBlock(entries, asOf)
 }
@@ -372,6 +439,7 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	preview := q.Get("preview") == "true" && s.PreviewJID != ""
 	style := q.Get("style")
+	asImage := q.Get("format") == "image"
 
 	// ?date=YYYY-MM-DD simuliert den Verarbeitungstag (Statistik-Stichtag).
 	asOf := s.today()
@@ -395,8 +463,27 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 		out.Message = report.BuildByStyle(style, out.stats)
 	}
 
+	// Bild-Karte: Statistik als PNG rendern (Basis für Admin-UI-Vorschau);
+	// im Vorschau-Modus geht das Bild statt des Texts an die eigene Nummer.
+	var png []byte
+	if asImage && out.Path == "statistik" && out.stats != nil {
+		var err error
+		png, err = s.renderCard(r.Context(), out.stats, out.penalties, asOf, false)
+		if err != nil {
+			http.Error(w, "Bild-Rendering fehlgeschlagen: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		out.ImageBase64 = base64.StdEncoding.EncodeToString(png)
+	}
+
 	if preview && out.Path == "statistik" && out.Message != "" {
-		if err := s.sender.SendText(r.Context(), s.PreviewJID, out.Message); err != nil {
+		var err error
+		if asImage && png != nil {
+			err = s.sender.SendImage(r.Context(), s.PreviewJID, "🍻 Zumba Stats · Stand "+asOf.Format("02.01.2006"), png)
+		} else {
+			err = s.sender.SendText(r.Context(), s.PreviewJID, out.Message)
+		}
+		if err != nil {
 			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
 		} else {
 			out.PreviewTo = s.PreviewJID

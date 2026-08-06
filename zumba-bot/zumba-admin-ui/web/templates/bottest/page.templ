@@ -40,6 +40,18 @@ templ Page(vm PageVM) {
 				</select>
 				<span class="style-hint">Nur für „Statistik" – Live-Nachricht bleibt „Klassik".</span>
 			</div>
+			<div class="style-row">
+				<label>Ausgabe</label>
+				<label class="format-opt">
+					<input type="radio" name="format" value="text" checked/>
+					<span>💬 Nachricht</span>
+				</label>
+				<label class="format-opt">
+					<input type="radio" name="format" value="image"/>
+					<span>🖼️ Bild</span>
+				</label>
+				<span class="style-hint">Bild = PNG-Karte über den Renderer (nur „Statistik"/Wochenreport; Design-Auswahl gilt dann nicht).</span>
+			</div>
 			<fieldset class="mode-switch">
 				<legend>Modus</legend>
 				<label class="mode-opt">
@@ -63,7 +75,7 @@ templ Page(vm PageVM) {
 				type="button"
 				class="btn-secondary"
 				hx-get="/bot-test/weekly"
-				hx-include="[name='mode'],[name='date']"
+				hx-include="[name='mode'],[name='date'],[name='format']"
 				hx-target="#bot-response"
 				hx-swap="innerHTML"
 			>📅 Wochenreport testen</button>

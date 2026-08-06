@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.AntonDataURL}}") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+  }
+  :root {
+    --holz: #3D2314;
+    --holz-tief: #241309;
+    --biergold: #F59E0B;
+    --biergold-dunkel: #D97706;
+    --schaum: #FEF3C7;
+    --hairline: rgba(254, 243, 199, 0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--holz-tief);
+    font-family: "Noto Sans", "DejaVu Sans", sans-serif, "Noto Color Emoji";
+    color: var(--schaum);
+    font-feature-settings: "tnum";
+  }
+  .karte {
+    background:
+      radial-gradient(560px 340px at 12% -6%, rgba(245, 158, 11, 0.16), transparent 68%),
+      linear-gradient(168deg, #33200F 0%, var(--holz-tief) 62%);
+    padding: 46px 44px 30px;
+  }
+
+  .weekly {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--biergold);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 999px;
+    padding: 5px 14px;
+    margin-bottom: 22px;
+  }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; }
+  .titel .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(254, 243, 199, 0.55);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: "Anton", "Noto Sans", sans-serif, "Noto Color Emoji";
+    font-size: 48px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    color: var(--biergold);
+    text-shadow: 0 0 34px rgba(245, 158, 11, 0.28);
+  }
+  .kopf-meta { text-align: right; padding-bottom: 6px; }
+  .kopf-meta .total {
+    font-family: "Anton", sans-serif;
+    font-size: 40px;
+    line-height: 1;
+    color: var(--schaum);
+  }
+  .kopf-meta .total-label {
+    font-size: 13px;
+    color: rgba(254, 243, 199, 0.55);
+    margin-top: 4px;
+  }
+  .kopf-meta .datum {
+    font-size: 13px;
+    color: rgba(254, 243, 199, 0.4);
+    margin-top: 8px;
+  }
+
+  .highlights {
+    display: flex;
+    gap: 28px;
+    margin: 34px 0 8px;
+    padding: 18px 0;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .hl { flex: 1; min-width: 0; }
+  .hl + .hl { border-left: 1px solid var(--hairline); padding-left: 28px; }
+  .hl .label {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(254, 243, 199, 0.7);
+    margin-bottom: 6px;
+  }
+  .hl .wert {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--schaum);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hl .wert .zahl { color: var(--biergold); }
+
+  .rangliste { margin-top: 18px; }
+  .zeile {
+    display: grid;
+    grid-template-columns: 46px 1fr 210px 70px 58px;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(254, 243, 199, 0.07);
+  }
+  .zeile:last-child { border-bottom: none; }
+
+  .rang {
+    font-family: "Anton", sans-serif, "Noto Color Emoji";
+    font-size: 21px;
+    text-align: center;
+    color: rgba(254, 243, 199, 0.85);
+  }
+  .zeile.top3 .rang { font-size: 22px; }
+
+  .wer { min-width: 0; display: flex; align-items: baseline; gap: 9px; }
+  .name {
+    font-weight: 600;
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .zeile.top3 .name { font-size: 17px; }
+  .streak { font-size: 14.5px; color: rgba(254, 243, 199, 0.95); white-space: nowrap; }
+  .zeile.top3 .streak { font-size: 15px; }
+
+  .balken {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(254, 243, 199, 0.1);
+    overflow: hidden;
+  }
+  .zeile.top3 .balken { height: 10px; }
+  .balken .voll {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--biergold-dunkel), var(--biergold));
+  }
+  .zeile.top3 .balken .voll {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+  }
+
+  .bilanz {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(254, 243, 199, 0.85);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .prozent {
+    font-family: "Anton", sans-serif;
+    font-size: 18px;
+    text-align: right;
+    color: rgba(254, 243, 199, 0.85);
+  }
+  .zeile.top3 .prozent { font-size: 23px; color: var(--biergold); }
+
+  .strafen { margin-top: 30px; }
+  .abschnitt {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .abschnitt .linie { flex: 1; height: 1px; background: var(--hairline); }
+  .abschnitt .kopf {
+    font-family: "Anton", sans-serif, "Noto Color Emoji";
+    font-size: 19px;
+    letter-spacing: 0.1em;
+    color: var(--biergold);
+  }
+  .strafe {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(254, 243, 199, 0.07);
+  }
+  .strafe:last-child { border-bottom: none; }
+  .strafe.beglichen { opacity: 0.55; }
+  .strafe .sname { font-weight: 600; }
+  .strafe .grund { color: rgba(254, 243, 199, 0.55); font-size: 13.5px; flex: 1; }
+  .strafe .betrag {
+    font-family: "Anton", sans-serif;
+    font-size: 19px;
+    color: var(--biergold);
+    white-space: nowrap;
+  }
+  .keine-strafen {
+    padding: 10px 0 2px;
+    font-size: 14.5px;
+    color: rgba(254, 243, 199, 0.55);
+  }
+
+  .leer { padding: 40px 0; font-size: 18px; color: rgba(254, 243, 199, 0.6); }
+
+  footer {
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--hairline);
+    font-size: 12.5px;
+    color: rgba(254, 243, 199, 0.4);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="karte">
+  {{if .WeeklyNote}}<div class="weekly">📅 Automatischer Wochenreport · Do 21:00</div>{{end}}
+  <header>
+    <div class="titel">
+      <div class="eyebrow">Weihnachtsfeier → Weihnachtsfeier</div>
+      <h1>🍻 ZUMBA STATS</h1>
+    </div>
+    {{if .Users}}
+    <div class="kopf-meta">
+      <div class="total">{{.Total}}</div>
+      <div class="total-label">Stammtische</div>
+      <div class="datum">Stand {{.Datum}}</div>
+    </div>
+    {{end}}
+  </header>
+
+  {{if .Users}}
+  <div class="highlights">
+    <div class="hl">
+      <div class="label">🐐 GOAT</div>
+      <div class="wert">{{.GoatName}} <span class="zahl">{{.GoatPercent}}%</span></div>
+    </div>
+    {{if .MaxStreak}}
+    <div class="hl">
+      <div class="label">{{.MaxFlame}} Heißeste Serie</div>
+      <div class="wert">{{.MaxStreakNames}} <span class="zahl">{{.MaxStreak}}x</span></div>
+    </div>
+    {{end}}
+    {{if .MinStreak}}
+    <div class="hl">
+      <div class="label">{{.MinIce}} Längste Pause</div>
+      <div class="wert">{{.MinStreakNames}} <span class="zahl">{{.MinStreak}}x</span></div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="rangliste">
+    {{range .Users}}
+    <div class="zeile{{if .Top3}} top3{{end}}">
+      <div class="rang">{{if .Medal}}{{.Medal}}{{else}}{{.Rank}}{{end}}</div>
+      <div class="wer">
+        <span class="name">{{.Name}}</span>
+        {{if .StreakTag}}<span class="streak">{{.StreakTag}}</span>{{end}}
+      </div>
+      <div class="balken"><div class="voll" style="width: {{printf "%.1f" .PercentVal}}%"></div></div>
+      <div class="bilanz">{{.Attendance}}-{{.Away}}</div>
+      <div class="prozent">{{.Percent}}%</div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="leer">Keine Daten.</div>
+  {{end}}
+
+  <div class="strafen">
+    <div class="abschnitt"><div class="linie"></div><div class="kopf">💸 STRAFEN</div><div class="linie"></div></div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="strafe{{if .Beglichen}} beglichen{{end}}">
+        <span>{{.Icon}}</span>
+        <span class="sname">{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+        <span class="betrag">{{.Betrag}}€</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="keine-strafen">Keine offenen Strafen 🎉</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>🤖🍺 Automatisch erstellt vom Zumba-Bot</span>
+    <span>{{.Datum}}</span>
+  </footer>
+</div>
+</body>
+</html>

@@ -53,11 +53,25 @@ Fehltage-Strafen als Marker. Der Report ist über das Admin-UI als Dry-Run
 testbar („Wochenreport testen"), inklusive simuliertem Stichtag — simulierte
 Läufe schreiben nie.
 
+## Statistik als Bild-Karte
+
+Die Statistik gibt es außer als Text auch als **PNG-Karte** im Wrapped-Look
+(dunkles Holz/Biergold): Rangliste mit Medaillen, Prozent-Balken und
+Streak-Symbolen, Highlights (GOAT, heißeste Serie, längste Pause) und
+STRAFEN-Block. Der Bot baut dafür HTML und lässt es vom eigenen
+**renderer-service** (headless Chromium) zu einem Bild schießen; verschickt
+wird es als WhatsApp-Bild mit kurzer Caption.
+
+Aktiv nur, wenn der Renderer konfiguriert ist (`RENDERER_URL`). Abrufbar über
+`?format=image` auf `/test` und `/weekly-report`; im Admin-UI Bot-Test per
+Ausgabe-Wahl „Bild“. Die Text-Nachricht bleibt der Live-Standard.
+
 ## Test-Modus
 
 Ein `/test`-Endpoint führt die komplette Verarbeitung einer Beispielnachricht
 aus (Klassifikation, DB-Wirkung, Antworttext), aber ohne Tages-/Gruppen-
-Sperren. Das Admin-UI nutzt ihn für die Bot-Test-Seite.
+Sperren. Das Admin-UI nutzt ihn für die Bot-Test-Seite (dort wählbar:
+Nachricht oder Bild-Karte).
 
 ## Betriebsverhalten
 
