@@ -43,7 +43,32 @@
     margin-bottom: 22px;
   }
 
-  header { display: flex; align-items: flex-end; justify-content: space-between; }
+  /* Emblem | Titel | Zahl: Titel und Zahl enden auf derselben Grundlinie
+     (align-items: end), das Emblem ist auf die Titelzeile zentriert. */
+  header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: end;
+    column-gap: 19px;
+  }
+  /* Das Emblem sitzt im Gold-Schein der Karte (radial-gradient oben links)
+     und bekommt einen Biergold-Rand, damit es wie ein eingelassenes Wappen
+     wirkt und nicht wie ein aufgeklebter Sticker. */
+  .emblem {
+    /* unten bündig plus negativer Versatz: so liegt die Mitte des Emblems
+       auf der Mitte der 48px-Titelzeile statt auf der des ganzen Kopfs */
+    align-self: end;
+    width: 86px;
+    height: 86px;
+    margin-bottom: -17px;
+    border-radius: 50%;
+    /* minimal wärmer, damit das Creme des Logos zum Schaum-Ton der Karte passt */
+    filter: sepia(0.12) saturate(1.06);
+    box-shadow:
+      0 0 0 2px rgba(245, 158, 11, 0.34),
+      0 0 26px rgba(245, 158, 11, 0.2),
+      0 8px 20px rgba(0, 0, 0, 0.45);
+  }
   .titel .eyebrow {
     font-size: 13px;
     letter-spacing: 0.14em;
@@ -61,22 +86,21 @@
     color: var(--biergold);
     text-shadow: 0 0 34px rgba(245, 158, 11, 0.28);
   }
-  .kopf-meta { text-align: right; padding-bottom: 6px; }
-  .kopf-meta .total {
-    font-family: "Anton", sans-serif;
-    font-size: 40px;
-    line-height: 1;
-    color: var(--schaum);
-  }
+  /* Der Kopf-Block spiegelt links: kleine Zeile oben, große Zahl unten —
+     Titel und Zahl stehen dadurch auf derselben Grundlinie. */
+  .kopf-meta { text-align: right; }
   .kopf-meta .total-label {
     font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: rgba(254, 243, 199, 0.55);
-    margin-top: 4px;
+    margin-bottom: 10px;
   }
-  .kopf-meta .datum {
-    font-size: 13px;
-    color: rgba(254, 243, 199, 0.4);
-    margin-top: 8px;
+  .kopf-meta .total {
+    font-family: "Anton", sans-serif;
+    font-size: 48px; /* wie h1, damit auch die Kleinzeilen oben auf einer Höhe stehen */
+    line-height: 1;
+    color: var(--schaum);
   }
 
   .highlights {
@@ -223,15 +247,15 @@
 <div class="karte">
   {{if .WeeklyNote}}<div class="weekly">📅 Automatischer Wochenreport · Do 21:00</div>{{end}}
   <header>
+    <img class="emblem" src="{{.Logo}}" alt="Stammtisch Zumba">
     <div class="titel">
       <div class="eyebrow">Weihnachtsfeier → Weihnachtsfeier</div>
-      <h1>🍻 ZUMBA STATS</h1>
+      <h1>ZUMBA STATS</h1>
     </div>
     {{if .Users}}
     <div class="kopf-meta">
-      <div class="total">{{.Total}}</div>
       <div class="total-label">Stammtische</div>
-      <div class="datum">Stand {{.Datum}}</div>
+      <div class="total">{{.Total}}</div>
     </div>
     {{end}}
   </header>

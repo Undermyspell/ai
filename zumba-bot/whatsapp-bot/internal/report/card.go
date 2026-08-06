@@ -50,6 +50,13 @@ var playfairWoff2 []byte
 //go:embed assets/caveat-latin.woff2
 var caveatWoff2 []byte
 
+// Das offizielle Stammtisch-Emblem, kreisrund freigestellt (256px, PNG mit
+// Alpha), damit es sich im Live-Design als Wappen neben den Titel setzen
+// lässt, ohne als Kachel aufzufallen.
+//
+//go:embed assets/logo.png
+var logoPNG []byte
+
 // CardWidth ist die Viewport-Breite, mit der die Karte gerendert werden muss.
 const CardWidth = 720
 
@@ -95,6 +102,12 @@ type cardFonts struct {
 
 func fontURL(b []byte) template.URL {
 	return template.URL("data:font/woff2;base64," + base64.StdEncoding.EncodeToString(b))
+}
+
+// logoURL ist das eingebettete Emblem als Data-URL (der Renderer-Container
+// hat keinen Netzzugriff).
+func logoURL() template.URL {
+	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(logoPNG))
 }
 
 // monatDE liefert deutsche Monatsnamen für das ausgeschriebene Datum
@@ -198,8 +211,9 @@ type cardData struct {
 	Users   []cardUser
 	Strafen []cardStrafe
 
-	Skin  string // Farbwelt-Variante des gewählten Designs
+	Skin  string       // Farbwelt-Variante des gewählten Designs
 	Fonts cardFonts
+	Logo  template.URL // Stammtisch-Emblem als Data-URL
 }
 
 // BuildCardHTML baut die Karte im Live-Design (siehe DefaultCardStyle).
@@ -226,6 +240,7 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 		Datum:      fmt.Sprintf("%d.%d.%d", asOf.Day(), int(asOf.Month()), asOf.Year()),
 		DatumLang:  fmt.Sprintf("%d. %s %d", asOf.Day(), monatDE[asOf.Month()], asOf.Year()),
 		Skin:       sel.skin,
+		Logo:       logoURL(),
 	}
 	sel.fonts(&data.Fonts)
 

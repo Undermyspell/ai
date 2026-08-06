@@ -62,6 +62,13 @@ STRAFEN-Block. Der Bot baut dafür HTML und lässt es vom eigenen
 **renderer-service** (headless Chromium) zu einem Bild schießen; verschickt
 wird es als WhatsApp-Bild mit kurzer Caption.
 
+Im Live-Design steht links vom Titel das **offizielle Stammtisch-Emblem**
+(kreisrund freigestellt, `internal/report/assets/logo.png`, als Data-URL
+eingebettet — der Renderer hat keinen Netzzugriff). Es sitzt im Gold-Schein
+der Karte, bekommt einen Biergold-Rand und einen leichten Warmton-Filter,
+damit es wie eingelassen wirkt; das frühere 🍻 in der Überschrift entfällt
+dafür.
+
 Aktiv nur, wenn der Renderer konfiguriert ist (`RENDERER_URL`). Zwei
 unabhängige Schalter steuern den Live-Betrieb (beide auf Staging seit
 08/2026 auf `image`):
