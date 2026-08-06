@@ -62,6 +62,7 @@ type fakeSender struct {
 	imageNumber  string
 	imageCaption string
 	imagePNG     []byte
+	imageErr     error
 	imageCalled  bool
 }
 
@@ -77,7 +78,7 @@ func (f *fakeSender) SendImage(_ context.Context, number, caption string, png []
 	f.imageNumber = number
 	f.imageCaption = caption
 	f.imagePNG = png
-	return nil
+	return f.imageErr
 }
 
 func newTestServer(result classifier.Result, now time.Time) (*Server, *fakeStore, *fakeSender) {

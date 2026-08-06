@@ -126,3 +126,41 @@ func TestStatsFormatImageFallbackAufText(t *testing.T) {
 }
 
 var errRender = errors.New("chromium kaputt")
+
+func TestWeeklyImageRenderFehlerFallbackText(t *testing.T) {
+	s, st, snd := newTestServer(classifier.Invalid, time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC))
+	st.penaltyInput = penaltyFixture()
+	s.Renderer = &fakeRenderer{err: errRender}
+
+	req := httptest.NewRequest("POST", "/weekly-report?format=image", nil)
+	rec := httptest.NewRecorder()
+	s.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code = %d: %s", rec.Code, rec.Body.String())
+	}
+	if snd.imageCalled {
+		t.Error("Bild darf bei Render-Fehler nicht gesendet werden")
+	}
+	if !snd.called {
+		t.Error("Render-Fehler muss auf Text-Versand zurückfallen")
+	}
+}
+
+func TestWeeklyImageSendFehlerFallbackText(t *testing.T) {
+	s, st, snd := newTestServer(classifier.Invalid, time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC))
+	st.penaltyInput = penaltyFixture()
+	s.Renderer = &fakeRenderer{}
+	snd.imageErr = errRender
+
+	req := httptest.NewRequest("POST", "/weekly-report?format=image", nil)
+	rec := httptest.NewRecorder()
+	s.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code = %d: %s", rec.Code, rec.Body.String())
+	}
+	if !snd.called {
+		t.Error("SendImage-Fehler muss auf Text-Versand zurückfallen")
+	}
+}

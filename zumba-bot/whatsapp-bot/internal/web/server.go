@@ -322,34 +322,41 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	if asImage && stats != nil {
 		png, err = s.renderCard(ctx, stats, entries, asOf, true)
 		if err != nil {
-			http.Error(w, "Bild-Rendering fehlgeschlagen: "+err.Error(), http.StatusBadGateway)
-			return
+			// Reiner Dry-Run (Admin-UI): Fehler sichtbar machen. Bei echtem
+			// Versand/Vorschau geht der Report als Text-Fallback trotzdem raus.
+			if !send && !preview {
+				http.Error(w, "Bild-Rendering fehlgeschlagen: "+err.Error(), http.StatusBadGateway)
+				return
+			}
+			log.Printf("⚠️  Bild-Karte(Wochenreport): %v – Fallback auf Text", err)
+			png = nil
+		} else {
+			out.ImageBase64 = base64.StdEncoding.EncodeToString(png)
 		}
-		out.ImageBase64 = base64.StdEncoding.EncodeToString(png)
 	}
 
 	caption := "📅 Automatischer Wochenreport · Stand " + asOf.Format("02.01.2006")
-	if send && text != "" {
-		var err error
-		if asImage {
-			err = s.sender.SendImage(ctx, s.groupJID, caption, png)
-		} else {
-			err = s.sender.SendText(ctx, s.groupJID, text)
+	// deliver schickt bevorzugt die Bild-Karte und fällt bei Fehlern auf den
+	// Text zurück – der Wochenreport muss immer rausgehen.
+	deliver := func(number string) error {
+		if png != nil {
+			if err := s.sender.SendImage(ctx, number, caption, png); err == nil {
+				return nil
+			} else {
+				log.Printf("⚠️  SendImage(%s): %v – Fallback auf Text", number, err)
+			}
 		}
-		if err != nil {
+		return s.sender.SendText(ctx, number, text)
+	}
+	if send && text != "" {
+		if err := deliver(s.groupJID); err != nil {
 			log.Printf("⚠️  Wochenreport-Versand(%s): %v", s.groupJID, err)
 		} else {
 			log.Printf("📅 Wochenreport gesendet an %s", s.groupJID)
 		}
 	}
 	if preview && text != "" {
-		var err error
-		if asImage {
-			err = s.sender.SendImage(ctx, s.PreviewJID, caption, png)
-		} else {
-			err = s.sender.SendText(ctx, s.PreviewJID, text)
-		}
-		if err != nil {
+		if err := deliver(s.PreviewJID); err != nil {
 			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
 		} else {
 			out.PreviewTo = s.PreviewJID
