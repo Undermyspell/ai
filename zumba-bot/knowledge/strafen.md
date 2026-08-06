@@ -58,8 +58,8 @@ tauchen (kurz) noch in Reports auf.
 
 ## Implementierungs-Konvention
 
-Die komplette Fachlogik liegt wortgleich in **drei** Services
-(`internal/penalty/` in whatsapp-bot, zumba-admin-ui, wrapped) — eigene
-Go-Module, bewusste Duplikation. Jede Regeländerung muss in allen drei
-Kopien landen. Die Tabellen-DDL wird von Bot **und** Admin-UI idempotent beim
-Start angelegt (Deploy-Reihenfolge offen).
+Die komplette Fachlogik liegt **einmal** im shared-Modul
+(`shared/penalty/`) und wird von whatsapp-bot, zumba-admin-ui und wrapped
+importiert (seit dem shared-Refactoring 08/2026 — vorher bewusst
+dreifach dupliziert). Die Tabellen-DDL (ebenfalls shared) wird von Bot
+**und** Admin-UI idempotent beim Start angelegt (Deploy-Reihenfolge offen).

@@ -30,6 +30,7 @@ SealedSecrets. Chart und Umgebungen müssen deshalb zusammen im
 | zumba-admin-ui | Pflege-Oberfläche |
 | zumba-classifier | ML-Schattenmodell für den Klassifikator-Vergleich |
 | wrapped | Jahresrückblick (seit 08/2026) |
+| zumba-renderer | HTML → PNG (headless Chromium) für die Statistik-Bild-Karte (seit 08/2026) |
 
 Erreichbarkeit: nur im Heimnetz, HTTP über Traefik-IngressRoutes. n8n,
 Admin-UI und Wrapped haben je einen eigenen Hostnamen — die konkreten Hosts
@@ -47,6 +48,9 @@ Ablauf eines Deployments:
 2. `docker build` auf dem Pi (arm64 nativ, kein QEMU) — Build-Kontext ist
    `zumba-bot/` (wegen des `shared/`-Moduls):
    `docker build -f <service>/Dockerfile -t <image> .`
+   **Ausnahme renderer-service**: eigenständiges Modul ohne shared-Bezug,
+   Build-Kontext ist `renderer-service/` selbst. Der Chromium-apt-Layer
+   kann auf dem Pi transient fehlschlagen — Build einfach wiederholen.
 3. Image in k3s importieren
 4. Versions-Tag in `environments/staging/values.yaml` erhöhen,
    committen, pushen
@@ -71,5 +75,9 @@ Das DB-Passwort konsumieren alle Services zur Laufzeit aus dem Secret
 - Schema-Migrationen macht kein separates Tool: Bot und Admin-UI legen
   Tabellen/Spalten idempotent beim Start an (`strafen`,
   `stammtisch_abwesenheit.created_at`).
-- Lokale Entwicklung: `docker-compose.yml` im Repo-Root (n8n + Postgres +
-  Evolution), einzelne Services per `make dev` mit `.env`.
+- Lokale Entwicklung: `make dev` im Repo-Root startet alles außer Postgres
+  und Evolution API (die kommen aus dem Cluster, siehe `.env`-Dateien):
+  Bot, Admin-UI, Wrapped, Classifier mit Hot-Reload auf dem Host, der
+  Renderer als Docker-Container (Chromium + Emoji-Fonts identisch zum
+  Cluster). `docker-compose.yml` enthält daneben noch n8n/Postgres/Evolution
+  für Standalone-Betrieb.

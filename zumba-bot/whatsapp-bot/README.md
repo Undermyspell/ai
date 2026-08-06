@@ -13,7 +13,8 @@ Konventionen wie die Schwester-Services `wrapped/` und `zumba-admin-ui/`: vanill
 
 - **`message == "statistik"`** (getrimmt, case-insensitive) → Per-User-Stats aus Postgres
   (`internal/store/stats.sql`) → Ranglisten-Text (`internal/report`) → zurück an den Absender
-  (Evolution `sendText`).
+  (Evolution `sendText`). Mit `STATS_FORMAT=image` geht stattdessen die PNG-Bild-Karte raus
+  (`internal/report/card.go` + renderer-service, Evolution `sendMedia`; Fallback Text).
 - **sonst**, wenn **alle** gelten: `messageType == "conversation"`, `remoteJid == ZUMBA_GROUP_JID`,
   **heute ist Donnerstag** (TZ `Europe/Berlin`):
   - Gemini-Classifier → `true` / `false` / `invalid`
@@ -51,6 +52,9 @@ Siehe `.env.example`. Wichtig:
 | `OUTPUT_FILE` | Pfad bei `OUTPUT_MODE=file` (default `output.txt`) |
 | `EVOLUTION_URL` / `EVOLUTION_API_KEY` / `EVOLUTION_INSTANCE` | Evolution-API-Endpunkt, `apikey`, Instanzname (`whatsapp`) – nur bei `OUTPUT_MODE=evolution` |
 | `ZUMBA_GROUP_JID` | remoteJid der Zumba-Gruppe |
+| `PREVIEW_JID` | Ziel des „Vorschau“-Modus der Bot-Test-Seite (leer = Vorschau aus) |
+| `RENDERER_URL` | Basis-URL des renderer-service für die Statistik-Bild-Karte (leer = Bild aus) |
+| `STATS_FORMAT` | Antwort auf „statistik“ in der Gruppe: `text` (default) / `image` (PNG-Karte, Fallback Text) |
 | `TZ` | Zeitzone für Donnerstag-Prüfung + Tagesdatum |
 
 Lokales Testen (Statistik ohne Evolution, Beispiel-Requests): siehe **`TESTING.md`**.

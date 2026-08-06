@@ -12,7 +12,7 @@ Spotify-Wrapped-Stil.
 | [whatsapp-bot.md](whatsapp-bot.md) | `whatsapp-bot/` | Liest die WhatsApp-Gruppe, klassifiziert Absagen per LLM, beantwortet Statistik-Anfragen, verschickt den Wochenreport |
 | [admin-ui.md](admin-ui.md) | `zumba-admin-ui/` | Pflege-Oberfläche: Anwesenheiten, Sperrtage, Strafen, Bot-Test |
 | [wrapped.md](wrapped.md) | `wrapped/` | Jahresrückblick als Slide-Show (25 Slides, Stand 08/2026) |
-| [strafen.md](strafen.md) | quer | Strafen-Fachlogik (in drei Services dupliziert!) |
+| [strafen.md](strafen.md) | quer | Strafen-Fachlogik (einzige Kopie in `shared/penalty/`) |
 | [deployment.md](deployment.md) | `deployment/` | GitOps auf k3s (Raspberry Pi 5) via ArgoCD |
 
 ## Das Domänenmodell (gilt überall)
@@ -46,12 +46,13 @@ im Schema `evolution`) und `zumba` (Domänendaten).
 
 - **Alle nutzerseitigen Texte deutsch** (UI, Reports, Logs). Datumsformat
   DD.MM., Woche beginnt Montag.
-- **Keep-in-sync-Duplikate**: bewusst kopierte Logik statt Shared Library,
-  weil jeder Service ein eigenes Go-Modul ist und Docker-Builds nur das
-  Service-Verzeichnis kopieren. Änderungen immer in allen Kopien nachziehen:
-  - `internal/penalty/` in whatsapp-bot, zumba-admin-ui **und** wrapped
-  - Klassifikator-Prompt + Statistik-SQL zwischen Bot und n8n-Workflow
-  - Strafen-DDL (`EnsureStrafenSchema`) in Bot und Admin-UI
+- **Shared-Modul statt Duplikate** (seit 08/2026): gemeinsame Domänen-Logik
+  lebt einmal in `shared/` (`penalty/`, `domain/`, `store/` inkl.
+  Rangliste-Query `leaderboard.sql` und Strafen-DDL) und wird von Bot,
+  Admin-UI und Wrapped per `replace`-Directive eingebunden. Deshalb ist der
+  Docker-Build-Kontext `zumba-bot/` (Ausnahme: `renderer-service/`,
+  eigenständig). Verbleibendes Keep-in-sync: der Klassifikator-Prompt
+  (`system-prompt.txt` ↔ `whatsapp-bot/internal/classifier/system-prompt.txt`).
 - **LLM-Klassifikator-Vertrag**: Antwort ist exakt `true` / `false` /
   `invalid` — nie ändern ohne alle Konsumenten.
 

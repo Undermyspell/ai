@@ -51,6 +51,10 @@ docker save zumba-admin-ui:0.1.0 | sudo k3s ctr images import -
 UI für die Webhook-Requests gegen den `whatsapp-bot`. Funktion wählen (Statistik / Absage /
 Zusage) → Beispiel-JSON erscheint editierbar → „An Bot senden" proxyt serverseitig an
 `BOT_URL/test` und zeigt die Antwort (Ranglisten-Bubble bzw. Klassifizierung/Aktion).
-Der Bot führt den Test **echt** aus (DB-Write bzw. Versand) und **umgeht** die
-Donnerstag-/Gruppen-Guards. Setzt einen laufenden, erreichbaren `whatsapp-bot` voraus
-(`BOT_URL`); für Absage/Zusage braucht der Bot einen `GEMINI_API_KEY`.
+Der Bot **umgeht** dabei die Donnerstag-/Gruppen-Guards, läuft aber immer als Dry-Run —
+DB-Writes und Gruppen-Versand passieren nie; der Modus „Vorschau an meine Nummer“
+schickt die erzeugte Nachricht zusätzlich an `PREVIEW_JID`. Die Ausgabe ist wählbar:
+„💬 Nachricht“ (Text, inkl. alternativer Statistik-Designs) oder „🖼️ Bild“ (PNG-Karte
+über den renderer-service). Dazu „📅 Wochenreport testen“ (Dry-Run/Vorschau, simulierter
+Stichtag). Setzt einen laufenden, erreichbaren `whatsapp-bot` voraus (`BOT_URL`);
+für Absage/Zusage braucht der Bot einen `GEMINI_API_KEY`, fürs Bild `RENDERER_URL`.

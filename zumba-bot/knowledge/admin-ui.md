@@ -44,6 +44,12 @@ strukturierte Ergebnis (Klassifikation, DB-Wirkung, Antworttext). Zusätzlich
 „Wochenreport testen": Dry-Run des kompletten Donnerstagsreports, optional
 mit simuliertem Datum.
 
+Die **Ausgabe** ist pro Request wählbar: „💬 Nachricht“ (Text, inkl.
+alternativer Statistik-Designs) oder „🖼️ Bild“ (PNG-Karte über den
+renderer-service, wird als WhatsApp-Bubble angezeigt). Der Modus „Vorschau
+an meine Nummer“ verschickt entsprechend Text oder Bild an die Testnummer —
+nie an die Gruppe.
+
 ### ML-Testdaten
 Tabelle `ml_test_messages`: gesammelte Beispielnachrichten für den
 Classifier-Vergleich (LLM vs. eigenes Modell); manueller Klassifikations-Test

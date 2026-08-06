@@ -62,9 +62,20 @@ STRAFEN-Block. Der Bot baut dafür HTML und lässt es vom eigenen
 **renderer-service** (headless Chromium) zu einem Bild schießen; verschickt
 wird es als WhatsApp-Bild mit kurzer Caption.
 
-Aktiv nur, wenn der Renderer konfiguriert ist (`RENDERER_URL`). Abrufbar über
-`?format=image` auf `/test` und `/weekly-report`; im Admin-UI Bot-Test per
-Ausgabe-Wahl „Bild“. Die Text-Nachricht bleibt der Live-Standard.
+Aktiv nur, wenn der Renderer konfiguriert ist (`RENDERER_URL`). Zwei
+unabhängige Schalter steuern den Live-Betrieb (beide auf Staging seit
+08/2026 auf `image`):
+
+- **Gruppen-„statistik“**: Env `STATS_FORMAT=text|image`
+  (Helm: `whatsappBot.env.STATS_FORMAT`)
+- **Wochenreport**: Helm `whatsappBot.weeklyReport.format: text|image`
+  (hängt `?format=image` an die CronJob-URL)
+
+Schlägt Rendern oder Bild-Versand fehl, geht der Report **als Text** raus
+(Fallback — er muss immer ankommen). Der Wochenreport trägt auf der Karte
+einen Badge „📅 Automatischer Wochenreport“; zusätzlich unterscheidet die
+WhatsApp-Caption die beiden Fälle. Im Admin-UI Bot-Test ist das Format pro
+Request per Ausgabe-Wahl „Nachricht/Bild“ wählbar.
 
 ## Test-Modus
 

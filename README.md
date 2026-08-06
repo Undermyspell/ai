@@ -33,14 +33,19 @@ wird nicht einmal aufgerufen.
 Unabhängig davon läuft der **Wochenreport** (CronJob, Do 21:00): Rangliste plus
 Strafen-Block in die Gruppe, im Admin-UI als Dry-Run mit simuliertem Stichtag testbar.
 
+Statistik und Wochenreport gehen wahlweise als Text oder als **PNG-Bild-Karte** im
+Wrapped-Look raus (headless Chromium im `renderer-service/`, Schalter
+`STATS_FORMAT` bzw. `weeklyReport.format`, Fallback immer Text — auf Staging steht
+beides auf `image`).
+
 ## Strafen
 
 Zwei Strafarten: **Fehltage** (automatisch — 5 abgemeldete Donnerstage in Folge = 25 €,
 jede weitere Woche +5 €) und **No-Show** (manuell im Admin-UI, Default 50 €). Beträge werden
 immer live aus den Anwesenheiten berechnet, persistiert wird nur ein Serien-Marker;
-Begleichen oder Löschen setzt den Serienzähler zurück. Die Fachlogik ist bewusst in drei
-Services dupliziert (Bot, Admin-UI, Wrapped) — Details und Regeln in
-[`knowledge/strafen.md`](zumba-bot/knowledge/strafen.md).
+Begleichen oder Löschen setzt den Serienzähler zurück. Die Fachlogik lebt einmal im
+shared-Modul (`shared/penalty/`) und wird von Bot, Admin-UI und Wrapped importiert —
+Details und Regeln in [`knowledge/strafen.md`](zumba-bot/knowledge/strafen.md).
 
 ## Klassifikation
 
@@ -111,6 +116,8 @@ Metriken je Klasse, Schwellen-Sweep, alle Fehlklassifikationen im Wortlaut, Glos
 | [`ml-classifier/`](zumba-bot/ml-classifier/) | Python · Trainingsdaten, Training, Evaluation, Export |
 | [`zumba-admin-ui/`](zumba-bot/zumba-admin-ui/) | Go · Adminoberfläche (templ + HTMX): Anwesenheiten, Sperrtage, Strafen, Bot-Test |
 | [`wrapped/`](zumba-bot/wrapped/) | Go · Jahresrückblick `/2026` (25 Slides, auf Staging) |
+| [`renderer-service/`](zumba-bot/renderer-service/) | Go · HTML → PNG via headless Chromium (Statistik-Bild-Karte) |
+| [`shared/`](zumba-bot/shared/) | Go · gemeinsames Modul: Strafen-Logik, Rangliste-Query, DB-Zugriffe |
 | [`deployment/`](zumba-bot/deployment/) | ArgoCD ApplicationSet · Helm · SealedSecrets · system-upgrade-controller |
 | [`knowledge/`](zumba-bot/knowledge/) | Fachliche Doku: Domänenmodell, Strafregeln, Deployment |
 
