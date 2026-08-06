@@ -33,6 +33,11 @@ type Config struct {
 	// als PNG-Karte rendert (z.B. http://zumba-renderer:8080). Leer = Bild aus.
 	RendererURL string
 
+	// StatsFormat steuert die Antwort auf "statistik" in der Gruppe:
+	// "text" (Default) oder "image" (PNG-Karte; braucht RendererURL,
+	// bei Render-Fehlern Fallback auf Text).
+	StatsFormat string
+
 	// Location steuert die Donnerstag-Prüfung und das Tagesdatum für die DB-Writes.
 	Location *time.Location
 }
@@ -114,6 +119,7 @@ func Load() (Config, error) {
 		PreviewJID:    os.Getenv("PREVIEW_JID"),
 		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
 		RendererURL:   os.Getenv("RENDERER_URL"),
+		StatsFormat:   getenv("STATS_FORMAT", "text"),
 		Location:      loc,
 	}
 
@@ -121,6 +127,12 @@ func Load() (Config, error) {
 	case OutputEvolution, OutputStdout, OutputFile:
 	default:
 		return Config{}, fmt.Errorf("OUTPUT_MODE %q: erlaubt sind evolution|stdout|file", cfg.Output.Mode)
+	}
+
+	switch cfg.StatsFormat {
+	case "text", "image":
+	default:
+		return Config{}, fmt.Errorf("STATS_FORMAT %q: erlaubt sind text|image", cfg.StatsFormat)
 	}
 
 	return cfg, nil

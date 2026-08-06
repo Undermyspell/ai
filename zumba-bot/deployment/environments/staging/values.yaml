@@ -64,10 +64,15 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.2.5"
+    tag: "0.2.6"
     pullPolicy: IfNotPresent
+  env:
+    # Gruppen-"statistik" antwortet als Bild-Karte (Fallback Text)
+    STATS_FORMAT: image
   weeklyReport:
     enabled: true
+    # Wochenreport ebenfalls als Bild-Karte
+    format: image
 
 # Statistik-Bild-Karte (HTML → PNG via headless Chromium). Auf true setzen,
 # sobald das zumba-renderer-Image auf dem Pi gebaut/importiert ist — der Bot

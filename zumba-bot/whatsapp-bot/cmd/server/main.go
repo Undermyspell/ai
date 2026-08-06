@@ -71,6 +71,10 @@ func main() {
 		srv.Renderer = renderer.NewClient(cfg.RendererURL)
 		log.Printf("🖼  Bild-Karte aktiv (Renderer: %s)", cfg.RendererURL)
 	}
+	srv.StatsFormat = cfg.StatsFormat
+	if cfg.StatsFormat == "image" {
+		log.Printf("🖼  \"statistik\"-Antwort als Bild (STATS_FORMAT=image)")
+	}
 
 	// Trace-Aufzeichnung (Gruppe + Donnerstag) in der zumba-DB.
 	tracer := tracestore.New(pg.DB)

@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -95,3 +96,33 @@ func TestWeeklyFormatImagePreviewSendetBild(t *testing.T) {
 		t.Errorf("Vorschau darf nicht persistieren: %v", st.autoStrafen)
 	}
 }
+
+func TestStatsFormatImageSendetBildAnGruppe(t *testing.T) {
+	s, _, snd := newTestServer(classifier.Invalid, friday)
+	s.Renderer = &fakeRenderer{}
+	s.StatsFormat = "image"
+
+	out := s.run(context.Background(), groupMsg("statistik"), false, false, s.today())
+	if out.Path != "statistik" {
+		t.Fatalf("Path = %q", out.Path)
+	}
+	if !snd.imageCalled || snd.imageNumber != testGroup {
+		t.Errorf("Bild nicht an Gruppe gesendet: %+v", snd)
+	}
+	if snd.called {
+		t.Error("bei erfolgreichem Bild darf kein Text gesendet werden")
+	}
+}
+
+func TestStatsFormatImageFallbackAufText(t *testing.T) {
+	s, _, snd := newTestServer(classifier.Invalid, friday)
+	s.Renderer = &fakeRenderer{err: errRender}
+	s.StatsFormat = "image"
+
+	s.run(context.Background(), groupMsg("statistik"), false, false, s.today())
+	if !snd.called {
+		t.Error("Render-Fehler muss auf Text zurückfallen")
+	}
+}
+
+var errRender = errors.New("chromium kaputt")

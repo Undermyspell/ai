@@ -182,6 +182,9 @@ whatsappBot:
     # Hinweis: ZUMBA_GROUP_JID + PREVIEW_JID (statische WhatsApp-Nummern) liegen
     # im SealedSecret whatsapp-bot-secrets, nicht hier im Klartext.
     TZ: Europe/Berlin
+    # "statistik"-Antwort in der Gruppe: text | image (braucht renderer.enabled,
+    # fällt bei Render-Fehlern auf Text zurück)
+    STATS_FORMAT: text
 
   service:
     type: ClusterIP

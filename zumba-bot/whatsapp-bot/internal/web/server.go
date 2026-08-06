@@ -71,6 +71,10 @@ type Server struct {
 
 	// Renderer rendert die Statistik-Bild-Karte (von main gesetzt; nil = aus).
 	Renderer Renderer
+
+	// StatsFormat steuert die Antwort auf "statistik" in der Gruppe:
+	// "image" schickt die PNG-Karte (Fallback Text), sonst Text.
+	StatsFormat string
 }
 
 func New(st store.Store, cl Classifier, snd Sender, groupJID string, loc *time.Location) *Server {
@@ -242,6 +246,23 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asO
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeInfo, "An Gruppe senden", "Dry-Run – nicht gesendet")
 		return text, stats, entries
 	}
+
+	// STATS_FORMAT=image: PNG-Karte senden; bei Render-/Versand-Fehlern
+	// fällt der Report auf den Text zurück (er muss immer rausgehen).
+	if s.StatsFormat == "image" {
+		if png, err := s.renderCard(ctx, stats, entries, asOf, false); err != nil {
+			rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "Bild-Karte rendern", err.Error()+" – Fallback auf Text")
+			log.Printf("⚠️  Bild-Karte(%s): %v – Fallback auf Text", receiver, err)
+		} else if err := s.sender.SendImage(ctx, receiver, "🍻 Zumba Stats · Stand "+asOf.Format("02.01.2006"), png); err != nil {
+			rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "An Gruppe senden (Bild)", err.Error()+" – Fallback auf Text")
+			log.Printf("⚠️  SendImage(%s): %v – Fallback auf Text", receiver, err)
+		} else {
+			rec.Step(tracestore.NodeSendStats, tracestore.OutcomePass, "An Gruppe senden (Bild)", "→ "+receiver)
+			log.Printf("📊 Statistik-Bild gesendet an %s", receiver)
+			return text, stats, entries
+		}
+	}
+
 	if err := s.sender.SendText(ctx, receiver, text); err != nil {
 		rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "An Gruppe senden", err.Error())
 		log.Printf("⚠️  SendText(%s): %v", receiver, err)
