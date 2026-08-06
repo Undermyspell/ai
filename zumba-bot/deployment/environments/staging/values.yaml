@@ -64,7 +64,7 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.3.0"
+    tag: "0.3.1"
     pullPolicy: IfNotPresent
   env:
     # Gruppen-"statistik" antwortet als Bild-Karte (Fallback Text)

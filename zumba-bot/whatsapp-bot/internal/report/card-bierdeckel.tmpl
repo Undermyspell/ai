@@ -20,6 +20,9 @@
     --pappe-tief: #241309;
     --tinte: #FEF3C7;      /* Schaum */
     --stempel: #F59E0B;    /* Biergold */
+    --serie: #FF7A45;      /* leuchtendes Orange – muss sich klar vom Creme der Striche abheben */
+    --strich: rgba(254, 243, 199, 0.72);
+    --serie-glow: 0 0 6px rgba(255, 122, 69, 0.55);
     --kante: rgba(254, 243, 199, 0.24);
     --deutlich: rgba(254, 243, 199, 0.82);
     --matt: rgba(254, 243, 199, 0.62);
@@ -36,6 +39,9 @@
     --pappe-tief: #ded0ae;
     --tinte: #22355c;      /* Kugelschreiber-Blau */
     --stempel: #a6362b;    /* Stempelrot */
+    --serie: #a6362b;
+    --strich: var(--tinte);
+    --serie-glow: none;
     --kante: rgba(34, 53, 92, 0.3);
     --deutlich: rgba(34, 53, 92, 0.75);
     --matt: rgba(34, 53, 92, 0.55);
@@ -182,8 +188,8 @@
   .platz { font-family: "Anton", sans-serif; font-size: 17px; color: var(--matt); }
   .zeile.spitze .platz { color: var(--stempel); }
   .wer { font-family: "Caveat", cursive; font-size: 27px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .quote { font-family: "Caveat", cursive; font-size: 25px; text-align: right; }
-  .quote small { font-family: "Noto Sans", sans-serif; font-size: 11px; color: var(--matt); }
+  .quote { font-family: "Caveat", cursive; font-size: 27px; text-align: right; color: var(--tinte); }
+  .quote small { font-family: "Noto Sans", sans-serif; font-size: 12px; color: var(--deutlich); }
 
   /* Strichliste: je Fünferbündel vier Striche plus Querstrich. Die Striche
      der laufenden Serie stehen in Stempelfarbe — sie sind die zuletzt
@@ -194,14 +200,14 @@
     position: absolute;
     left: -3px; top: 10px;
     width: 24px; height: 2px;
-    background: var(--tinte);
+    background: var(--strich);
     transform: rotate(-21deg);
   }
-  .b5 .quer.serie { background: var(--stempel); }
+  .b5 .quer.serie { background: var(--serie); box-shadow: var(--serie-glow); }
   .b5:nth-child(2n) { transform: rotate(1.2deg); }
   .b5:nth-child(3n) { transform: rotate(-1.4deg); }
-  .s { width: 2px; height: 22px; background: var(--tinte); }
-  .s.serie { background: var(--stempel); }
+  .s { width: 2px; height: 22px; background: var(--strich); }
+  .s.serie { background: var(--serie); box-shadow: var(--serie-glow); }
   .s:nth-child(2n) { transform: rotate(1.6deg); }
   .s:nth-child(3n) { transform: rotate(-1.8deg); }
   .rest { display: flex; gap: 3px; }
@@ -210,11 +216,11 @@
   .x { position: relative; width: 13px; height: 13px; opacity: 0.5; }
   .x::before, .x::after {
     content: ""; position: absolute; left: 0; top: 6px;
-    width: 15px; height: 2px; background: var(--tinte);
+    width: 15px; height: 2px; background: var(--strich);
   }
   .x::before { transform: rotate(38deg); }
   .x::after { transform: rotate(-38deg); }
-  .fehlt { font-family: "Caveat", cursive; font-size: 20px; opacity: 0.5; margin-left: 6px; white-space: nowrap; }
+  .fehlt { font-family: "Caveat", cursive; font-size: 20px; color: var(--matt); margin-left: 6px; white-space: nowrap; }
 
   /* Offene Rechnung. */
   .rechnung {
@@ -305,7 +311,7 @@
       {{range .Bundles}}<span class="b5">{{range .Strokes}}<span class="s{{if .Serie}} serie{{end}}"></span>{{end}}<span class="quer{{if .Serie}} serie{{end}}"></span></span>{{end}}
       {{if .Rest}}<span class="rest">{{range .Rest}}<span class="s{{if .Serie}} serie{{end}}"></span>{{end}}</span>{{end}}
       {{if .Pausen}}<span class="kreuze">{{range .Pausen}}<span class="x"></span>{{end}}</span>{{end}}
-      <span class="fehlt">{{.Attendance}} da</span>
+      <span class="fehlt">{{.Attendance}} da · {{.Away}} nicht</span>
     </div>
     <div class="quote">{{.Percent}}<small>%</small></div>
   </div>
