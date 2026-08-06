@@ -59,7 +59,9 @@ im Schema `evolution`) und `zumba` (Domänendaten).
 
 - Ursprung: n8n-Workflow "Zumba" (`HG0zPlWsmPI3Mt7z`, Instanz
   `zumba-staging`); der Go-Bot ist dessen 1:1-Port und ist produktiv.
-- `whatsapp-statistic/` enthält drei Alternativ-Stylings des
-  Statistik-Snippets für n8n-Code-Nodes (Geschwister, keine Versionen).
+- Die n8n-Code-Node-Snippets (`whatsapp-statistic/`) und n8n-SQL-Dateien
+  (`whatsapp-statistic.sql`, `absagen.sql`) wurden entfernt — n8n wird nicht
+  mehr benutzt; die Rangliste-Query lebt in
+  `shared/store/queries/leaderboard.sql`.
 - Geplant: Personalisierung im Wrapped (`?wer=…`) als nächster größerer
   Schritt; created_at-Auswertungen ab Wrapped 2027.

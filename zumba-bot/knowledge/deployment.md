@@ -44,7 +44,9 @@ dafür, dass der lokal importierte Stand verwendet wird.
 
 Ablauf eines Deployments:
 1. Quellcode zum Pi synchronisieren (rsync, ohne `.env`/`tmp`)
-2. `docker build` auf dem Pi (arm64 nativ, kein QEMU)
+2. `docker build` auf dem Pi (arm64 nativ, kein QEMU) — Build-Kontext ist
+   `zumba-bot/` (wegen des `shared/`-Moduls):
+   `docker build -f <service>/Dockerfile -t <image> .`
 3. Image in k3s importieren
 4. Versions-Tag in `environments/staging/values.yaml` erhöhen,
    committen, pushen

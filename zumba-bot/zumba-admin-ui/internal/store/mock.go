@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/michael/zumba-admin-ui/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
 

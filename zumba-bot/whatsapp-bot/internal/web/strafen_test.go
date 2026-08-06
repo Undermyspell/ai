@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
-	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
 )
 
 // penaltyFixture: ein User mit 5 Fehltagen in Folge bis zum Test-Donnerstag.

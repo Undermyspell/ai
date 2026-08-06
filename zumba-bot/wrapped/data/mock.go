@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/michael/stammtisch-wrapped/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 )
 

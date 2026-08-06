@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
 

@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/michael/zumba-whatsapp-bot/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
+	sharedstore "github.com/michael/zumba-shared/store"
 )
 
 // Stat ist eine Zeile der Per-User-Statistik (entspricht den Spalten von
@@ -20,11 +21,8 @@ type Stat struct {
 	Streak         int
 }
 
-// AutoStrafe ist der Marker einer erkannten Fehltage-Strafe.
-type AutoStrafe struct {
-	UserID string
-	Datum  time.Time
-}
+// AutoStrafe ist der Marker einer erkannten Fehltage-Strafe (shared-Typ).
+type AutoStrafe = sharedstore.AutoStrafe
 
 // Store kapselt die DB-Operationen des Workflows.
 type Store interface {

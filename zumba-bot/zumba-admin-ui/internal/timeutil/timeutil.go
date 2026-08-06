@@ -3,6 +3,8 @@ package timeutil
 import (
 	"fmt"
 	"time"
+
+	"github.com/michael/zumba-shared/domain"
 )
 
 const dateLayout = "2006-01-02"
@@ -11,20 +13,9 @@ func IsThursday(t time.Time) bool {
 	return t.Weekday() == time.Thursday
 }
 
-// Period is the active Stammtisch evaluation window.
-// End is capped at today so future Thursdays don't count.
-type Period struct {
-	Start time.Time
-	End   time.Time
-}
-
-func (p Period) EffectiveEnd() time.Time {
-	today := StartOfDay(time.Now())
-	if p.End.After(today) {
-		return today
-	}
-	return p.End
-}
+// Period is the active Stammtisch evaluation window – geteilter Typ aus dem
+// shared-Modul (EffectiveEnd kappt das Ende am heutigen Tag).
+type Period = domain.Period
 
 func StartOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())

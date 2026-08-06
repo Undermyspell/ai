@@ -7,7 +7,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/michael/zumba-admin-ui/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
+	sharedstore "github.com/michael/zumba-shared/store"
+
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
 
@@ -24,18 +26,10 @@ type Absence struct {
 	Message *string
 }
 
-type LeaderboardRow struct {
-	UserID          string
-	UserName        string
-	StartDate       *time.Time
-	EffectiveStart  time.Time
-	ThursdayCount   int
-	AttendanceCount int
-	AwayCount       int
-	AttendPercent   float64
-	// Streak is signed: >0 = current attendance run, <0 = current absence run, 0 = no Thursdays yet.
-	Streak int
-}
+// LeaderboardRow ist eine Zeile der Rangliste (geteilter Typ, geteilte Query
+// im shared-Modul). Streak ist vorzeichenbehaftet: >0 = aktuelle
+// Anwesenheits-Serie, <0 = aktuelle Abwesenheits-Serie.
+type LeaderboardRow = sharedstore.LeaderboardRow
 
 // StripDay ist eine Kachel des Donnerstags-Strips: Datum, Sperrtag-Flag und
 // Anzahl Abmeldungen – komplett in SQL aggregiert.

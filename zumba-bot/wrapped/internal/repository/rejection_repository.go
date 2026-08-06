@@ -10,24 +10,14 @@ import (
 
 	"github.com/lib/pq"
 
+	"github.com/michael/zumba-shared/domain"
+
 	"github.com/michael/stammtisch-wrapped/internal/database"
 )
 
-// DateRange represents a time span for evaluations
-type DateRange struct {
-	Start time.Time
-	End   time.Time
-}
-
-// EffectiveEnd returns the end date capped at today's date
-// This ensures we don't consider future Thursdays in evaluations
-func (d DateRange) EffectiveEnd() time.Time {
-	today := time.Now().Truncate(24 * time.Hour)
-	if d.End.After(today) {
-		return today
-	}
-	return d.End
-}
+// DateRange ist der Auswertungszeitraum – geteilter Typ aus dem shared-Modul
+// (EffectiveEnd kappt das Ende am heutigen Tag).
+type DateRange = domain.Period
 
 // queryer is satisfied by both *sql.DB and *sql.Tx so the fetch helpers can
 // run inside one read-only transaction.

@@ -1,14 +1,18 @@
+-- Rangliste je User: Donnerstage ab effektivem Start (GREATEST(startDate,
+-- Periodenstart)), Anwesenheit = Donnerstage - Absagen (attendance-by-default),
+-- Streak vorzeichenbehaftet über gaps-and-islands.
+-- $1 = Periodenstart, $2 = Stichtag/Periodenende (wird an current_date gekappt).
+-- Einzige Kopie dieser Query; früher dupliziert als whatsapp-bot stats.sql,
+-- zumba-admin-ui leaderboardQ und n8n whatsapp-statistic.sql.
 WITH startdates AS (
     SELECT
         u."userId",
         GREATEST(
-            COALESCE(u."startDate", DATE '2025-12-01')::date,
-            DATE '2025-12-01'
+            COALESCE(u."startDate", $1::date)::date,
+            $1::date
         ) AS effective_start_date
     FROM public.users u
 ),
-
--- Count all valid Thursdays for each user (excluding excluded_days)
 user_thursdays AS (
     SELECT
         s."userId",
@@ -17,7 +21,7 @@ user_thursdays AS (
     FROM startdates s
     CROSS JOIN LATERAL generate_series(
         s.effective_start_date,
-        $1::date,
+        LEAST($2::date, current_date),
         interval '1 day'
     ) d(day)
     LEFT JOIN excluded_days ed
@@ -26,8 +30,6 @@ user_thursdays AS (
       AND ed.date IS NULL
     GROUP BY s."userId", s.effective_start_date
 ),
-
--- Build per-Thursday attendance status (0 = attended, 1 = absent)
 per_thursday AS (
     SELECT
         s."userId",
@@ -38,7 +40,7 @@ per_thursday AS (
         SELECT day
         FROM generate_series(
             s.effective_start_date,
-            $1::date,
+            LEAST($2::date, current_date),
             interval '1 day'
         ) day
         LEFT JOIN excluded_days ed
@@ -50,8 +52,6 @@ per_thursday AS (
         ON a."userId" = s."userId"
         AND a.date = d.day
 ),
-
--- Compute streak: compare each row with the first row in descending order
 streak_calc AS (
     SELECT
         p."userId",
@@ -65,8 +65,6 @@ streak_calc AS (
         END AS break_flag
     FROM per_thursday p
 ),
-
--- Collapse to first break and compute streak count
 user_streak AS (
     SELECT
         "userId",
@@ -87,36 +85,29 @@ user_streak AS (
     WHERE grp = 0
     GROUP BY "userId", is_absent
 )
-
 SELECT
-    COUNT(a."userId") AS away_count,
-    ut.thursday_count - COUNT(a."userId") AS attendance_count,
-    ROUND(
-        (ut.thursday_count - COUNT(a."userId")::numeric)
-        / ut.thursday_count * 100,
-        2
-    ) AS attend_percentage,
-    u."userId" AS user_id,
-    u."userName" AS user_name,
+    u."userId",
+    u."userName",
     u."startDate",
     ut.effective_start_date,
-    us.streak
+    ut.thursday_count,
+    (ut.thursday_count - COUNT(a."userId"))::int AS attendance_count,
+    COUNT(a."userId")::int AS away_count,
+    CASE WHEN ut.thursday_count = 0 THEN 0
+         ELSE ROUND(
+             (ut.thursday_count - COUNT(a."userId")::numeric)
+             / ut.thursday_count * 100, 2)
+    END AS attend_percentage,
+    COALESCE(us.streak, 0) AS streak
 FROM public.users u
-JOIN user_thursdays ut
-    ON ut."userId" = u."userId"
+JOIN user_thursdays ut ON ut."userId" = u."userId"
 LEFT JOIN public.stammtisch_abwesenheit a
     ON a."userId" = u."userId"
     AND a.date >= ut.effective_start_date
-    AND a.date <= $1::date
-LEFT JOIN excluded_days ed
-    ON ed.date = a.date
-LEFT JOIN user_streak us
-    ON us."userId" = u."userId"
-WHERE ed.date IS NULL
+    AND a.date <= LEAST($2::date, current_date)
+    AND a.date NOT IN (SELECT date FROM excluded_days)
+LEFT JOIN user_streak us ON us."userId" = u."userId"
 GROUP BY
-    u."userId",
-    u."userName",
-    ut.thursday_count,
-    ut.effective_start_date,
-    us.streak
-ORDER BY attendance_count DESC, attend_percentage DESC;
+    u."userId", u."userName", u."startDate",
+    ut.thursday_count, ut.effective_start_date, us.streak
+ORDER BY attendance_count DESC, attend_percentage DESC, u."userName"

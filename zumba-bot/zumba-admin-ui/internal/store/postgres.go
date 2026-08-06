@@ -10,6 +10,8 @@ import (
 
 	"github.com/lib/pq"
 
+	sharedstore "github.com/michael/zumba-shared/store"
+
 	"github.com/michael/zumba-admin-ui/internal/db"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
@@ -135,163 +137,15 @@ func (s *Postgres) ListAbsences(ctx context.Context, p timeutil.Period) ([]Absen
 	return out, rows.Err()
 }
 
-// leaderboardQ ports whatsapp-statistic.sql verbatim, parameterized over the
-// evaluation period. Streak is signed (positive = current attendance run,
-// negative = current absence run).
-const leaderboardQ = `
-WITH startdates AS (
-    SELECT
-        u."userId",
-        GREATEST(
-            COALESCE(u."startDate", $1::date)::date,
-            $1::date
-        ) AS effective_start_date
-    FROM public.users u
-),
-user_thursdays AS (
-    SELECT
-        s."userId",
-        s.effective_start_date,
-        COUNT(*) AS thursday_count
-    FROM startdates s
-    CROSS JOIN LATERAL generate_series(
-        s.effective_start_date,
-        LEAST($2::date, current_date),
-        interval '1 day'
-    ) d(day)
-    LEFT JOIN excluded_days ed
-        ON ed.date = d.day
-    WHERE EXTRACT(ISODOW FROM d.day) = 4
-      AND ed.date IS NULL
-    GROUP BY s."userId", s.effective_start_date
-),
-per_thursday AS (
-    SELECT
-        s."userId",
-        d.day AS thursday,
-        CASE WHEN a."userId" IS NOT NULL THEN 1 ELSE 0 END AS is_absent
-    FROM startdates s
-    CROSS JOIN LATERAL (
-        SELECT day
-        FROM generate_series(
-            s.effective_start_date,
-            LEAST($2::date, current_date),
-            interval '1 day'
-        ) day
-        LEFT JOIN excluded_days ed
-            ON ed.date = day
-        WHERE EXTRACT(ISODOW FROM day) = 4
-          AND ed.date IS NULL
-    ) d
-    LEFT JOIN public.stammtisch_abwesenheit a
-        ON a."userId" = s."userId"
-        AND a.date = d.day
-),
-streak_calc AS (
-    SELECT
-        p."userId",
-        p.thursday,
-        p.is_absent,
-        CASE
-            WHEN p.is_absent = first_value(p.is_absent)
-                OVER (PARTITION BY p."userId" ORDER BY p.thursday DESC)
-            THEN 0
-            ELSE 1
-        END AS break_flag
-    FROM per_thursday p
-),
-user_streak AS (
-    SELECT
-        "userId",
-        CASE
-            WHEN is_absent = 1 THEN -COUNT(*)
-            ELSE COUNT(*)
-        END AS streak
-    FROM (
-        SELECT
-            sc.*,
-            SUM(break_flag) OVER (
-                PARTITION BY "userId"
-                ORDER BY thursday DESC
-                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-            ) AS grp
-        FROM streak_calc sc
-    ) x
-    WHERE grp = 0
-    GROUP BY "userId", is_absent
-)
-SELECT
-    u."userId",
-    u."userName",
-    u."startDate",
-    ut.effective_start_date,
-    ut.thursday_count,
-    (ut.thursday_count - COUNT(a."userId"))::int AS attendance_count,
-    COUNT(a."userId")::int AS away_count,
-    CASE WHEN ut.thursday_count = 0 THEN 0
-         ELSE ROUND(
-             (ut.thursday_count - COUNT(a."userId")::numeric)
-             / ut.thursday_count * 100, 2)
-    END AS attend_percentage,
-    COALESCE(us.streak, 0) AS streak
-FROM public.users u
-JOIN user_thursdays ut ON ut."userId" = u."userId"
-LEFT JOIN public.stammtisch_abwesenheit a
-    ON a."userId" = u."userId"
-    AND a.date >= ut.effective_start_date
-    AND a.date <= LEAST($2::date, current_date)
-    AND a.date NOT IN (SELECT date FROM excluded_days)
-LEFT JOIN user_streak us ON us."userId" = u."userId"
-GROUP BY
-    u."userId", u."userName", u."startDate",
-    ut.thursday_count, ut.effective_start_date, us.streak
-ORDER BY attendance_count DESC, attend_percentage DESC, u."userName"
-`
-
-func scanLeaderboardRow(rows *sql.Rows, r *LeaderboardRow) error {
-	return rows.Scan(
-		&r.UserID, &r.UserName, &r.StartDate,
-		&r.EffectiveStart, &r.ThursdayCount,
-		&r.AttendanceCount, &r.AwayCount,
-		&r.AttendPercent, &r.Streak,
-	)
-}
-
+// Leaderboard nutzt die geteilte Rangliste-Query aus dem shared-Modul
+// (queries/leaderboard.sql – früher hier als leaderboardQ dupliziert).
 func (s *Postgres) Leaderboard(ctx context.Context, p timeutil.Period) ([]LeaderboardRow, error) {
-	rows, err := s.db.QueryContext(ctx, leaderboardQ, p.Start, p.End)
-	if err != nil {
-		return nil, fmt.Errorf("Leaderboard: %w", err)
-	}
-	defer rows.Close()
-
-	var out []LeaderboardRow
-	for rows.Next() {
-		var r LeaderboardRow
-		if err := scanLeaderboardRow(rows, &r); err != nil {
-			return nil, fmt.Errorf("Leaderboard scan: %w", err)
-		}
-		out = append(out, r)
-	}
-	return out, rows.Err()
+	return sharedstore.Leaderboard(ctx, s.db, p)
 }
 
-// UserLeaderboardRow filtert die Leaderboard-CTE in SQL auf einen User, statt
-// alle Zeilen zu laden und in Go zu suchen.
+// UserLeaderboardRow filtert die Leaderboard-CTE in SQL auf einen User.
 func (s *Postgres) UserLeaderboardRow(ctx context.Context, p timeutil.Period, userID string) (LeaderboardRow, error) {
-	q := `SELECT * FROM (` + leaderboardQ + `) b WHERE b."userId" = $3`
-	rows, err := s.db.QueryContext(ctx, q, p.Start, p.End, userID)
-	if err != nil {
-		return LeaderboardRow{}, fmt.Errorf("UserLeaderboardRow: %w", err)
-	}
-	defer rows.Close()
-
-	var r LeaderboardRow
-	if rows.Next() {
-		if err := scanLeaderboardRow(rows, &r); err != nil {
-			return LeaderboardRow{}, fmt.Errorf("UserLeaderboardRow scan: %w", err)
-		}
-	}
-	return r, rows.Err()
+	return sharedstore.UserLeaderboardRow(ctx, s.db, p, userID)
 }
 
 // ThursdayStrip aggregiert die Strip-Kacheln komplett in SQL: Donnerstage bis

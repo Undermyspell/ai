@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/michael/zumba-admin-ui/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )

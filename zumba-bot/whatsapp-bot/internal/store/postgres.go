@@ -2,16 +2,15 @@ package store
 
 import (
 	"context"
-	"database/sql"
-	_ "embed"
 	"fmt"
 	"time"
 
+	"github.com/michael/zumba-shared/domain"
+	"github.com/michael/zumba-shared/penalty"
+	sharedstore "github.com/michael/zumba-shared/store"
+
 	"github.com/michael/zumba-whatsapp-bot/internal/db"
 )
-
-//go:embed stats.sql
-var statsQuery string
 
 type Postgres struct {
 	db *db.Postgres
@@ -21,41 +20,30 @@ func NewPostgres(p *db.Postgres) *Postgres {
 	return &Postgres{db: p}
 }
 
+// UserStats nutzt die geteilte Leaderboard-Query (shared/store/queries/
+// leaderboard.sql – früher eigene stats.sql-Kopie): Periodenstart ist der
+// Domänen-Mindeststart 2025-12-01, Ende der Stichtag asOf.
 func (s *Postgres) UserStats(ctx context.Context, asOf time.Time) ([]Stat, error) {
-	rows, err := s.db.QueryContext(ctx, statsQuery, asOf)
+	period := domain.Period{Start: penalty.ClampStart(nil), End: asOf}
+	rows, err := sharedstore.Leaderboard(ctx, s.db, period)
 	if err != nil {
 		return nil, fmt.Errorf("UserStats: %w", err)
 	}
-	defer rows.Close()
 
-	var out []Stat
-	for rows.Next() {
-		var (
-			st        Stat
-			startDate sql.NullTime
-		)
-		// Spaltenreihenfolge identisch zu stats.sql:
-		// away_count, attendance_count, attend_percentage, user_id,
-		// user_name, "startDate", effective_start_date, streak
-		if err := rows.Scan(
-			&st.Away,
-			&st.Attendance,
-			&st.Percent,
-			&st.UserID,
-			&st.Name,
-			&startDate,
-			&st.EffectiveStart,
-			&st.Streak,
-		); err != nil {
-			return nil, fmt.Errorf("UserStats scan: %w", err)
-		}
-		if startDate.Valid {
-			t := startDate.Time
-			st.StartDate = &t
-		}
-		out = append(out, st)
+	out := make([]Stat, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, Stat{
+			UserID:         r.UserID,
+			Name:           r.UserName,
+			StartDate:      r.StartDate,
+			EffectiveStart: r.EffectiveStart,
+			Attendance:     r.AttendanceCount,
+			Away:           r.AwayCount,
+			Percent:        r.AttendPercent,
+			Streak:         r.Streak,
+		})
 	}
-	return out, rows.Err()
+	return out, nil
 }
 
 func (s *Postgres) MarkAbsent(ctx context.Context, userID string, date time.Time, message string) error {

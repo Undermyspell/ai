@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/michael/zumba-admin-ui/internal/penalty"
+	"github.com/michael/zumba-shared/penalty"
 )
 
 func postForm(t *testing.T, srv http.Handler, path string, form url.Values) *httptest.ResponseRecorder {
