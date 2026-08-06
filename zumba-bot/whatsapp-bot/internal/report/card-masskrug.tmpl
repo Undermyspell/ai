@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Caveat";
+    src: url("{{.Fonts.Caveat}}") format("woff2");
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  :root {
+    --tisch: #43281a;
+    --tisch-tief: #2b1810;
+    --bier: #f4b537;
+    --bier-tief: #d98416;
+    --schaum: #fff6e2;
+    --creme: #f6e7cb;
+    --creme-matt: rgba(246, 231, 203, 0.62);
+    --creme-schwach: rgba(246, 231, 203, 0.22);
+    --glas: rgba(246, 231, 203, 0.14);
+    --rot: #e0705c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--tisch-tief);
+    color: var(--creme);
+    font-family: "Noto Sans", sans-serif;
+  }
+  /* Wirtshaustisch: Holzmaserung längs, Licht von oben. */
+  .tisch {
+    padding: 30px 34px 24px;
+    background:
+      radial-gradient(ellipse 70% 40% at 50% -5%, rgba(255, 200, 120, 0.16), transparent 70%),
+      repeating-linear-gradient(88deg, rgba(0,0,0,0.14) 0 2px, transparent 2px 26px),
+      repeating-linear-gradient(91deg, rgba(255,220,170,0.05) 0 1px, transparent 1px 60px),
+      linear-gradient(170deg, var(--tisch), var(--tisch-tief));
+  }
+
+  .weekly {
+    display: inline-block;
+    font-family: "Caveat", cursive;
+    font-size: 21px;
+    color: var(--bier);
+    border-bottom: 2px solid rgba(244, 181, 55, 0.45);
+    margin-bottom: 14px;
+  }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+  .haus {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--creme-matt);
+  }
+  h1 {
+    font-family: "Anton", sans-serif;
+    font-size: 48px; font-weight: 400; line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--bier);
+    margin-top: 6px;
+    text-shadow: 0 0 30px rgba(244, 181, 55, 0.3);
+  }
+  .unter { font-family: "Caveat", cursive; font-size: 22px; color: var(--creme-matt); margin-top: 1px; }
+  .runden { text-align: right; flex-shrink: 0; }
+  .runden .zahl { font-family: "Anton", sans-serif; font-size: 38px; line-height: 1; color: var(--creme); }
+  .runden .wort { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--creme-matt); margin-top: 3px; }
+
+  .notizen {
+    display: flex; gap: 24px;
+    margin: 20px 0 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--creme-schwach);
+    border-bottom: 1px solid var(--creme-schwach);
+    font-family: "Caveat", cursive; font-size: 22px;
+  }
+  .notiz { flex: 1; min-width: 0; }
+  .notiz .was {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--creme-matt);
+    margin-bottom: 1px;
+  }
+  .notiz b { color: var(--bier); }
+
+  .zeile {
+    display: grid;
+    grid-template-columns: 26px 132px 1fr 66px;
+    gap: 14px;
+    align-items: center;
+    padding: 7px 0;
+  }
+  .platz { font-family: "Anton", sans-serif; font-size: 18px; color: var(--creme-schwach); text-align: center; }
+  .zeile.voll .platz { color: var(--bier); }
+  .name {
+    font-family: "Caveat", cursive; font-size: 26px; line-height: 1.05;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Liegender Krug: Glaskörper mit Füllstand, Schaumkante und Rippen. */
+  .krug {
+    position: relative;
+    height: 30px;
+    border: 2px solid var(--glas);
+    border-radius: 5px 9px 9px 5px;
+    background: rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+  }
+  .krug .fuellung {
+    position: absolute; inset: 0 auto 0 0;
+    background: linear-gradient(180deg, var(--bier) 0%, var(--bier-tief) 62%, #b96b0f 100%);
+  }
+  /* Schaumkrone am oberen Ende der Füllung. */
+  .krug .schaum {
+    position: absolute; top: 0; bottom: 0; width: 7px;
+    background: linear-gradient(180deg, var(--schaum), rgba(255, 246, 226, 0.75));
+    box-shadow: 0 0 8px rgba(255, 246, 226, 0.5);
+  }
+  /* Krugrippen und Glanzlicht liegen über dem Bier. */
+  .krug .rippen {
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, rgba(0,0,0,0.13) 0 1px, transparent 1px 15px);
+  }
+  .krug .glanz {
+    position: absolute; left: 0; right: 0; top: 3px; height: 6px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
+    border-radius: 3px;
+  }
+  .krug .perlen {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 18% 68%, rgba(255,255,255,0.30) 0 1.4px, transparent 1.5px),
+      radial-gradient(circle at 41% 40%, rgba(255,255,255,0.24) 0 1.2px, transparent 1.3px),
+      radial-gradient(circle at 63% 74%, rgba(255,255,255,0.26) 0 1.5px, transparent 1.6px),
+      radial-gradient(circle at 82% 52%, rgba(255,255,255,0.22) 0 1.2px, transparent 1.3px);
+  }
+
+  .quote { text-align: right; font-family: "Anton", sans-serif; font-size: 20px; color: var(--creme); }
+  .zeile.voll .quote { color: var(--bier); }
+  .bilanz { font-family: "Noto Sans", sans-serif; font-size: 10.5px; color: var(--creme-matt); letter-spacing: .02em; }
+
+  .deckel { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--creme-schwach); }
+  .deckel .kopf {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--rot); margin-bottom: 5px;
+  }
+  .posten { display: flex; align-items: baseline; gap: 10px; font-family: "Caveat", cursive; font-size: 23px; padding: 3px 0; }
+  .posten .grund { font-family: "Noto Sans", sans-serif; font-size: 11.5px; color: var(--creme-matt); flex: 1; }
+  .posten .betrag { font-family: "Anton", sans-serif; font-size: 19px; color: var(--rot); }
+  .posten.bezahlt { opacity: 0.45; }
+  .posten.bezahlt .betrag { color: var(--creme-matt); }
+  .sauber { font-family: "Caveat", cursive; font-size: 23px; color: var(--creme-matt); }
+
+  .leer { font-family: "Caveat", cursive; font-size: 26px; padding: 34px 0; color: var(--creme-matt); }
+
+  footer {
+    margin-top: 16px; padding-top: 10px;
+    border-top: 1px solid var(--creme-schwach);
+    display: flex; justify-content: space-between;
+    font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--creme-schwach);
+  }
+</style>
+</head>
+<body>
+<div class="tisch">
+  {{if .WeeklyNote}}<div class="weekly">Wochenabrechnung, Donnerstag 21 Uhr</div>{{end}}
+
+  <header>
+    <div>
+      <div class="haus">Stammtisch Zumba</div>
+      <h1>SCHANKBRETT</h1>
+      <div class="unter">Wie voll war dein Krug dieses Jahr?</div>
+    </div>
+    {{if .Users}}
+    <div class="runden">
+      <div class="zahl">{{.Total}}</div>
+      <div class="wort">Runden</div>
+    </div>
+    {{end}}
+  </header>
+
+  {{if .Users}}
+  <div class="notizen">
+    <div class="notiz"><span class="was">Vollster Krug</span>{{.GoatName}}, <b>{{.GoatPercent}}%</b></div>
+    {{if .MaxStreak}}<div class="notiz"><span class="was">Längste Serie</span>{{.MaxStreakNames}}, <b>{{.MaxStreak}}x</b></div>{{end}}
+    {{if .MinStreak}}<div class="notiz"><span class="was">Längste Pause</span>{{.MinStreakNames}}, <b>{{.MinStreak}}x</b></div>{{end}}
+  </div>
+
+  {{range .Users}}
+  <div class="zeile{{if .Top3}} voll{{end}}">
+    <div class="platz">{{.Rank}}</div>
+    <div>
+      <div class="name">{{.Name}}</div>
+      <div class="bilanz">{{.Attendance}} da · {{.Away}} fehlt</div>
+    </div>
+    <div class="krug">
+      <div class="fuellung" style="width: {{printf "%.1f" .PercentVal}}%"></div>
+      <div class="schaum" style="left: calc({{printf "%.1f" .PercentVal}}% - 7px)"></div>
+      <div class="perlen"></div>
+      <div class="rippen"></div>
+      <div class="glanz"></div>
+    </div>
+    <div class="quote">{{.Percent}}%</div>
+  </div>
+  {{end}}
+  {{else}}
+  <div class="leer">Alle Gläser leer — keine Daten.</div>
+  {{end}}
+
+  <div class="deckel">
+    <div class="kopf">Auf dem Deckel</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="posten{{if .Beglichen}} bezahlt{{end}}">
+        <span>{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · bezahlt{{end}}</span>
+        <span class="betrag">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="sauber">Nichts offen. Prost!</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>Zumba-Bot · eingeschenkt wird automatisch</span>
+    <span>{{.Datum}}</span>
+  </footer>
+</div>
+</body>
+</html>

@@ -31,6 +31,12 @@ var cardZeitungSrc string
 //go:embed card-arena.tmpl
 var cardArenaSrc string
 
+//go:embed card-tafel.tmpl
+var cardTafelSrc string
+
+//go:embed card-masskrug.tmpl
+var cardMasskrugSrc string
+
 // Display-Fonts als eingebettete latin-Subsets: der Renderer-Container hat
 // keinen Netzzugriff, Google-Fonts-Links scheiden aus. Im Container selbst
 // liegen nur Noto Sans/Serif, DejaVu Mono und Noto Color Emoji.
@@ -58,13 +64,18 @@ type CardStyle struct {
 
 	tmpl  *template.Template
 	fonts func(*cardFonts)
+	skin  string // Farbwelt innerhalb eines Templates (leer = Standard)
 }
 
-// CardStyles listet alle Bild-Designs; "wrapped" ist das Live-Design.
+// CardStyles listet alle Bild-Designs; "wrapped" ist das Live-Design, der
+// Rest ist Bot-Test-Spielwiese.
 func CardStyles() []CardStyle {
 	return []CardStyle{
 		{ID: "wrapped", Label: "Wrapped (live)", tmpl: parseCard("wrapped", cardTmplSrc), fonts: withAnton},
-		{ID: "bierdeckel", Label: "Bierdeckel", tmpl: parseCard("bierdeckel", cardBierdeckelSrc), fonts: withCaveat},
+		{ID: "bierdeckel", Label: "Bierdeckel hell", tmpl: parseCard("bierdeckel", cardBierdeckelSrc), fonts: withCaveat},
+		{ID: "bierdeckel-dunkel", Label: "Bierdeckel dunkel", tmpl: parseCard("bierdeckel", cardBierdeckelSrc), fonts: withCaveat, skin: "dunkel"},
+		{ID: "tafel", Label: "Kreidetafel", tmpl: parseCard("tafel", cardTafelSrc), fonts: withCaveat},
+		{ID: "masskrug", Label: "Maßkrug", tmpl: parseCard("masskrug", cardMasskrugSrc), fonts: withCaveat},
 		{ID: "zeitung", Label: "Zeitung", tmpl: parseCard("zeitung", cardZeitungSrc), fonts: withPlayfair},
 		{ID: "arena", Label: "Arena", tmpl: parseCard("arena", cardArenaSrc), fonts: withAnton},
 	}
@@ -112,14 +123,52 @@ type cardUser struct {
 	StreakTag  string // "🔥+4" / "❄️-2" / leer
 	Top3       bool
 
-	// Bundles/Rest zerlegen die Anwesenheiten in Fünfer-Bündel und Rest,
-	// Lit/Dark sind ein Slot je Stammtisch (anwesend/gefehlt): go-Templates
-	// können nicht n-mal zählen, "bierdeckel" (Strichliste) und "arena"
-	// (LED-Segmente) rendern daraus ihre Balken.
-	Bundles []int
-	Rest    []int
+	// Go-Templates können nicht n-mal zählen, deshalb kommen die
+	// Wiederholungen fertig aus dem Code:
+	//   Bundles/Rest — Strichliste in Fünferbündeln ("bierdeckel"). Die
+	//     Striche der laufenden Anwesenheitsserie sind markiert, sie sind
+	//     definitionsgemäß die zuletzt gemachten.
+	//   Pausen — ein Kreuz je Termin der laufenden Fehl-Serie.
+	//   Lit/Dark — ein Slot je Stammtisch, anwesend/gefehlt ("arena").
+	Bundles []cardBundle
+	Rest    []cardStroke
+	Pausen  []int
 	Lit     []int
 	Dark    []int
+}
+
+// cardStroke ist ein einzelner Strich der Strichliste.
+type cardStroke struct{ Serie bool }
+
+// cardBundle ist ein Fünferbündel; Serie markiert den Querstrich, wenn das
+// ganze Bündel zur laufenden Serie gehört.
+type cardBundle struct {
+	Strokes []cardStroke
+	Serie   bool
+}
+
+// strichliste zerlegt die Anwesenheiten in Fünferbündel plus Rest und
+// markiert die letzten streak Striche als laufende Serie.
+func strichliste(attendance, streak int) ([]cardBundle, []cardStroke) {
+	if streak < 0 {
+		streak = 0
+	}
+	if streak > attendance {
+		streak = attendance
+	}
+	abSerie := attendance - streak // Index, ab dem die Serie läuft
+
+	strokes := make([]cardStroke, attendance)
+	for i := range strokes {
+		strokes[i] = cardStroke{Serie: i >= abSerie}
+	}
+
+	var bundles []cardBundle
+	for i := 0; i+5 <= attendance; i += 5 {
+		b := cardBundle{Strokes: strokes[i : i+5], Serie: i >= abSerie}
+		bundles = append(bundles, b)
+	}
+	return bundles, strokes[attendance-attendance%5:]
 }
 
 type cardStrafe struct {
@@ -149,6 +198,7 @@ type cardData struct {
 	Users   []cardUser
 	Strafen []cardStrafe
 
+	Skin  string // Farbwelt-Variante des gewählten Designs
 	Fonts cardFonts
 }
 
@@ -175,6 +225,7 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 		WeeklyNote: weekly,
 		Datum:      fmt.Sprintf("%d.%d.%d", asOf.Day(), int(asOf.Month()), asOf.Year()),
 		DatumLang:  fmt.Sprintf("%d. %s %d", asOf.Day(), monatDE[asOf.Month()], asOf.Year()),
+		Skin:       sel.skin,
 	}
 	sel.fonts(&data.Fonts)
 
@@ -211,13 +262,19 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 				medal = u.medal
 			}
 			tag := strings.TrimSpace(hotTag(u.Streak) + coldTag(u.Streak))
+			bundles, rest := strichliste(u.Attendance, u.Streak)
+			pausen := 0
+			if u.Streak < 0 {
+				pausen = abs(u.Streak)
+			}
 			data.Users = append(data.Users, cardUser{
 				Medal: medal, Rank: u.rank, Name: u.Name,
 				Attendance: u.Attendance, Away: u.Away,
 				Percent: fmtNum(u.Percent), PercentVal: u.Percent,
 				Streak: u.Streak, StreakAbs: abs(u.Streak), StreakTag: tag, Top3: u.rank <= 3,
-				Bundles: make([]int, u.Attendance/5),
-				Rest:    make([]int, u.Attendance%5),
+				Bundles: bundles,
+				Rest:    rest,
+				Pausen:  make([]int, pausen),
 				Lit:     make([]int, u.Attendance),
 				Dark:    make([]int, u.Away),
 			})

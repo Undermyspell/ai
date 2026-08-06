@@ -38,17 +38,23 @@ vom Bot erkannt. Das UI zeigt auch erkannte, noch nicht persistierte
 Kandidaten an.
 
 ### Bot-Test (`/bot-test`)
-Spielwiese gegen den echten Bot ohne WhatsApp: Beispielnachricht wählen
-(Statistik / Absage / Zusage), JSON anpassen, abschicken — das UI zeigt das
-strukturierte Ergebnis (Klassifikation, DB-Wirkung, Antworttext). Zusätzlich
-„Wochenreport testen": Dry-Run des kompletten Donnerstagsreports, optional
-mit simuliertem Datum.
+Spielwiese gegen den echten Bot ohne WhatsApp — ein Formular in vier
+Schritten:
 
-Die **Ausgabe** ist pro Request wählbar: „💬 Nachricht“ (Text, inkl.
-alternativer Statistik-Designs) oder „🖼️ Bild“ (PNG-Karte über den
-renderer-service, wird als WhatsApp-Bubble angezeigt). Für das Bild gibt es
-zusätzlich die Design-Auswahl (Wrapped/Bierdeckel/Zeitung/Arena) — nur zum
-Ausprobieren, live läuft immer „Wrapped“. Der Modus „Vorschau
+1. **Szenario** — Statistik, Absage, Zusage oder Wochenreport. Die ersten
+   drei schicken eine Beispielnachricht durch die komplette Verarbeitung,
+   der Wochenreport löst den Donnerstagsreport aus.
+2. **Beispiel-Nachricht** — das Webhook-JSON, frei editierbar (entfällt beim
+   Wochenreport).
+3. **Ausgabe** — „💬 Nachricht" (Text, inkl. alternativer Statistik-Designs)
+   oder „🖼️ Bild" (PNG-Karte mit Design-Auswahl). Entfällt bei
+   Absage/Zusage, weil dort nur klassifiziert wird.
+4. **Versand** — Dry-Run oder Vorschau an die eigene Nummer, dazu ein
+   optionaler Stichtag.
+
+Danach zeigt das UI das strukturierte Ergebnis (Klassifikation, DB-Wirkung,
+Antworttext bzw. Bild). Nicht zutreffende Schritte blendet die Seite aus,
+die Nummerierung bleibt lückenlos. Der Modus „Vorschau
 an meine Nummer“ verschickt entsprechend Text oder Bild an die Testnummer —
 nie an die Gruppe.
 

@@ -11,7 +11,10 @@ type styleOption struct{ ID, Label string }
 // "wrapped" ist das Live-Design, der Rest ist reine Testspielwiese.
 var cardStyleOptions = []styleOption{
 	{"wrapped", "Wrapped (live)"},
-	{"bierdeckel", "Bierdeckel"},
+	{"bierdeckel", "Bierdeckel hell"},
+	{"bierdeckel-dunkel", "Bierdeckel dunkel"},
+	{"tafel", "Kreidetafel"},
+	{"masskrug", "Maßkrug"},
 	{"zeitung", "Zeitung"},
 	{"arena", "Arena"},
 }
@@ -26,91 +29,149 @@ var styleOptions = []styleOption{
 	{"minimal", "Minimal"},
 }
 
+// szenarien sind die vier Testläufe. Die ersten drei schicken eine
+// Beispiel-Nachricht an /test, "wochenreport" ruft /weekly-report auf –
+// deshalb hat nur es kein Beispiel-JSON.
+type szenario struct {
+	ID, Icon, Label, Hint string
+	HasPayload            bool
+	HasOutput             bool // erzeugt eine Statistik (Ausgabe-Format wählbar)
+}
+
+var szenarien = []szenario{
+	{"statistik", "📊", "Statistik", "Rangliste auf Zuruf", true, true},
+	{"absage", "🚫", "Absage", "Klassifikation prüfen", true, false},
+	{"zusage", "✅", "Zusage", "Klassifikation prüfen", true, false},
+	{"wochenreport", "📅", "Wochenreport", "Donnerstag 21:00", false, true},
+}
+
 templ Page(vm PageVM) {
 	<div class="page-header enter">
 		<div class="eyebrow">WhatsApp-Bot</div>
 		<h1>Bot-Test</h1>
-		<p class="meta">Beispiel-Request auswählen, optional anpassen, an den Bot senden.</p>
+		<p class="meta">Szenario wählen, Optionen setzen, Test starten. Es geht nie etwas an die Zumba-Gruppe.</p>
 	</div>
-	<div class="bot-test enter">
-		<div class="kind-switch" role="tablist">
-			@kindButton("statistik", "Statistik", vm.DefaultKind)
-			@kindButton("absage", "Absage", vm.DefaultKind)
-			@kindButton("zusage", "Zusage", vm.DefaultKind)
-		</div>
-		<form hx-post="/bot-test/run" hx-target="#bot-response" hx-swap="innerHTML" hx-include="#weekly-date">
-			<textarea id="bot-json" name="payload" rows="18" spellcheck="false">{ vm.DefaultJSON }</textarea>
-			<div class="style-row">
-				<label for="bot-style">Statistik-Design</label>
-				<select id="bot-style" name="style" class="style-select">
-					for _, o := range styleOptions {
-						<option value={ o.ID }>{ o.Label }</option>
-					}
-				</select>
-				<span class="style-hint">Nur für „Statistik" – Live-Nachricht bleibt „Klassik".</span>
+	<form
+		class="bt enter"
+		hx-post="/bot-test/run"
+		hx-target="#bot-response"
+		hx-swap="innerHTML"
+		hx-indicator="#bt-start"
+	>
+		<section class="bt-panel">
+			<div class="bt-head">
+				<span class="bt-step"></span>
+				<h2>Szenario</h2>
 			</div>
-			<div class="style-row">
-				<label>Ausgabe</label>
-				<label class="format-opt">
-					<input type="radio" name="format" value="text" checked/>
-					<span>💬 Nachricht</span>
-				</label>
-				<label class="format-opt">
-					<input type="radio" name="format" value="image"/>
-					<span>🖼️ Bild</span>
-				</label>
-				<span class="style-hint">Bild = PNG-Karte über den Renderer (nur „Statistik"/Wochenreport).</span>
+			<div class="seg seg-wide" role="radiogroup" aria-label="Szenario">
+				for _, s := range szenarien {
+					@szenarioOption(s, vm.DefaultKind)
+				}
 			</div>
-			<div class="style-row">
-				<label for="bot-card-style">Bild-Design</label>
-				<select id="bot-card-style" name="cardStyle" class="style-select">
-					for _, o := range cardStyleOptions {
-						<option value={ o.ID }>{ o.Label }</option>
-					}
-				</select>
-				<span class="style-hint">Nur für Ausgabe „Bild". Live läuft immer „Wrapped".</span>
+		</section>
+		<section class="bt-panel only-payload">
+			<div class="bt-head">
+				<span class="bt-step"></span>
+				<h2>Beispiel-Nachricht</h2>
+				<span class="bt-hint">Evolution-Webhook-Event — frei editierbar</span>
 			</div>
-			<fieldset class="mode-switch">
-				<legend>Modus</legend>
-				<label class="mode-opt">
+			<textarea id="bot-json" name="payload" rows="14" spellcheck="false">{ vm.DefaultJSON }</textarea>
+		</section>
+		<div class="bt-grid">
+			<section class="bt-panel only-output">
+				<div class="bt-head">
+					<span class="bt-step"></span>
+					<h2>Ausgabe</h2>
+				</div>
+				<div class="seg" role="radiogroup" aria-label="Ausgabeformat">
+					<label class="seg-opt">
+						<input type="radio" name="format" value="text" id="fmt-text" checked/>
+						<span class="seg-face"><span class="seg-ico">💬</span>Nachricht</span>
+					</label>
+					<label class="seg-opt">
+						<input type="radio" name="format" value="image" id="fmt-image"/>
+						<span class="seg-face"><span class="seg-ico">🖼️</span>Bild</span>
+					</label>
+				</div>
+				<div class="bt-field only-text">
+					<label for="bot-style">Text-Design</label>
+					<select id="bot-style" name="style" class="bt-select">
+						for _, o := range styleOptions {
+							<option value={ o.ID }>{ o.Label }</option>
+						}
+					</select>
+					<p class="bt-note">Live geht immer „Klassik" raus.</p>
+				</div>
+				<div class="bt-field only-image">
+					<label for="bot-card-style">Bild-Design</label>
+					<select id="bot-card-style" name="cardStyle" class="bt-select">
+						for _, o := range cardStyleOptions {
+							<option value={ o.ID }>{ o.Label }</option>
+						}
+					</select>
+					<p class="bt-note">PNG-Karte über den Renderer. Live läuft immer „Wrapped".</p>
+				</div>
+			</section>
+			<section class="bt-panel">
+				<div class="bt-head">
+					<span class="bt-step"></span>
+					<h2>Versand</h2>
+				</div>
+				<label class="opt-card">
 					<input type="radio" name="mode" value="dryrun" checked/>
-					<span class="mo-title">Dry-Run</span>
-					<span class="mo-hint">nur UI – nichts gesendet/geschrieben</span>
+					<span class="oc-title">Dry-Run</span>
+					<span class="oc-hint">Nur hier im UI — nichts gesendet, nichts in die DB geschrieben.</span>
 				</label>
-				<label class="mode-opt">
+				<label class="opt-card">
 					<input type="radio" name="mode" value="preview"/>
-					<span class="mo-title">📱 Vorschau an meine Nummer</span>
-					<span class="mo-hint">UI + echte WhatsApp an dich – nie an die Gruppe</span>
+					<span class="oc-title">📱 Vorschau an meine Nummer</span>
+					<span class="oc-hint">Zusätzlich als echte WhatsApp an dich — nie an die Gruppe.</span>
 				</label>
-			</fieldset>
-			<p class="mode-note">Die Testseite sendet nie an die Zumba-Gruppe. Echte Gruppen-Nachrichten kommen nur über reale „statistik"-Anfragen und den Wochenreport-CronJob.</p>
-			<div class="bot-actions">
-				<button type="submit" class="btn-primary">An Bot senden</button>
-			</div>
-		</form>
-		<div class="weekly-test">
-			<button
-				type="button"
-				class="btn-secondary"
-				hx-get="/bot-test/weekly"
-				hx-include="[name='mode'],[name='date'],[name='format'],[name='cardStyle']"
-				hx-target="#bot-response"
-				hx-swap="innerHTML"
-			>📅 Wochenreport testen</button>
-			<label class="weekly-hint" for="weekly-date">Stichtag:</label>
-			<input type="date" id="weekly-date" name="date"/>
-			<span class="weekly-hint">Nutzt den gewählten Modus (Dry-Run = nur Vorschau im UI). Der Stichtag simuliert den Versandtag der Nachricht (Rangliste + Strafen) und gilt für beide Buttons – beim Wochenreport erzwingt er Dry-Run.</span>
+				<div class="bt-field">
+					<label for="bt-date">Stichtag <span class="bt-optional">optional</span></label>
+					<input type="date" id="bt-date" name="date" class="bt-input"/>
+					<p class="bt-note">Simuliert den Versandtag für Rangliste und Strafen. Beim Wochenreport erzwingt ein Stichtag den Dry-Run.</p>
+				</div>
+			</section>
 		</div>
-		<div id="bot-response" class="bot-response"></div>
-	</div>
+		<div class="bt-bar">
+			<button type="submit" id="bt-start" class="btn-primary">Test starten</button>
+			<span class="bt-bar-note">Echte Gruppen-Nachrichten entstehen nur durch reale „statistik"-Anfragen und den Wochenreport-CronJob.</span>
+		</div>
+		<section class="bt-result">
+			<div class="bt-head">
+				<h2>Ergebnis</h2>
+			</div>
+			<div id="bot-response" class="bot-response">
+				<p class="bt-empty">Noch kein Durchlauf. Der Bot verarbeitet die Anfrage komplett — Klassifikation, DB-Wirkung, Antwort — und zeigt sie hier.</p>
+			</div>
+		</section>
+	</form>
 }
 
-templ kindButton(kind, label, active string) {
-	<button
-		type="button"
-		class={ "kind-btn", templ.KV("active", kind == active) }
-		hx-get={ "/bot-test/example/" + kind }
-		hx-target="#bot-json"
-		hx-swap="innerHTML"
-	>{ label }</button>
+templ szenarioOption(s szenario, active string) {
+	<label class="seg-opt">
+		if s.HasPayload {
+			<input
+				type="radio"
+				name="szenario"
+				value={ s.ID }
+				id={ "sz-" + s.ID }
+				checked?={ s.ID == active }
+				hx-get={ "/bot-test/example/" + s.ID }
+				hx-target="#bot-json"
+				hx-swap="innerHTML"
+				hx-trigger="change"
+			/>
+		} else {
+			<input type="radio" name="szenario" value={ s.ID } id={ "sz-" + s.ID }/>
+		}
+		<span class="seg-face">
+			<span class="seg-ico">{ s.Icon }</span>
+			<span class="seg-text">
+				{ s.Label }
+				<small>{ s.Hint }</small>
+			</span>
+		</span>
+	</label>
 }

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Caveat";
+    src: url("{{.Fonts.Caveat}}") format("woff2");
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  :root {
+    --schiefer: #2c322e;
+    --schiefer-hell: #39403b;
+    --kreide: #eee9dc;
+    --kreide-matt: rgba(238, 233, 220, 0.6);
+    --kreide-schwach: rgba(238, 233, 220, 0.28);
+    --gelb: #e8c14f;   /* Kreide-Gelb für Hervorhebungen */
+    --rot: #d9705e;    /* Rote Kreide für Strafen */
+    --holz: #6b4626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: #241a12;
+    font-family: "Caveat", cursive;
+    color: var(--kreide);
+  }
+
+  /* Holzrahmen mit Tafel darin. */
+  .rahmen {
+    margin: 14px;
+    padding: 13px;
+    border-radius: 8px;
+    background:
+      repeating-linear-gradient(92deg, rgba(0,0,0,0.16) 0 3px, transparent 3px 11px),
+      linear-gradient(120deg, #7d5530 0%, var(--holz) 45%, #55371d 100%);
+    box-shadow: 0 12px 26px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,220,170,0.18);
+  }
+  .tafel {
+    position: relative;
+    padding: 28px 32px 24px;
+    border-radius: 3px;
+    background:
+      radial-gradient(circle at 25% 15%, rgba(255,255,255,0.045) 0 32%, transparent 33%),
+      radial-gradient(circle at 80% 85%, rgba(255,255,255,0.03) 0 26%, transparent 27%),
+      linear-gradient(165deg, var(--schiefer-hell), var(--schiefer) 70%);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.5);
+    overflow: hidden;
+  }
+  /* Wischspuren des Schwamms. */
+  .tafel::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(102deg, transparent 18%, rgba(255,255,255,0.035) 24%, transparent 30%),
+      linear-gradient(96deg, transparent 55%, rgba(255,255,255,0.03) 62%, transparent 69%);
+    pointer-events: none;
+  }
+
+  .weekly {
+    display: inline-block;
+    font-size: 21px;
+    color: var(--gelb);
+    border: 2px solid rgba(232, 193, 79, 0.5);
+    border-radius: 20px;
+    padding: 1px 14px 3px;
+    margin-bottom: 12px;
+    transform: rotate(-1.2deg);
+  }
+
+  header { text-align: center; padding-bottom: 12px; }
+  header .haus {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.4em; text-transform: uppercase;
+    color: var(--kreide-matt);
+  }
+  header h1 {
+    font-family: "Anton", sans-serif;
+    font-size: 46px; font-weight: 400; line-height: 1.04;
+    letter-spacing: 0.03em;
+    margin-top: 6px;
+    color: var(--kreide);
+    text-shadow: 0 0 18px rgba(238, 233, 220, 0.16);
+  }
+  header .datum { font-size: 22px; color: var(--gelb); margin-top: 2px; }
+  /* Kreidestrich unter der Überschrift, leicht schief wie von Hand. */
+  .strich {
+    height: 3px; margin: 10px 0 4px;
+    background: linear-gradient(90deg, transparent, var(--kreide-schwach) 8%, var(--kreide-matt) 50%, var(--kreide-schwach) 92%, transparent);
+    transform: rotate(-0.25deg);
+  }
+
+  .merker { display: flex; justify-content: space-around; gap: 16px; padding: 8px 0 12px; font-size: 23px; }
+  .merker div { text-align: center; }
+  .merker .was {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--kreide-schwach);
+    margin-bottom: 2px;
+  }
+  .merker b { color: var(--gelb); font-weight: 700; }
+
+  .zeile {
+    display: grid;
+    grid-template-columns: 30px 1fr 230px 92px;
+    gap: 14px;
+    align-items: center;
+    padding: 6px 0;
+  }
+  .zeile + .zeile { border-top: 1px solid rgba(238, 233, 220, 0.1); }
+  .platz { font-family: "Anton", sans-serif; font-size: 19px; color: var(--kreide-schwach); text-align: center; }
+  .zeile.oben .platz { color: var(--gelb); }
+  .name { font-size: 28px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Kreidebalken: gestrichelte Spur, gefüllter Teil kräftig. */
+  .balken { position: relative; height: 15px; }
+  .balken .spur {
+    position: absolute; inset: 5px 0;
+    background: repeating-linear-gradient(90deg, var(--kreide-schwach) 0 7px, transparent 7px 12px);
+  }
+  .balken .voll {
+    position: absolute; top: 2px; bottom: 2px; left: 0;
+    background: var(--kreide);
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(238, 233, 220, 0.35);
+  }
+  .zeile.oben .balken .voll { background: var(--gelb); box-shadow: 0 0 12px rgba(232, 193, 79, 0.5); }
+
+  .zahlen { text-align: right; font-size: 24px; white-space: nowrap; }
+  .zahlen .prozent { color: var(--gelb); }
+  .zahlen small { font-family: "Noto Sans", sans-serif; font-size: 11px; color: var(--kreide-schwach); display: block; margin-top: -4px; }
+
+  .anschrift { margin-top: 14px; padding-top: 10px; border-top: 2px dashed rgba(238, 233, 220, 0.2); }
+  .anschrift .kopf {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--rot);
+    margin-bottom: 4px;
+  }
+  .posten { display: flex; align-items: baseline; gap: 10px; font-size: 23px; padding: 2px 0; }
+  .posten .grund { font-family: "Noto Sans", sans-serif; font-size: 11.5px; color: var(--kreide-schwach); flex: 1; }
+  .posten .betrag { font-family: "Anton", sans-serif; font-size: 20px; color: var(--rot); }
+  .posten.bezahlt { opacity: 0.45; }
+  .posten.bezahlt .betrag { color: var(--kreide-matt); }
+  .sauber { font-size: 23px; color: var(--kreide-matt); }
+
+  .leer { font-size: 26px; padding: 32px 0; text-align: center; color: var(--kreide-matt); }
+
+  footer {
+    margin-top: 14px;
+    display: flex; justify-content: space-between;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--kreide-schwach);
+  }
+</style>
+</head>
+<body>
+<div class="rahmen">
+  <div class="tafel">
+    {{if .WeeklyNote}}<div class="weekly">Wochenabrechnung · Donnerstag 21 Uhr</div>{{end}}
+
+    <header>
+      <div class="haus">Stammtisch Zumba</div>
+      <h1>TAGESKARTE</h1>
+      <div class="datum">{{if .Users}}{{.Total}} Stammtische · {{end}}Stand {{.Datum}}</div>
+    </header>
+    <div class="strich"></div>
+
+    {{if .Users}}
+    <div class="merker">
+      <div><span class="was">Bester Gast</span>{{.GoatName}} <b>{{.GoatPercent}}%</b></div>
+      {{if .MaxStreak}}<div><span class="was">Längste Serie</span>{{.MaxStreakNames}} <b>{{.MaxStreak}}x</b></div>{{end}}
+      {{if .MinStreak}}<div><span class="was">Längste Pause</span>{{.MinStreakNames}} <b>{{.MinStreak}}x</b></div>{{end}}
+    </div>
+
+    {{range .Users}}
+    <div class="zeile{{if .Top3}} oben{{end}}">
+      <div class="platz">{{.Rank}}</div>
+      <div class="name">{{.Name}}</div>
+      <div class="balken">
+        <div class="spur"></div>
+        <div class="voll" style="width: {{printf "%.1f" .PercentVal}}%"></div>
+      </div>
+      <div class="zahlen">
+        <span class="prozent">{{.Percent}}%</span>
+        <small>{{.Attendance}} da · {{.Away}} fehlt</small>
+      </div>
+    </div>
+    {{end}}
+    {{else}}
+    <div class="leer">Tafel frisch gewischt — keine Daten.</div>
+    {{end}}
+
+    <div class="anschrift">
+      <div class="kopf">Angeschrieben</div>
+      {{if .Strafen}}
+        {{range .Strafen}}
+        <div class="posten{{if .Beglichen}} bezahlt{{end}}">
+          <span>{{.Name}}</span>
+          <span class="grund">{{.Grund}}{{if .Beglichen}} · bezahlt{{end}}</span>
+          <span class="betrag">{{.Betrag}} €</span>
+        </div>
+        {{end}}
+      {{else}}
+        <div class="sauber">Nichts angeschrieben. Sauber!</div>
+      {{end}}
+    </div>
+
+    <footer>
+      <span>Zumba-Bot</span>
+      <span>{{.DatumLang}}</span>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

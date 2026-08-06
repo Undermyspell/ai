@@ -69,7 +69,6 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /bot-test", s.handleBotTest)
 	mux.HandleFunc("GET /bot-test/example/{kind}", s.handleBotTestExample)
 	mux.HandleFunc("POST /bot-test/run", s.handleBotTestRun)
-	mux.HandleFunc("GET /bot-test/weekly", s.handleBotTestWeekly)
 	mux.HandleFunc("GET /trace", s.handleTraceList)
 	mux.HandleFunc("GET /trace/{id}", s.handleTraceDetail)
 	mux.HandleFunc("GET /ml-shadow", s.handleMLShadow)
@@ -458,12 +457,21 @@ func modeQuery(mode string) string {
 	return "?dryRun=true"
 }
 
-// handleBotTestWeekly ruft den Wochenreport-Endpoint des Bots im gewählten Modus
-// auf. Ein optionales date=YYYY-MM-DD simuliert den Stichtag des Strafenblocks
-// (der Bot erzwingt dann Dry-Run, sofern nicht Vorschau).
-func (s *Server) handleBotTestWeekly(w http.ResponseWriter, r *http.Request) {
+// handleBotTestRun führt den gewählten Testlauf aus. Das Szenario bestimmt den
+// Bot-Endpoint: "wochenreport" ruft /weekly-report ohne Body auf, alles andere
+// schickt das Beispiel-Event an /test. Modus, Stichtag und Ausgabeformat gelten
+// für beide Wege – deshalb liegt alles in einem Formular.
+func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	url := strings.TrimRight(s.cfg.BotURL, "/") + "/weekly-report" + modeQuery(r.FormValue("mode"))
+
+	weekly := r.FormValue("szenario") == "wochenreport"
+	endpoint := "/test"
+	if weekly {
+		endpoint = "/weekly-report"
+	}
+	url := strings.TrimRight(s.cfg.BotURL, "/") + endpoint + modeQuery(r.FormValue("mode"))
+
+	// Stichtag gilt für den Statistik-Pfad wie für den Wochenreport.
 	if date := r.FormValue("date"); date != "" {
 		url += "&date=" + date
 	}
@@ -472,29 +480,16 @@ func (s *Server) handleBotTestWeekly(w http.ResponseWriter, r *http.Request) {
 		if cs := r.FormValue("cardStyle"); cs != "" {
 			url += "&cardStyle=" + cs
 		}
-	}
-	s.proxyBot(w, r, url, nil)
-}
-
-func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
-	payload := r.FormValue("payload")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	url := strings.TrimRight(s.cfg.BotURL, "/") + "/test" + modeQuery(r.FormValue("mode"))
-	if style := r.FormValue("style"); style != "" && style != "klassik" {
+	} else if style := r.FormValue("style"); style != "" && style != "klassik" {
+		// Alternative Textdesigns kennt nur der /test-Endpoint.
 		url += "&style=" + style
 	}
-	// Stichtag gilt auch für den Statistik-Pfad des /test-Endpoints.
-	if date := r.FormValue("date"); date != "" {
-		url += "&date=" + date
+
+	if weekly {
+		s.proxyBot(w, r, url, nil)
+		return
 	}
-	if r.FormValue("format") == "image" {
-		url += "&format=image"
-		if cs := r.FormValue("cardStyle"); cs != "" {
-			url += "&cardStyle=" + cs
-		}
-	}
-	s.proxyBot(w, r, url, strings.NewReader(payload))
+	s.proxyBot(w, r, url, strings.NewReader(r.FormValue("payload")))
 }
 
 // proxyBot schickt eine POST-Anfrage an den Bot und rendert dessen Outcome

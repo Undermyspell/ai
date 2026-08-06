@@ -78,9 +78,16 @@ Spielwiese, um Alternativen auszuprobieren:
 | Design | Idee |
 |---|---|
 | `wrapped` | Live: dunkle Karte im Wrapped-Look, Medaillen und Quotenbalken |
-| `bierdeckel` | Wirtshaus-Deckel: Strichliste in Fünferbündeln, Handschrift, Stempel, „offene Rechnung" |
+| `bierdeckel` | Wirtshaus-Deckel aus heller Pappe: Strichliste in Fünferbündeln, Handschrift, Stempel, „offene Rechnung" |
+| `bierdeckel-dunkel` | Derselbe Deckel in den Live-Farben (Holz/Biergold/Schaum) |
+| `tafel` | Kreidetafel im Holzrahmen: Tageskarte mit Kreidebalken |
+| `masskrug` | Schankbrett: je Mitglied ein Krug, gefüllt nach Quote, mit Schaumkante |
 | `zeitung` | Sportteil des „Zumba-Anzeigers": Schlagzeile, Vorspann, Tabelle, Strafregister — ohne Emojis |
 | `arena` | LED-Anzeigetafel: ein leuchtendes Segment je Stammtisch, Strafenbank |
+
+In der Strichliste der Bierdeckel-Designs sind die Striche der **laufenden
+Serie** farbig abgesetzt (sie sind definitionsgemäß die zuletzt gemachten),
+eine laufende Pause erscheint als Reihe von ✕.
 
 Live läuft immer „Wrapped"; unbekannte Werte fallen darauf zurück.
 
