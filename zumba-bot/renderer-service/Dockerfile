@@ -1,6 +1,6 @@
 # Build-Kontext ist renderer-service/ selbst (kein shared-Modul nötig):
 #   docker build -f renderer-service/Dockerfile renderer-service/
-FROM golang:1.26.5-bookworm AS builder
+FROM golang:1.26.6-bookworm AS builder
 
 WORKDIR /app
 
