@@ -1,6 +1,6 @@
 # Build-Kontext ist zumba-bot/ (wegen des shared-Moduls):
 #   docker build -f wrapped/Dockerfile -t stammtisch-wrapped .
-FROM golang:1.26.5-alpine AS builder
+FROM golang:1.26.6-alpine AS builder
 
 WORKDIR /app
 
