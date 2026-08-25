@@ -9,6 +9,8 @@ import (
 
 type ListVM struct {
 	Days []time.Time // newest first
+	// ReadOnly: abgeschlossenes Stammtischjahr (Archivansicht).
+	ReadOnly bool
 }
 
 templ List(vm ListVM) {
@@ -17,10 +19,12 @@ templ List(vm ListVM) {
 		<h1>Ausgeschlossene Donnerstage</h1>
 		<p class="meta">Diese Tage zählen nicht in der Auswertung.</p>
 	</div>
-	<form class="excluded-form enter" hx-post="/excluded" hx-target="#excluded-region" hx-swap="outerHTML">
-		<input type="date" name="date" required aria-label="Donnerstag wählen"/>
-		<button type="submit" class="btn-primary">Sperrtag anlegen</button>
-	</form>
+	if !vm.ReadOnly {
+		<form class="excluded-form enter" hx-post="/excluded" hx-target="#excluded-region" hx-swap="outerHTML">
+			<input type="date" name="date" required aria-label="Donnerstag wählen"/>
+			<button type="submit" class="btn-primary">Sperrtag anlegen</button>
+		</form>
+	}
 	@ListRegion(vm)
 }
 
@@ -34,27 +38,29 @@ templ ListRegion(vm ListVM) {
 		} else {
 			<div class="list enter">
 				for _, d := range vm.Days {
-					@row(d)
+					@row(d, vm.ReadOnly)
 				}
 			</div>
 		}
 	</div>
 }
 
-templ row(d time.Time) {
+templ row(d time.Time, readOnly bool) {
 	<div class="excluded-row">
 		<span class="marker"></span>
 		<div>
 			<div class="label">{ timeutil.FormatDE(d) }</div>
 			<div class="iso">{ fmt.Sprintf("KW %d · %s", isoWeek(d), timeutil.FormatISO(d)) }</div>
 		</div>
-		<button
-			class="btn-danger"
-			hx-delete={ "/excluded/" + timeutil.FormatISO(d) }
-			hx-target="#excluded-region"
-			hx-swap="outerHTML"
-			hx-confirm="Sperrtag wirklich entfernen?"
-		>Entfernen</button>
+		if !readOnly {
+			<button
+				class="btn-danger"
+				hx-delete={ "/excluded/" + timeutil.FormatISO(d) }
+				hx-target="#excluded-region"
+				hx-swap="outerHTML"
+				hx-confirm="Sperrtag wirklich entfernen?"
+			>Entfernen</button>
+		}
 	</div>
 }
 

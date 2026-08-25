@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/michael/zumba-shared/domain"
 	"github.com/michael/zumba-shared/penalty"
 	sharedstore "github.com/michael/zumba-shared/store"
 
@@ -45,8 +46,20 @@ type DayAbsences struct {
 	AbsentUserIDs []string
 }
 
+// Season ist ein Stammtischjahr: gepflegter Auswertungszeitraum mit Label
+// ("2026"). Jedes Jahr hat eigene Start-/Enddaten, keine Kalendergrenzen.
+type Season = domain.Season
+
 // Store is the interface used by handlers. Phase 2 adds the write methods.
 type Store interface {
+	// ListSeasons liefert alle Stammtischjahre, neuestes zuerst (Reihenfolge
+	// des Jahres-Umschalters).
+	ListSeasons(ctx context.Context) ([]Season, error)
+	// SeasonAt liefert das Jahr, in das t fällt, sonst domain.ErrNoSeason.
+	SeasonAt(ctx context.Context, t time.Time) (Season, error)
+	// SeasonByLabel liefert das Jahr zum Slug aus ?jahr=.
+	SeasonByLabel(ctx context.Context, label string) (Season, error)
+
 	ListUsers(ctx context.Context) ([]User, error)
 	// GetUser liefert einen einzelnen User (nil, wenn unbekannt).
 	GetUser(ctx context.Context, userID string) (*User, error)
@@ -98,9 +111,10 @@ type Store interface {
 	JudgeMLTest(ctx context.Context, id int64, expectedLabel string) (*MLTestMessage, error)
 	DeleteMLTest(ctx context.Context, id int64) error
 
-	// Strafen-Feature. ListStrafen liefert ALLE Zeilen (inkl. beglichen und
-	// geloescht – Lösch-/Begleich-Zeitpunkte resetten den Fehltage-Zähler).
-	ListStrafen(ctx context.Context) ([]penalty.Row, error)
+	// Strafen-Feature. ListSeasonStrafen liefert alle Zeilen EINES Jahres
+	// (inkl. beglichen und geloescht – Lösch-/Begleich-Zeitpunkte resetten
+	// den Fehltage-Zähler).
+	ListSeasonStrafen(ctx context.Context, season Season) ([]penalty.Row, error)
 	// InsertAutoStrafe persistiert den Marker einer erkannten Fehltage-Strafe
 	// (idempotent auf userId + Serienstart).
 	InsertAutoStrafe(ctx context.Context, userID string, datum time.Time) error

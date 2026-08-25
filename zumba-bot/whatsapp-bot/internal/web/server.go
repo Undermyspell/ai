@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
-	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/report"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 	"github.com/michael/zumba-whatsapp-bot/internal/tracestore"
@@ -233,13 +233,19 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 // runStats baut den Ranglisten-Text zum Stichtag asOf und protokolliert
 // Berechnung + Versand.
 func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asOf time.Time, rec *tracestore.Recorder) (string, []store.Stat, []penalty.Entry) {
-	stats, err := s.store.UserStats(ctx, asOf)
+	season, err := s.store.SeasonAt(ctx, asOf)
+	if err != nil {
+		rec.Step(tracestore.NodeBuildStats, tracestore.OutcomeError, "Stammtischjahr bestimmen", err.Error())
+		log.Printf("⚠️  SeasonAt(%s): %v", asOf.Format("2006-01-02"), err)
+		return "", nil, nil
+	}
+	stats, err := s.store.UserStats(ctx, season, asOf)
 	if err != nil {
 		rec.Step(tracestore.NodeBuildStats, tracestore.OutcomeError, "Statistik berechnen", err.Error())
 		log.Printf("⚠️  UserStats: %v", err)
 		return "", nil, nil
 	}
-	entries, perr := s.penalties(ctx, asOf, !dryRun)
+	entries, perr := s.penalties(ctx, season, asOf, !dryRun)
 	text := report.BuildWithStrafen(stats, strafenBlock(entries, perr, asOf))
 	rec.Step(tracestore.NodeBuildStats, tracestore.OutcomePass, "Statistik berechnen", fmt.Sprintf("%d Nutzer", len(stats)))
 	if dryRun {
@@ -301,8 +307,13 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	send := !(dryRun || preview)
 	ctx := r.Context()
 
-	stats, err := s.store.UserStats(ctx, asOf)
+	// Ohne gepflegtes Jahr bleibt stats nil und der Report entfällt – besser
+	// als eine leere Rangliste an die Gruppe.
+	var stats []store.Stat
+	season, err := s.store.SeasonAt(ctx, asOf)
 	if err != nil {
+		log.Printf("⚠️  SeasonAt(%s): %v (Report entfällt)", asOf.Format("2006-01-02"), err)
+	} else if stats, err = s.store.UserStats(ctx, season, asOf); err != nil {
 		log.Printf("⚠️  UserStats: %v", err)
 		stats = nil
 	}
@@ -312,7 +323,7 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	)
 	if stats != nil {
 		var perr error
-		entries, perr = s.penalties(ctx, asOf, send)
+		entries, perr = s.penalties(ctx, season, asOf, send)
 		text = report.BuildWeeklyWithStrafen(stats, strafenBlock(entries, perr, asOf))
 	}
 
@@ -388,11 +399,14 @@ func (s *Server) renderCardStyled(ctx context.Context, style string, stats []sto
 	return s.Renderer.PNG(ctx, html, report.CardWidth)
 }
 
-// penalties berechnet alle Strafen zum Stichtag asOf. persist=true schreibt
-// Marker für neu erkannte Fehltage-Strafen (nur echte Läufe – nie
-// Dry-Run/Vorschau).
-func (s *Server) penalties(ctx context.Context, asOf time.Time, persist bool) ([]penalty.Entry, error) {
-	in, err := s.store.PenaltyInputs(ctx, asOf)
+// penalties berechnet alle Strafen des Stammtischjahres season zum Stichtag
+// asOf. persist=true schreibt Marker für neu erkannte Fehltage-Strafen (nur
+// echte Läufe – nie Dry-Run/Vorschau). asOf wird auf das Jahr geklemmt – für
+// Eingangsdaten und Bewertung derselbe Stichtag, sonst reichten Serien über
+// die Jahresgrenze.
+func (s *Server) penalties(ctx context.Context, season store.Season, asOf time.Time, persist bool) ([]penalty.Entry, error) {
+	asOf = season.ClampAsOf(asOf)
+	in, err := s.store.PenaltyInputs(ctx, season, asOf)
 	if err != nil {
 		log.Printf("⚠️  PenaltyInputs: %v (Strafenblock entfällt)", err)
 		return nil, err

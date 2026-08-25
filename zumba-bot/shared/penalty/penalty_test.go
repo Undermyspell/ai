@@ -177,3 +177,43 @@ func TestNextThursday(t *testing.T) {
 		t.Errorf("Freitag → nächster Donnerstag: got %v", got)
 	}
 }
+
+// TestAssessSerieBrichtAnJahresgrenze: eine Fehltage-Serie, die über den
+// Jahreswechsel läuft, wird in zwei Serien geschnitten – je Jahr wird mit
+// eigenem EffectiveStart (Jahresstart) und eigenem asOf (Jahresende) bewertet.
+// Ohne diesen Schnitt bekäme ein Mitglied im neuen Jahr sofort eine Strafe aus
+// Fehltagen des Vorjahres.
+func TestAssessSerieBrichtAnJahresgrenze(t *testing.T) {
+	// Jahr A endet nach Donnerstag 3, Jahr B beginnt mit Donnerstag 4.
+	grenzeA := thursday(3)
+	startB := thursday(4)
+
+	alle := []time.Time{
+		thursday(0), thursday(1), thursday(2), thursday(3),
+		thursday(4), thursday(5), thursday(6),
+	}
+
+	// Durchgehend bewertet wären das 7 Fehltage in Folge → eine Strafe.
+	durchgehend := Assess(Input{Users: []UserData{{
+		UserID: "u1", Name: "Hans", EffectiveStart: thursday(0), Absences: alle,
+	}}}, thursday(6))
+	if len(durchgehend) != 1 || durchgehend[0].Tage != 7 {
+		t.Fatalf("ohne Jahresgrenze: %+v, want eine Serie über 7 Tage", durchgehend)
+	}
+
+	// Jahr A: Start = thursday(0), asOf = Jahresende → 4 Fehltage, keine Strafe.
+	jahrA := Assess(Input{Users: []UserData{{
+		UserID: "u1", Name: "Hans", EffectiveStart: thursday(0), Absences: alle,
+	}}}, grenzeA)
+	if len(jahrA) != 0 {
+		t.Errorf("Jahr A: %+v, want keine Strafe (nur 4 Fehltage)", jahrA)
+	}
+
+	// Jahr B: Start = Jahresstart → die Serie beginnt dort neu, 3 Fehltage.
+	jahrB := Assess(Input{Users: []UserData{{
+		UserID: "u1", Name: "Hans", EffectiveStart: startB, Absences: alle,
+	}}}, thursday(6))
+	if len(jahrB) != 0 {
+		t.Errorf("Jahr B: %+v, want keine Strafe (nur 3 Fehltage)", jahrB)
+	}
+}

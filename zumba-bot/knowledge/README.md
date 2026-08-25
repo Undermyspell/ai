@@ -24,9 +24,17 @@ Anwesenheit aus dem Fehlen einer Absage ab.
 **Nur Donnerstage zählen** (`EXTRACT(DOW) = 4` / ISODOW 4). Sperrtage
 (`excluded_days`, z. B. Feiertage) werden überall herausgefiltert.
 
-**Zeitrechnung**: Auswertungszeitraum "Wrapped 2026" = 01.12.2025–30.11.2026.
-Startdaten von Mitgliedern werden auf frühestens 01.12.2025 geklemmt
-(`ClampStart`). Zukunft zählt nie mit — Enddatum wird auf "heute" gekappt.
+**Zeitrechnung**: Die Auswertung läuft in **Stammtischjahren** — benannte
+Zeiträume mit gepflegtem Start- und Enddatum, keine Kalenderjahre. Sie stehen
+in `seasons` (siehe unten), überlappen nicht und lösen den Jahreswechsel
+automatisch auf: maßgeblich ist das Jahr, in das der Stichtag fällt. "2026" =
+01.12.2025–30.11.2026, "2027" beginnt am 01.12.2026.
+
+Startdaten von Mitgliedern werden auf frühestens den Jahresstart geklemmt
+(`domain.Season.ClampStart`) — mit jedem neuen Jahr beginnen alle wieder bei
+null. Zukunft zählt nie mit: das Enddatum wird auf "heute" gekappt, bei
+abgelaufenen Jahren auf ihr Jahresende (Archiv zeigt den Endstand).
+Fehltage-Serien enden an der Jahresgrenze und beginnen im neuen Jahr neu.
 
 ### Tabellen (Postgres, DB `zumba`, Schema `public`)
 
@@ -37,6 +45,21 @@ Startdaten von Mitgliedern werden auf frühestens 01.12.2025 geklemmt
   (TIMESTAMPTZ, seit 08/2026; Altbestand NULL. Für Wrapped 2027:
   "kurzfristigste Absage"). PK (`userId`, `date`).
 - `excluded_days` — Donnerstage, die nicht zählen.
+- `seasons` — die Stammtischjahre: `label` ("2026"), `start_date`, `end_date`
+  (beide inklusive). Ein EXCLUDE-Constraint auf `daterange` verbietet
+  Überlappungen, damit "das Jahr zum Zeitpunkt t" eindeutig ist. Bot und
+  Admin-UI legen die Tabelle idempotent an und seeden sie einmalig
+  (`shared/store.EnsureSeasonsSchema`, Seed: 2025/2026/2027, je 1.12.–30.11.);
+  danach wird sie von Hand gepflegt. Ist für einen Zeitpunkt kein Jahr
+  gepflegt, gibt es `domain.ErrNoSeason` — bewusst ein Fehler statt einer
+  stillen Null-Auswertung.
+
+  **Datenlage 2025**: Absagen sind erst ab 13.10.2025 erfasst. Die ~45
+  Donnerstage davor zählen wegen attendance-by-default als anwesend — das
+  Archiv-Jahr 2025 liest sich deshalb deutlich besser als die Realität.
+  Zusätzlich liegen 285 Altzeilen (13.10.–16.11.2025) auf Nicht-Donnerstagen;
+  alle Auswertungen filtern `ISODOW = 4`, sie sind damit wirkungslos, aber
+  noch in der Tabelle.
 - `strafen` — siehe [strafen.md](strafen.md).
 
 Zwei Datenbanken auf einer Postgres-Instanz: `n8n` (n8n-State + Evolution-API

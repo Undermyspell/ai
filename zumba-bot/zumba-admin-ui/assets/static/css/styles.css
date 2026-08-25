@@ -301,6 +301,48 @@ h3 { font-size: 17px; line-height: 1.25; }
 .banner strong { color: var(--ink); font-weight: 500; }
 
 /* ============================================================
+   Season picker (Stammtischjahr)
+   ============================================================ */
+.season-picker {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+.season-picker .season-range {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.season-picker ul {
+  display: flex;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.season-link {
+  display: inline-block;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.season-link:hover { border-color: var(--accent); color: var(--ink); }
+.season-link.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ============================================================
    Thursday strip
    ============================================================ */
 .thursday-strip {
@@ -832,6 +874,9 @@ h3 { font-size: 17px; line-height: 1.25; }
 .toggle:hover { border-color: var(--accent); }
 .toggle.is-present { color: var(--success); border-color: var(--success-soft); background: var(--success-soft); }
 .toggle.is-absent  { color: var(--danger);  border-color: var(--danger-soft);  background: var(--danger-soft); }
+/* Archivansicht: Zustand sichtbar, nicht klickbar. */
+.toggle.is-readonly { cursor: default; opacity: .65; }
+.toggle.is-readonly:hover { border-color: var(--rule-strong); }
 
 /* Generic buttons */
 .btn-primary {

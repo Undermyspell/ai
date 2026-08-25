@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"github.com/michael/zumba-shared/domain"
 	sharedstore "github.com/michael/zumba-shared/store"
 )
 
@@ -57,6 +58,11 @@ type ThursdayAttendance struct {
 
 // RawData contains all raw data needed for evaluations
 type RawData struct {
+	// Season ist das ausgewertete Stammtischjahr (Zeitraum + Label). Die
+	// Evaluatoren klemmen User-Startdaten daran (Season.ClampStart), damit
+	// jedes Jahr bei null beginnt.
+	Season domain.Season
+
 	Users        []RawUser
 	Rejections   []RawRejection
 	ExcludedDays []ExcludedDay

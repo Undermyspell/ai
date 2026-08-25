@@ -14,10 +14,10 @@ func (s *Postgres) EnsureStrafenSchema(ctx context.Context) error {
 	return sharedstore.EnsureStrafenSchema(ctx, s.db)
 }
 
-// PenaltyInputs delegiert an das shared-Modul (Queries auf [2025-12-01, asOf]
-// begrenzt, siehe dort).
-func (s *Postgres) PenaltyInputs(ctx context.Context, asOf time.Time) (penalty.Input, error) {
-	return sharedstore.PenaltyInputs(ctx, s.db, asOf)
+// PenaltyInputs delegiert an das shared-Modul (Queries auf
+// [season.Start, asOf] begrenzt, siehe dort).
+func (s *Postgres) PenaltyInputs(ctx context.Context, season Season, asOf time.Time) (penalty.Input, error) {
+	return sharedstore.PenaltyInputs(ctx, s.db, season, asOf)
 }
 
 // InsertAutoStrafen persistiert alle Marker in einem Statement (shared).

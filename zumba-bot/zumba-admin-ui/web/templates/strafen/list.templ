@@ -29,6 +29,8 @@ type PageVM struct {
 	Thursdays     []time.Time // gültige Donnerstage (ohne Sperrtage), neueste zuerst
 	Rows          []Row
 	NoShowDefault int
+	// ReadOnly: abgeschlossenes Stammtischjahr (Archivansicht).
+	ReadOnly bool
 }
 
 templ Page(vm PageVM) {
@@ -41,6 +43,13 @@ templ Page(vm PageVM) {
 			Begleichen friert den Zähler ein – die nächste Serie zählt von vorn.
 		</p>
 	</div>
+	if !vm.ReadOnly {
+		@noShowForm(vm)
+	}
+	@ListRegion(vm)
+}
+
+templ noShowForm(vm PageVM) {
 	<form
 		class="excluded-form enter"
 		hx-post="/strafen"
@@ -62,7 +71,6 @@ templ Page(vm PageVM) {
 		<input type="number" name="betrag" min="1" value={ strconv.Itoa(vm.NoShowDefault) } aria-label="Betrag in Euro"/>
 		<button type="submit" class="btn-primary">No-Show-Strafe anlegen</button>
 	</form>
-	@ListRegion(vm)
 }
 
 templ ListRegion(vm PageVM) {
@@ -75,14 +83,14 @@ templ ListRegion(vm PageVM) {
 		} else {
 			<div class="list enter">
 				for _, r := range vm.Rows {
-					@row(r)
+					@row(r, vm.ReadOnly)
 				}
 			</div>
 		}
 	</div>
 }
 
-templ row(r Row) {
+templ row(r Row, readOnly bool) {
 	<div class="excluded-row strafen-row">
 		<span class={ "marker", templ.KV("offen", r.Status == penalty.StatusOffen), templ.KV("beglichen", r.Status == penalty.StatusBeglichen) }></span>
 		<div>
@@ -98,7 +106,7 @@ templ row(r Row) {
 			<div class="iso">{ beschreibung(r) }</div>
 		</div>
 		<div class="strafen-actions">
-			if r.Status == penalty.StatusOffen {
+			if !readOnly && r.Status == penalty.StatusOffen {
 				<button
 					class="btn-secondary btn-sm"
 					hx-post={ fmt.Sprintf("/strafen/%d/begleichen", r.ID) }
@@ -106,13 +114,15 @@ templ row(r Row) {
 					hx-swap="outerHTML"
 				>Beglichen</button>
 			}
-			<button
-				class="btn-danger btn-sm"
-				hx-delete={ fmt.Sprintf("/strafen/%d", r.ID) }
-				hx-target="#strafen-region"
-				hx-swap="outerHTML"
-				hx-confirm="Strafe wirklich löschen? Normalerweise werden Strafen nur beglichen – Löschen ist für Testeinträge gedacht und startet den Fehltage-Zähler neu."
-			>Löschen</button>
+			if !readOnly {
+				<button
+					class="btn-danger btn-sm"
+					hx-delete={ fmt.Sprintf("/strafen/%d", r.ID) }
+					hx-target="#strafen-region"
+					hx-swap="outerHTML"
+					hx-confirm="Strafe wirklich löschen? Normalerweise werden Strafen nur beglichen – Löschen ist für Testeinträge gedacht und startet den Fehltage-Zähler neu."
+				>Löschen</button>
+			}
 		</div>
 	</div>
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/lib/pq"
 
+	"github.com/michael/zumba-shared/domain"
 	"github.com/michael/zumba-shared/penalty"
 )
 
@@ -83,15 +84,20 @@ func ListStrafen(ctx context.Context, q Queryer) ([]penalty.Row, error) {
 	return scanStrafenRows(rows)
 }
 
-// PenaltyInputs sammelt die Eingangsdaten für penalty.Assess zum Stichtag
-// asOf: User (mit auf 2025-12-01 geklemmtem Start), deren
-// Abwesenheits-Donnerstage, Sperrtage und strafen-Zeilen. Alle Queries sind
-// auf [2025-12-01, asOf] begrenzt – Zeilen außerhalb können das Ergebnis
-// nicht beeinflussen (Assess betrachtet nur Donnerstage in diesem Fenster,
-// und Resets zukünftiger strafen-Zeilen liegen immer nach deren datum).
-func PenaltyInputs(ctx context.Context, q Queryer, asOf time.Time) (penalty.Input, error) {
+// PenaltyInputs sammelt die Eingangsdaten für penalty.Assess im Stammtischjahr
+// season zum Stichtag asOf: User (mit auf den Jahresstart geklemmtem Start),
+// deren Abwesenheits-Donnerstage, Sperrtage und strafen-Zeilen. Alle Queries
+// sind auf [season.Start, asOf] begrenzt – Zeilen außerhalb können das
+// Ergebnis nicht beeinflussen (Assess betrachtet nur Donnerstage in diesem
+// Fenster, und Resets zukünftiger strafen-Zeilen liegen immer nach deren
+// datum). Dadurch enden Fehltage-Serien an der Jahresgrenze.
+//
+// asOf wird auf das Jahr geklemmt; derselbe geklemmte Stichtag muss an
+// penalty.Assess gehen – dafür season.ClampAsOf beim Aufrufer verwenden.
+func PenaltyInputs(ctx context.Context, q Queryer, season domain.Season, asOf time.Time) (penalty.Input, error) {
 	var in penalty.Input
-	minStart := penalty.ClampStart(nil)
+	minStart := domain.DateOnly(season.Start)
+	asOf = season.ClampAsOf(asOf)
 
 	const usersQ = `SELECT "userId", "userName", "startDate" FROM public.users`
 	rows, err := q.QueryContext(ctx, usersQ)
@@ -112,7 +118,7 @@ func PenaltyInputs(ctx context.Context, q Queryer, asOf time.Time) (penalty.Inpu
 		if start.Valid {
 			sd = &start.Time
 		}
-		u.EffectiveStart = penalty.ClampStart(sd)
+		u.EffectiveStart = season.ClampStart(sd)
 		idx[u.UserID] = len(in.Users)
 		in.Users = append(in.Users, u)
 	}
@@ -167,15 +173,36 @@ func PenaltyInputs(ctx context.Context, q Queryer, asOf time.Time) (penalty.Inpu
 		SELECT id, "userId", art, datum, COALESCE(betrag, 0), status,
 		       created_at, beglichen_am, geloescht_am
 		FROM strafen
-		WHERE datum <= $1
+		WHERE datum >= $1 AND datum <= $2
 		ORDER BY "userId", datum`
-	srows, err := q.QueryContext(ctx, strafenQ, asOf)
+	srows, err := q.QueryContext(ctx, strafenQ, minStart, asOf)
 	if err != nil {
 		return in, fmt.Errorf("PenaltyInputs strafen: %w", err)
 	}
 	defer srows.Close()
 	in.Rows, err = scanStrafenRows(srows)
 	return in, err
+}
+
+// ListSeasonStrafen liefert die Zeilen eines Stammtischjahres inkl.
+// beglichen/geloescht (Reset-Marker), neueste zuerst. Die Strafen-Seite zeigt
+// immer genau ein Jahr – ohne diese Grenze tauchen No-Shows aus Vorjahren auf
+// (Fehltage-Strafen fallen ohnehin heraus, weil zu ihnen keine Serie im
+// Auswertungsfenster existiert).
+func ListSeasonStrafen(ctx context.Context, q Queryer, season domain.Season) ([]penalty.Row, error) {
+	const query = `
+		SELECT id, "userId", art, datum, COALESCE(betrag, 0), status,
+		       created_at, beglichen_am, geloescht_am
+		FROM strafen
+		WHERE datum >= $1 AND datum <= $2
+		ORDER BY created_at DESC, id DESC`
+	rows, err := q.QueryContext(ctx, query,
+		domain.DateOnly(season.Start), domain.DateOnly(season.End))
+	if err != nil {
+		return nil, fmt.Errorf("ListSeasonStrafen: %w", err)
+	}
+	defer rows.Close()
+	return scanStrafenRows(rows)
 }
 
 // AutoStrafe ist der Marker einer erkannten Fehltage-Strafe.

@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/michael/zumba-shared/domain"
+	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
-	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
 
@@ -24,7 +25,22 @@ type fakeStore struct {
 	penaltyInputCalls int
 }
 
-func (f *fakeStore) UserStats(context.Context, time.Time) ([]store.Stat, error) {
+// testSeason ist bewusst weit aufgespannt: die Tests sollen am Stichtag nicht
+// durch die Jahresgrenze geklemmt werden (die Grenzlogik selbst prüft
+// shared/domain).
+var testSeason = store.Season{
+	ID:    1,
+	Label: "test",
+	Period: domain.Period{
+		Start: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+		End:   time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+	},
+}
+
+func (f *fakeStore) SeasonAt(context.Context, time.Time) (store.Season, error) {
+	return testSeason, nil
+}
+func (f *fakeStore) UserStats(context.Context, store.Season, time.Time) ([]store.Stat, error) {
 	f.statsCalled = true
 	return []store.Stat{{Name: "A", Attendance: 1, Away: 0, Percent: 100}}, nil
 }
@@ -37,7 +53,7 @@ func (f *fakeStore) MarkPresent(_ context.Context, userID string, _ time.Time) e
 	f.presentUserID = userID
 	return nil
 }
-func (f *fakeStore) PenaltyInputs(context.Context, time.Time) (penalty.Input, error) {
+func (f *fakeStore) PenaltyInputs(context.Context, store.Season, time.Time) (penalty.Input, error) {
 	f.penaltyInputCalls++
 	return f.penaltyInput, nil
 }

@@ -7,7 +7,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/michael/zumba-shared/domain"
 	"github.com/michael/zumba-shared/penalty"
+
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
 
@@ -20,9 +22,14 @@ type Mock struct {
 	excludedDays []time.Time // Thursdays
 	strafen      []penalty.Row
 	nextStrafeID int64
+	seasons      []Season
 }
 
-func NewMock(p timeutil.Period) *Mock {
+// NewMock erzeugt Testdaten für das Stammtischjahr season. seasons ist die
+// Liste, die der Jahres-Umschalter anzeigt (im Mock-Modus gibt es keine DB,
+// aus der sie kommen könnte).
+func NewMock(season Season, seasons []Season) *Mock {
+	p := season.Period
 	users := []User{
 		{ID: "u01", Name: "Max", Emoji: "🍺"},
 		{ID: "u02", Name: "Thomas", Emoji: "🎸"},
@@ -85,7 +92,33 @@ func NewMock(p timeutil.Period) *Mock {
 		}
 	}
 
-	return &Mock{users: users, absences: absences, excludedDays: excluded}
+	return &Mock{users: users, absences: absences, excludedDays: excluded, seasons: seasons}
+}
+
+// --- Stammtischjahre: Mock (feste Liste, siehe DefaultSeasons) ---
+
+func (m *Mock) ListSeasons(_ context.Context) ([]Season, error) {
+	out := make([]Season, len(m.seasons))
+	copy(out, m.seasons)
+	return out, nil
+}
+
+func (m *Mock) SeasonAt(_ context.Context, t time.Time) (Season, error) {
+	for _, s := range m.seasons {
+		if s.Contains(t) {
+			return s, nil
+		}
+	}
+	return Season{}, fmt.Errorf("%w: %s", domain.ErrNoSeason, t.Format("2006-01-02"))
+}
+
+func (m *Mock) SeasonByLabel(_ context.Context, label string) (Season, error) {
+	for _, s := range m.seasons {
+		if s.Label == label {
+			return s, nil
+		}
+	}
+	return Season{}, fmt.Errorf("%w: %q", domain.ErrNoSeason, label)
 }
 
 func generateThursdays(start, end time.Time) []time.Time {
@@ -567,9 +600,13 @@ func (m *Mock) DeleteMLTest(_ context.Context, _ int64) error { return nil }
 // --- Strafen: Mock (in-memory; Auto-Strafen entstehen wie im echten Betrieb
 // aus den generierten Abwesenheiten) ---
 
-func (m *Mock) ListStrafen(_ context.Context) ([]penalty.Row, error) {
-	out := make([]penalty.Row, len(m.strafen))
-	copy(out, m.strafen)
+func (m *Mock) ListSeasonStrafen(_ context.Context, season Season) ([]penalty.Row, error) {
+	var out []penalty.Row
+	for _, r := range m.strafen {
+		if season.Contains(r.Datum) {
+			out = append(out, r)
+		}
+	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].ID > out[j].ID })
 	return out, nil
 }

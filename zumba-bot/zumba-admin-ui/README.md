@@ -18,6 +18,16 @@ Ohne DB-Env-Vars: App läuft mit Mock-Daten (siehe Banner im UI).
 
 App läuft auf http://localhost:8080.
 
+`make dev` startet **nur** das Admin-UI. Die ML-Test-Seite (`/ml-test`) braucht
+zusätzlich den `classifier-service` und meldet sonst „Kein classifier-service
+konfiguriert" (mit Mock-Daten fällt das nicht auf — dort ist die Seite ohne
+Klassifikator freigeschaltet). Für den vollen lokalen Stack — Renderer, Bot,
+Admin-UI, wrapped und Klassifikator, alle korrekt verdrahtet:
+
+```bash
+make stack     # geht aus jedem Unterverzeichnis, delegiert ans Repo-Root
+```
+
 ## Build & Deploy zu k3s `rpi5` (Phase 3)
 ```bash
 docker build -t zumba-admin-ui:0.1.0 .
@@ -36,9 +46,13 @@ docker save zumba-admin-ui:0.1.0 | sudo k3s ctr images import -
 | `DB_NAME` | `zumba` | `zumba` |
 | `DB_SSLMODE` | `disable` | `disable` |
 | `PORT` | `8080` | `8080` |
-| `EVAL_PERIOD_START` | `2025-12-01` | `2025-12-01` |
-| `EVAL_PERIOD_END` | `2026-11-30` | `2026-11-30` |
 | `BOT_URL` | `http://localhost:8080` | `http://zumba-whatsapp-bot:8080` |
+
+Der Auswertungszeitraum ist **keine** Env-Variable mehr: Stammtischjahre stehen in
+`public.seasons` (`label`, `start_date`, `end_date`, überlappungsfrei per
+EXCLUDE-Constraint). Ohne `?jahr=` gilt das heute laufende Jahr, `?jahr=2025`
+öffnet ein Archiv. Abgeschlossene Jahre sind read-only – der Server lehnt
+Schreibzugriffe auf sie ab (HTTP 409), unabhängig vom Parameter.
 
 ## Phase 2: schreibende Operationen
 

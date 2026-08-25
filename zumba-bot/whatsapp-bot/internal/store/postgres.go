@@ -6,25 +6,40 @@ import (
 	"time"
 
 	"github.com/michael/zumba-shared/domain"
-	"github.com/michael/zumba-shared/penalty"
 	sharedstore "github.com/michael/zumba-shared/store"
 
 	"github.com/michael/zumba-whatsapp-bot/internal/db"
 )
 
 type Postgres struct {
-	db *db.Postgres
+	db      *db.Postgres
+	seasons *sharedstore.SeasonCache
 }
 
 func NewPostgres(p *db.Postgres) *Postgres {
-	return &Postgres{db: p}
+	return &Postgres{db: p, seasons: sharedstore.NewSeasonCache(p, seasonCacheTTL)}
+}
+
+// seasonCacheTTL: Stammtischjahre ändern sich höchstens jährlich, werden aber
+// bei jedem Report gebraucht.
+const seasonCacheTTL = 10 * time.Minute
+
+// EnsureSeasonsSchema legt die Jahres-Tabelle idempotent an (geteilte DDL;
+// Admin-UI ruft dieselbe Funktion, Deploy-Reihenfolge offen).
+func (s *Postgres) EnsureSeasonsSchema(ctx context.Context) error {
+	return sharedstore.EnsureSeasonsSchema(ctx, s.db)
+}
+
+// SeasonAt liefert das Stammtischjahr zum Zeitpunkt t (gecacht).
+func (s *Postgres) SeasonAt(ctx context.Context, t time.Time) (Season, error) {
+	return s.seasons.At(ctx, t)
 }
 
 // UserStats nutzt die geteilte Leaderboard-Query (shared/store/queries/
 // leaderboard.sql – früher eigene stats.sql-Kopie): Periodenstart ist der
-// Domänen-Mindeststart 2025-12-01, Ende der Stichtag asOf.
-func (s *Postgres) UserStats(ctx context.Context, asOf time.Time) ([]Stat, error) {
-	period := domain.Period{Start: penalty.ClampStart(nil), End: asOf}
+// Start des Stammtischjahres, Ende der auf das Jahr geklemmte Stichtag asOf.
+func (s *Postgres) UserStats(ctx context.Context, season Season, asOf time.Time) ([]Stat, error) {
+	period := domain.Period{Start: season.Start, End: season.ClampAsOf(asOf)}
 	rows, err := sharedstore.Leaderboard(ctx, s.db, period)
 	if err != nil {
 		return nil, fmt.Errorf("UserStats: %w", err)

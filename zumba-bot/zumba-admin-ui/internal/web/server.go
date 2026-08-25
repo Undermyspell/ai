@@ -4,16 +4,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/a-h/templ"
+
+	"github.com/michael/zumba-shared/domain"
 
 	"github.com/michael/zumba-admin-ui/assets"
 	"github.com/michael/zumba-admin-ui/internal/config"
@@ -82,12 +86,88 @@ func (s *Server) Routes() http.Handler {
 	return logRequests(mux)
 }
 
-func (s *Server) period() timeutil.Period {
-	return timeutil.Period{Start: s.cfg.EvalPeriodStart, End: s.cfg.EvalPeriodEnd}
+// season löst das Stammtischjahr des Requests auf: ?jahr=<label> wählt ein
+// bestimmtes (Archiv), ohne Parameter gilt das heute laufende. Ist keines
+// gepflegt, kommt ein Fehler – lieber eine sichtbare Meldung als eine stille
+// Auswertung des falschen Zeitraums.
+func (s *Server) season(r *http.Request) (store.Season, error) {
+	ctx := r.Context()
+	if label := r.URL.Query().Get("jahr"); label != "" {
+		return s.store.SeasonByLabel(ctx, label)
+	}
+	return s.store.SeasonAt(ctx, timeutil.StartOfDay(time.Now()))
+}
+
+// pageSeason ist season() für Seiten-Handler: bei einem unbekannten Jahr
+// antwortet es selbst und liefert ok == false.
+func (s *Server) pageSeason(w http.ResponseWriter, r *http.Request) (store.Season, bool) {
+	season, err := s.season(r)
+	if errors.Is(err, domain.ErrNoSeason) {
+		log.Printf("season: %v", err)
+		http.Error(w, "Für diesen Zeitraum ist kein Stammtischjahr gepflegt.", http.StatusNotFound)
+		return store.Season{}, false
+	}
+	if err != nil {
+		s.fail(w, "season", err)
+		return store.Season{}, false
+	}
+	return season, true
+}
+
+// archived: das Jahr ist vorbei. Archiv-Ansichten sind read-only – sonst
+// ändert man aus der Rückschau versehentlich abgeschlossene Jahre.
+func archived(season store.Season) bool {
+	return season.End.Before(timeutil.StartOfDay(time.Now()))
+}
+
+// requireWritable stellt sicher, dass das Datum in ein noch laufendes Jahr
+// fällt. Der Guard hängt am Datum, nicht am ?jahr= des Requests: so greift er
+// auch, wenn ein HTMX-Aufruf ohne Jahres-Parameter hereinkommt.
+func (s *Server) requireWritable(w http.ResponseWriter, r *http.Request, date time.Time) bool {
+	season, err := s.store.SeasonAt(r.Context(), date)
+	if errors.Is(err, domain.ErrNoSeason) {
+		s.triggerToast(w, "error", "Für dieses Datum ist kein Stammtischjahr gepflegt.")
+		http.Error(w, "kein Stammtischjahr", http.StatusUnprocessableEntity)
+		return false
+	}
+	if err != nil {
+		s.fail(w, "season", err)
+		return false
+	}
+	if archived(season) {
+		s.triggerToast(w, "error", "Stammtischjahr "+season.Label+" ist abgeschlossen – keine Änderungen möglich.")
+		http.Error(w, "Jahr abgeschlossen", http.StatusConflict)
+		return false
+	}
+	return true
 }
 
 func (s *Server) meta(title, active string) templates.PageMeta {
 	return templates.PageMeta{Title: title, ActiveNav: active, MockMode: s.mockMode}
+}
+
+// seasonMeta ergänzt meta um den Jahres-Umschalter. Nur Seiten mit
+// Jahresbezug bekommen ihn – Bot-Test und die ML-Seiten haben keinen.
+func (s *Server) seasonMeta(r *http.Request, title, active string, season store.Season) templates.PageMeta {
+	m := s.meta(title, active)
+	m.Season = season.Label
+	m.SeasonRange = timeutil.FormatDEShort(season.Start) + " – " + timeutil.FormatDEShort(season.End)
+	m.SeasonArchived = archived(season)
+
+	seasons, err := s.store.ListSeasons(r.Context())
+	if err != nil {
+		log.Printf("list seasons: %v", err) // Umschalter entfällt, Seite bleibt
+		return m
+	}
+	for _, sn := range seasons {
+		q := url.Values{"jahr": {sn.Label}}
+		m.Seasons = append(m.Seasons, templates.SeasonLink{
+			Label:  sn.Label,
+			Href:   r.URL.Path + "?" + q.Encode(),
+			Active: sn.Label == season.Label,
+		})
+	}
+	return m
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, meta templates.PageMeta, body templ.Component) {
@@ -103,7 +183,11 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	period := s.period()
+	season, ok := s.pageSeason(w, r)
+	if !ok {
+		return
+	}
+	period := season.Period
 
 	board, err := s.store.Leaderboard(ctx, period)
 	if err != nil {
@@ -146,7 +230,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		Leaderboard:      board,
 	}
 
-	s.render(w, r, s.meta("Dashboard", "dashboard"), dashboard.Page(vm))
+	s.render(w, r, s.seasonMeta(r, "Dashboard", "dashboard", season), dashboard.Page(vm))
 }
 
 // Mitglieder sind jetzt direkt im Dashboard integriert; alte /members-Links umleiten.
@@ -156,7 +240,11 @@ func (s *Server) handleMembers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	period := s.period()
+	season, ok := s.pageSeason(w, r)
+	if !ok {
+		return
+	}
+	period := season.Period
 	userId := r.PathValue("userId")
 
 	user, err := s.store.GetUser(ctx, userId)
@@ -197,13 +285,19 @@ func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
 		entries = append(entries, members.DetailEntry{Date: t, Absent: absent, Message: msg})
 	}
 
-	s.render(w, r, s.meta(user.Name, "dashboard"),
-		members.Detail(members.DetailVM{User: *user, Stats: stats, Entries: entries}))
+	s.render(w, r, s.seasonMeta(r, user.Name, "dashboard", season),
+		members.Detail(members.DetailVM{
+			User: *user, Stats: stats, Entries: entries, ReadOnly: archived(season),
+		}))
 }
 
 func (s *Server) handleDays(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	period := s.period()
+	season, ok := s.pageSeason(w, r)
+	if !ok {
+		return
+	}
+	period := season.Period
 
 	users, err := s.store.ListUsers(ctx)
 	if err != nil {
@@ -231,7 +325,7 @@ func (s *Server) handleDays(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	s.render(w, r, s.meta("Donnerstage", "days"),
+	s.render(w, r, s.seasonMeta(r, "Donnerstage", "days", season),
 		days.List(days.ListVM{StripItems: strip, Days: cards, TotalUsers: len(users)}))
 }
 
@@ -284,20 +378,32 @@ func (s *Server) handleDayDetail(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	season, err := s.store.SeasonAt(ctx, date)
+	if err != nil && !errors.Is(err, domain.ErrNoSeason) {
+		s.fail(w, "season", err)
+		return
+	}
+	// Ohne gepflegtes Jahr ist der Tag nicht auswertbar – anzeigen ja,
+	// ändern nein.
+	readOnly := err != nil || archived(season)
+
 	s.render(w, r, s.meta(timeutil.FormatDEShort(date), "days"),
-		days.Detail(days.DetailVM{Date: date, Excluded: isExcluded, Cells: cells}))
+		days.Detail(days.DetailVM{Date: date, Excluded: isExcluded, Cells: cells, ReadOnly: readOnly}))
 }
 
 func (s *Server) handleExcluded(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	period := s.period()
-	all, err := s.store.ListExcludedDays(ctx, period)
+	season, ok := s.pageSeason(w, r)
+	if !ok {
+		return
+	}
+	all, err := s.store.ListExcludedDays(ctx, season.Period)
 	if err != nil {
 		s.fail(w, "excluded", err)
 		return
 	}
-	s.render(w, r, s.meta("Sperrtage", "excluded"),
-		excluded.List(excluded.ListVM{Days: all}))
+	s.render(w, r, s.seasonMeta(r, "Sperrtage", "excluded", season),
+		excluded.List(excluded.ListVM{Days: all, ReadOnly: archived(season)}))
 }
 
 func (s *Server) handleAddExcluded(w http.ResponseWriter, r *http.Request) {
@@ -310,6 +416,9 @@ func (s *Server) handleAddExcluded(w http.ResponseWriter, r *http.Request) {
 	if !timeutil.IsThursday(date) {
 		s.triggerToast(w, "error", "Nur Donnerstage können gesperrt werden.")
 		http.Error(w, "kein Donnerstag", http.StatusUnprocessableEntity)
+		return
+	}
+	if !s.requireWritable(w, r, date) {
 		return
 	}
 	if err := s.store.InsertExcludedDay(r.Context(), date); err != nil {
@@ -326,6 +435,9 @@ func (s *Server) handleDeleteExcluded(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ungültiges Datum", http.StatusUnprocessableEntity)
 		return
 	}
+	if !s.requireWritable(w, r, date) {
+		return
+	}
 	if err := s.store.DeleteExcludedDay(r.Context(), date); err != nil {
 		s.fail(w, "delete excluded", err)
 		return
@@ -336,13 +448,18 @@ func (s *Server) handleDeleteExcluded(w http.ResponseWriter, r *http.Request) {
 
 // renderExcludedList renders just the list region (HTMX swap target).
 func (s *Server) renderExcludedList(w http.ResponseWriter, r *http.Request) {
-	all, err := s.store.ListExcludedDays(r.Context(), s.period())
+	season, ok := s.pageSeason(w, r)
+	if !ok {
+		return
+	}
+	all, err := s.store.ListExcludedDays(r.Context(), season.Period)
 	if err != nil {
 		s.fail(w, "excluded", err)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := excluded.ListRegion(excluded.ListVM{Days: all}).Render(r.Context(), w); err != nil {
+	vm := excluded.ListVM{Days: all, ReadOnly: archived(season)}
+	if err := excluded.ListRegion(vm).Render(r.Context(), w); err != nil {
 		log.Printf("render excluded region: %v", err)
 	}
 }
@@ -381,6 +498,9 @@ func (s *Server) handleToggleAbsence(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "userId fehlt", http.StatusUnprocessableEntity)
 		return
 	}
+	if !s.requireWritable(w, r, date) {
+		return
+	}
 
 	nowAbsent, err := s.store.ToggleAbsence(r.Context(), userID, date)
 	if err != nil {
@@ -394,7 +514,9 @@ func (s *Server) handleToggleAbsence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := partials.AbsenceToggle(userID, date, nowAbsent).Render(r.Context(), w); err != nil {
+	// Der Toggle kommt nur aus einem schreibbaren Jahr zurück (requireWritable
+	// oben), also nie read-only.
+	if err := partials.AbsenceToggle(userID, date, nowAbsent, false).Render(r.Context(), w); err != nil {
 		log.Printf("render toggle: %v", err)
 	}
 }

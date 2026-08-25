@@ -10,6 +10,8 @@ import (
 	"github.com/michael/stammtisch-wrapped/data"
 	"github.com/michael/stammtisch-wrapped/internal/database"
 	eval2026 "github.com/michael/stammtisch-wrapped/internal/evaluations/2026"
+	"github.com/michael/zumba-shared/domain"
+
 	"github.com/michael/stammtisch-wrapped/internal/repository"
 	"github.com/michael/stammtisch-wrapped/internal/viewbuilder"
 	year2026 "github.com/michael/stammtisch-wrapped/web/templates/years/2026"
@@ -21,10 +23,18 @@ import (
 // runs the full evaluation pipeline — no need to redo that per request.
 const cacheTTL = 15 * time.Minute
 
-// Date range for 2026 Wrapped: 01.12.2025 - 30.11.2026
-var dateRange2026 = repository.DateRange{
-	Start: time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC),
-	End:   time.Date(2026, 11, 30, 23, 59, 59, 0, time.UTC),
+// seasonLabel2026 ist der Slug des Stammtischjahres in public.seasons. Der
+// Zeitraum kommt aus der Tabelle – dieselbe Quelle wie für Bot und Admin-UI.
+const seasonLabel2026 = "2026"
+
+// fallbackSeason2026 greift nur, wenn public.seasons (noch) nicht gepflegt
+// ist: 01.12.2025 – 30.11.2026, der bisher fest verdrahtete Zeitraum.
+var fallbackSeason2026 = domain.Season{
+	Label: seasonLabel2026,
+	Period: domain.Period{
+		Start: time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC),
+		End:   time.Date(2026, 11, 30, 23, 59, 59, 0, time.UTC),
+	},
 }
 
 // WrappedHandler handles requests for the Wrapped pages
@@ -86,7 +96,13 @@ func (h *WrappedHandler) viewModel(ctx context.Context) viewmodels.PageViewModel
 
 // loadFromDatabase loads data from PostgreSQL and evaluates it
 func (h *WrappedHandler) loadFromDatabase(ctx context.Context) *viewbuilder.EvalData {
-	rawData, err := h.repo.GetRawDataByDateRange(ctx, dateRange2026)
+	season, err := h.repo.SeasonByLabel(ctx, seasonLabel2026)
+	if err != nil {
+		log.Printf("Stammtischjahr %s nicht gepflegt (%v), nutze festen Zeitraum", seasonLabel2026, err)
+		season = fallbackSeason2026
+	}
+
+	rawData, err := h.repo.GetRawDataBySeason(ctx, season)
 	if err != nil {
 		log.Printf("Error loading data from database: %v, falling back to mock data", err)
 		return h.loadFromMock()

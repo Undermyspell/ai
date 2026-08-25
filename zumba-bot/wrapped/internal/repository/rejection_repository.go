@@ -177,15 +177,17 @@ func getThursdays(ctx context.Context, q queryer, start, end time.Time) ([]time.
 // computation; rows after the evaluation window are irrelevant and filtered
 // in SQL. If the strafen table does not exist yet (bot/admin-ui create it on
 // startup), an empty slice is returned instead of an error.
-func getStrafenRows(ctx context.Context, q queryer, end time.Time) ([]StrafenRow, error) {
+// getStrafenRows liefert die Strafen EINES Jahres. Die untere Grenze ist
+// nötig, damit Serien nicht über die Jahresgrenze reichen.
+func getStrafenRows(ctx context.Context, q queryer, start, end time.Time) ([]StrafenRow, error) {
 	query := `
 		SELECT id, "userId", art, datum, betrag, status, beglichen_am, geloescht_am
 		FROM strafen
-		WHERE datum <= $1
+		WHERE datum >= $1 AND datum <= $2
 		ORDER BY "userId", datum
 	`
 
-	rows, err := q.QueryContext(ctx, query, end)
+	rows, err := q.QueryContext(ctx, query, start, end)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "42P01" { // undefined_table
@@ -253,7 +255,11 @@ func getThursdayStats(ctx context.Context, q queryer, start, end time.Time) ([]T
 // GetRawDataByDateRange fetches all raw data needed for evaluations within a
 // date range. All fetches run in one read-only repeatable-read transaction so
 // the evaluation sees a consistent snapshot.
-func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRange DateRange) (*RawData, error) {
+// GetRawDataBySeason lädt alle Rohdaten eines Stammtischjahres in einer
+// Snapshot-Transaktion. Der Zeitraum kommt aus der Season – alle Services
+// lesen ihn aus derselben Tabelle (public.seasons).
+func (r *RejectionRepository) GetRawDataBySeason(ctx context.Context, season domain.Season) (*RawData, error) {
+	dateRange := season.Period
 	effectiveEnd := dateRange.EffectiveEnd()
 
 	tx, err := r.db.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
@@ -282,7 +288,7 @@ func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRan
 		return nil, fmt.Errorf("failed to get thursdays: %w", err)
 	}
 
-	strafenRows, err := getStrafenRows(ctx, tx, effectiveEnd)
+	strafenRows, err := getStrafenRows(ctx, tx, dateRange.Start, effectiveEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get strafen rows: %w", err)
 	}
@@ -307,6 +313,7 @@ func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRan
 	}
 
 	return &RawData{
+		Season:        season,
 		Users:         users,
 		Rejections:    rejections,
 		ExcludedDays:  excludedDays,
@@ -316,4 +323,10 @@ func (r *RejectionRepository) GetRawDataByDateRange(ctx context.Context, dateRan
 		MaxStreaks:    maxStreaks,
 		ThursdayStats: thursdayStats,
 	}, nil
+}
+
+// SeasonByLabel liefert das gepflegte Stammtischjahr zu einem Label ("2026")
+// aus public.seasons – dieselbe Quelle wie Bot und Admin-UI.
+func (r *RejectionRepository) SeasonByLabel(ctx context.Context, label string) (domain.Season, error) {
+	return sharedstore.SeasonByLabel(ctx, r.db.DB, label)
 }

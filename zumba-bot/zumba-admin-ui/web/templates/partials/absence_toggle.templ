@@ -9,17 +9,30 @@ import (
 // AbsenceToggle rendert einen Button, der die An-/Abwesenheit eines Mitglieds
 // für einen Donnerstag umschaltet. Er postet an /toggle-absence und ersetzt
 // sich selbst durch die vom Server neu gerenderte Antwort.
-templ AbsenceToggle(userID string, date time.Time, absent bool) {
-	<button
-		class={ "toggle", templ.KV("is-absent", absent), templ.KV("is-present", !absent) }
-		hx-post="/toggle-absence"
-		hx-vals={ `{"userId":"` + userID + `","date":"` + timeutil.FormatISO(date) + `"}` }
-		hx-swap="outerHTML"
-	>
-		if absent {
-			Abgemeldet
-		} else {
-			Anwesend
-		}
-	</button>
+// readOnly = abgeschlossenes Stammtischjahr: der Zustand bleibt sichtbar, die
+// Schaltfläche ist inaktiv. Der Server lehnt solche Schreibversuche ohnehin
+// ab (requireWritable) – das hier ist nur die sichtbare Hälfte.
+templ AbsenceToggle(userID string, date time.Time, absent, readOnly bool) {
+	if readOnly {
+		<span class={ "toggle", "is-readonly", templ.KV("is-absent", absent), templ.KV("is-present", !absent) }>
+			if absent {
+				Abgemeldet
+			} else {
+				Anwesend
+			}
+		</span>
+	} else {
+		<button
+			class={ "toggle", templ.KV("is-absent", absent), templ.KV("is-present", !absent) }
+			hx-post="/toggle-absence"
+			hx-vals={ `{"userId":"` + userID + `","date":"` + timeutil.FormatISO(date) + `"}` }
+			hx-swap="outerHTML"
+		>
+			if absent {
+				Abgemeldet
+			} else {
+				Anwesend
+			}
+		</button>
+	}
 }

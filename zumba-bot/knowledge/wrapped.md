@@ -7,11 +7,16 @@ Läuft im Cluster unter eigenem Hostnamen (siehe Staging-Values), Route `/2026`.
 
 ## Auswertungszeitraum
 
-„Wrapped 2026" = **01.12.2025 – 30.11.2026**. Zukünftige Donnerstage zählen
-nie mit (Kappung auf „heute") — die Seite ist also unterjährig jederzeit
-aufrufbar und wächst mit. Sperrtage sind überall herausgerechnet, Startdaten
-geklemmt. Jeder Jahrgang ist als eigenständiges Paket gedacht (2027 kommt
-neben 2026, ersetzt es nicht).
+„Wrapped 2026" = **01.12.2025 – 30.11.2026**. Der Zeitraum steht nicht mehr im
+Code, sondern in `public.seasons` (Label `2026`) — dieselbe Quelle, aus der
+Bot und Admin-UI ihr Jahr beziehen. Fehlt die Zeile, greift ein fest
+verdrahteter Fallback mit genau diesen Daten (`fallbackSeason2026`).
+
+Zukünftige Donnerstage zählen nie mit (Kappung auf „heute") — die Seite ist
+also unterjährig jederzeit aufrufbar und wächst mit. Sperrtage sind überall
+herausgerechnet, Startdaten auf den Jahresstart geklemmt. Jeder Jahrgang ist
+als eigenständiges Paket gedacht (2027 kommt als eigener Ordner neben 2026,
+ersetzt es nicht) — nur der Zeitraum ist geteilt.
 
 ## Bedienung (Story-Mechanik)
 

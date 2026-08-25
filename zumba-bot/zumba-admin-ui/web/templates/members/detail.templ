@@ -11,9 +11,11 @@ import (
 )
 
 type DetailVM struct {
-	User      store.User
-	Stats     store.LeaderboardRow
-	Entries   []DetailEntry // newest first
+	User    store.User
+	Stats   store.LeaderboardRow
+	Entries []DetailEntry // newest first
+	// ReadOnly: abgeschlossenes Stammtischjahr (Archivansicht).
+	ReadOnly bool
 }
 
 type DetailEntry struct {
@@ -52,7 +54,7 @@ templ Detail(vm DetailVM) {
 		</div>
 		<div class="list">
 			for _, e := range vm.Entries {
-				@entryRow(vm.User.ID, e)
+				@entryRow(vm.User.ID, e, vm.ReadOnly)
 			}
 		</div>
 	</section>
@@ -92,7 +94,7 @@ func attTitle(e DetailEntry) string {
 	return s + " – anwesend"
 }
 
-templ entryRow(userID string, e DetailEntry) {
+templ entryRow(userID string, e DetailEntry, readOnly bool) {
 	<div class={ "attendance-cell", entryClass(e.Absent) }>
 		<span class="emoji">{ statusEmoji(e.Absent) }</span>
 		<div>
@@ -101,7 +103,7 @@ templ entryRow(userID string, e DetailEntry) {
 				<div class="msg">„{ *e.Message }"</div>
 			}
 		</div>
-		@partials.AbsenceToggle(userID, e.Date, e.Absent)
+		@partials.AbsenceToggle(userID, e.Date, e.Absent, readOnly)
 	</div>
 }
 

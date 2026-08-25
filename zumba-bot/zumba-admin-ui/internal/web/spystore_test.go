@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/michael/zumba-shared/domain"
 	"github.com/michael/zumba-shared/penalty"
+
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
@@ -18,6 +20,7 @@ type spyStore struct {
 	users            []store.User
 	absences         []store.Absence
 
+	seasons          []store.Season
 	strafen          []penalty.Row
 	nextStrafeID     int64
 	beglichenStrafe  int64
@@ -25,7 +28,49 @@ type spyStore struct {
 }
 
 func newSpyStore() *spyStore {
-	return &spyStore{users: []store.User{{ID: "u01", Name: "Max"}}}
+	return &spyStore{users: []store.User{{ID: "u01", Name: "Max"}}, seasons: []store.Season{testSeason}}
+}
+
+// testSeason ist bewusst weit aufgespannt: die Tests sollen weder am
+// Jahresende geklemmt noch als Archiv gesperrt werden (die Grenzlogik selbst
+// prüft shared/domain bzw. TestArchivedSeason...).
+var testSeason = store.Season{
+	ID:    1,
+	Label: "test",
+	Period: domain.Period{
+		Start: mustDate("2000-01-01"),
+		End:   mustDate("2099-12-31"),
+	},
+}
+
+// archivedSeason ist abgelaufen – Schreibzugriffe darauf müssen scheitern.
+var archivedSeason = store.Season{
+	ID:    2,
+	Label: "2019",
+	Period: domain.Period{
+		Start: mustDate("2018-12-01"),
+		End:   mustDate("2019-11-30"),
+	},
+}
+
+func (s *spyStore) ListSeasons(context.Context) ([]store.Season, error) { return s.seasons, nil }
+
+func (s *spyStore) SeasonAt(_ context.Context, t time.Time) (store.Season, error) {
+	for _, sn := range s.seasons {
+		if sn.Contains(t) {
+			return sn, nil
+		}
+	}
+	return store.Season{}, domain.ErrNoSeason
+}
+
+func (s *spyStore) SeasonByLabel(_ context.Context, label string) (store.Season, error) {
+	for _, sn := range s.seasons {
+		if sn.Label == label {
+			return sn, nil
+		}
+	}
+	return store.Season{}, domain.ErrNoSeason
 }
 
 func (s *spyStore) ListUsers(context.Context) ([]store.User, error) { return s.users, nil }
@@ -137,7 +182,15 @@ func (s *spyStore) JudgeMLTest(_ context.Context, id int64, expectedLabel string
 
 func (s *spyStore) DeleteMLTest(_ context.Context, _ int64) error { return nil }
 
-func (s *spyStore) ListStrafen(_ context.Context) ([]penalty.Row, error) { return s.strafen, nil }
+func (s *spyStore) ListSeasonStrafen(_ context.Context, season store.Season) ([]penalty.Row, error) {
+	var out []penalty.Row
+	for _, r := range s.strafen {
+		if season.Contains(r.Datum) {
+			out = append(out, r)
+		}
+	}
+	return out, nil
+}
 func (s *spyStore) InsertAutoStrafe(_ context.Context, userID string, datum time.Time) error {
 	for _, r := range s.strafen {
 		if r.Art == penalty.ArtFehltage && r.UserID == userID && timeutil.FormatISO(r.Datum) == timeutil.FormatISO(datum) {

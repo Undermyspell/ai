@@ -8,21 +8,29 @@ import (
 	"time"
 
 	"github.com/michael/zumba-shared/penalty"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 	"github.com/michael/zumba-admin-ui/web/templates/strafen"
 )
 
-// strafenVM bewertet alle Strafen zum heutigen Tag (Stichtag-Simulation gibt
-// es nur auf der Bot-Test-Seite über den Wochenreport-Endpoint). Neu erkannte
-// Fehltage-Strafen werden idempotent persistiert (Marker), damit sie sofort
-// begleich-/löschbar sind – dieselbe Erkennung läuft auch im Bot beim Report.
-func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
-	stichtag := timeutil.StartOfDay(time.Now())
+// strafenVM bewertet die Strafen eines Stammtischjahres zum heutigen Tag
+// (Stichtag-Simulation gibt es nur auf der Bot-Test-Seite über den
+// Wochenreport-Endpoint). Im Archiv ist der Stichtag das Jahresende, damit ein
+// abgeschlossenes Jahr denselben Stand zeigt wie an seinem letzten Tag.
+//
+// Neu erkannte Fehltage-Strafen werden idempotent persistiert (Marker), damit
+// sie sofort begleich-/löschbar sind – dieselbe Erkennung läuft auch im Bot
+// beim Report. In abgeschlossenen Jahren wird NICHT mehr geschrieben: das
+// bloße Öffnen einer Archivseite darf keine Zeilen anlegen.
+func (s *Server) strafenVM(ctx context.Context, season store.Season) (strafen.PageVM, error) {
+	readOnly := archived(season)
+	stichtag := season.ClampAsOf(timeutil.StartOfDay(time.Now()))
 	users, err := s.store.ListUsers(ctx)
 	if err != nil {
 		return strafen.PageVM{}, err
 	}
-	period := timeutil.Period{Start: s.cfg.EvalPeriodStart, End: stichtag}
+	period := timeutil.Period{Start: season.Start, End: stichtag}
 	absences, err := s.store.ListAbsences(ctx, period)
 	if err != nil {
 		return strafen.PageVM{}, err
@@ -31,7 +39,7 @@ func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
 	if err != nil {
 		return strafen.PageVM{}, err
 	}
-	rows, err := s.store.ListStrafen(ctx)
+	rows, err := s.store.ListSeasonStrafen(ctx, season)
 	if err != nil {
 		return strafen.PageVM{}, err
 	}
@@ -50,7 +58,7 @@ func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
 		for _, u := range users {
 			in.Users = append(in.Users, penalty.UserData{
 				UserID: u.ID, Name: u.Name,
-				EffectiveStart: penalty.ClampStart(u.StartDate),
+				EffectiveStart: season.ClampStart(u.StartDate),
 				Absences:       byUser[u.ID],
 			})
 		}
@@ -63,7 +71,7 @@ func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
 	// Aktions-Buttons echte IDs haben.
 	persisted := false
 	for _, e := range entries {
-		if e.ID != 0 {
+		if e.ID != 0 || readOnly {
 			continue
 		}
 		if err := s.store.InsertAutoStrafe(ctx, e.UserID, e.Datum); err != nil {
@@ -73,7 +81,7 @@ func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
 		persisted = true
 	}
 	if persisted {
-		if rows, err = s.store.ListStrafen(ctx); err != nil {
+		if rows, err = s.store.ListSeasonStrafen(ctx, season); err != nil {
 			return strafen.PageVM{}, err
 		}
 		entries = penalty.Assess(input(rows), stichtag)
@@ -83,6 +91,7 @@ func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
 		Users:         users,
 		Thursdays:     thursdays,
 		NoShowDefault: penalty.NoShowDefault,
+		ReadOnly:      readOnly,
 	}
 	for _, e := range entries {
 		if e.Status == penalty.StatusGeloescht {
@@ -104,12 +113,16 @@ func (s *Server) strafenVM(ctx context.Context) (strafen.PageVM, error) {
 }
 
 func (s *Server) handleStrafen(w http.ResponseWriter, r *http.Request) {
-	vm, err := s.strafenVM(r.Context())
+	season, ok := s.pageSeason(w, r)
+	if !ok {
+		return
+	}
+	vm, err := s.strafenVM(r.Context(), season)
 	if err != nil {
 		s.fail(w, "strafen", err)
 		return
 	}
-	s.render(w, r, s.meta("Strafen", "strafen"), strafen.Page(vm))
+	s.render(w, r, s.seasonMeta(r, "Strafen", "strafen", season), strafen.Page(vm))
 }
 
 func (s *Server) handleAddStrafe(w http.ResponseWriter, r *http.Request) {
@@ -128,6 +141,9 @@ func (s *Server) handleAddStrafe(w http.ResponseWriter, r *http.Request) {
 	if !timeutil.IsThursday(datum) {
 		s.triggerToast(w, "error", "No-Shows gibt es nur an Donnerstagen.")
 		http.Error(w, "kein Donnerstag", http.StatusUnprocessableEntity)
+		return
+	}
+	if !s.requireWritable(w, r, datum) {
 		return
 	}
 	betrag := penalty.NoShowDefault
@@ -154,6 +170,9 @@ func (s *Server) handleBegleicheStrafe(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ungültige ID", http.StatusUnprocessableEntity)
 		return
 	}
+	if !s.strafeWritable(w, r, id) {
+		return
+	}
 	if err := s.store.BegleicheStrafe(r.Context(), id); err != nil {
 		s.fail(w, "begleiche strafe", err)
 		return
@@ -168,6 +187,9 @@ func (s *Server) handleDeleteStrafe(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ungültige ID", http.StatusUnprocessableEntity)
 		return
 	}
+	if !s.strafeWritable(w, r, id) {
+		return
+	}
 	if err := s.store.LoescheStrafe(r.Context(), id); err != nil {
 		s.fail(w, "loesche strafe", err)
 		return
@@ -176,9 +198,39 @@ func (s *Server) handleDeleteStrafe(w http.ResponseWriter, r *http.Request) {
 	s.renderStrafenRegion(w, r)
 }
 
+// strafeWritable erlaubt Begleichen/Löschen nur für Strafen des laufenden
+// Jahres. Der Check hängt an der Strafe selbst, nicht am ?jahr= des Requests –
+// ein HTMX-Aufruf ohne Jahres-Parameter darf kein abgeschlossenes Jahr ändern.
+func (s *Server) strafeWritable(w http.ResponseWriter, r *http.Request, id int64) bool {
+	ctx := r.Context()
+	season, err := s.store.SeasonAt(ctx, timeutil.StartOfDay(time.Now()))
+	if err != nil {
+		s.triggerToast(w, "error", "Kein laufendes Stammtischjahr – keine Änderungen möglich.")
+		http.Error(w, "kein laufendes Stammtischjahr", http.StatusConflict)
+		return false
+	}
+	rows, err := s.store.ListSeasonStrafen(ctx, season)
+	if err != nil {
+		s.fail(w, "strafen", err)
+		return false
+	}
+	for _, row := range rows {
+		if row.ID == id {
+			return true
+		}
+	}
+	s.triggerToast(w, "error", "Strafe gehört nicht zum laufenden Stammtischjahr.")
+	http.Error(w, "Jahr abgeschlossen", http.StatusConflict)
+	return false
+}
+
 // renderStrafenRegion rendert nur die Liste (HTMX-Swap-Ziel).
 func (s *Server) renderStrafenRegion(w http.ResponseWriter, r *http.Request) {
-	vm, err := s.strafenVM(r.Context())
+	season, ok := s.pageSeason(w, r)
+	if !ok {
+		return
+	}
+	vm, err := s.strafenVM(r.Context(), season)
 	if err != nil {
 		s.fail(w, "strafen", err)
 		return

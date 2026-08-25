@@ -15,8 +15,8 @@ func (s *Postgres) EnsureStrafenSchema(ctx context.Context) error {
 	return sharedstore.EnsureStrafenSchema(ctx, s.db)
 }
 
-func (s *Postgres) ListStrafen(ctx context.Context) ([]penalty.Row, error) {
-	return sharedstore.ListStrafen(ctx, s.db)
+func (s *Postgres) ListSeasonStrafen(ctx context.Context, season Season) ([]penalty.Row, error) {
+	return sharedstore.ListSeasonStrafen(ctx, s.db, season)
 }
 
 func (s *Postgres) InsertAutoStrafe(ctx context.Context, userID string, datum time.Time) error {

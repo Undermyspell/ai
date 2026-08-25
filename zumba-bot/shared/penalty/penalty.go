@@ -42,11 +42,10 @@ const (
 
 // Beträge in ganzen Euro.
 const (
-	MinFehltage    = 5  // ab so vielen Fehltagen in Folge greift die Strafe
-	BasisBetrag    = 25 // Betrag bei genau MinFehltage
-	ProTagBetrag   = 5  // jeder weitere Fehltag
-	NoShowDefault  = 50 // Default für manuelle No-Show-Strafen
-	clampStartDate = "2025-12-01"
+	MinFehltage   = 5  // ab so vielen Fehltagen in Folge greift die Strafe
+	BasisBetrag   = 25 // Betrag bei genau MinFehltage
+	ProTagBetrag  = 5  // jeder weitere Fehltag
+	NoShowDefault = 50 // Default für manuelle No-Show-Strafen
 )
 
 // Row ist eine persistierte Zeile der Tabelle strafen.
@@ -66,7 +65,7 @@ type Row struct {
 type UserData struct {
 	UserID         string
 	Name           string
-	EffectiveStart time.Time // GREATEST(startDate, 2025-12-01)
+	EffectiveStart time.Time // GREATEST(startDate, Jahresstart) – domain.Season.ClampStart
 	Absences       []time.Time
 }
 
@@ -95,16 +94,6 @@ type Entry struct {
 type Segment struct {
 	Start time.Time
 	Tage  int
-}
-
-// ClampStart liefert den effektiven Startpunkt eines Users (Domänen-Konvention:
-// nie vor dem 01.12.2025).
-func ClampStart(startDate *time.Time) time.Time {
-	clamp, _ := time.Parse("2006-01-02", clampStartDate)
-	if startDate == nil || startDate.Before(clamp) {
-		return clamp
-	}
-	return *startDate
 }
 
 // Betrag berechnet den Strafbetrag einer Fehltage-Serie (0 = keine Strafe).
@@ -195,6 +184,11 @@ func resetBetween(resetDays []time.Time, a, b time.Time) bool {
 // Assess bewertet alle User: persistierte Strafen bekommen ihren berechneten
 // Betrag, erkannte aber noch nicht persistierte Fehltage-Strafen kommen als
 // Kandidaten (ID == 0, Status offen) dazu.
+//
+// Der bewertete Zeitraum ist [EffectiveStart, asOf] je User. Beim Aufruf pro
+// Stammtischjahr (EffectiveStart = Jahresstart, asOf ≤ Jahresende) enden
+// Fehltage-Serien damit automatisch an der Jahresgrenze: eine Serie, die im
+// November beginnt, läuft im neuen Jahr nicht weiter, sondern beginnt dort neu.
 func Assess(in Input, asOf time.Time) []Entry {
 	excluded := make(map[string]bool, len(in.Excluded))
 	for _, d := range in.Excluded {

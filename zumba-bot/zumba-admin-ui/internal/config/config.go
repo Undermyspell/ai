@@ -3,16 +3,12 @@ package config
 import (
 	"fmt"
 	"os"
-	"time"
 )
 
 type Config struct {
 	Port string
 
 	DB DBConfig
-
-	EvalPeriodStart time.Time
-	EvalPeriodEnd   time.Time
 
 	// BotURL ist die Basis-URL des whatsapp-bot (für die Bot-Test-Seite).
 	BotURL string
@@ -52,18 +48,9 @@ func Load() (Config, error) {
 		BotURL:        getenv("BOT_URL", "http://localhost:8080"),
 		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
 	}
-
-	start, err := parseDate(getenv("EVAL_PERIOD_START", "2025-12-01"))
-	if err != nil {
-		return cfg, fmt.Errorf("EVAL_PERIOD_START: %w", err)
-	}
-	end, err := parseDate(getenv("EVAL_PERIOD_END", "2026-11-30"))
-	if err != nil {
-		return cfg, fmt.Errorf("EVAL_PERIOD_END: %w", err)
-	}
-	cfg.EvalPeriodStart = start
-	cfg.EvalPeriodEnd = end
-
+	// Der Auswertungszeitraum kommt NICHT mehr aus der Umgebung, sondern aus
+	// der Tabelle public.seasons – sonst müsste zu jedem Jahreswechsel
+	// deployt werden, und Archiv-Ansichten wären unmöglich.
 	return cfg, nil
 }
 
@@ -72,8 +59,4 @@ func getenv(key, fallback string) string {
 		return v
 	}
 	return fallback
-}
-
-func parseDate(s string) (time.Time, error) {
-	return time.Parse("2006-01-02", s)
 }

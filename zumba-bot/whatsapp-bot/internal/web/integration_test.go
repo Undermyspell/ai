@@ -19,7 +19,7 @@ import (
 // statsStore liefert deterministische Statistik für den End-to-End-Test.
 type statsStore struct{ fakeStore }
 
-func (*statsStore) UserStats(context.Context, time.Time) ([]store.Stat, error) {
+func (*statsStore) UserStats(context.Context, store.Season, time.Time) ([]store.Stat, error) {
 	return []store.Stat{
 		{Name: "Anna", Attendance: 10, Away: 0, Percent: 100, Streak: 5},
 		{Name: "Ben", Attendance: 8, Away: 2, Percent: 80, Streak: -2},

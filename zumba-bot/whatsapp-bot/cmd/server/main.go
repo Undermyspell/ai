@@ -40,6 +40,11 @@ func main() {
 	log.Printf("✅ Connected to PostgreSQL '%s' on %s:%s", cfg.DB.Name, cfg.DB.Host, cfg.DB.Port)
 
 	st := store.NewPostgres(pg)
+	// Stammtischjahre (Auswertungszeiträume). Beide Services legen die
+	// Tabelle idempotent an und seeden sie einmalig.
+	if err := st.EnsureSeasonsSchema(context.Background()); err != nil {
+		log.Printf("⚠️  seasons Schema: %v", err)
+	}
 	// Strafen-Tabelle (Marker für Fehltage-Strafen; No-Shows pflegt das
 	// Admin-UI). Beide Services legen sie idempotent an.
 	if err := st.EnsureStrafenSchema(context.Background()); err != nil {

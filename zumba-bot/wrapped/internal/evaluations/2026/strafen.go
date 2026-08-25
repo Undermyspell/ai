@@ -1,11 +1,12 @@
 package eval2026
 
 import (
+	"log"
 	"sort"
 	"time"
 
-	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/stammtisch-wrapped/pkg/models"
+	"github.com/michael/zumba-shared/penalty"
 )
 
 // calculateStrafenStats evaluates the strafen table with the shared penalty
@@ -14,6 +15,12 @@ import (
 // the recap (they only act as reset markers inside penalty.Assess).
 func (e *Evaluator) calculateStrafenStats() models.StrafenStats {
 	if len(e.rawData.Thursdays) == 0 {
+		return models.StrafenStats{}
+	}
+	// Ohne Jahresstart gäbe es keinen Klemm-Punkt: penalty.Thursdays liefe ab
+	// dem Nulldatum. Lieber keine Strafen ausweisen als falsche.
+	if e.rawData.Season.Start.IsZero() {
+		log.Printf("⚠️ RawData ohne Stammtischjahr – Strafen-Auswertung entfällt")
 		return models.StrafenStats{}
 	}
 	// asOf = last valid Thursday of the (today-capped) period
@@ -36,7 +43,7 @@ func (e *Evaluator) calculateStrafenStats() models.StrafenStats {
 		users = append(users, penalty.UserData{
 			UserID:         u.UserID,
 			Name:           u.UserName,
-			EffectiveStart: penalty.ClampStart(u.StartDate),
+			EffectiveStart: e.rawData.Season.ClampStart(u.StartDate),
 			Absences:       absencesByUser[u.UserID],
 		})
 	}

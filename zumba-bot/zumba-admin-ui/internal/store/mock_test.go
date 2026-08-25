@@ -18,8 +18,9 @@ func thursdayIn(p timeutil.Period) time.Time {
 }
 
 func TestMockInsertDeleteAbsence(t *testing.T) {
-	p := timeutil.Period{Start: mustDate("2025-12-01"), End: mustDate("2026-11-30")}
-	m := NewMock(p)
+	season := testSeason()
+	p := season.Period
+	m := NewMock(season, []Season{season})
 	ctx := context.Background()
 	day := thursdayIn(p)
 	uid := m.users[0].ID
@@ -48,8 +49,9 @@ func TestMockInsertDeleteAbsence(t *testing.T) {
 }
 
 func TestMockInsertDeleteExcluded(t *testing.T) {
-	p := timeutil.Period{Start: mustDate("2025-12-01"), End: mustDate("2026-11-30")}
-	m := NewMock(p)
+	season := testSeason()
+	p := season.Period
+	m := NewMock(season, []Season{season})
 	ctx := context.Background()
 	day := thursdayIn(p)
 
@@ -91,6 +93,13 @@ func containsDate(days []time.Time, d time.Time) bool {
 		}
 	}
 	return false
+}
+
+// testSeason: fester Zeitraum, unabhängig vom gepflegten Seed.
+func testSeason() Season {
+	s := Season{ID: 1, Label: "2026"}
+	s.Start, s.End = mustDate("2025-12-01"), mustDate("2026-11-30")
+	return s
 }
 
 func mustDate(s string) time.Time {

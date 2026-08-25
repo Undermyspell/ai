@@ -17,11 +17,34 @@ import (
 )
 
 type Postgres struct {
-	db *db.Postgres
+	db      *db.Postgres
+	seasons *sharedstore.SeasonCache
 }
 
 func NewPostgres(p *db.Postgres) *Postgres {
-	return &Postgres{db: p}
+	return &Postgres{db: p, seasons: sharedstore.NewSeasonCache(p, seasonCacheTTL)}
+}
+
+// seasonCacheTTL: Stammtischjahre ändern sich höchstens jährlich, werden aber
+// für jede Seite gebraucht.
+const seasonCacheTTL = 10 * time.Minute
+
+// EnsureSeasonsSchema legt die Jahres-Tabelle idempotent an und seedet sie
+// einmalig (geteilte DDL; der Bot ruft dieselbe Funktion).
+func (s *Postgres) EnsureSeasonsSchema(ctx context.Context) error {
+	return sharedstore.EnsureSeasonsSchema(ctx, s.db)
+}
+
+func (s *Postgres) ListSeasons(ctx context.Context) ([]Season, error) {
+	return s.seasons.All(ctx)
+}
+
+func (s *Postgres) SeasonAt(ctx context.Context, t time.Time) (Season, error) {
+	return s.seasons.At(ctx, t)
+}
+
+func (s *Postgres) SeasonByLabel(ctx context.Context, label string) (Season, error) {
+	return s.seasons.ByLabel(ctx, label)
 }
 
 func (s *Postgres) ListUsers(ctx context.Context) ([]User, error) {

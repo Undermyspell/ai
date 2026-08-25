@@ -3,9 +3,23 @@ package templates
 import "github.com/michael/zumba-admin-ui/web/templates/partials"
 
 type PageMeta struct {
-	Title      string
-	ActiveNav  string // "dashboard" | "members" | "days" | "excluded"
-	MockMode   bool
+	Title     string
+	ActiveNav string // "dashboard" | "members" | "days" | "excluded"
+	MockMode  bool
+
+	// Jahresbezug. Nur Seiten mit Auswertungszeitraum füllen das – Bot-Test
+	// und die ML-Seiten lassen es leer, dann entfällt der Umschalter.
+	Season         string // Label des angezeigten Stammtischjahres, z. B. "2026"
+	SeasonRange    string // "1. Dez – 30. Nov"
+	SeasonArchived bool   // Jahr vorbei: Ansicht ist read-only
+	Seasons        []SeasonLink
+}
+
+// SeasonLink ist ein Eintrag des Jahres-Umschalters.
+type SeasonLink struct {
+	Label  string
+	Href   string
+	Active bool
 }
 
 templ Layout(meta PageMeta) {
@@ -36,10 +50,38 @@ templ Layout(meta PageMeta) {
 					if meta.MockMode {
 						@partials.Banner("Mock-Daten aktiv – keine Verbindung zur Datenbank.")
 					}
+					if meta.Season != "" {
+						@seasonPicker(meta)
+					}
+					if meta.SeasonArchived {
+						@partials.Banner("Stammtischjahr " + meta.Season + " ist abgeschlossen – Archivansicht, keine Änderungen möglich.")
+					}
 					{ children... }
 				</main>
 				<div id="toast-stack" class="toast-stack" aria-live="polite"></div>
 			</div>
 		</body>
 	</html>
+}
+
+// seasonPicker zeigt das angezeigte Stammtischjahr und die Umschalt-Links auf
+// die übrigen (Archiv). Der Link behält den aktuellen Pfad und tauscht nur
+// ?jahr= aus.
+templ seasonPicker(meta PageMeta) {
+	<nav class="season-picker" aria-label="Stammtischjahr">
+		<span class="season-range">{ meta.SeasonRange }</span>
+		<ul>
+			for _, s := range meta.Seasons {
+				<li>
+					<a
+						href={ templ.SafeURL(s.Href) }
+						class={ "season-link", templ.KV("is-active", s.Active) }
+						if s.Active {
+							aria-current="page"
+						}
+					>{ s.Label }</a>
+				</li>
+			}
+		</ul>
+	</nav>
 }

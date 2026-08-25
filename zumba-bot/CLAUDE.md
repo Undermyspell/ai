@@ -24,13 +24,14 @@ The remote is `github.com/Undermyspell/ai` (referenced from `deployment/argocd/a
 The "Stammtisch" data model is **attendance-by-default**: a user is present on a Thursday unless they explicitly send a cancellation message. This is fundamental — there is no "attended" table.
 
 Postgres tables (schema `public`):
-- `users` — `userId`, `userName`, `startDate` (when the user joined; nullable). All evaluations clamp the start date to no earlier than `2025-12-01`.
+- `users` — `userId`, `userName`, `startDate` (when the user joined; nullable). All evaluations clamp the start date to the start of the Stammtisch year being evaluated (`domain.Season.ClampStart`).
+- `seasons` — the Stammtisch years: `label` ("2026"), `start_date`, `end_date` (inclusive, non-overlapping via an EXCLUDE constraint on `daterange`). This table is the single source of the evaluation period for bot, admin UI and wrapped; both services create and seed it idempotently on startup (`shared/store.EnsureSeasonsSchema`).
 - `stammtisch_abwesenheit` — one row per cancellation: `userId`, `date`, `message` (nullable). Only rows with `EXTRACT(DOW FROM date) = 4` (Thursday) are valid.
 - `excluded_days` — Thursdays that don't count (holidays etc.). Always filter via `NOT IN (SELECT date FROM excluded_days)`.
 
 Two databases share the same Postgres instance: `n8n` (n8n's own state) and `zumba` (the Stammtisch domain data the wrapped app reads). Evolution API uses the `evolution` schema in the `n8n` DB.
 
-The "2026 Wrapped" period is **01.12.2025 – 30.11.2026** (defined in `wrapped/internal/handlers/wrapped.go`). All evaluation queries cap the end date at "today" so future Thursdays don't count as missed.
+Evaluations run per **Stammtisch year**, resolved from `public.seasons` by the query date — so the turn of the year happens on its own, with no deploy. "2026" is 01.12.2025 – 30.11.2026; "2027" starts 01.12.2026. All evaluation queries cap the end date at "today" so future Thursdays don't count as missed; for a finished year the cap is its own end date, so archive views show the final standing. Fehltage streaks end at the year boundary and restart in the new year. The admin UI selects the year via `?jahr=<label>` (default: the running one) and refuses writes into finished years.
 
 **Strafen feature** (whatsapp-bot + zumba-admin-ui): table `strafen` (`art` = `fehltage`|`noshow`, `status` = `offen`|`beglichen`|`geloescht`), created idempotently by both services on startup. Auto penalties: ≥5 consecutive absent Thursdays → 25 € + 5 €/further day; only a marker row (`userId` + first day of the streak) is persisted — the amount is always computed from the absences. Paying (`beglichen_am`) or deleting (`geloescht_am`, soft delete) a fehltage penalty acts as a reset point that splits the streak, so the counter restarts. Settled penalties stay in the report until the Thursday following settlement; deleted ones never show but must stay in the table (reset marker). The domain logic lives in `shared/penalty/` (shared module, single copy — imported by whatsapp-bot, zumba-admin-ui and wrapped). The bot appends the STRAFEN block between Rangliste and footer (`report.StrafenBlock`) and persists new markers only on real (non-dry-run) runs; the admin UI has a `/strafen` CRUD page with a simulated query date (`?stichtag=`), and `/weekly-report?date=` on the bot simulates the penalty-block date (forces dry-run unless preview).
 
@@ -40,7 +41,8 @@ Go web server that renders `/2026` from either the live Postgres or hardcoded mo
 
 ### Commands (run from `wrapped/`)
 ```bash
-make dev      # hot reload via Air; runs `templ generate && go build` on change
+make dev      # hot reload via Air (THIS service only); runs `templ generate && go build` on change
+make stack    # full local stack instead (delegates to the repo root)
 make build    # one-shot build to ./tmp/server
 make run      # build + run
 make test     # go test -v ./...

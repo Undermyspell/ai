@@ -18,3 +18,10 @@ type Queryer interface {
 type Execer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
+
+// RowQueryer ergänzt Queryer um QueryRowContext – für Abfragen, die höchstens
+// eine Zeile liefern (z. B. das Stammtischjahr zu einem Zeitpunkt).
+type RowQueryer interface {
+	Queryer
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
