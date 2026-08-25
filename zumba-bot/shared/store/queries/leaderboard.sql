@@ -1,6 +1,11 @@
 -- Rangliste je User: Donnerstage ab effektivem Start (GREATEST(startDate,
 -- Periodenstart)), Anwesenheit = Donnerstage - Absagen (attendance-by-default),
 -- Streak vorzeichenbehaftet über gaps-and-islands.
+-- Nur Donnerstags-Absagen zählen (ISODOW 4) – wie in PenaltyInputs. Ohne
+-- diesen Filter zog der Join Altbestand auf anderen Wochentagen mit (285
+-- Zeilen 13.10.–16.11.2025) und die Anwesenheit konnte negativ werden. Für
+-- Zeiträume ab 2025-12-01 ändert der Filter nichts – dort liegen nur
+-- Donnerstage.
 -- $1 = Periodenstart, $2 = Stichtag/Periodenende (wird an current_date gekappt).
 -- Einzige Kopie dieser Query; früher dupliziert als whatsapp-bot stats.sql,
 -- zumba-admin-ui leaderboardQ und n8n whatsapp-statistic.sql.
@@ -105,6 +110,7 @@ LEFT JOIN public.stammtisch_abwesenheit a
     ON a."userId" = u."userId"
     AND a.date >= ut.effective_start_date
     AND a.date <= LEAST($2::date, current_date)
+    AND EXTRACT(ISODOW FROM a.date) = 4
     AND a.date NOT IN (SELECT date FROM excluded_days)
 LEFT JOIN user_streak us ON us."userId" = u."userId"
 GROUP BY
