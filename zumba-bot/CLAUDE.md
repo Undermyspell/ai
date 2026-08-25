@@ -29,7 +29,9 @@ Postgres tables (schema `public`):
 - `stammtisch_abwesenheit` — one row per cancellation: `userId`, `date`, `message` (nullable). Only rows with `EXTRACT(DOW FROM date) = 4` (Thursday) are valid.
 - `excluded_days` — Thursdays that don't count (holidays etc.). Always filter via `NOT IN (SELECT date FROM excluded_days)`.
 
-Two databases share the same Postgres instance: `n8n` (n8n's own state) and `zumba` (the Stammtisch domain data the wrapped app reads). Evolution API uses the `evolution` schema in the `n8n` DB.
+One Postgres instance holds several databases: `zumba` (the Stammtisch domain data), `evolution` (Evolution API's own state — its own DB, **not** a schema inside `n8n`), and `n8n` (n8n's own state, kept but no longer used). Verified 2026-08-25.
+
+**n8n is switched off** (`n8n.enabled: false`, since 2026-08-25): the "Zumba" workflow is fully replaced by `whatsapp-bot/`, and the Evolution webhook points at the bot. Deployment, Service and IngressRoute are gone; the PVC `zumba-n8n-data` and the `n8n` database are deliberately kept, so `enabled: true` brings it back with its old state. Renovate no longer opens PRs for the n8n image. `switch-webhook.sh n8n` would point Evolution at a dead Service — there is no rollback path to n8n any more.
 
 Evaluations run per **Stammtisch year**, resolved from `public.seasons` by the query date — so the turn of the year happens on its own, with no deploy. "2026" is 01.12.2025 – 30.11.2026; "2027" starts 01.12.2026. All evaluation queries cap the end date at "today" so future Thursdays don't count as missed; for a finished year the cap is its own end date, so archive views show the final standing. Fehltage streaks end at the year boundary and restart in the new year. The admin UI selects the year via `?jahr=<label>` (default: the running one) and refuses writes into finished years.
 
@@ -64,7 +66,7 @@ The split between `evaluations/2026/` (domain stats) and `viewbuilder/` (present
 
 GitOps via ArgoCD `ApplicationSet` → 2 Applications: `zumba-staging` (ns `zumba-staging`, `http://zumba-stage.pi.home`) and `zumba-production` (ns `zumba-production`, `http://zumba.pi.home`). Each Application has **two sources**:
 
-1. The Helm chart `helm-charts/zumba/` (n8n + Postgres + Evolution API + IngressRoute) with `valueFiles: ../../environments/{{.env}}/values.yaml`.
+1. The Helm chart `helm-charts/zumba/` (Postgres + Evolution API + the Go services + IngressRoute; n8n templates still exist but are gated off) with `valueFiles: ../../environments/{{.env}}/values.yaml`.
 2. Kustomize at `environments/{{.env}}/` which only emits SealedSecrets.
 
 Because of source 1's relative `valueFiles`, the Helm chart and `environments/` must stay co-located under `deployment/`. Renovate updates the n8n image tag in `helm-charts/zumba/values.yaml` and the local `docker-compose.yml` together (see recent commits).

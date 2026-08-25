@@ -15,32 +15,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update n8n Docker image tag in base Helm values",
-      "managerFilePatterns": [
-        "zumba-bot/deployment/helm-charts/zumba/values.yaml"
-      ],
-      "matchStrings": [
-        "n8n:\\s*\\n\\s*image:\\s*\\n\\s*repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
-      ],
-      "depNameTemplate": "n8n-io/n8n",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^n8n@(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "description": "Update n8n Docker image tag in staging environment",
-      "managerFilePatterns": [
-        "zumba-bot/deployment/environments/staging/values.yaml"
-      ],
-      "matchStrings": [
-        "n8n:\\s*\\n\\s*image:\\s*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
-      ],
-      "depNameTemplate": "n8n-io/n8n",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^n8n@(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
       "description": "Update postgres Docker image tag in base Helm values",
       "managerFilePatterns": [
         "zumba-bot/deployment/helm-charts/zumba/values.yaml"
@@ -108,22 +82,12 @@
       "enabled": false
     },
     {
-      "description": "Auto-merge n8n updates in staging environment only",
-      "matchFileNames": [
-        "zumba-bot/deployment/environments/staging/values.yaml"
-      ],
+      "description": "n8n ist abgeschaltet (Workflow durch whatsapp-bot ersetzt) - keine Updates mehr, auch nicht fuer das Image in docker-compose.yml",
       "matchPackageNames": [
+        "docker.n8n.io/n8nio/n8n",
         "n8n-io/n8n"
       ],
-      "automerge": true,
-      "automergeType": "pr",
-      "automergeStrategy": "squash",
-      "labels": [
-        "dependencies",
-        "staging",
-        "n8n",
-        "automerge"
-      ]
+      "enabled": false
     },
     {
       "description": "Manual review required for base and production values",

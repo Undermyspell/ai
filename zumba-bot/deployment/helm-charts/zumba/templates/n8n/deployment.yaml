@@ -1,3 +1,4 @@
+{{- if .Values.n8n.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -70,3 +71,4 @@ spec:
       - name: n8n-data
         persistentVolumeClaim:
           claimName: {{ include "zumba.fullname" . }}-n8n-data
+{{- end }}

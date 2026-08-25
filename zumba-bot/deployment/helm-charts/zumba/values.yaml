@@ -6,6 +6,13 @@
 # namespace: override-me
 
 n8n:
+  # Abgeschaltet seit 2026-08-25: der "Zumba"-Workflow ist vollständig durch
+  # whatsapp-bot/ ersetzt, der Evolution-Webhook zeigt auf den Bot. Die DB
+  # "n8n" und das PVC bleiben bestehen — auf true setzen genügt, um n8n mit
+  # seinem alten Stand zurückzuholen (der Workflow ist dann inaktiv, siehe
+  # knowledge/deployment.md).
+  enabled: false
+
   image:
     repository: docker.n8n.io/n8nio/n8n
     tag: "2.37.0"

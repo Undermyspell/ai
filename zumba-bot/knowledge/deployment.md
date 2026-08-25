@@ -69,8 +69,10 @@ Das DB-Passwort konsumieren alle Services zur Laufzeit aus dem Secret
 
 ## Sonstiges
 
-- Renovate hält Fremd-Images (n8n, Evolution, rclone …) aktuell und ändert
-  dabei Chart-Values und lokales docker-compose zusammen.
+- Renovate hält Fremd-Images (Evolution, Postgres, k3s, ArgoCD …) aktuell und
+  ändert dabei Chart-Values und lokales docker-compose zusammen. Das
+  n8n-Image ist explizit ausgenommen (`enabled: false` in
+  `.github/renovate.json`), seit n8n abgeschaltet ist.
 - Postgres-Backup läuft als CronJob (Dump + rclone).
 - Schema-Migrationen macht kein separates Tool: Bot und Admin-UI legen
   Tabellen/Spalten idempotent beim Start an (`strafen`,
@@ -80,4 +82,13 @@ Das DB-Passwort konsumieren alle Services zur Laufzeit aus dem Secret
   Bot, Admin-UI, Wrapped, Classifier mit Hot-Reload auf dem Host, der
   Renderer als Docker-Container (Chromium + Emoji-Fonts identisch zum
   Cluster). `docker-compose.yml` enthält daneben noch n8n/Postgres/Evolution
-  für Standalone-Betrieb.
+  für Standalone-Betrieb — der n8n-Service dort ist nur noch historisch,
+  im Cluster läuft er nicht mehr.
+- **n8n abgeschaltet** (25.08.2026): `n8n.enabled: false` im Basis-Chart.
+  Deployment, Service, ConfigMap und IngressRoute rendern nicht mehr, ArgoCD
+  hat sie gepruned. Das PVC `zumba-n8n-data` ist bewusst NICHT ans Flag
+  gekoppelt (prune hätte sonst das Volume gelöscht) und bleibt gebunden
+  liegen; die Datenbank `n8n` ebenfalls. Zurückholen: `enabled: true`.
+  Der „Zumba"-Workflow wurde vorher in der DB auf inaktiv gesetzt, damit er
+  beim Wiedereinschalten nicht von selbst startet — der Evolution-Webhook
+  zeigt ohnehin auf den Bot.

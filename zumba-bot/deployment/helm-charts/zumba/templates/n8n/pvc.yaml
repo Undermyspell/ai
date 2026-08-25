@@ -1,3 +1,7 @@
+# Bewusst NICHT an n8n.enabled gekoppelt: ArgoCD prunet (prune: true), das
+# Volume mit dem n8n-State wäre sonst beim Abschalten weg. Es bleibt als
+# ungenutztes, gebundenes PVC liegen und kostet nichts. Erst löschen, wenn
+# n8n endgültig verschwindet – zusammen mit der Datenbank "n8n".
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

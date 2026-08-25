@@ -62,8 +62,15 @@ Fehltage-Serien enden an der Jahresgrenze und beginnen im neuen Jahr neu.
   noch in der Tabelle.
 - `strafen` — siehe [strafen.md](strafen.md).
 
-Zwei Datenbanken auf einer Postgres-Instanz: `n8n` (n8n-State + Evolution-API
-im Schema `evolution`) und `zumba` (Domänendaten).
+Datenbanken auf einer Postgres-Instanz: `zumba` (Domänendaten), `evolution`
+(Evolution-API-State — eine **eigene Datenbank**, kein Schema in `n8n`) und
+`n8n` (n8n-eigener State, bleibt liegen, wird nicht mehr genutzt).
+
+**n8n ist abgeschaltet** (seit 25.08.2026): der „Zumba"-Workflow ist komplett
+durch `whatsapp-bot/` ersetzt, der Evolution-Webhook zeigt auf den Bot.
+Deployment, Service und IngressRoute sind weg; PVC und Datenbank bleiben
+bewusst erhalten, `n8n.enabled: true` holt alles zurück. Damit entfällt auch
+der Rollback-Pfad `switch-webhook.sh n8n`.
 
 ## Konventionen
 

@@ -1,3 +1,4 @@
+{{- if .Values.n8n.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -14,3 +15,4 @@ spec:
       name: http
   selector:
     {{- include "zumba.n8n.selectorLabels" . | nindent 4 }}
+{{- end }}
