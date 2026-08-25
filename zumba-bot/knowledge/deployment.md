@@ -75,7 +75,7 @@ Das DB-Passwort konsumieren alle Services zur Laufzeit aus dem Secret
 - Schema-Migrationen macht kein separates Tool: Bot und Admin-UI legen
   Tabellen/Spalten idempotent beim Start an (`strafen`,
   `stammtisch_abwesenheit.created_at`).
-- Lokale Entwicklung: `make dev` im Repo-Root startet alles außer Postgres
+- Lokale Entwicklung: `make stack` im Repo-Root startet alles außer Postgres
   und Evolution API (die kommen aus dem Cluster, siehe `.env`-Dateien):
   Bot, Admin-UI, Wrapped, Classifier mit Hot-Reload auf dem Host, der
   Renderer als Docker-Container (Chromium + Emoji-Fonts identisch zum

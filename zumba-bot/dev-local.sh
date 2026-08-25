@@ -6,6 +6,9 @@
 #   zumba-admin-ui :8090  Air Hot-Reload, BOT_URL auf den Bot
 #   wrapped        :8082  Air Hot-Reload (Route /2026)
 #   classifier     :8085  go run (Modell eingebettet, ändert sich selten)
+#                        — Bot (Shadow-Modus) UND Admin-UI (/ml-test) zeigen
+#                          darauf; ohne CLASSIFIER_URL meldet /ml-test
+#                          "Kein classifier-service konfiguriert".
 # Strg-C beendet alle. Ports via BOT_PORT/UI_PORT/WRAPPED_PORT/CLS_PORT
 # überschreibbar.
 set -euo pipefail
@@ -28,7 +31,7 @@ trap 'kill 0' EXIT INT TERM
 
 echo
 echo "🤖 whatsapp-bot → http://localhost:${BOT_PORT}   (Air Hot-Reload)"
-echo "🖥  admin-ui     → http://localhost:${UI_PORT}   (Air Hot-Reload, Bot-Test: /bot-test)"
+echo "🖥  admin-ui     → http://localhost:${UI_PORT}   (Air Hot-Reload, Bot-Test: /bot-test, ML-Test: /ml-test)"
 echo "🎁 wrapped      → http://localhost:${WRAPPED_PORT}/2026   (Air Hot-Reload)"
 echo "🧠 classifier   → http://localhost:${CLS_PORT}   (go run, ML-Shadow)"
 echo "   Renderer (Bild-Karte) kommt aus Docker: make up  → localhost:8091"
@@ -42,7 +45,9 @@ echo
     RENDERER_URL="${RENDERER_URL:-http://localhost:8091}" \
     CLASSIFIER_URL="${CLASSIFIER_URL:-http://localhost:${CLS_PORT}}" \
     air 2>&1 | sed -u 's/^/[bot] /' ) &
-( cd zumba-admin-ui && PORT="${UI_PORT}" BOT_URL="http://localhost:${BOT_PORT}" air 2>&1 | sed -u 's/^/[ui ] /' ) &
+( cd zumba-admin-ui && PORT="${UI_PORT}" BOT_URL="http://localhost:${BOT_PORT}" \
+    CLASSIFIER_URL="${CLASSIFIER_URL:-http://localhost:${CLS_PORT}}" \
+    air 2>&1 | sed -u 's/^/[ui ] /' ) &
 ( cd wrapped && PORT="${WRAPPED_PORT}" air 2>&1 | sed -u 's/^/[wrp] /' ) &
 ( cd classifier-service && PORT="${CLS_PORT}" go run ./cmd/server 2>&1 | sed -u 's/^/[cls] /' ) &
 

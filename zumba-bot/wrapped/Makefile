@@ -1,4 +1,4 @@
-.PHONY: help build run dev clean test
+.PHONY: help build run dev stack clean test
 
 # Lokale Env-Vars aus .env laden (gitignored, siehe .env.example)
 -include .env
@@ -16,7 +16,8 @@ run: build ## Baut und startet den Server
 	@echo "🍺 Starte Stammtisch Wrapped..."
 	@./tmp/server
 
-dev: ## Startet den Development Server mit Hot Reload (benötigt Air)
+dev: ## Startet NUR diesen Service mit Hot Reload (voller Stack: `make stack` im Repo-Root)
+	@echo "ℹ️  Nur wrapped. Voller Stack (inkl. classifier-service für /ml-test): make stack im Repo-Root."
 	@echo "🔥 Starting development server with Air..."
 	@air
 
@@ -36,3 +37,6 @@ install: ## Installiert Dependencies
 	@echo "✅ Dependencies installiert!"
 
 .DEFAULT_GOAL := help
+
+stack: ## Startet den vollen lokalen Stack (delegiert ans Repo-Root)
+	@$(MAKE) -C .. stack
