@@ -157,7 +157,8 @@ h3 { font-size: 17px; line-height: 1.25; }
   margin: 0 auto;
 }
 
-/* Bottom nav (mobile) */
+/* Bottom nav (mobile): vier Hauptpunkte + „Mehr" – jede Spalte gleich breit,
+   Label einzeilig und abgeschnitten statt umgebrochen. */
 .app-nav {
   position: fixed;
   bottom: 0;
@@ -165,29 +166,45 @@ h3 { font-size: 17px; line-height: 1.25; }
   right: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: var(--bg-elev);
   border-top: 1px solid var(--rule);
-  height: var(--nav-h-mobile);
+  height: calc(var(--nav-h-mobile) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
 }
-.app-nav a {
+.app-nav a,
+.nav-more-toggle {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  font-size: 11px;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 2px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--ink-soft);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition: color 160ms ease;
 }
-.app-nav a .icon { font-size: 20px; line-height: 1; }
-.app-nav a[aria-current="page"] {
+.app-nav a .label,
+.nav-more-toggle .label {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-nav a .icon,
+.nav-more-toggle .icon { font-size: 20px; line-height: 1; }
+.app-nav a[aria-current="page"],
+.nav-more-toggle.is-active {
   color: var(--accent);
 }
-.app-nav a[aria-current="page"]::before {
+.app-nav a[aria-current="page"]::before,
+.nav-more-toggle.is-active::before {
   content: "";
   position: absolute;
   top: 0;
@@ -198,6 +215,50 @@ h3 { font-size: 17px; line-height: 1.25; }
   background: var(--accent);
   border-radius: 0 0 2px 2px;
 }
+
+/* „Mehr": <details> ohne Browser-Marker, Panel klappt über der Leiste auf. */
+.nav-more { display: contents; }
+.nav-more-toggle { list-style: none; height: var(--nav-h-mobile); }
+.nav-more-toggle::-webkit-details-marker { display: none; }
+.nav-more-toggle .icon {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.nav-more-panel {
+  position: fixed;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: calc(var(--nav-h-mobile) + env(safe-area-inset-bottom) + var(--space-2));
+  z-index: 41;
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2);
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  animation: fadeUp 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.nav-more-head {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint);
+  padding: var(--space-2) var(--space-3) var(--space-1);
+}
+.nav-more-panel a {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  font-size: 14px;
+  border-radius: var(--radius);
+}
+.nav-more-panel a .icon { font-size: 18px; }
+.nav-more-panel a[aria-current="page"] { background: var(--accent-soft); }
+.nav-more-panel a[aria-current="page"]::before { display: none; }
 
 /* Desktop layout: left rail */
 @media (min-width: 768px) {
@@ -227,6 +288,7 @@ h3 { font-size: 17px; line-height: 1.25; }
     font-size: 14px;
     border-radius: var(--radius);
   }
+  .app-nav a .label { white-space: normal; overflow: visible; }
   .app-nav a .icon { font-size: 18px; }
   .app-nav a:hover {
     background: var(--accent-soft);
@@ -236,6 +298,23 @@ h3 { font-size: 17px; line-height: 1.25; }
     background: var(--accent-soft);
   }
   .app-nav a[aria-current="page"]::before { display: none; }
+
+  /* Seitenleiste: kein Aufklappen, die Werkzeuge stehen als zweite Gruppe
+     unter einer Überschrift. */
+  .nav-more { display: block; margin-top: var(--space-4); }
+  .nav-more-toggle { display: none; }
+  .nav-more-panel {
+    position: static;
+    display: grid;
+    gap: 2px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    animation: none;
+  }
+  .nav-more-head { padding: var(--space-2) var(--space-4) var(--space-1); }
+  .nav-more-panel a { padding: var(--space-3) var(--space-4); }
   .app-main {
     padding: var(--space-6) var(--space-7);
     padding-bottom: var(--space-7);

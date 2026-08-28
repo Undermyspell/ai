@@ -7,11 +7,19 @@ type navItem struct {
 	Label string
 }
 
-var navItems = []navItem{
+// Die Leiste am unteren Rand trägt nur die vier Punkte der täglichen Pflege —
+// neun Einträge nebeneinander waren auf dem Handy weder lesbar noch treffbar.
+var primaryNav = []navItem{
 	{Key: "dashboard", Href: "/dashboard", Icon: "📊", Label: "Dashboard"},
 	{Key: "days", Href: "/days", Icon: "📅", Label: "Donnerstage"},
-	{Key: "excluded", Href: "/excluded", Icon: "🚫", Label: "Ausgeschlossen"},
+	{Key: "excluded", Href: "/excluded", Icon: "🚫", Label: "Sperrtage"},
 	{Key: "strafen", Href: "/strafen", Icon: "💸", Label: "Strafen"},
+}
+
+// Die Werkzeuge stecken hinter „Mehr" — Bot- und ML-Seiten braucht man selten
+// und nie unterwegs. Auf dem Desktop zeigt die Seitenleiste beide Gruppen
+// untereinander, dort ist Platz genug.
+var moreNav = []navItem{
 	{Key: "bottest", Href: "/bot-test", Icon: "🤖", Label: "Bot-Test"},
 	{Key: "trace", Href: "/trace", Icon: "📜", Label: "Verlauf"},
 	{Key: "mlshadow", Href: "/ml-shadow", Icon: "🧠", Label: "ML-Shadow"},
@@ -19,20 +27,47 @@ var navItems = []navItem{
 	{Key: "mldocs", Href: "/ml-doku", Icon: "📖", Label: "ML-Doku"},
 }
 
+// inMore: liegt die aktive Seite im Mehr-Menü, wird der Knopf selbst markiert —
+// sonst sähe die Leiste aus, als wäre gar nichts ausgewählt.
+func inMore(active string) bool {
+	for _, item := range moreNav {
+		if item.Key == active {
+			return true
+		}
+	}
+	return false
+}
+
 templ Nav(active string) {
 	<nav class="app-nav" aria-label="Hauptnavigation">
-		for _, item := range navItems {
-			if item.Key == active {
-				<a href={ templ.URL(item.Href) } aria-current="page">
-					<span class="icon">{ item.Icon }</span>
-					<span class="label">{ item.Label }</span>
-				</a>
-			} else {
-				<a href={ templ.URL(item.Href) }>
-					<span class="icon">{ item.Icon }</span>
-					<span class="label">{ item.Label }</span>
-				</a>
-			}
+		for _, item := range primaryNav {
+			@navLink(item, item.Key == active)
 		}
+		<details class="nav-more">
+			<summary class={ "nav-more-toggle", templ.KV("is-active", inMore(active)) }>
+				<span class="icon" aria-hidden="true">⋯</span>
+				<span class="label">Mehr</span>
+			</summary>
+			<div class="nav-more-panel">
+				<p class="nav-more-head">Werkzeuge</p>
+				for _, item := range moreNav {
+					@navLink(item, item.Key == active)
+				}
+			</div>
+		</details>
 	</nav>
+}
+
+templ navLink(item navItem, active bool) {
+	if active {
+		<a href={ templ.URL(item.Href) } aria-current="page">
+			<span class="icon">{ item.Icon }</span>
+			<span class="label">{ item.Label }</span>
+		</a>
+	} else {
+		<a href={ templ.URL(item.Href) }>
+			<span class="icon">{ item.Icon }</span>
+			<span class="label">{ item.Label }</span>
+		</a>
+	}
 }
