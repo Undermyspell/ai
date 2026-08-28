@@ -55,6 +55,7 @@ Siehe `.env.example`. Wichtig:
 | `PREVIEW_JID` | Ziel des „Vorschau“-Modus der Bot-Test-Seite (leer = Vorschau aus) |
 | `RENDERER_URL` | Basis-URL des renderer-service für die Statistik-Bild-Karte (leer = Bild aus) |
 | `STATS_FORMAT` | Antwort auf „statistik“ in der Gruppe: `text` (default) / `image` (PNG-Karte, Fallback Text) |
+| `CARD_STYLES` | Komma-Liste der Bild-Designs (leer = immer `wrapped`): „statistik“ zieht zufällig, der Wochenreport rotiert der Reihe nach |
 | `TZ` | Zeitzone für Donnerstag-Prüfung + Tagesdatum |
 
 Lokales Testen (Statistik ohne Evolution, Beispiel-Requests): siehe **`TESTING.md`**.

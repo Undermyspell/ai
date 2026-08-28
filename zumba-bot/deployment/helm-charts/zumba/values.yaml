@@ -192,6 +192,11 @@ whatsappBot:
     # "statistik"-Antwort in der Gruppe: text | image (braucht renderer.enabled,
     # fällt bei Render-Fehlern auf Text zurück)
     STATS_FORMAT: text
+    # Auswahl der Bild-Designs (Komma-Liste der Design-IDs, leer = immer
+    # "wrapped"). "statistik" zieht zufällig daraus, der Wochenreport geht die
+    # Liste der Reihe nach durch – ein Design kommt erst wieder, wenn alle
+    # anderen dran waren. Reihenfolge hier = Reihenfolge der Rotation.
+    CARD_STYLES: ""
 
   service:
     type: ClusterIP

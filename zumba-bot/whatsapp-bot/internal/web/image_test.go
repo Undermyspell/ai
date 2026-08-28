@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
+	"github.com/michael/zumba-whatsapp-bot/internal/report"
 )
 
 type fakeRenderer struct {
@@ -162,5 +163,75 @@ func TestWeeklyImageSendFehlerFallbackText(t *testing.T) {
 	}
 	if !snd.called {
 		t.Error("SendImage-Fehler muss auf Text-Versand zurückfallen")
+	}
+}
+
+// marker ist ein Textschnipsel, der nur im HTML des jeweiligen Designs steht.
+var marker = map[string]string{
+	"wrapped":  "ZUMBA STATS",
+	"zeitung":  "Der Zumba-Anzeiger",
+	"arena":    "MATCHDAY",
+	"formular": "ANWESENHEITSNACHWEIS",
+}
+
+// Ohne ?cardStyle bestimmt die Rotation das Design des Wochenreports.
+func TestWochenreportNimmtDesignAusRotation(t *testing.T) {
+	s, st, _ := newTestServer(classifier.Invalid, time.Date(2026, 8, 6, 12, 0, 0, 0, time.UTC))
+	st.penaltyInput = penaltyFixture()
+	rnd := &fakeRenderer{}
+	s.Renderer = rnd
+	s.Cards = report.NewCardRotation([]string{"wrapped", "zeitung", "arena", "formular"})
+
+	// ?date= erzwingt Dry-Run – der Stichtag bestimmt trotzdem das Design.
+	req := httptest.NewRequest("POST", "/weekly-report?format=image&date=2026-08-06", nil)
+	rec := httptest.NewRecorder()
+	s.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code = %d: %s", rec.Code, rec.Body.String())
+	}
+	want := s.Cards.ForWeek(time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC))
+	if !strings.Contains(rnd.html, marker[want]) {
+		t.Errorf("Wochenreport nicht im Design %q gerendert", want)
+	}
+}
+
+// Der Bot-Test wählt weiterhin selbst: ?cardStyle schlägt die Rotation.
+func TestWochenreportCardStyleSchlaegtRotation(t *testing.T) {
+	s, st, _ := newTestServer(classifier.Invalid, time.Date(2026, 8, 6, 12, 0, 0, 0, time.UTC))
+	st.penaltyInput = penaltyFixture()
+	rnd := &fakeRenderer{}
+	s.Renderer = rnd
+	s.Cards = report.NewCardRotation([]string{"formular"})
+
+	req := httptest.NewRequest("POST", "/weekly-report?format=image&cardStyle=zeitung&date=2026-08-06", nil)
+	rec := httptest.NewRecorder()
+	s.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code = %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rnd.html, marker["zeitung"]) {
+		t.Error("ausdrückliches cardStyle wurde übergangen")
+	}
+}
+
+// Die "statistik" in der Gruppe zieht ihr Design aus derselben Auswahl.
+func TestStatistikBildNimmtDesignAusRotation(t *testing.T) {
+	s, _, snd := newTestServer(classifier.Invalid, thursday)
+	rnd := &fakeRenderer{}
+	s.Renderer = rnd
+	s.StatsFormat = "image"
+	s.Cards = report.NewCardRotation([]string{"arena"})
+
+	req := httptest.NewRequest("POST", "/webhook/whatsapp", strings.NewReader(statistikJSON()))
+	rec := httptest.NewRecorder()
+	s.Routes().ServeHTTP(rec, req)
+
+	if !snd.imageCalled {
+		t.Fatal("kein Bild gesendet")
+	}
+	if !strings.Contains(rnd.html, marker["arena"]) {
+		t.Error("Statistik nicht im Design der Rotation gerendert")
 	}
 }

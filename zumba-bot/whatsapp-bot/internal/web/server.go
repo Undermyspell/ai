@@ -75,6 +75,10 @@ type Server struct {
 	// StatsFormat steuert die Antwort auf "statistik" in der Gruppe:
 	// "image" schickt die PNG-Karte (Fallback Text), sonst Text.
 	StatsFormat string
+
+	// Cards wählt das Bild-Design je Karte (von main aus CARD_STYLES gesetzt;
+	// Nullwert = immer das Live-Design).
+	Cards report.CardRotation
 }
 
 func New(st store.Store, cl Classifier, snd Sender, groupJID string, loc *time.Location) *Server {
@@ -255,16 +259,19 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asO
 
 	// STATS_FORMAT=image: PNG-Karte senden; bei Render-/Versand-Fehlern
 	// fällt der Report auf den Text zurück (er muss immer rausgehen).
+	// Das Design wird je Aufruf neu gezogen – "statistik" kann mehrmals am Tag
+	// kommen, ein fester Durchlauf wäre da nur berechenbar.
 	if s.StatsFormat == "image" {
-		if png, err := s.renderCard(ctx, stats, entries, asOf, false); err != nil {
+		style := s.Cards.Random()
+		if png, err := s.renderCardStyled(ctx, style, stats, entries, asOf, false); err != nil {
 			rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "Bild-Karte rendern", err.Error()+" – Fallback auf Text")
 			log.Printf("⚠️  Bild-Karte(%s): %v – Fallback auf Text", receiver, err)
 		} else if err := s.sender.SendImage(ctx, receiver, "🍻 Zumba Stats · Stand "+asOf.Format("02.01.2006"), png); err != nil {
 			rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "An Gruppe senden (Bild)", err.Error()+" – Fallback auf Text")
 			log.Printf("⚠️  SendImage(%s): %v – Fallback auf Text", receiver, err)
 		} else {
-			rec.Step(tracestore.NodeSendStats, tracestore.OutcomePass, "An Gruppe senden (Bild)", "→ "+receiver)
-			log.Printf("📊 Statistik-Bild gesendet an %s", receiver)
+			rec.Step(tracestore.NodeSendStats, tracestore.OutcomePass, "An Gruppe senden (Bild)", "→ "+receiver+" ("+style+")")
+			log.Printf("📊 Statistik-Bild (%s) gesendet an %s", style, receiver)
 			return text, stats, entries
 		}
 	}
@@ -329,9 +336,17 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 
 	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: !send}
 
+	// Ohne ausdrückliches ?cardStyle (Bot-Test) bestimmt der Stichtag das
+	// Design: Durchlauf durch CARD_STYLES, jedes Design einmal je Runde.
+	style := q.Get("cardStyle")
+	if style == "" {
+		style = s.Cards.ForWeek(asOf)
+	}
+
 	var png []byte
 	if asImage && stats != nil {
-		png, err = s.renderCardStyled(ctx, q.Get("cardStyle"), stats, entries, asOf, true)
+		log.Printf("🖼️  Wochenreport-Design: %s", style)
+		png, err = s.renderCardStyled(ctx, style, stats, entries, asOf, true)
 		if err != nil {
 			// Reiner Dry-Run (Admin-UI): Fehler sichtbar machen. Bei echtem
 			// Versand/Vorschau geht der Report als Text-Fallback trotzdem raus.
@@ -379,15 +394,9 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(out)
 }
 
-// renderCard baut die Bild-Karte im Live-Design und lässt sie vom
-// renderer-service als PNG schießen.
-func (s *Server) renderCard(ctx context.Context, stats []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) ([]byte, error) {
-	return s.renderCardStyled(ctx, report.DefaultCardStyle, stats, entries, asOf, weekly)
-}
-
-// renderCardStyled rendert die Karte in einem wählbaren Design (nur die
-// Testseite nutzt etwas anderes als das Live-Design). Fehlt der Renderer
-// (RENDERER_URL leer), gibt es einen Fehler.
+// renderCardStyled rendert die Karte im gewählten Design; unbekannte/leere
+// IDs fallen auf das Live-Design zurück. Fehlt der Renderer (RENDERER_URL
+// leer), gibt es einen Fehler.
 func (s *Server) renderCardStyled(ctx context.Context, style string, stats []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) ([]byte, error) {
 	if s.Renderer == nil {
 		return nil, fmt.Errorf("kein Renderer konfiguriert (RENDERER_URL)")

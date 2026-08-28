@@ -33,6 +33,12 @@ type Config struct {
 	// als PNG-Karte rendert (z.B. http://zumba-renderer:8080). Leer = Bild aus.
 	RendererURL string
 
+	// CardStyles ist die Auswahl an Bild-Designs, aus der Statistik und
+	// Wochenreport ziehen: Komma-Liste von Design-IDs, geprüft wird sie in
+	// main (report.ParseCardStyles – hier ginge das nur mit Import-Zyklus).
+	// Leer = immer das Live-Design.
+	CardStyles string
+
 	// StatsFormat steuert die Antwort auf "statistik" in der Gruppe:
 	// "text" (Default) oder "image" (PNG-Karte; braucht RendererURL,
 	// bei Render-Fehlern Fallback auf Text).
@@ -119,6 +125,7 @@ func Load() (Config, error) {
 		PreviewJID:    os.Getenv("PREVIEW_JID"),
 		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
 		RendererURL:   os.Getenv("RENDERER_URL"),
+		CardStyles:    os.Getenv("CARD_STYLES"),
 		StatsFormat:   getenv("STATS_FORMAT", "text"),
 		Location:      loc,
 	}

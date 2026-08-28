@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/michael/zumba-whatsapp-bot/internal/db"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
 	"github.com/michael/zumba-whatsapp-bot/internal/renderer"
+	"github.com/michael/zumba-whatsapp-bot/internal/report"
 	"github.com/michael/zumba-whatsapp-bot/internal/shadow"
 	"github.com/michael/zumba-whatsapp-bot/internal/sink"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
@@ -77,6 +79,16 @@ func main() {
 		log.Printf("🖼  Bild-Karte aktiv (Renderer: %s)", cfg.RendererURL)
 	}
 	srv.StatsFormat = cfg.StatsFormat
+	// Tippfehler in CARD_STYLES fallen so beim Start auf, nicht erst beim
+	// Rendern der nächsten Karte.
+	cardStyles, err := report.ParseCardStyles(cfg.CardStyles)
+	if err != nil {
+		log.Fatalf("❌ CARD_STYLES: %v", err)
+	}
+	srv.Cards = report.NewCardRotation(cardStyles)
+	if len(cardStyles) > 0 {
+		log.Printf("🎨 Bild-Designs in Rotation: %s", strings.Join(cardStyles, ", "))
+	}
 	if cfg.StatsFormat == "image" {
 		log.Printf("🖼  \"statistik\"-Antwort als Bild (STATS_FORMAT=image)")
 	}
