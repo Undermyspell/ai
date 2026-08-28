@@ -43,7 +43,16 @@
     border-top: 3px solid var(--schwarz);
     border-bottom: 1px solid var(--schwarz);
     padding: 12px 0 10px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+  }
+  /* Signet im Zeitungskopf: entsättigt und kontrastreich wie im Druck. */
+  .titel .signet {
+    width: 66px; height: 66px;
+    border-radius: 50%;
+    filter: grayscale(1) contrast(1.2);
   }
   .titel h1 {
     font-family: "Playfair", "Noto Serif", serif;
@@ -136,10 +145,35 @@
   }
   .quote { font-family: "Playfair", serif; font-weight: 900; font-size: 16px; width: 74px; }
   /* Schmaler Quotenbalken – Zeitungsgrafik, keine Deko. */
+  /* Der Balken trägt beide Größen: schwarz = anwesend, schraffiert = gefehlt. */
   .balken { width: 130px; padding-left: 14px; }
-  .balken .spur { height: 7px; background: rgba(22, 21, 15, 0.1); }
-  .balken .voll { height: 7px; background: var(--schwarz); }
+  .balken .spur {
+    height: 8px;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(22, 21, 15, 0.5) 0 1px,
+      rgba(22, 21, 15, 0.08) 1px 4px);
+  }
+  .balken .voll { height: 8px; background: var(--schwarz); }
   tr.spitze .balken .voll { background: var(--rot); }
+  .fehltzahl { color: var(--rot); }
+  /* Legende mit denselben Mustern wie der Balken statt beschreibendem Text. */
+  .kopfhinweis {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: none;
+    color: var(--grau);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .kopfhinweis i { width: 12px; height: 7px; display: inline-block; }
+  .kopfhinweis i.da { background: var(--schwarz); }
+  .kopfhinweis i.weg {
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(22, 21, 15, 0.5) 0 1px,
+      rgba(22, 21, 15, 0.08) 1px 4px);
+  }
 
   /* Strafregister */
   .register {
@@ -189,7 +223,10 @@
     <span>Unabhängig seit der Weihnachtsfeier</span>
     <span>Preis: eine Runde</span>
   </div>
-  <div class="titel"><h1>Der Zumba-Anzeiger</h1></div>
+  <div class="titel">
+    <img class="signet" src="{{.Logo}}" alt="Stammtisch Zumba">
+    <h1>Der Zumba-Anzeiger</h1>
+  </div>
   <div class="zeile2">
     <span>Stammtisch-Chronik</span>
     <span>{{.DatumLang}}</span>
@@ -215,7 +252,7 @@
         <th class="l">Pl.</th>
         <th class="l">Name</th>
         <th class="l"></th>
-        <th></th>
+        <th class="l"><span class="kopfhinweis"><i class="da"></i> da <i class="weg"></i> gefehlt</span></th>
         <th>Da</th>
         <th>Fehlt</th>
         <th>Quote</th>
@@ -229,7 +266,7 @@
         <td class="l notiz">{{if gt .Streak 0}}Serie {{.StreakAbs}}{{else if lt .Streak 0}}Pause {{.StreakAbs}}{{end}}</td>
         <td class="balken"><div class="spur"><div class="voll" style="width: {{printf "%.1f" .PercentVal}}%"></div></div></td>
         <td>{{.Attendance}}</td>
-        <td>{{.Away}}</td>
+        <td class="fehltzahl">{{.Away}}</td>
         <td class="quote">{{.Percent}}</td>
       </tr>
       {{end}}

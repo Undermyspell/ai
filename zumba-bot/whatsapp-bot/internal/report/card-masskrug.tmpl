@@ -52,6 +52,17 @@
   }
 
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+  .haus-block { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  /* Emblem wie ein Untersetzer neben dem Schriftzug, mit Bierlicht-Rand. */
+  .untersetzer {
+    flex-shrink: 0;
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 2px rgba(244, 181, 55, 0.35),
+      0 0 24px rgba(244, 181, 55, 0.18),
+      0 8px 18px rgba(0, 0, 0, 0.4);
+  }
   .haus {
     font-size: 10px; font-weight: 700;
     letter-spacing: 0.34em; text-transform: uppercase;
@@ -91,7 +102,7 @@
 
   .zeile {
     display: grid;
-    grid-template-columns: 26px 132px 1fr 66px;
+    grid-template-columns: 26px 132px 1fr 84px 66px;
     gap: 14px;
     align-items: center;
     padding: 7px 0;
@@ -132,6 +143,27 @@
     background: linear-gradient(90deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
     border-radius: 3px;
   }
+  /* Der ungefüllte Teil ist kein Rest, sondern die Zahl der gefehlten
+     Stammtische — schraffiert und beschriftet, damit das sofort lesbar ist. */
+  .krug .leerraum {
+    position: absolute; top: 0; bottom: 0; right: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(246, 231, 203, 0.16) 0 2px,
+      rgba(246, 231, 203, 0.03) 2px 7px);
+  }
+  .krug .beschriftung {
+    position: absolute; inset: 0;
+    display: flex; align-items: center;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden;
+  }
+  .krug .beschriftung .da {
+    color: #3a1f06;
+    padding-left: 9px;
+    overflow: hidden;
+  }
   .krug .perlen {
     position: absolute; inset: 0;
     background:
@@ -143,7 +175,15 @@
 
   .quote { text-align: right; font-family: "Anton", sans-serif; font-size: 20px; color: var(--creme); }
   .zeile.voll .quote { color: var(--bier); }
-  .bilanz { font-family: "Noto Sans", sans-serif; font-size: 10.5px; color: var(--creme-matt); letter-spacing: .02em; }
+  /* Die Fehltermine stehen neben dem Krug statt darin: bei fast vollem Krug
+     wäre im leeren Rest kein Platz für die Zahl. */
+  .fehlt {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--rot);
+    white-space: nowrap;
+  }
+  .fehlt.keine { color: var(--creme-schwach); }
 
   .deckel { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--creme-schwach); }
   .deckel .kopf {
@@ -174,10 +214,13 @@
   {{if .WeeklyNote}}<div class="weekly">Wochenabrechnung, Donnerstag 21 Uhr</div>{{end}}
 
   <header>
-    <div>
-      <div class="haus">Stammtisch Zumba</div>
-      <h1>SCHANKBRETT</h1>
-      <div class="unter">Wie voll war dein Krug dieses Jahr?</div>
+    <div class="haus-block">
+      <img class="untersetzer" src="{{.Logo}}" alt="Stammtisch Zumba">
+      <div>
+        <div class="haus">Stammtisch Zumba</div>
+        <h1>SCHANKBRETT</h1>
+        <div class="unter">Voll = da, leer = gefehlt</div>
+      </div>
     </div>
     {{if .Users}}
     <div class="runden">
@@ -197,17 +240,19 @@
   {{range .Users}}
   <div class="zeile{{if .Top3}} voll{{end}}">
     <div class="platz">{{.Rank}}</div>
-    <div>
-      <div class="name">{{.Name}}</div>
-      <div class="bilanz">{{.Attendance}} da · {{.Away}} fehlt</div>
-    </div>
+    <div class="name">{{.Name}}</div>
     <div class="krug">
       <div class="fuellung" style="width: {{printf "%.1f" .PercentVal}}%"></div>
+      <div class="leerraum" style="left: {{printf "%.1f" .PercentVal}}%"></div>
       <div class="schaum" style="left: calc({{printf "%.1f" .PercentVal}}% - 7px)"></div>
       <div class="perlen"></div>
       <div class="rippen"></div>
       <div class="glanz"></div>
+      <div class="beschriftung">
+        <span class="da" style="width: {{printf "%.1f" .PercentVal}}%">{{if .Attendance}}{{.Attendance}} da{{end}}</span>
+      </div>
     </div>
+    <div class="fehlt{{if not .Away}} keine{{end}}">{{.Away}} gefehlt</div>
     <div class="quote">{{.Percent}}%</div>
   </div>
   {{end}}

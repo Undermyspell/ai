@@ -133,7 +133,7 @@
   .rangliste { margin-top: 18px; }
   .zeile {
     display: grid;
-    grid-template-columns: 46px 1fr 210px 70px 58px;
+    grid-template-columns: 46px 1fr 258px 58px;
     align-items: center;
     gap: 14px;
     padding: 9px 0;
@@ -161,29 +161,43 @@
   .streak { font-size: 14.5px; color: rgba(254, 243, 199, 0.95); white-space: nowrap; }
   .zeile.top3 .streak { font-size: 15px; }
 
+  /* Anwesenheitsbalken: der gefüllte Teil sind die besuchten Stammtische,
+     der schraffierte Rest die gefehlten — beide Zahlen stehen direkt
+     darunter, damit An- und Abwesenheit ohne Rechnen ablesbar sind. */
   .balken {
-    height: 8px;
+    display: flex;
+    height: 9px;
     border-radius: 999px;
-    background: rgba(254, 243, 199, 0.1);
     overflow: hidden;
+    background: rgba(254, 243, 199, 0.08);
   }
-  .zeile.top3 .balken { height: 10px; }
+  .zeile.top3 .balken { height: 11px; }
   .balken .voll {
-    height: 100%;
-    border-radius: 999px;
+    border-radius: 999px 0 0 999px;
     background: linear-gradient(90deg, var(--biergold-dunkel), var(--biergold));
+  }
+  .balken .fehlt {
+    flex: 1;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(254, 243, 199, 0.22) 0 2px,
+      rgba(254, 243, 199, 0.06) 2px 6px);
   }
   .zeile.top3 .balken .voll {
     box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
   }
-
-  .bilanz {
-    font-size: 15px;
+  .marken {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font-size: 11.5px;
     font-weight: 600;
-    color: rgba(254, 243, 199, 0.85);
-    text-align: right;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     white-space: nowrap;
   }
+  .marken .da { color: var(--biergold); }
+  .marken .weg { color: rgba(254, 243, 199, 0.5); }
   .prozent {
     font-family: "Anton", sans-serif;
     font-size: 18px;
@@ -288,8 +302,16 @@
         <span class="name">{{.Name}}</span>
         {{if .StreakTag}}<span class="streak">{{.StreakTag}}</span>{{end}}
       </div>
-      <div class="balken"><div class="voll" style="width: {{printf "%.1f" .PercentVal}}%"></div></div>
-      <div class="bilanz">{{.Attendance}}-{{.Away}}</div>
+      <div class="bilanzspur">
+        <div class="balken">
+          <div class="voll" style="width: {{printf "%.1f" .PercentVal}}%"></div>
+          <div class="fehlt"></div>
+        </div>
+        <div class="marken">
+          <span class="da">{{.Attendance}} da</span>
+          <span class="weg">{{.Away}} gefehlt</span>
+        </div>
+      </div>
       <div class="prozent">{{.Percent}}%</div>
     </div>
     {{end}}

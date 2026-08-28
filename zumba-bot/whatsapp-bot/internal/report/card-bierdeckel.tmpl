@@ -32,6 +32,8 @@
     --schimmer: rgba(255, 255, 255, 0.05);
     --fleck: rgba(255, 200, 120, 0.07);
     --abdruck: rgba(255, 220, 170, 0.07);
+    --wappen-blend: normal;
+    --wappen-ring: rgba(245, 158, 11, 0.35);
   }
   {{else}}
   :root {
@@ -51,6 +53,9 @@
     --schimmer: rgba(255, 255, 255, 0.07);
     --fleck: rgba(120, 80, 30, 0.10);
     --abdruck: rgba(120, 75, 25, 0.10);
+    /* Auf heller Pappe wirkt das Emblem wie aufgedruckt, nicht aufgeklebt. */
+    --wappen-blend: multiply;
+    --wappen-ring: rgba(166, 54, 43, 0.3);
   }
   {{end}}
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -94,7 +99,16 @@
   }
 
   header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
-  .wirt { font-family: "Anton", sans-serif; }
+  .haus-block { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  /* Das Wirtshaus-Emblem, wie es auf jedem Deckel eingedruckt ist. */
+  .wappen {
+    flex-shrink: 0;
+    width: 74px; height: 74px;
+    border-radius: 50%;
+    mix-blend-mode: var(--wappen-blend);
+    box-shadow: 0 0 0 2px var(--wappen-ring);
+  }
+  .wirt { font-family: "Anton", sans-serif; min-width: 0; }
   .wirt .haus {
     font-size: 12px;
     letter-spacing: 0.34em;
@@ -164,7 +178,7 @@
   .trenner { height: 2px; background: var(--kante); margin: 14px 0 6px; }
   .spaltenkopf {
     display: grid;
-    grid-template-columns: 26px 1fr 192px 96px;
+    grid-template-columns: 26px 1fr 238px 96px;
     gap: 12px;
     font-size: 10px;
     font-weight: 700;
@@ -178,7 +192,7 @@
 
   .zeile {
     display: grid;
-    grid-template-columns: 26px 1fr 192px 96px;
+    grid-template-columns: 26px 1fr 238px 96px;
     gap: 12px;
     align-items: center;
     padding: 5px 0;
@@ -217,7 +231,7 @@
   /* Strichliste: je Fünferbündel vier Striche plus Querstrich. Die Striche
      der laufenden Serie stehen in Stempelfarbe — sie sind die zuletzt
      gemachten, deshalb stimmt die Markierung von hinten. */
-  .striche { display: flex; align-items: center; flex-wrap: nowrap; gap: 10px; height: 24px; }
+  .striche { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; row-gap: 4px; min-height: 24px; }
   .b5 { position: relative; display: flex; gap: 3px; }
   .b5 .quer {
     position: absolute;
@@ -234,6 +248,22 @@
   .s:nth-child(2n) { transform: rotate(1.6deg); }
   .s:nth-child(3n) { transform: rotate(-1.8deg); }
   .rest { display: flex; gap: 3px; }
+
+  /* Jeder gefehlte Stammtisch bekommt ein durchgestrichenes Kreuz — so
+     steht die Abwesenheit gleichwertig neben der Strichliste und muss
+     nicht aus Quote und Strichzahl erschlossen werden. */
+  .fehlt { display: flex; align-items: center; gap: 2px; }
+  .fehlt .teiler { width: 1px; height: 18px; background: var(--linie); margin-right: 4px; }
+  .kx { position: relative; width: 5px; height: 14px; flex: none; }
+  .kx::before, .kx::after {
+    content: "";
+    position: absolute; left: 1.75px; top: 2px;
+    width: 1.5px; height: 10px;
+    background: var(--matt);
+  }
+  .kx::before { transform: rotate(40deg); }
+  .kx::after { transform: rotate(-40deg); }
+  .kx:nth-child(3n)::before { transform: rotate(44deg); }
 
   /* Offene Rechnung. */
   .rechnung {
@@ -276,10 +306,13 @@
   {{if .WeeklyNote}}<div class="weekly">Wochenabrechnung, Donnerstag 21 Uhr</div>{{end}}
 
   <header>
+    <div class="haus-block">
+    <img class="wappen" src="{{.Logo}}" alt="Stammtisch Zumba">
     <div class="wirt">
       <div class="haus">Stammtisch · Zumba</div>
       <h1>DEIN DECKEL</h1>
       <div class="unter">Strichliste seit der Weihnachtsfeier</div>
+    </div>
     </div>
     {{if .Users}}
     <div class="stempel">
@@ -312,7 +345,7 @@
   <div class="trenner"></div>
   <div class="spaltenkopf">
     <div>Nr</div><div>Gast</div>
-    <div>Angeschrieben</div>
+    <div>Angeschrieben <span class="legende">│ ✕ = gefehlt</span></div>
     <div class="r">Quote</div>
   </div>
 
@@ -327,8 +360,9 @@
     <div class="striche">
       {{range .Bundles}}<span class="b5">{{range .Strokes}}<span class="s{{if .Serie}} serie{{end}}"></span>{{end}}<span class="quer{{if .Serie}} serie{{end}}"></span></span>{{end}}
       {{if .Rest}}<span class="rest">{{range .Rest}}<span class="s{{if .Serie}} serie{{end}}"></span>{{end}}</span>{{end}}
+      {{if .Dark}}<span class="fehlt"><span class="teiler"></span>{{range .Dark}}<span class="kx"></span>{{end}}</span>{{end}}
     </div>
-    <div class="quote">{{.Percent}}<small>%</small><span class="bilanz">{{.Attendance}} da · {{.Away}} nicht</span></div>
+    <div class="quote">{{.Percent}}<small>%</small><span class="bilanz">{{.Attendance}} da · {{.Away}} gefehlt</span></div>
   </div>
   {{end}}
   {{else}}

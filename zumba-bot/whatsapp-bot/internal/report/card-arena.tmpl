@@ -13,7 +13,7 @@
     --gehaeuse: #15181d;
     --led: #ffb31a;
     --led-schwach: #4a3410;
-    --aus: #1b1f26;
+    --aus: #5a2a2f;   /* dunkelrot: nicht "leer", sondern klar gefehlt */
     --rot: #ff4433;
     --gruen: #3ddc84;
     --text: #dfe4ea;
@@ -62,6 +62,16 @@
     display: flex; align-items: flex-end; justify-content: space-between;
     border-bottom: 2px solid #262b33;
     padding-bottom: 14px;
+  }
+  .klub { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  /* Vereinswappen im Tafelkopf, im LED-Licht der Anzeige. */
+  .crest {
+    flex-shrink: 0;
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 2px rgba(255, 179, 26, 0.4),
+      0 0 22px rgba(255, 179, 26, 0.22);
   }
   .liga {
     font-size: 10px; font-weight: 800;
@@ -145,11 +155,16 @@
   .trend.auf { color: var(--gruen); }
   .trend.ab { color: #4a90d9; }
 
-  /* Ein Segment je Stammtisch: leuchtend = anwesend. */
-  .segmente { display: flex; gap: 2px; align-items: center; }
+  /* Ein Segment je Stammtisch: leuchtend = anwesend, dunkelrot = gefehlt. */
+  .segmente { display: flex; gap: 2px; align-items: center; flex-wrap: wrap; row-gap: 2px; }
   .seg { width: 6px; height: 15px; }
   .seg.an { background: var(--led); box-shadow: 0 0 6px rgba(255, 179, 26, 0.6); }
-  .seg.aus { background: var(--aus); }
+  .seg.aus { background: var(--aus); box-shadow: inset 0 0 0 1px rgba(255, 68, 51, 0.35); }
+  /* Legende in der Kopfzeile: dieselben Segmente, einmal beschriftet. */
+  .leg { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; letter-spacing: 0.08em; }
+  .leg i { width: 6px; height: 11px; display: inline-block; }
+  .leg i.an { background: var(--led); }
+  .leg i.aus { background: var(--aus); box-shadow: inset 0 0 0 1px rgba(255, 68, 51, 0.35); }
 
   .bilanz { text-align: right; font-size: 13px; font-weight: 700; color: var(--matt); }
   .prozent {
@@ -204,9 +219,12 @@
   {{if .WeeklyNote}}<div class="weekly">Wochenreport · Do 21:00</div>{{end}}
 
   <header>
-    <div>
-      <div class="liga">Zumba Arena</div>
-      <h1>MATCHDAY <em>{{.Total}}</em></h1>
+    <div class="klub">
+      <img class="crest" src="{{.Logo}}" alt="Stammtisch Zumba">
+      <div>
+        <div class="liga">Zumba Arena</div>
+        <h1>MATCHDAY <em>{{.Total}}</em></h1>
+      </div>
     </div>
     <div class="uhr">
       <div>Stand <b>{{.Datum}}</b></div>
@@ -235,7 +253,9 @@
   </div>
 
   <div class="kopfzeile">
-    <div>Pos</div><div>Spieler</div><div>Bilanz je Stammtisch</div><div class="r">Da:Weg</div><div class="r">Quote</div>
+    <div>Pos</div><div>Spieler</div>
+    <div>Je Stammtisch <span class="leg"><i class="an"></i> da<i class="aus" style="margin-left:6px"></i> gefehlt</span></div>
+    <div class="r">Da:Weg</div><div class="r">Quote</div>
   </div>
 
   {{range .Users}}

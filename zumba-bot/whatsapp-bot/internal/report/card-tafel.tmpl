@@ -74,6 +74,15 @@
   }
 
   header { text-align: center; padding-bottom: 12px; }
+  /* Das Emblem hängt über der Tafel: heller Kreideschein statt harter Kante. */
+  header .schild {
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    box-shadow:
+      0 0 0 2px rgba(238, 233, 220, 0.28),
+      0 0 22px rgba(238, 233, 220, 0.16);
+  }
   header .haus {
     font-family: "Noto Sans", sans-serif;
     font-size: 10px; font-weight: 700;
@@ -108,9 +117,28 @@
   }
   .merker b { color: var(--gelb); font-weight: 700; }
 
+  /* Legende: dieselben Kreidezeichen wie in den Zeilen, nur einmal erklärt. */
+  .legende {
+    display: flex; justify-content: flex-end; gap: 18px;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--kreide-schwach);
+    padding-bottom: 8px;
+  }
+  .legende span { display: inline-flex; align-items: center; gap: 6px; }
+  .legende i.punkt { width: 6px; height: 6px; border-radius: 50%; background: var(--kreide); }
+  .legende i.kreuz { position: relative; width: 6px; height: 10px; }
+  .legende i.kreuz::before, .legende i.kreuz::after {
+    content: ""; position: absolute; left: 2.5px; top: 0;
+    width: 1.5px; height: 10px; background: var(--rot);
+  }
+  .legende i.kreuz::before { transform: rotate(38deg); }
+  .legende i.kreuz::after { transform: rotate(-38deg); }
+
   .zeile {
     display: grid;
-    grid-template-columns: 30px 1fr 230px 92px;
+    grid-template-columns: 30px 1fr 266px 92px;
     gap: 14px;
     align-items: center;
     padding: 6px 0;
@@ -120,19 +148,29 @@
   .zeile.oben .platz { color: var(--gelb); }
   .name { font-size: 28px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Kreidebalken: gestrichelte Spur, gefüllter Teil kräftig. */
-  .balken { position: relative; height: 15px; }
-  .balken .spur {
-    position: absolute; inset: 5px 0;
-    background: repeating-linear-gradient(90deg, var(--kreide-schwach) 0 7px, transparent 7px 12px);
-  }
-  .balken .voll {
-    position: absolute; top: 2px; bottom: 2px; left: 0;
+  /* Angeschrieben wird mit Kreide: ein voller Punkt je besuchtem Stammtisch,
+     ein Kreuz je gefehltem. Damit steht die Abwesenheit gleichwertig neben
+     der Anwesenheit und nicht nur in der Quote. */
+  .kreide { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; row-gap: 3px; }
+  .kreide .punkt {
+    width: 6px; height: 6px;
+    border-radius: 50%;
     background: var(--kreide);
-    border-radius: 2px;
-    box-shadow: 0 0 10px rgba(238, 233, 220, 0.35);
+    box-shadow: 0 0 5px rgba(238, 233, 220, 0.4);
   }
-  .zeile.oben .balken .voll { background: var(--gelb); box-shadow: 0 0 12px rgba(232, 193, 79, 0.5); }
+  .zeile.oben .kreide .punkt { background: var(--gelb); box-shadow: 0 0 6px rgba(232, 193, 79, 0.55); }
+  .kreide .teiler { width: 1px; height: 13px; background: var(--kreide-schwach); margin: 0 4px; }
+  .kreide .kreuz { position: relative; width: 6px; height: 10px; }
+  .kreide .kreuz::before, .kreide .kreuz::after {
+    content: "";
+    position: absolute; left: 2.5px; top: 0;
+    width: 1.5px; height: 10px;
+    background: var(--rot);
+    opacity: 0.85;
+  }
+  .kreide .kreuz::before { transform: rotate(38deg); }
+  .kreide .kreuz::after { transform: rotate(-38deg); }
+  .kreide .kreuz:nth-child(3n)::before { transform: rotate(43deg); }
 
   .zahlen { text-align: right; font-size: 24px; white-space: nowrap; }
   .zahlen .prozent { color: var(--gelb); }
@@ -170,6 +208,7 @@
     {{if .WeeklyNote}}<div class="weekly">Wochenabrechnung · Donnerstag 21 Uhr</div>{{end}}
 
     <header>
+      <img class="schild" src="{{.Logo}}" alt="Stammtisch Zumba">
       <div class="haus">Stammtisch Zumba</div>
       <h1>TAGESKARTE</h1>
       <div class="datum">{{if .Users}}{{.Total}} Stammtische · {{end}}Stand {{.Datum}}</div>
@@ -183,13 +222,18 @@
       {{if .MinStreak}}<div><span class="was">Längste Pause</span>{{.MinStreakNames}} <b>{{.MinStreak}}x</b></div>{{end}}
     </div>
 
+    <div class="legende">
+      <span><i class="punkt"></i> = da</span>
+      <span><i class="kreuz"></i> = gefehlt</span>
+    </div>
+
     {{range .Users}}
     <div class="zeile{{if .Top3}} oben{{end}}">
       <div class="platz">{{.Rank}}</div>
       <div class="name">{{.Name}}</div>
-      <div class="balken">
-        <div class="spur"></div>
-        <div class="voll" style="width: {{printf "%.1f" .PercentVal}}%"></div>
+      <div class="kreide">
+        {{range .Lit}}<span class="punkt"></span>{{end}}
+        {{if .Dark}}<span class="teiler"></span>{{range .Dark}}<span class="kreuz"></span>{{end}}{{end}}
       </div>
       <div class="zahlen">
         <span class="prozent">{{.Percent}}%</span>

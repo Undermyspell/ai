@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  :root {
+    --papier: #f3f2ec;
+    --papier-tief: #e7e5db;
+    --tinte: #1d2024;
+    --matt: #6b6f76;
+    --schwach: #9aa0a6;
+    --linie: #c3c6c0;
+    --rot: #a5241d;
+    --raster: rgba(60, 90, 130, 0.07);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: #b9b6ab;
+    color: var(--tinte);
+    font-family: "DejaVu Sans Mono", "Noto Sans Mono", monospace;
+    font-size: 11px;
+  }
+  /* Formblatt: Papier mit feinem Behördenraster und Heftrand. */
+  .blatt {
+    position: relative;
+    margin: 18px;
+    padding: 26px 30px 22px;
+    background:
+      repeating-linear-gradient(0deg, var(--raster) 0 1px, transparent 1px 24px),
+      repeating-linear-gradient(90deg, var(--raster) 0 1px, transparent 1px 24px),
+      linear-gradient(180deg, var(--papier), var(--papier-tief));
+    box-shadow: 0 10px 22px rgba(30, 25, 15, 0.35);
+  }
+  /* Heftrand links, wie bei einem abgehefteten Formular. */
+  .blatt::before {
+    content: "";
+    position: absolute; left: 13px; top: 0; bottom: 0;
+    width: 1px; background: rgba(165, 36, 29, 0.35);
+  }
+
+  .amtskopf { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .behoerde {
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--matt);
+  }
+  h1 {
+    font-family: "Anton", sans-serif;
+    font-size: 33px; font-weight: 400; line-height: 1.05;
+    letter-spacing: 0.03em;
+    margin: 7px 0 3px;
+  }
+  .formblatt { font-size: 10px; letter-spacing: 0.1em; color: var(--matt); }
+
+  /* Dienstsiegel: das Emblem als aufgedrückter Rundstempel. */
+  .siegel { flex-shrink: 0; text-align: center; transform: rotate(-7deg); }
+  .siegel img {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    mix-blend-mode: multiply;
+    box-shadow: 0 0 0 2px rgba(165, 36, 29, 0.55);
+  }
+  .siegel .wort {
+    margin-top: 4px;
+    font-size: 8.5px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--rot);
+    border: 1.5px solid rgba(165, 36, 29, 0.55);
+    padding: 1px 5px 2px;
+  }
+
+  .kopffelder {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin: 16px 0 14px;
+    border: 1px solid var(--linie);
+  }
+  .kopffelder .kf { padding: 6px 9px 7px; border-right: 1px solid var(--linie); }
+  .kopffelder .kf:last-child { border-right: none; }
+  .kopffelder .was {
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--matt); margin-bottom: 3px;
+  }
+  .kopffelder .wert {
+    font-size: 12px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kopffelder .wert b { color: var(--rot); }
+
+  .abschnitt {
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--matt);
+    border-bottom: 2px solid var(--tinte);
+    padding-bottom: 4px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  /* Legende: erklärt die Kästchen genau einmal. */
+  .legende { display: inline-flex; align-items: center; gap: 14px; letter-spacing: 0.1em; }
+  .legende span { display: inline-flex; align-items: center; gap: 5px; }
+
+  .spalten, .zeile {
+    display: grid;
+    grid-template-columns: 26px 1fr 308px 34px 34px 48px;
+    gap: 8px;
+    align-items: center;
+  }
+  .spalten {
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--matt);
+    padding: 6px 0 5px;
+    border-bottom: 1px solid var(--linie);
+  }
+  .spalten .r, .zeile .r { text-align: right; }
+
+  .zeile {
+    padding: 5px 0;
+    border-bottom: 1px solid var(--linie);
+  }
+  .zeile:last-of-type { border-bottom: 1px solid var(--tinte); }
+  .zeile.oben { background: rgba(165, 36, 29, 0.05); }
+  .lfd { color: var(--matt); }
+  .zeile.oben .lfd { color: var(--rot); font-weight: 700; }
+  .nm {
+    font-size: 12.5px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .verm { font-size: 9px; color: var(--matt); letter-spacing: 0.04em; }
+
+  /* Nachweis: ein Kästchen je Termin — ausgefüllt = anwesend, leer = gefehlt. */
+  .nachweis { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; row-gap: 2px; }
+  .kaestchen { width: 7px; height: 7px; border: 1px solid var(--tinte); flex: none; }
+  .kaestchen.an { background: var(--tinte); }
+  .kaestchen.fehlt { border-color: var(--rot); background: transparent; }
+  .nachweis .trenner { width: 1px; height: 10px; background: var(--linie); margin: 0 3px; }
+
+  .zahl-an { font-weight: 700; }
+  .zahl-fehlt { font-weight: 700; color: var(--rot); }
+  .quote { font-family: "Anton", sans-serif; font-size: 15px; text-align: right; }
+  .zeile.oben .quote { color: var(--rot); }
+
+  .anlage { margin-top: 16px; border: 1px solid var(--linie); padding: 10px 12px 11px; }
+  .anlage .kopf {
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--rot);
+    border-bottom: 1px solid var(--linie);
+    padding-bottom: 5px; margin-bottom: 6px;
+  }
+  .posten { display: flex; align-items: baseline; gap: 9px; padding: 3px 0; font-size: 11.5px; }
+  .posten .nm2 { font-weight: 700; }
+  .posten .grund { flex: 1; color: var(--matt); font-size: 10px; }
+  .posten .betrag { font-weight: 700; }
+  .posten.erledigt { color: var(--schwach); }
+  .posten.erledigt .nm2, .posten.erledigt .betrag { font-weight: 400; }
+  .keine { font-size: 11px; color: var(--matt); }
+
+  .leer { padding: 32px 0; font-size: 12px; color: var(--matt); letter-spacing: 0.1em; }
+
+  footer {
+    margin-top: 14px;
+    padding-top: 8px;
+    border-top: 1px solid var(--linie);
+    display: flex; justify-content: space-between;
+    font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--schwach);
+  }
+</style>
+</head>
+<body>
+<div class="blatt">
+  <div class="amtskopf">
+    <div>
+      <div class="behoerde">Stammtisch Zumba · Amt für Anwesenheit</div>
+      <h1>ANWESENHEITSNACHWEIS</h1>
+      <div class="formblatt">Formblatt ZU-4 · {{if .WeeklyNote}}Wochenmeldung, Donnerstag 21:00{{else}}Auskunft auf Antrag{{end}}</div>
+    </div>
+    <div class="siegel">
+      <img src="{{.Logo}}" alt="Stammtisch Zumba">
+      <div class="wort">Geprüft</div>
+    </div>
+  </div>
+
+  <div class="kopffelder">
+    <div class="kf">
+      <div class="was">Aktenzeichen</div>
+      <div class="wert">ZU-4/{{.Datum}}</div>
+    </div>
+    <div class="kf">
+      <div class="was">Berichtszeitraum</div>
+      <div class="wert">ab Weihnachtsfeier</div>
+    </div>
+    <div class="kf">
+      <div class="was">Erfasste Termine</div>
+      <div class="wert">{{if .Users}}{{.Total}}{{else}}0{{end}}</div>
+    </div>
+    <div class="kf">
+      <div class="was">Spitzenreiter</div>
+      <div class="wert">{{if .Users}}{{.GoatName}} <b>{{.GoatPercent}}%</b>{{else}}—{{end}}</div>
+    </div>
+  </div>
+
+  {{if .Users}}
+  <div class="abschnitt">
+    <span>Abschnitt A · Teilnahme je Person</span>
+    <span class="legende">
+      <span><i class="kaestchen an"></i> anwesend</span>
+      <span><i class="kaestchen fehlt"></i> gefehlt</span>
+    </span>
+  </div>
+
+  <div class="spalten">
+    <div>Lfd.</div>
+    <div>Name / Vermerk</div>
+    <div>Nachweis je Termin</div>
+    <div class="r">Anw.</div>
+    <div class="r">Fehlt</div>
+    <div class="r">Quote</div>
+  </div>
+
+  {{range .Users}}
+  <div class="zeile{{if .Top3}} oben{{end}}">
+    <div class="lfd">{{.Rank}}.</div>
+    <div>
+      <div class="nm">{{.Name}}</div>
+      {{if gt .Streak 0}}<div class="verm">Serie: {{.StreakAbs}}x in Folge</div>{{end}}
+      {{if lt .Streak 0}}<div class="verm">Vermerk: {{.StreakAbs}}x gefehlt</div>{{end}}
+    </div>
+    <div class="nachweis">
+      {{range .Lit}}<span class="kaestchen an"></span>{{end}}
+      {{if .Dark}}<span class="trenner"></span>{{range .Dark}}<span class="kaestchen fehlt"></span>{{end}}{{end}}
+    </div>
+    <div class="r zahl-an">{{.Attendance}}</div>
+    <div class="r zahl-fehlt">{{.Away}}</div>
+    <div class="quote">{{.Percent}}</div>
+  </div>
+  {{end}}
+  {{else}}
+  <div class="leer">Für den Berichtszeitraum liegen keine Daten vor.</div>
+  {{end}}
+
+  <div class="anlage">
+    <div class="kopf">Anlage 1 · Gebührenbescheid</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="posten{{if .Beglichen}} erledigt{{end}}">
+        <span class="nm2">{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+        <span class="betrag">{{.Betrag}},00 €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="keine">Keine Forderungen offen.</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>Maschinell erstellt vom Zumba-Bot · ohne Unterschrift gültig</span>
+    <span>{{.DatumLang}}</span>
+  </footer>
+</div>
+</body>
+</html>

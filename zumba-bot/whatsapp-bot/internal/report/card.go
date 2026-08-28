@@ -37,6 +37,15 @@ var cardTafelSrc string
 //go:embed card-masskrug.tmpl
 var cardMasskrugSrc string
 
+//go:embed card-stempelkarte.tmpl
+var cardStempelkarteSrc string
+
+//go:embed card-sammelkarten.tmpl
+var cardSammelkartenSrc string
+
+//go:embed card-formular.tmpl
+var cardFormularSrc string
+
 // Display-Fonts als eingebettete latin-Subsets: der Renderer-Container hat
 // keinen Netzzugriff, Google-Fonts-Links scheiden aus. Im Container selbst
 // liegen nur Noto Sans/Serif, DejaVu Mono und Noto Color Emoji.
@@ -51,8 +60,9 @@ var playfairWoff2 []byte
 var caveatWoff2 []byte
 
 // Das offizielle Stammtisch-Emblem, kreisrund freigestellt (256px, PNG mit
-// Alpha), damit es sich im Live-Design als Wappen neben den Titel setzen
-// lässt, ohne als Kachel aufzufallen.
+// Alpha). Jedes Design führt es — mal als Wappen neben dem Titel, mal als
+// Dienstsiegel oder Stempel —, damit die Karte immer als Stammtisch-Karte
+// erkennbar ist.
 //
 //go:embed assets/logo.png
 var logoPNG []byte
@@ -85,6 +95,9 @@ func CardStyles() []CardStyle {
 		{ID: "masskrug", Label: "Maßkrug", tmpl: parseCard("masskrug", cardMasskrugSrc), fonts: withCaveat},
 		{ID: "zeitung", Label: "Zeitung", tmpl: parseCard("zeitung", cardZeitungSrc), fonts: withPlayfair},
 		{ID: "arena", Label: "Arena", tmpl: parseCard("arena", cardArenaSrc), fonts: withAnton},
+		{ID: "stempelkarte", Label: "Treuekarte", tmpl: parseCard("stempelkarte", cardStempelkarteSrc), fonts: withCaveat},
+		{ID: "sammelkarten", Label: "Sammelalbum", tmpl: parseCard("sammelkarten", cardSammelkartenSrc), fonts: withAnton},
+		{ID: "formular", Label: "Amtsformular", tmpl: parseCard("formular", cardFormularSrc), fonts: withAnton},
 	}
 }
 
@@ -105,7 +118,9 @@ func fontURL(b []byte) template.URL {
 }
 
 // logoURL ist das eingebettete Emblem als Data-URL (der Renderer-Container
-// hat keinen Netzzugriff).
+// hat keinen Netzzugriff). Designs, die das Emblem vielfach zeigen
+// (Treuekarte, Sammelalbum), legen es einmal in eine CSS-Variable statt die
+// Data-URL je Element zu wiederholen.
 func logoURL() template.URL {
 	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(logoPNG))
 }

@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  :root {
+    /* Emblem einmal als Variable: jede Karte trägt es als Wappen, ohne die
+       Data-URL im HTML zu vervielfachen. */
+    --logo: url("{{.Logo}}");
+    --album: #101a2e;
+    --album-tief: #070c16;
+    --karte: #1b2842;
+    --karte-hell: #24344f;
+    --gold: #e8b64c;
+    --gold-tief: #a97c22;
+    --creme: #f2ead9;
+    --matt: rgba(242, 234, 217, 0.62);
+    --schwach: rgba(242, 234, 217, 0.3);
+    --linie: rgba(242, 234, 217, 0.14);
+    --rot: #e0574a;
+    --gruen: #5fcf8e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--album-tief);
+    color: var(--creme);
+    font-family: "Noto Sans", sans-serif;
+    font-feature-settings: "tnum";
+  }
+  /* Albumseite: dunkler Karton mit Goldschein oben. */
+  .album {
+    padding: 28px 30px 24px;
+    background:
+      radial-gradient(620px 300px at 50% -12%, rgba(232, 182, 76, 0.14), transparent 70%),
+      linear-gradient(170deg, var(--album) 0%, var(--album-tief) 70%);
+  }
+
+  .weekly {
+    display: inline-block;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--album-tief);
+    background: var(--gold);
+    padding: 4px 10px;
+    margin-bottom: 14px;
+  }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+  .marke { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .wappen {
+    flex-shrink: 0;
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 2px rgba(232, 182, 76, 0.45),
+      0 0 24px rgba(232, 182, 76, 0.22);
+  }
+  .serie {
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.36em; text-transform: uppercase;
+    color: var(--gold);
+  }
+  h1 {
+    font-family: "Anton", sans-serif;
+    font-size: 44px; font-weight: 400; line-height: 1;
+    letter-spacing: 0.02em;
+    margin-top: 6px;
+    color: var(--creme);
+  }
+  .auflage { text-align: right; flex-shrink: 0; }
+  .auflage .zahl { font-family: "Anton", sans-serif; font-size: 38px; line-height: 1; color: var(--gold); }
+  .auflage .wort {
+    font-size: 9.5px; font-weight: 800;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--matt); margin-top: 3px;
+  }
+
+  .banner {
+    display: flex; gap: 22px;
+    margin: 18px 0 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--linie);
+    border-bottom: 1px solid var(--linie);
+  }
+  .banner .feld { flex: 1; min-width: 0; }
+  .banner .was {
+    font-size: 9.5px; font-weight: 800;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--matt); margin-bottom: 3px;
+  }
+  .banner .wer {
+    font-size: 15px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .banner .wer b { color: var(--gold); }
+
+  .legende {
+    display: flex; justify-content: flex-end; gap: 18px;
+    font-size: 9.5px; font-weight: 800;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--matt);
+    margin-bottom: 10px;
+  }
+  .legende span { display: inline-flex; align-items: center; gap: 6px; }
+  .legende i { width: 8px; height: 8px; border-radius: 50%; }
+  .legende i.da { background: var(--gold); }
+  .legende i.weg { border: 1.5px solid #ef6f61; background: rgba(224, 87, 74, 0.28); }
+
+  /* Zwei Sammelkarten je Reihe. */
+  .bogen { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sk {
+    position: relative;
+    padding: 11px 13px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--linie);
+    background:
+      linear-gradient(150deg, var(--karte-hell) 0%, var(--karte) 58%, #16223a 100%);
+    overflow: hidden;
+  }
+  /* Top-3 bekommen den Goldrand und einen Folienschimmer quer über die Karte. */
+  .sk.gold { border-color: rgba(232, 182, 76, 0.6); }
+  .sk.gold::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(118deg, transparent 34%, rgba(232, 182, 76, 0.14) 46%, transparent 58%);
+    pointer-events: none;
+  }
+
+  .sk .kopf { display: flex; align-items: center; gap: 9px; }
+  .sk .crest {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background-image: var(--logo);
+    background-size: cover;
+    box-shadow: 0 0 0 1px rgba(232, 182, 76, 0.4);
+    flex: none;
+  }
+  .sk .rang {
+    font-family: "Anton", sans-serif;
+    font-size: 13px; line-height: 1;
+    padding: 3px 7px 4px;
+    border-radius: 3px;
+    background: rgba(242, 234, 217, 0.1);
+    color: var(--matt);
+  }
+  .sk.gold .rang { background: var(--gold); color: #17203a; }
+  .sk .lauf {
+    margin-left: auto;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .sk .lauf.auf { color: var(--gruen); }
+  .sk .lauf.ab { color: var(--rot); }
+
+  .sk .nm {
+    font-family: "Anton", sans-serif;
+    font-size: 25px; line-height: 1.05;
+    letter-spacing: 0.02em;
+    margin: 8px 0 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .sk .werte { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+  .sk .quote {
+    font-family: "Anton", sans-serif;
+    font-size: 30px; line-height: 0.95;
+    color: var(--gold);
+  }
+  .sk .quote small { font-size: 14px; }
+  .sk .bilanz { text-align: right; font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sk .bilanz .ja { color: var(--gold); }
+  .sk .bilanz .nein { color: var(--rot); }
+
+  /* Ein Punkt je Stammtisch: voll = da, offener Ring = gefehlt. */
+  /* Punktgröße so gewählt, dass auch 31 Termine in eine Reihe passen. */
+  .punkte { display: flex; flex-wrap: wrap; gap: 2.5px; margin-top: 9px; }
+  .p { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .p.da { background: var(--gold); box-shadow: 0 0 5px rgba(232, 182, 76, 0.45); }
+  .p.weg { border: 1.5px solid #ef6f61; background: rgba(224, 87, 74, 0.28); }
+
+  .transfers { margin-top: 18px; border-top: 1px solid var(--linie); padding-top: 12px; }
+  .transfers .kopf {
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--rot); margin-bottom: 6px;
+  }
+  .posten {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 0; font-size: 13px;
+    border-bottom: 1px solid rgba(242, 234, 217, 0.07);
+  }
+  .posten:last-child { border-bottom: none; }
+  .posten .marker { width: 7px; height: 14px; background: var(--rot); border-radius: 1px; }
+  .posten.bezahlt .marker { background: var(--gruen); }
+  .posten .nm { font-weight: 700; }
+  .posten .grund { flex: 1; color: var(--matt); font-size: 11.5px; }
+  .posten .betrag { font-family: "Anton", sans-serif; font-size: 18px; color: var(--rot); }
+  .posten.bezahlt { opacity: 0.6; }
+  .posten.bezahlt .betrag { color: var(--matt); }
+  .sauber { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gruen); }
+
+  .leer { padding: 36px 0; letter-spacing: 0.18em; text-transform: uppercase; color: var(--matt); }
+
+  footer {
+    margin-top: 16px; padding-top: 10px;
+    border-top: 1px solid var(--linie);
+    display: flex; justify-content: space-between;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--schwach);
+  }
+</style>
+</head>
+<body>
+<div class="album">
+  {{if .WeeklyNote}}<div class="weekly">Wochenreport · Do 21:00</div>{{end}}
+
+  <header>
+    <div class="marke">
+      <img class="wappen" src="{{.Logo}}" alt="Stammtisch Zumba">
+      <div>
+        <div class="serie">Stammtisch Zumba</div>
+        <h1>SAMMELALBUM</h1>
+      </div>
+    </div>
+    {{if .Users}}
+    <div class="auflage">
+      <div class="zahl">{{.Total}}</div>
+      <div class="wort">Stammtische</div>
+    </div>
+    {{end}}
+  </header>
+
+  {{if .Users}}
+  <div class="banner">
+    <div class="feld">
+      <div class="was">🐐 GOAT</div>
+      <div class="wer">{{.GoatName}} <b>{{.GoatPercent}}%</b></div>
+    </div>
+    {{if .MaxStreak}}
+    <div class="feld">
+      <div class="was">{{.MaxFlame}} Beste Serie</div>
+      <div class="wer">{{.MaxStreakNames}} <b>{{.MaxStreak}}x</b></div>
+    </div>
+    {{end}}
+    {{if .MinStreak}}
+    <div class="feld">
+      <div class="was">{{.MinIce}} Längste Pause</div>
+      <div class="wer">{{.MinStreakNames}} <b>{{.MinStreak}}x</b></div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="legende">
+    <span><i class="da"></i> da</span>
+    <span><i class="weg"></i> gefehlt</span>
+  </div>
+
+  <div class="bogen">
+    {{range .Users}}
+    <div class="sk{{if .Top3}} gold{{end}}">
+      <div class="kopf">
+        <span class="crest"></span>
+        <span class="rang">{{.Rank}}</span>
+        {{if gt .Streak 0}}<span class="lauf auf">▲ {{.StreakAbs}} in Folge</span>{{end}}
+        {{if lt .Streak 0}}<span class="lauf ab">▼ {{.StreakAbs}} verpasst</span>{{end}}
+      </div>
+      <div class="nm">{{.Name}}</div>
+      <div class="werte">
+        <div class="quote">{{.Percent}}<small>%</small></div>
+        <div class="bilanz">
+          <span class="ja">{{.Attendance}} da</span><br>
+          <span class="nein">{{.Away}} gefehlt</span>
+        </div>
+      </div>
+      <div class="punkte">
+        {{range .Lit}}<span class="p da"></span>{{end}}
+        {{range .Dark}}<span class="p weg"></span>{{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="leer">Keine Karten im Album</div>
+  {{end}}
+
+  <div class="transfers">
+    <div class="kopf">Strafenliste</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="posten{{if .Beglichen}} bezahlt{{end}}">
+        <span class="marker"></span>
+        <span class="nm">{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+        <span class="betrag">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="sauber">Keine offenen Strafen</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>Zumba-Bot · Sammelalbum</span>
+    <span>{{.Datum}}</span>
+  </footer>
+</div>
+</body>
+</html>
