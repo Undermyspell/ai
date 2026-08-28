@@ -81,8 +81,12 @@ deployment/
 │       └── sealed-secrets/
 │           ├── postgres-secrets.yaml
 │           └── n8n-secrets.yaml
-└── scripts/
-    ├── create-sealed-secret.sh      # Generate new SealedSecrets
+├── scripts/
+│   ├── create-sealed-secret.sh      # Generate new SealedSecrets
+│   └── README.md
+└── node/                            # Host systemd config, NOT managed by ArgoCD
+    ├── k3s.service.d/               # k3s waits for NTP (see node/README.md)
+    ├── systemd-time-wait-sync.service.d/
     └── README.md
 ```
 
