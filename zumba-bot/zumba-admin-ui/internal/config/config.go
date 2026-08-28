@@ -16,7 +16,30 @@ type Config struct {
 	// ClassifierURL ist die Basis-URL des classifier-service (für den
 	// manuellen ML-Test). Leer = Seite meldet "nicht konfiguriert".
 	ClassifierURL string
+
+	Auth AuthConfig
 }
+
+// AuthConfig steuert den Login. Ohne Passwort ist der Login aus – das ist der
+// lokale Entwicklungsfall (`make dev`, Tests). Im Cluster kommt das Passwort
+// aus einem SealedSecret; fehlt es dort, startet der Pod gar nicht erst.
+type AuthConfig struct {
+	User     string
+	Password string
+
+	// SessionSecret signiert das Session-Cookie. Leer = pro Start ein
+	// zufälliger Schlüssel, dann ist nach einem Neustart ein erneuter Login
+	// nötig.
+	SessionSecret string
+
+	// CookieSecure setzt das Secure-Flag am Session-Cookie. Default true;
+	// COOKIE_SECURE=false ist nur für lokale Entwicklung über http gedacht
+	// (Browser verwerfen ein Secure-Cookie auf einer http-Seite).
+	CookieSecure bool
+}
+
+// Enabled: ohne Passwort gibt es keinen Login.
+func (a AuthConfig) Enabled() bool { return a.Password != "" }
 
 type DBConfig struct {
 	Host     string
@@ -47,6 +70,12 @@ func Load() (Config, error) {
 		},
 		BotURL:        getenv("BOT_URL", "http://localhost:8080"),
 		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
+		Auth: AuthConfig{
+			User:          getenv("ADMIN_USER", "admin"),
+			Password:      os.Getenv("ADMIN_PASSWORD"),
+			SessionSecret: os.Getenv("SESSION_SECRET"),
+			CookieSecure:  getenv("COOKIE_SECURE", "true") != "false",
+		},
 	}
 	// Der Auswertungszeitraum kommt NICHT mehr aus der Umgebung, sondern aus
 	// der Tabelle public.seasons – sonst müsste zu jedem Jahreswechsel

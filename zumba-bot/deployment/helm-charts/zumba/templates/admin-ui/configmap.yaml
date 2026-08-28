@@ -14,6 +14,10 @@ data:
   DB_USER: {{ .Values.adminUi.env.DB_USER | quote }}
   DB_SSLMODE: {{ .Values.adminUi.env.DB_SSLMODE | quote }}
   TZ: {{ .Values.adminUi.env.TZ | quote }}
+  # Login: Benutzername im Klartext, Passwort und Session-Schlüssel kommen aus
+  # dem SealedSecret (siehe deployment.yaml).
+  ADMIN_USER: {{ .Values.adminUi.auth.user | quote }}
+  COOKIE_SECURE: {{ .Values.adminUi.auth.cookieSecure | quote }}
   BOT_URL: http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}
   {{- if .Values.classifier.enabled }}
   # Manueller ML-Test: Admin-UI ruft den classifier-service direkt

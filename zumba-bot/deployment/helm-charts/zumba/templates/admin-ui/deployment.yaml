@@ -45,6 +45,20 @@ spec:
             secretKeyRef:
               name: postgres-secrets
               key: DB_POSTGRESDB_PASSWORD
+        # Login-Zugang. Ohne dieses Secret startet der Pod nicht – lieber gar
+        # kein Admin-UI als eines ohne Anmeldung.
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.adminUi.auth.existingSecret }}
+              key: {{ .Values.adminUi.auth.passwordKey }}
+        # Signiert das Session-Cookie: bleibt der Schlüssel gleich, überlebt
+        # die Anmeldung einen Neustart des Pods.
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.adminUi.auth.existingSecret }}
+              key: {{ .Values.adminUi.auth.sessionSecretKey }}
         livenessProbe:
           httpGet:
             path: /healthz

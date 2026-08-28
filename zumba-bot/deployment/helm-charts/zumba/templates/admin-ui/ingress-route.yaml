@@ -1,4 +1,63 @@
 {{- if and .Values.adminUi.enabled .Values.adminUi.ingress.enabled -}}
+{{- if .Values.adminUi.ingress.tls.enabled }}
+# TLS-Variante: das Session-Cookie des Logins ist Secure+SameSite=Strict, und
+# ein Secure-Cookie verwirft der Browser auf einer http-Seite. Deshalb läuft
+# das Admin-UI mit Login über websecure; der web-Entrypoint leitet nur um.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "zumba.fullname" . }}-admin-ui
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.adminUi.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`{{ .Values.adminUi.ingress.host }}`)
+      kind: Rule
+      services:
+        - name: {{ include "zumba.fullname" . }}-admin-ui
+          port: {{ .Values.adminUi.service.port }}
+  {{- if .Values.adminUi.ingress.tls.certResolver }}
+  tls:
+    certResolver: {{ .Values.adminUi.ingress.tls.certResolver }}
+  {{- else }}
+  tls: {}
+  {{- end }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "zumba.fullname" . }}-admin-ui-redirect-https
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.adminUi.labels" . | nindent 4 }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+# Ohne diese Route antwortet der web-Entrypoint mit 404 statt umzuleiten.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "zumba.fullname" . }}-admin-ui-http
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.adminUi.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`{{ .Values.adminUi.ingress.host }}`)
+      kind: Rule
+      middlewares:
+        - name: {{ include "zumba.fullname" . }}-admin-ui-redirect-https
+      services:
+        - name: {{ include "zumba.fullname" . }}-admin-ui
+          port: {{ .Values.adminUi.service.port }}
+{{- else }}
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -15,4 +74,5 @@ spec:
       services:
         - name: {{ include "zumba.fullname" . }}-admin-ui
           port: {{ .Values.adminUi.service.port }}
+{{- end }}
 {{- end }}

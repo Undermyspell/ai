@@ -100,10 +100,15 @@ adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.3.2"
+    tag: "0.4.0"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io
+    # Login-Cookie ist Secure – deshalb muss die Seite über https laufen.
+    # Ohne certResolver nimmt Traefik sein selbstsigniertes Default-Zertifikat:
+    # der Browser warnt einmalig, das Cookie wird aber gesetzt.
+    tls:
+      enabled: true
 
 wrapped:
   enabled: true

@@ -1,0 +1,80 @@
+package login
+
+// VM ist das Modell der Anmeldeseite. Sie steht bewusst außerhalb des
+// App-Layouts: ohne Anmeldung gibt es weder Navigation noch Jahresumschalter.
+type VM struct {
+	User  string // vorbelegter Benutzername (nach Fehlversuch)
+	Next  string // Ziel nach erfolgreichem Login
+	Error string // leer = keine Meldung
+}
+
+templ Page(vm VM) {
+	<!DOCTYPE html>
+	<html lang="de" data-theme="light">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+			<meta name="color-scheme" content="light dark"/>
+			<meta name="robots" content="noindex, nofollow"/>
+			<title>Anmelden · Zumba Admin</title>
+			<link rel="stylesheet" href="/static/css/styles.css"/>
+			<script src="/static/js/theme.js"></script>
+		</head>
+		<body class="login-body">
+			<div class="login-shell">
+				<div class="login-toggle">
+					<button class="theme-toggle" type="button" aria-label="Theme umschalten">
+						<span class="icon">☀</span>
+						<span class="label">Tagesbar</span>
+					</button>
+				</div>
+				<main class="login-card">
+					<div class="login-coaster" aria-hidden="true">
+						<span class="glyph">𝔃</span>
+					</div>
+					<header class="login-head">
+						<p class="eyebrow">Zumba · Logbuch</p>
+						<h1>Willkommen zurück</h1>
+						<p class="sub">Anmelden, um Donnerstage, Strafen und Bot-Tests zu verwalten.</p>
+					</header>
+					if vm.Error != "" {
+						<p class="login-error" role="alert">
+							<span aria-hidden="true">✕</span>
+							{ vm.Error }
+						</p>
+					}
+					<form class="login-form" method="post" action="/login" autocomplete="on">
+						<input type="hidden" name="next" value={ vm.Next }/>
+						<label class="login-field">
+							<span class="login-label">Benutzername</span>
+							<input
+								type="text"
+								name="username"
+								value={ vm.User }
+								autocomplete="username"
+								autocapitalize="none"
+								spellcheck="false"
+								required
+								autofocus
+							/>
+						</label>
+						<label class="login-field">
+							<span class="login-label">Passwort</span>
+							<input
+								type="password"
+								name="password"
+								autocomplete="current-password"
+								required
+							/>
+						</label>
+						<button class="login-submit" type="submit">Anmelden</button>
+					</form>
+					<footer class="login-foot">
+						<span class="rule" aria-hidden="true"></span>
+						<p>Donnerstag ist Pflicht. Abmelden ist Kunst.</p>
+					</footer>
+				</main>
+			</div>
+		</body>
+	</html>
+}

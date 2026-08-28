@@ -7,6 +7,10 @@ type PageMeta struct {
 	ActiveNav string // "dashboard" | "members" | "days" | "excluded"
 	MockMode  bool
 
+	// AuthEnabled: Login ist konfiguriert – dann bekommt der Header einen
+	// Abmelden-Knopf.
+	AuthEnabled bool
+
 	// Jahresbezug. Nur Seiten mit Auswertungszeitraum füllen das – Bot-Test
 	// und die ML-Seiten lassen es leer, dann entfällt der Umschalter.
 	Season         string // Label des angezeigten Stammtischjahres, z. B. "2026"
@@ -43,7 +47,17 @@ templ Layout(meta PageMeta) {
 						<span class="wordmark">Zumba</span>
 						<span class="tag">Logbuch</span>
 					</a>
-					@partials.ThemeToggle()
+					<div class="app-actions">
+						@partials.ThemeToggle()
+						if meta.AuthEnabled {
+							<form method="post" action="/logout">
+								<button class="logout-button" type="submit" title="Abmelden">
+									<span class="icon" aria-hidden="true">⏻</span>
+									<span class="label">Abmelden</span>
+								</button>
+							</form>
+						}
+					</div>
 				</header>
 				@partials.Nav(meta.ActiveNav)
 				<main class="app-main">

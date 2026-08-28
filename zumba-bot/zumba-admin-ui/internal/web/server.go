@@ -36,10 +36,14 @@ type Server struct {
 	store    store.Store
 	cfg      config.Config
 	mockMode bool
+
+	// ephemeralKey signiert Session-Cookies, wenn kein SESSION_SECRET gesetzt
+	// ist. Er lebt nur so lange wie der Prozess.
+	ephemeralKey []byte
 }
 
 func New(s store.Store, cfg config.Config, mockMode bool) *Server {
-	return &Server{store: s, cfg: cfg, mockMode: mockMode}
+	return &Server{store: s, cfg: cfg, mockMode: mockMode, ephemeralKey: randomKey()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -55,6 +59,10 @@ func (s *Server) Routes() http.Handler {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	mux.HandleFunc("GET /login", s.handleLoginPage)
+	mux.HandleFunc("POST /login", s.handleLoginSubmit)
+	mux.HandleFunc("POST /logout", s.handleLogout)
 
 	mux.HandleFunc("GET /{$}", s.handleRoot)
 	mux.HandleFunc("GET /dashboard", s.handleDashboard)
@@ -83,7 +91,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("DELETE /ml-test/{id}", s.handleMLTestDelete)
 	mux.HandleFunc("GET /ml-doku", s.handleMLDocs)
 
-	return logRequests(mux)
+	return logRequests(s.requireLogin(mux))
 }
 
 // season löst das Stammtischjahr des Requests auf: ?jahr=<label> wählt ein
@@ -143,7 +151,12 @@ func (s *Server) requireWritable(w http.ResponseWriter, r *http.Request, date ti
 }
 
 func (s *Server) meta(title, active string) templates.PageMeta {
-	return templates.PageMeta{Title: title, ActiveNav: active, MockMode: s.mockMode}
+	return templates.PageMeta{
+		Title:       title,
+		ActiveNav:   active,
+		MockMode:    s.mockMode,
+		AuthEnabled: s.cfg.Auth.Enabled(),
+	}
 }
 
 // seasonMeta ergänzt meta um den Jahres-Umschalter. Nur Seiten mit

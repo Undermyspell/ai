@@ -280,12 +280,32 @@ adminUi:
     # Stammtischjahr je Zeile), nicht mehr aus der Umgebung – sonst wäre zu
     # jedem Jahreswechsel ein Deploy nötig.
     TZ: Europe/Berlin
+  auth:
+    # Login der Admin-UI. Der Benutzername steht im ConfigMap, Passwort und
+    # Session-Schlüssel kommen aus dem SealedSecret
+    # environments/<env>/sealed-secrets/admin-ui-secrets.yaml.
+    user: admin
+    existingSecret: admin-ui-secrets
+    passwordKey: ADMIN_PASSWORD
+    sessionSecretKey: SESSION_SECRET
+    # Secure-Flag am Session-Cookie (zusätzlich zu HttpOnly und
+    # SameSite=Strict). Nur zusammen mit ingress.tls.enabled sinnvoll: auf
+    # einer http-Seite verwirft der Browser ein Secure-Cookie, der Login würde
+    # endlos auf sich selbst zurückspringen.
+    cookieSecure: true
   service:
     type: ClusterIP
     port: 8080
   ingress:
     enabled: true
     host: zumba-admin.example.com  # per-environment überschreiben
+    tls:
+      # true: Route läuft über den websecure-Entrypoint, http leitet um.
+      # Voraussetzung für auth.cookieSecure.
+      enabled: false
+      # Leer = Traefiks eingebautes Default-Zertifikat (selbstsigniert, im
+      # Heimnetz ausreichend; der Browser warnt einmalig).
+      certResolver: ""
 
 # Stammtisch Wrapped (Jahresrückblick, read-only auf zumba-DB)
 wrapped:

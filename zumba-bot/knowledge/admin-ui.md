@@ -1,7 +1,26 @@
 # Admin-UI — fachliche Beschreibung
 
 Die Pflege-Oberfläche für die Stammtisch-Daten. Zielgruppe: der Organisator
-(eine Person). Erreichbar im Heimnetz, keine Authentifizierung.
+(eine Person). Erreichbar im Heimnetz, hinter einem Login.
+
+## Login
+
+Ein Benutzer (`admin`), ein Passwort. Ohne gültige Sitzung führt jeder Pfad
+außer Login, Healthcheck und statischen Dateien auf die Anmeldeseite; nach dem
+Anmelden geht es an der ursprünglich gewünschten Stelle weiter.
+
+Die Sitzung steckt in einem signierten Cookie — HttpOnly (kein Zugriff aus
+JavaScript), SameSite=Strict (wird bei Aufrufen von fremden Seiten nicht
+mitgeschickt) und Secure (nur über https). Der Server hält keinen
+Sitzungsspeicher; die Signatur macht das Cookie fälschungssicher, die
+Laufzeit endet nach sieben Tagen. Weil das Cookie Secure ist, läuft die Seite
+im Cluster über https (Traefik-Default-Zertifikat, der Browser warnt einmalig)
+und http leitet dorthin um.
+
+Passwort und Signatur-Schlüssel liegen als SealedSecret `admin-ui-secrets` im
+Repo. Fehlt das Secret, startet der Pod nicht — lieber kein Admin-UI als
+eines ohne Anmeldung. Lokal ist der Login aus, solange kein Passwort gesetzt
+ist.
 
 ## Was man damit macht
 

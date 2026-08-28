@@ -64,7 +64,8 @@ committet sein, sonst weicht Git vom Laufenden ab.
 Secrets liegen **verschlüsselt im Git** (Bitnami SealedSecrets), pro
 Umgebung mit eigenem Schlüssel. Entschlüsselte Secrets gehören nie ins Repo.
 Das DB-Passwort konsumieren alle Services zur Laufzeit aus dem Secret
-`postgres-secrets`. Neue Secrets entstehen über das Skript
+`postgres-secrets`, den Admin-UI-Login aus `admin-ui-secrets`
+(`ADMIN_PASSWORD`, `SESSION_SECRET`). Neue Secrets entstehen über das Skript
 `deployment/scripts/create-sealed-secret.sh`.
 
 ## Sonstiges
