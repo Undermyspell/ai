@@ -71,7 +71,7 @@ whatsappBot:
     STATS_FORMAT: image
     # Diese fünf Designs sind im Umlauf: "statistik" zufällig, Wochenreport
     # der Reihe nach (jedes Design einmal je fünf Wochen)
-    CARD_STYLES: "wrapped,bierdeckel,zeitung,arena,formular"
+    CARD_STYLES: "arena,formular,wrapped,bierdeckel,zeitung"
   weeklyReport:
     enabled: true
     # Wochenreport ebenfalls als Bild-Karte
