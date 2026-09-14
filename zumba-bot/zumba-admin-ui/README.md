@@ -3,8 +3,8 @@
 Admin-Weboberfläche für Stammtisch-Daten. Sister-App zu `../wrapped/`, teilt sich die `zumba` Postgres-Datenbank.
 
 ## Stack
-- Go 1.25 + a-h/templ + lib/pq
-- HTMX (vendored, Phase 2) für inline Edits
+- Go 1.27 + a-h/templ + lib/pq
+- HTMX 2.0.10 (vendored unter `assets/static/js/htmx.min.js`) für inline Edits
 - Plain CSS mit Custom Properties (light/dark Theme)
 - Embedded static assets (`go:embed`)
 
