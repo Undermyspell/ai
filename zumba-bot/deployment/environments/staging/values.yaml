@@ -84,7 +84,7 @@ renderer:
   enabled: true
   image:
     repository: zumba-renderer
-    tag: "0.1.0"
+    tag: "0.1.1"
     pullPolicy: IfNotPresent
 
 # ML-Klassifikator im Shadow-Modus (Bot loggt Gemini vs. Modell in ml_messages).
@@ -100,7 +100,7 @@ adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.4.1"
+    tag: "0.4.2"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io
