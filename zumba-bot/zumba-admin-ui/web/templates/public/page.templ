@@ -101,6 +101,10 @@ templ card(t TargetVM, opts []TTLOption) {
 			<div class="public-url">
 				<a href={ templ.SafeURL(t.URL) } target="_blank" rel="noopener noreferrer">{ t.URL }</a>
 				<button type="button" class="public-copy" data-copy={ t.URL } title="Adresse kopieren">Kopieren</button>
+				<form hx-post="/public/notify" hx-target="#public-status" hx-swap="outerHTML">
+					<input type="hidden" name="target" value={ t.Name }/>
+					<button type="submit" class="public-copy" title="Adresse per WhatsApp an die eigene Nummer schicken">📱 Aufs Handy</button>
+				</form>
 			</div>
 			<p class="public-meta">
 				{ t.SinceText }

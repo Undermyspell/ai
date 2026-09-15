@@ -91,6 +91,14 @@ Adresse samt Kopierknopf und Laufzeit. Beim Einschalten wählt man
 2, 8 oder 24 Stunden; danach schließt der Tunnel von selbst, spätestens nachts
 um drei.
 
+Neben „Kopieren" liegt **„📱 Aufs Handy"**: schickt die Adresse per WhatsApp an
+die eigene Nummer — praktisch, wenn man am Rechner freischaltet und den Link
+vom Telefon aus weitergeben will. Den Versand macht der whatsapp-bot
+(`/notify`), dessen Empfänger fest auf der Vorschau-Nummer steht; aus dem
+Admin-UI heraus ist die Gruppe darüber nicht erreichbar. Zwei Klicks
+hintereinander werden gebremst (5 Sekunden), damit ein Doppelklick nicht zwei
+Nachrichten schickt.
+
 Die Seite fragt den Zustand laufend nach — alle 2 Sekunden, solange etwas auf-
 oder abbaut, sonst gemächlicher. Der Aufbau dauert ein paar Sekunden, deshalb
 gibt es die Zwischenzustände überhaupt.

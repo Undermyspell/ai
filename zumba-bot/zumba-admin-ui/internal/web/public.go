@@ -1,12 +1,16 @@
 package web
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -237,3 +241,106 @@ func anySelected(opts []public.TTLOption) bool {
 	}
 	return false
 }
+
+// notifyMinInterval bremst den Versand aufs Handy. Zwei Klicks hintereinander
+// sind ein Versehen, keine zwei Nachrichten.
+const notifyMinInterval = 5 * time.Second
+
+type notifyThrottle struct {
+	mu   sync.Mutex
+	last time.Time
+}
+
+// allow meldet, ob jetzt gesendet werden darf, und merkt sich den Zeitpunkt.
+func (t *notifyThrottle) allow(now time.Time) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if !t.last.IsZero() && now.Sub(t.last) < notifyMinInterval {
+		return false
+	}
+	t.last = now
+	return true
+}
+
+// handlePublicNotify schickt die Adresse eines offenen Tunnels per WhatsApp an
+// die eigene Nummer. Den Versand macht der whatsapp-bot (POST /notify) — er
+// hat den Evolution-Zugang, und sein Empfänger steht fest auf PREVIEW_JID.
+// Das Admin-UI kann darüber keine Gruppe erreichen.
+func (s *Server) handlePublicNotify(w http.ResponseWriter, r *http.Request) {
+	name := r.FormValue("target")
+
+	status, err := s.tunnel.Status(r.Context())
+	if err != nil {
+		log.Printf("tunnel status: %v", err)
+		s.triggerToast(w, "error", "tunnel-service nicht erreichbar.")
+		s.renderPublicCards(w, r)
+		return
+	}
+	s.gate.set(status.AnyOpen())
+
+	var target tunnel.Target
+	for _, t := range status.Targets {
+		if t.Name == name {
+			target = t
+		}
+	}
+	if target.State != tunnel.StateActive || target.URL == "" {
+		s.triggerToast(w, "error", "Nur offene Tunnel lassen sich verschicken.")
+		s.renderPublicCards(w, r)
+		return
+	}
+	if !s.notify.allow(time.Now()) {
+		s.triggerToast(w, "error", "Gerade erst verschickt — kurz warten.")
+		s.renderPublicCards(w, r)
+		return
+	}
+
+	if err := s.sendNotify(r.Context(), notifyText(target)); err != nil {
+		log.Printf("notify: %v", err)
+		s.triggerToast(w, "error", "Versand fehlgeschlagen: "+err.Error())
+		s.renderPublicCards(w, r)
+		return
+	}
+	s.triggerToast(w, "success", "Adresse ist unterwegs aufs Handy.")
+	s.renderPublicCards(w, r)
+}
+
+// notifyText baut die Nachricht. Kurz halten — sie landet auf dem Handy und
+// soll dort vor allem einen antippbaren Link zeigen.
+func notifyText(t tunnel.Target) string {
+	msg := "🌍 " + t.Label + " ist öffentlich erreichbar:\n" + t.URL
+	if t.ExpiresAt != nil {
+		msg += "\n\nOffen bis " + t.ExpiresAt.Local().Format("15:04") + " Uhr."
+	}
+	return msg
+}
+
+func (s *Server) sendNotify(ctx context.Context, text string) error {
+	body, err := json.Marshal(map[string]string{"text": text})
+	if err != nil {
+		return err
+	}
+	url := strings.TrimRight(s.cfg.BotURL, "/") + "/notify"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := notifyClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("Bot nicht erreichbar: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		msg := strings.TrimSpace(string(raw))
+		if msg == "" {
+			msg = resp.Status
+		}
+		return errors.New(msg)
+	}
+	return nil
+}
+
+var notifyClient = &http.Client{Timeout: 10 * time.Second}

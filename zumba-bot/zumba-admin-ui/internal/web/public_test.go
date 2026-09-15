@@ -2,7 +2,9 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -224,5 +226,111 @@ func TestLoginBremseWaechstMitJedemFehlversuch(t *testing.T) {
 	th.fail(now)
 	if got := th.fail(now.Add(loginFailWindow + time.Minute)); got != failedLoginDelay {
 		t.Fatalf("nach Zeitfenster = %s, erwartet %s", got, failedLoginDelay)
+	}
+}
+
+// fakeBot steht für den whatsapp-bot: nimmt POST /notify entgegen und merkt
+// sich den Text.
+type fakeBot struct {
+	srv    *httptest.Server
+	texts  []string
+	status int
+}
+
+func newFakeBot(t *testing.T) *fakeBot {
+	t.Helper()
+	b := &fakeBot{status: http.StatusOK}
+	b.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/notify" {
+			t.Errorf("unerwarteter Pfad %s", r.URL.Path)
+		}
+		var req struct {
+			Text string `json:"text"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		b.texts = append(b.texts, req.Text)
+		w.WriteHeader(b.status)
+	}))
+	t.Cleanup(b.srv.Close)
+	return b
+}
+
+func publicSrvWithBot(f *fakeTunnel, bot *fakeBot) (*Server, http.Handler) {
+	srv := New(newSpyStore(), config.Config{TunnelURL: "http://tunnel:8080", BotURL: bot.srv.URL}, false)
+	srv.tunnel = f
+	return srv, srv.Routes()
+}
+
+func TestNotifySchicktAdresseUndAblaufAnDenBot(t *testing.T) {
+	bot := newFakeBot(t)
+	_, h := publicSrvWithBot(&fakeTunnel{status: statusWith(tunnel.StateActive)}, bot)
+
+	rec := postForm(t, h, "/public/notify", url.Values{"target": {"wrapped"}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code = %d", rec.Code)
+	}
+	if len(bot.texts) != 1 {
+		t.Fatalf("Aufrufe am Bot = %d", len(bot.texts))
+	}
+	text := bot.texts[0]
+	for _, want := range []string{"Wrapped", "https://abc.ngrok-free.app", "Offen bis"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("Nachricht enthält %q nicht: %q", want, text)
+		}
+	}
+	if !strings.Contains(rec.Header().Get("HX-Trigger"), "unterwegs") {
+		t.Errorf("kein Erfolgs-Toast: %s", rec.Header().Get("HX-Trigger"))
+	}
+}
+
+func TestNotifyNurBeiOffenemTunnel(t *testing.T) {
+	bot := newFakeBot(t)
+	_, h := publicSrvWithBot(&fakeTunnel{status: statusWith(tunnel.StateInactive)}, bot)
+
+	rec := postForm(t, h, "/public/notify", url.Values{"target": {"wrapped"}})
+	if len(bot.texts) != 0 {
+		t.Fatalf("es wurde trotz geschlossenem Tunnel gesendet: %v", bot.texts)
+	}
+	if !strings.Contains(rec.Header().Get("HX-Trigger"), "Nur offene Tunnel") {
+		t.Errorf("Hinweis fehlt: %s", rec.Header().Get("HX-Trigger"))
+	}
+}
+
+func TestNotifyBremstZweitenKlick(t *testing.T) {
+	bot := newFakeBot(t)
+	_, h := publicSrvWithBot(&fakeTunnel{status: statusWith(tunnel.StateActive)}, bot)
+
+	postForm(t, h, "/public/notify", url.Values{"target": {"wrapped"}})
+	rec := postForm(t, h, "/public/notify", url.Values{"target": {"wrapped"}})
+	if len(bot.texts) != 1 {
+		t.Fatalf("Aufrufe am Bot = %d, erwartet 1", len(bot.texts))
+	}
+	if !strings.Contains(rec.Header().Get("HX-Trigger"), "kurz warten") {
+		t.Errorf("Bremse meldet sich nicht: %s", rec.Header().Get("HX-Trigger"))
+	}
+}
+
+func TestNotifyMeldetFehlerDesBots(t *testing.T) {
+	bot := newFakeBot(t)
+	bot.status = http.StatusServiceUnavailable
+	_, h := publicSrvWithBot(&fakeTunnel{status: statusWith(tunnel.StateActive)}, bot)
+
+	rec := postForm(t, h, "/public/notify", url.Values{"target": {"wrapped"}})
+	if !strings.Contains(rec.Header().Get("HX-Trigger"), "Versand fehlgeschlagen") {
+		t.Errorf("Fehler wird nicht gemeldet: %s", rec.Header().Get("HX-Trigger"))
+	}
+}
+
+func TestNotifyBremseLaesstNachAblaufWiederZu(t *testing.T) {
+	var th notifyThrottle
+	now := time.Now()
+	if !th.allow(now) {
+		t.Fatal("erster Versand muss durchgehen")
+	}
+	if th.allow(now.Add(notifyMinInterval - time.Second)) {
+		t.Fatal("zu früh, hätte gebremst werden müssen")
+	}
+	if !th.allow(now.Add(notifyMinInterval + time.Second)) {
+		t.Fatal("nach der Wartezeit muss es wieder gehen")
 	}
 }

@@ -138,6 +138,15 @@ aus (Klassifikation, DB-Wirkung, Antworttext), aber ohne Tages-/Gruppen-
 Sperren. Das Admin-UI nutzt ihn für die Bot-Test-Seite (dort wählbar:
 Nachricht oder Bild-Karte).
 
+## Notiz an die eigene Nummer
+
+Ein `/notify`-Endpoint schickt einen übergebenen Text per WhatsApp — und zwar
+ausschließlich an die Vorschau-Nummer aus der Konfiguration. Der Empfänger
+kommt **nie** aus dem Request, sonst wäre das ein offener Versandweg in die
+Stammtisch-Gruppe. Genutzt wird er vom Admin-UI, um sich die Adresse eines
+offenen Tunnels aufs Handy zu schicken; ohne gepflegte Vorschau-Nummer
+antwortet er mit einem Fehler und sendet nichts.
+
 ## Betriebsverhalten
 
 - Preview-Modus: Antworten gehen an eine einzelne Testnummer statt in die

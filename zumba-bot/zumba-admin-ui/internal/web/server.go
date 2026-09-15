@@ -47,6 +47,9 @@ type Server struct {
 	// über einen Tunnel öffentlich erreichbar ist.
 	loginThrottle loginThrottle
 
+	// notify bremst den WhatsApp-Versand der Tunnel-Adresse.
+	notify notifyThrottle
+
 	// ephemeralKey signiert Session-Cookies, wenn kein SESSION_SECRET gesetzt
 	// ist. Er lebt nur so lange wie der Prozess.
 	ephemeralKey []byte
@@ -119,6 +122,7 @@ func (s *Server) Routes() http.Handler {
 		mux.HandleFunc("POST /public/open", s.handlePublicOpen)
 		mux.HandleFunc("POST /public/close", s.handlePublicClose)
 		mux.HandleFunc("POST /public/close-all", s.handlePublicCloseAll)
+		mux.HandleFunc("POST /public/notify", s.handlePublicNotify)
 	}
 
 	return logRequests(s.requireLogin(mux))

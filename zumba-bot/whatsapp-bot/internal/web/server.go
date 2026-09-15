@@ -97,6 +97,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /webhook/whatsapp", s.handleWebhook)
 	mux.HandleFunc("POST /test", s.handleTest)
 	mux.HandleFunc("POST /weekly-report", s.handleWeekly)
+	// Nachricht an die eigene Vorschau-Nummer (Admin-UI schickt sich die
+	// öffentlichen Tunnel-Adressen aufs Handy). Empfänger ist fest PREVIEW_JID.
+	mux.HandleFunc("POST /notify", s.handleNotify)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
