@@ -164,7 +164,6 @@ func (s *Server) publicVM(ctx context.Context) public.VM {
 			State:     string(t.State),
 			StateText: stateText(t.State),
 			URL:       t.URL,
-			Requests:  t.Requests,
 			Error:     t.Error,
 			Busy:      t.State == tunnel.StateOpening || t.State == tunnel.StateClosing,
 			Active:    t.State == tunnel.StateActive,

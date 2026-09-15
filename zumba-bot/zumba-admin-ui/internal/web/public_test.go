@@ -80,7 +80,7 @@ func TestOeffentlichSeiteZeigtZielUndZustand(t *testing.T) {
 		t.Fatalf("code = %d", rec.Code)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Wrapped", "öffentlich erreichbar", "https://abc.ngrok-free.app", "12 Aufrufe"} {
+	for _, want := range []string{"Wrapped", "öffentlich erreichbar", "https://abc.ngrok-free.app", "schließt"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("Seite enthält %q nicht", want)
 		}

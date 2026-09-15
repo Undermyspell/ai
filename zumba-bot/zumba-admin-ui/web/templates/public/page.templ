@@ -23,7 +23,6 @@ type TargetVM struct {
 	SinceText   string
 	ExpiresText string
 	Error       string
-	Requests    int64
 	// Busy: baut gerade auf oder ab — Knöpfe sind dann gesperrt.
 	Busy   bool
 	Active bool
@@ -109,8 +108,6 @@ templ card(t TargetVM, opts []TTLOption) {
 					<span class="public-sep">·</span>
 					{ t.ExpiresText }
 				}
-				<span class="public-sep">·</span>
-				{ strconv.FormatInt(t.Requests, 10) } Aufrufe
 			</p>
 		}
 		if t.Error != "" {

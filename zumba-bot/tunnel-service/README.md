@@ -32,6 +32,14 @@ Abbau läuft im Hintergrund. Genau deshalb gibt es die Zustände `opening` und
 
 Zustände: `inactive` · `opening` · `active` · `closing` · `error`
 
+## Zähler
+
+`Tunnel.Requests` kommt aus den Metriken des Agenten (`metrics.http.count`) und
+bleibt bei uns **immer 0**: gezählt wird dort erst mit eingeschaltetem
+Request-Inspektor, und der hält Anfragen und Antworten im Speicher des Agenten —
+auf dem Pi nicht erwünscht. Das Feld bleibt im Status, wird aber nirgends
+angezeigt.
+
 ## Abgleich mit dem Agenten
 
 Alle 5 Sekunden: abgelaufene Tunnel schließen, dann mit `GET /api/tunnels` abgleichen.

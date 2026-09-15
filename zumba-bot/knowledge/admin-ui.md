@@ -87,7 +87,7 @@ gegen den Classifier-Service.
 Schaltet Wrapped und das Admin-UI über ngrok ins Internet — für den Moment, in
 dem man den Wrapped-Link in die Gruppe schickt. Je Ziel eine Karte mit Zustand
 (*nicht erreichbar · baut auf · öffentlich erreichbar · baut ab · Fehler*),
-Adresse samt Kopierknopf, Laufzeit und Aufrufzähler. Beim Einschalten wählt man
+Adresse samt Kopierknopf und Laufzeit. Beim Einschalten wählt man
 2, 8 oder 24 Stunden; danach schließt der Tunnel von selbst, spätestens nachts
 um drei.
 
