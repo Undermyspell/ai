@@ -1,0 +1,32 @@
+{{- if .Values.ngrok.enabled -}}
+{{- $fullname := include "zumba.fullname" . -}}
+{{- $targets := list -}}
+{{- range .Values.ngrok.targets -}}
+{{- $targets = append $targets (dict "name" .name "label" .label "addr" (printf "%s-%s:%v" $fullname .service .port)) -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullname }}-ngrok
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.ngrok.labels" . | nindent 4 }}
+data:
+  # Konfiguration des ngrok-Agenten. web_addr auf 127.0.0.1: die Agent-API
+  # kennt keine Authentifizierung und kann beliebige Tunnel aufmachen — sie
+  # darf deshalb nur aus dem eigenen Pod erreichbar sein, nicht als Service im
+  # Namespace. Der Authtoken kommt per NGROK_AUTHTOKEN aus dem Secret.
+  ngrok.yml: |
+    version: "3"
+    web_addr: 127.0.0.1:4040
+    log: stdout
+    log_level: info
+  # Die Ziel-Liste des tunnel-service. Adressen stehen ausschließlich hier;
+  # ein Aufrufer wählt nur den Namen und kann sich kein eigenes Ziel wünschen.
+  TUNNEL_TARGETS: {{ toJson $targets | quote }}
+  DEFAULT_TTL: {{ .Values.ngrok.defaultTTL | quote }}
+  MAX_TTL: {{ .Values.ngrok.maxTTL | quote }}
+  AGENT_API: "http://127.0.0.1:4040"
+  PORT: {{ .Values.ngrok.service.port | quote }}
+  TZ: {{ .Values.ngrok.timeZone | quote }}
+{{- end }}

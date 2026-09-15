@@ -23,6 +23,7 @@ import (
 	"github.com/michael/zumba-admin-ui/internal/config"
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
+	"github.com/michael/zumba-admin-ui/internal/tunnel"
 	"github.com/michael/zumba-admin-ui/web/templates"
 	"github.com/michael/zumba-admin-ui/web/templates/bottest"
 	"github.com/michael/zumba-admin-ui/web/templates/dashboard"
@@ -37,13 +38,26 @@ type Server struct {
 	cfg      config.Config
 	mockMode bool
 
+	// tunnel steuert die öffentlichen ngrok-Tunnel. nil = TUNNEL_URL nicht
+	// gesetzt, dann gibt es die Öffentlich-Seite nur als Hinweis.
+	tunnel tunnelClient
+	gate   publicGate
+
+	// loginThrottle bremst Fehlversuche am Login — wichtig, sobald die Seite
+	// über einen Tunnel öffentlich erreichbar ist.
+	loginThrottle loginThrottle
+
 	// ephemeralKey signiert Session-Cookies, wenn kein SESSION_SECRET gesetzt
 	// ist. Er lebt nur so lange wie der Prozess.
 	ephemeralKey []byte
 }
 
 func New(s store.Store, cfg config.Config, mockMode bool) *Server {
-	return &Server{store: s, cfg: cfg, mockMode: mockMode, ephemeralKey: randomKey()}
+	srv := &Server{store: s, cfg: cfg, mockMode: mockMode, ephemeralKey: randomKey()}
+	if cfg.TunnelURL != "" {
+		srv.tunnel = tunnel.New(cfg.TunnelURL)
+	}
+	return srv
 }
 
 func (s *Server) Routes() http.Handler {
@@ -78,18 +92,34 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /strafen", s.handleAddStrafe)
 	mux.HandleFunc("POST /strafen/{id}/begleichen", s.handleBegleicheStrafe)
 	mux.HandleFunc("DELETE /strafen/{id}", s.handleDeleteStrafe)
-	mux.HandleFunc("GET /bot-test", s.handleBotTest)
-	mux.HandleFunc("GET /bot-test/example/{kind}", s.handleBotTestExample)
-	mux.HandleFunc("POST /bot-test/run", s.handleBotTestRun)
+	// Bot- und ML-Test bleiben zu, solange etwas öffentlich hängt: die
+	// Bot-Test-Seite kann im Preview-Modus eine echte WhatsApp-Nachricht
+	// auslösen (siehe blockWhilePublic).
+	sealed := func(h http.HandlerFunc) http.HandlerFunc {
+		return s.blockWhilePublic(h).ServeHTTP
+	}
+	mux.HandleFunc("GET /bot-test", sealed(s.handleBotTest))
+	mux.HandleFunc("GET /bot-test/example/{kind}", sealed(s.handleBotTestExample))
+	mux.HandleFunc("POST /bot-test/run", sealed(s.handleBotTestRun))
 	mux.HandleFunc("GET /trace", s.handleTraceList)
 	mux.HandleFunc("GET /trace/{id}", s.handleTraceDetail)
 	mux.HandleFunc("GET /ml-shadow", s.handleMLShadow)
 	mux.HandleFunc("POST /ml-shadow/verify/{id}", s.handleMLVerify)
-	mux.HandleFunc("GET /ml-test", s.handleMLTest)
-	mux.HandleFunc("POST /ml-test/run", s.handleMLTestRun)
-	mux.HandleFunc("POST /ml-test/judge/{id}", s.handleMLTestJudge)
-	mux.HandleFunc("DELETE /ml-test/{id}", s.handleMLTestDelete)
+	mux.HandleFunc("GET /ml-test", sealed(s.handleMLTest))
+	mux.HandleFunc("POST /ml-test/run", sealed(s.handleMLTestRun))
+	mux.HandleFunc("POST /ml-test/judge/{id}", sealed(s.handleMLTestJudge))
+	mux.HandleFunc("DELETE /ml-test/{id}", sealed(s.handleMLTestDelete))
 	mux.HandleFunc("GET /ml-doku", s.handleMLDocs)
+
+	// Öffentlich-Seite. Schalten geht nur, wenn es einen tunnel-service gibt —
+	// ohne ihn zeigt die Seite bloß den Hinweis.
+	mux.HandleFunc("GET /public", s.handlePublic)
+	if s.tunnel != nil {
+		mux.HandleFunc("GET /public/status", s.handlePublicStatus)
+		mux.HandleFunc("POST /public/open", s.handlePublicOpen)
+		mux.HandleFunc("POST /public/close", s.handlePublicClose)
+		mux.HandleFunc("POST /public/close-all", s.handlePublicCloseAll)
+	}
 
 	return logRequests(s.requireLogin(mux))
 }
@@ -151,11 +181,16 @@ func (s *Server) requireWritable(w http.ResponseWriter, r *http.Request, date ti
 }
 
 func (s *Server) meta(title, active string) templates.PageMeta {
+	// PublicOpen kommt aus dem zwischengespeicherten Stand — für das Ausblenden
+	// der gesperrten Menüpunkte reicht das, und es spart pro Seitenaufruf eine
+	// Anfrage an den tunnel-service.
+	open, _ := s.gate.get()
 	return templates.PageMeta{
 		Title:       title,
 		ActiveNav:   active,
 		MockMode:    s.mockMode,
 		AuthEnabled: s.cfg.Auth.Enabled(),
+		PublicOpen:  open,
 	}
 }
 

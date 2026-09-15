@@ -1,0 +1,167 @@
+package public
+
+import "strconv"
+
+// VM ist die fertige Anzeige der Öffentlich-Seite. Umrechnungen (Restzeit,
+// Zustandstexte) passieren im Handler, hier wird nur noch ausgegeben.
+type VM struct {
+	// Configured: TUNNEL_URL ist gesetzt, es gibt also einen tunnel-service.
+	Configured bool
+	// Err: der tunnel-service antwortet nicht. Die Seite bleibt stehen und
+	// zeigt den Grund — sie pollt weiter, das erholt sich von selbst.
+	Err        string
+	Targets    []TargetVM
+	TTLOptions []TTLOption
+}
+
+type TargetVM struct {
+	Name        string
+	Label       string
+	State       string // inactive | opening | active | closing | error
+	StateText   string
+	URL         string
+	SinceText   string
+	ExpiresText string
+	Error       string
+	Requests    int64
+	// Busy: baut gerade auf oder ab — Knöpfe sind dann gesperrt.
+	Busy   bool
+	Active bool
+}
+
+type TTLOption struct {
+	Hours    int
+	Label    string
+	Selected bool
+}
+
+templ Page(vm VM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Zugang von außen</div>
+		<h1>Öffentlich</h1>
+		<p class="meta">
+			Schaltet Wrapped und das Admin-UI über einen ngrok-Tunnel ins Internet.
+			Der Tunnel schließt nach Ablauf der gewählten Zeit von selbst, spätestens
+			nachts um drei.
+		</p>
+	</div>
+	if vm.Configured {
+		@Cards(vm)
+	} else {
+		<div class="trace-empty enter">
+			<span class="te-glyph">🔌</span>
+			<p>Kein tunnel-service konfiguriert (TUNNEL_URL fehlt).</p>
+		</div>
+	}
+}
+
+// Cards ist der pollende Teil: die Karte tauscht sich selbst aus. Während ein
+// Auf- oder Abbau läuft alle 2 Sekunden, sonst gemächlicher — der Zustand
+// ändert sich dann ja nur, wenn jemand drückt.
+templ Cards(vm VM) {
+	<div
+		id="public-status"
+		class="public-status enter"
+		hx-get="/public/status"
+		hx-trigger={ pollTrigger(vm) }
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		if vm.Err != "" {
+			<div class="public-offline">
+				<span class="po-glyph">⚠️</span>
+				<div>
+					<strong>tunnel-service nicht erreichbar</strong>
+					<p>{ vm.Err }</p>
+				</div>
+			</div>
+		}
+		for _, t := range vm.Targets {
+			@card(t, vm.TTLOptions)
+		}
+		if anyOpen(vm) {
+			<form hx-post="/public/close-all" hx-target="#public-status" hx-swap="outerHTML">
+				<button type="submit" class="public-panic">Alles schließen</button>
+			</form>
+		}
+	</div>
+}
+
+templ card(t TargetVM, opts []TTLOption) {
+	<section class={ "public-card", "is-" + t.State }>
+		<header class="public-card-head">
+			<h2>{ t.Label }</h2>
+			<span class={ "public-badge", "pb-" + t.State }>
+				if t.Busy {
+					<span class="pb-spinner" aria-hidden="true"></span>
+				}
+				{ t.StateText }
+			</span>
+		</header>
+		if t.Active && t.URL != "" {
+			<div class="public-url">
+				<a href={ templ.SafeURL(t.URL) } target="_blank" rel="noopener noreferrer">{ t.URL }</a>
+				<button type="button" class="public-copy" data-copy={ t.URL } title="Adresse kopieren">Kopieren</button>
+			</div>
+			<p class="public-meta">
+				{ t.SinceText }
+				if t.ExpiresText != "" {
+					<span class="public-sep">·</span>
+					{ t.ExpiresText }
+				}
+				<span class="public-sep">·</span>
+				{ strconv.FormatInt(t.Requests, 10) } Aufrufe
+			</p>
+		}
+		if t.Error != "" {
+			<p class="public-err">{ t.Error }</p>
+		}
+		<div class="public-actions">
+			if t.Active {
+				<form hx-post="/public/close" hx-target="#public-status" hx-swap="outerHTML">
+					<input type="hidden" name="target" value={ t.Name }/>
+					<button type="submit" class="public-stop">Schließen</button>
+				</form>
+			} else {
+				<form hx-post="/public/open" hx-target="#public-status" hx-swap="outerHTML">
+					<input type="hidden" name="target" value={ t.Name }/>
+					<label class="public-ttl">
+						für
+						<select name="hours" id={ "ttl-" + t.Name } hx-preserve="true">
+							for _, o := range opts {
+								if o.Selected {
+									<option value={ strconv.Itoa(o.Hours) } selected>{ o.Label }</option>
+								} else {
+									<option value={ strconv.Itoa(o.Hours) }>{ o.Label }</option>
+								}
+							}
+						</select>
+					</label>
+					<button type="submit" class="btn-primary" disabled?={ t.Busy }>Öffentlich schalten</button>
+				</form>
+			}
+		</div>
+	</section>
+}
+
+// pollTrigger: schnell nachfragen, solange sich etwas bewegt.
+func pollTrigger(vm VM) string {
+	for _, t := range vm.Targets {
+		if t.Busy {
+			return "every 2s"
+		}
+	}
+	if vm.Err != "" {
+		return "every 5s"
+	}
+	return "every 10s"
+}
+
+func anyOpen(vm VM) bool {
+	for _, t := range vm.Targets {
+		if t.Active || t.Busy {
+			return true
+		}
+	}
+	return false
+}

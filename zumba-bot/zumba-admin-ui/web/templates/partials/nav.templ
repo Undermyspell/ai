@@ -20,11 +20,30 @@ var primaryNav = []navItem{
 // und nie unterwegs. Auf dem Desktop zeigt die Seitenleiste beide Gruppen
 // untereinander, dort ist Platz genug.
 var moreNav = []navItem{
+	{Key: "public", Href: "/public", Icon: "🌍", Label: "Öffentlich"},
 	{Key: "bottest", Href: "/bot-test", Icon: "🤖", Label: "Bot-Test"},
 	{Key: "trace", Href: "/trace", Icon: "📜", Label: "Verlauf"},
 	{Key: "mlshadow", Href: "/ml-shadow", Icon: "🧠", Label: "ML-Shadow"},
 	{Key: "mltest", Href: "/ml-test", Icon: "🧪", Label: "ML-Test"},
 	{Key: "mldocs", Href: "/ml-doku", Icon: "📖", Label: "ML-Doku"},
+}
+
+// sealedWhilePublic: diese Seiten sind gesperrt, solange ein Tunnel offen ist
+// (Bot-Test kann echte Nachrichten verschicken). Sie aus dem Menü zu nehmen
+// erspart den Klick ins Leere.
+var sealedWhilePublic = map[string]bool{"bottest": true, "mltest": true}
+
+func visibleMore(publicOpen bool) []navItem {
+	if !publicOpen {
+		return moreNav
+	}
+	out := make([]navItem, 0, len(moreNav))
+	for _, item := range moreNav {
+		if !sealedWhilePublic[item.Key] {
+			out = append(out, item)
+		}
+	}
+	return out
 }
 
 // inMore: liegt die aktive Seite im Mehr-Menü, wird der Knopf selbst markiert —
@@ -38,7 +57,7 @@ func inMore(active string) bool {
 	return false
 }
 
-templ Nav(active string) {
+templ Nav(active string, publicOpen bool) {
 	<nav class="app-nav" aria-label="Hauptnavigation">
 		for _, item := range primaryNav {
 			@navLink(item, item.Key == active)
@@ -50,8 +69,11 @@ templ Nav(active string) {
 			</summary>
 			<div class="nav-more-panel">
 				<p class="nav-more-head">Werkzeuge</p>
-				for _, item := range moreNav {
+				for _, item := range visibleMore(publicOpen) {
 					@navLink(item, item.Key == active)
+				}
+				if publicOpen {
+					<p class="nav-more-note">Bot- und ML-Test gesperrt, solange ein Tunnel offen ist.</p>
 				}
 			</div>
 		</details>

@@ -1550,3 +1550,74 @@ h3 { font-size: 17px; line-height: 1.25; }
   font-size: 13px;
   color: var(--ink-faint);
 }
+
+/* ── Öffentlich (ngrok-Tunnel) ───────────────────────────────────────────── */
+.public-status { display: grid; gap: var(--space-4); }
+.public-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card);
+}
+.public-card.is-active { border-color: var(--success); }
+.public-card.is-error { border-color: var(--danger); }
+.public-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.public-card-head h2 { font-size: 20px; margin: 0; }
+
+.public-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px;
+  color: var(--ink-soft); background: var(--bg-sunk);
+}
+.public-badge.pb-active { color: var(--success); background: var(--success-soft); }
+.public-badge.pb-error { color: var(--danger); background: var(--danger-soft); }
+.public-badge.pb-opening, .public-badge.pb-closing { color: var(--accent); background: var(--accent-soft); }
+
+/* Der Kreisel läuft nur während Auf- und Abbau — er ist das Signal, dass
+   gerade etwas passiert. */
+.pb-spinner {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: pb-spin .7s linear infinite;
+}
+@keyframes pb-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pb-spinner { animation: none; } }
+
+.public-url { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-2); }
+.public-url a { font-family: var(--font-mono); font-size: 14px; word-break: break-all; color: var(--accent); }
+.public-copy {
+  font-size: 12px; padding: 2px 10px; border-radius: 999px;
+  border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-soft); cursor: pointer;
+}
+.public-copy:hover { color: var(--ink); border-color: var(--ink-faint); }
+.public-copy.is-copied { color: var(--success); border-color: var(--success); }
+
+.public-meta { font-size: 13px; color: var(--ink-soft); margin-bottom: var(--space-3); }
+.public-sep { opacity: .5; margin: 0 6px; }
+.public-err { font-size: 13px; color: var(--danger); font-family: var(--font-mono); margin-bottom: var(--space-3); }
+
+.public-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.public-actions form { display: flex; align-items: center; gap: var(--space-2); }
+.public-ttl { font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+.public-ttl select { padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--rule-strong); background: var(--bg); color: var(--ink); }
+.public-stop {
+  padding: 8px 16px; border-radius: var(--radius); cursor: pointer;
+  border: 1px solid var(--danger); background: transparent; color: var(--danger); font-weight: 600;
+}
+.public-stop:hover { background: var(--danger-soft); }
+.public-panic {
+  width: 100%; padding: 10px; border-radius: var(--radius); cursor: pointer;
+  border: 1px dashed var(--rule-strong); background: transparent; color: var(--ink-soft); font-size: 13px;
+}
+.public-panic:hover { color: var(--danger); border-color: var(--danger); }
+
+.public-offline {
+  display: flex; gap: var(--space-3); align-items: flex-start;
+  padding: var(--space-4); border-radius: var(--radius-lg);
+  background: var(--danger-soft); border: 1px solid var(--danger);
+}
+.public-offline .po-glyph { font-size: 20px; }
+.public-offline p { font-size: 13px; color: var(--ink-soft); font-family: var(--font-mono); margin: 2px 0 0; }
+
+.nav-more-note { font-size: 12px; color: var(--ink-faint); padding: var(--space-2) var(--space-3) 0; line-height: 1.4; }

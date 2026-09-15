@@ -117,6 +117,7 @@ Metriken je Klasse, Schwellen-Sweep, alle Fehlklassifikationen im Wortlaut, Glos
 | [`zumba-admin-ui/`](zumba-bot/zumba-admin-ui/) | Go · Adminoberfläche (templ + HTMX): Anwesenheiten, Sperrtage, Strafen, Bot-Test |
 | [`wrapped/`](zumba-bot/wrapped/) | Go · Jahresrückblick `/2026` (25 Slides, auf Staging) |
 | [`renderer-service/`](zumba-bot/renderer-service/) | Go · HTML → PNG via headless Chromium (Statistik-Bild-Karte) |
+| [`tunnel-service/`](zumba-bot/tunnel-service/) | Go · schaltet die öffentlichen ngrok-Tunnel (Sidecar am ngrok-Agent) |
 | [`shared/`](zumba-bot/shared/) | Go · gemeinsames Modul: Strafen-Logik, Rangliste-Query, DB-Zugriffe |
 | [`deployment/`](zumba-bot/deployment/) | ArgoCD ApplicationSet · Helm · SealedSecrets · system-upgrade-controller |
 | [`knowledge/`](zumba-bot/knowledge/) | Fachliche Doku: Domänenmodell, Strafregeln, Deployment |

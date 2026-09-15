@@ -1,0 +1,20 @@
+{{- if .Values.ngrok.enabled -}}
+# Nur der tunnel-service ist im Namespace erreichbar (Port 8080). Die
+# Agent-API auf 4040 bleibt absichtlich im Pod.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zumba.fullname" . }}-ngrok
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.ngrok.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.ngrok.service.type }}
+  ports:
+    - port: {{ .Values.ngrok.service.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "zumba.ngrok.selectorLabels" . | nindent 4 }}
+{{- end }}

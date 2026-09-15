@@ -1,0 +1,80 @@
+{{- if .Values.ngrok.enabled -}}
+# Ein Pod, zwei Container: der ngrok-Agent (tunnelt, wenn man ihm sagt) und
+# der tunnel-service (sagt es ihm und hält die Ablauffristen). Beide zusammen,
+# weil sie dieselbe Lebensdauer haben müssen: stirbt der Pod, sind Tunnel und
+# Fristen gleichzeitig weg — kein verwaister Tunnel ohne Aufpasser.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zumba.fullname" . }}-ngrok
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.ngrok.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  # Zwei Agenten gleichzeitig würden sich um dieselben Endpoint-Namen streiten.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "zumba.ngrok.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zumba.ngrok.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Änderungen an der Ziel-Liste sollen den Pod neu starten.
+        checksum/config: {{ include (print $.Template.BasePath "/ngrok/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: agent
+        image: "{{ .Values.ngrok.image.repository }}:{{ .Values.ngrok.image.tag }}"
+        imagePullPolicy: {{ .Values.ngrok.image.pullPolicy }}
+        # --none: Agent verbindet sich mit der ngrok-Cloud, öffnet aber keinen
+        # einzigen Tunnel. Alles Weitere kommt über die Agent-API.
+        args: ["start", "--none", "--config", "/etc/ngrok/ngrok.yml"]
+        env:
+        - name: NGROK_AUTHTOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.ngrok.authtoken.existingSecret }}
+              key: {{ .Values.ngrok.authtoken.key }}
+        volumeMounts:
+        - name: config
+          mountPath: /etc/ngrok
+          readOnly: true
+        resources:
+          {{- toYaml .Values.ngrok.resources.agent | nindent 10 }}
+      - name: tunnel-service
+        image: "{{ .Values.ngrok.controller.image.repository }}:{{ .Values.ngrok.controller.image.tag }}"
+        imagePullPolicy: {{ .Values.ngrok.controller.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "zumba.fullname" . }}-ngrok
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.ngrok.resources.controller | nindent 10 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "zumba.fullname" . }}-ngrok
+          items:
+          - key: ngrok.yml
+            path: ngrok.yml
+{{- end }}

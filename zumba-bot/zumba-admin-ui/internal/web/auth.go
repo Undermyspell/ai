@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/michael/zumba-admin-ui/web/templates/login"
@@ -19,10 +20,52 @@ import (
 const (
 	sessionCookieName = "zumba_admin_session"
 	sessionTTL        = 7 * 24 * time.Hour
-	// Kleine Bremse gegen stumpfes Durchprobieren. Ein Nutzer, ein Passwort –
-	// mehr Schutz braucht das Logbuch nicht.
+	// Bremse gegen stumpfes Durchprobieren: die Wartezeit verdoppelt sich mit
+	// jedem Fehlversuch, gedeckelt bei maxLoginDelay. Nach einer erfolgreichen
+	// Anmeldung oder loginFailWindow ohne Fehlversuch fängt sie wieder bei
+	// failedLoginDelay an.
+	//
+	// Bewusst eine Verzögerung und keine Sperre: gesperrt würde auch der
+	// Besitzer aussperren, und das ließe sich von außen mutwillig auslösen.
+	// Fünf Fehlversuche kosten hier schon über eine Minute, tausende sind
+	// damit praktisch ausgeschlossen.
 	failedLoginDelay = 500 * time.Millisecond
+	maxLoginDelay    = 30 * time.Second
+	loginFailWindow  = 15 * time.Minute
 )
+
+// loginThrottle zählt Fehlversuche über alle Aufrufer hinweg. Hinter ngrok
+// oder Traefik käme ohnehin jede Anfrage von derselben Adresse — nach IP zu
+// zählen würde nur Genauigkeit vortäuschen.
+type loginThrottle struct {
+	mu    sync.Mutex
+	fails int
+	last  time.Time
+}
+
+// fail zählt einen Fehlversuch und liefert die Wartezeit für diese Antwort.
+func (t *loginThrottle) fail(now time.Time) time.Duration {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if !t.last.IsZero() && now.Sub(t.last) > loginFailWindow {
+		t.fails = 0
+	}
+	t.last = now
+	t.fails++
+
+	delay := failedLoginDelay << min(t.fails-1, 16)
+	if delay > maxLoginDelay || delay <= 0 {
+		delay = maxLoginDelay
+	}
+	return delay
+}
+
+func (t *loginThrottle) reset() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.fails = 0
+	t.last = time.Time{}
+}
 
 // sessionKey liefert den HMAC-Schlüssel für das Session-Cookie. Ohne
 // konfiguriertes SESSION_SECRET wird beim Start einer gewürfelt – dann sind
@@ -172,13 +215,15 @@ func (s *Server) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	userOK := subtle.ConstantTimeCompare([]byte(user), []byte(s.cfg.Auth.User)) == 1
 	passOK := subtle.ConstantTimeCompare([]byte(pass), []byte(s.cfg.Auth.Password)) == 1
 	if !userOK || !passOK {
-		time.Sleep(failedLoginDelay)
-		log.Printf("login fehlgeschlagen für %q", user)
+		delay := s.loginThrottle.fail(time.Now())
+		time.Sleep(delay)
+		log.Printf("login fehlgeschlagen für %q (Bremse %s)", user, delay)
 		w.WriteHeader(http.StatusUnauthorized)
 		s.renderLogin(w, r, next, "Benutzername oder Passwort stimmt nicht.")
 		return
 	}
 
+	s.loginThrottle.reset()
 	s.setSessionCookie(w, s.cfg.Auth.User)
 	http.Redirect(w, r, safeNext(next), http.StatusSeeOther)
 }

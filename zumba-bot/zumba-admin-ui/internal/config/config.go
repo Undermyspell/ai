@@ -17,6 +17,10 @@ type Config struct {
 	// manuellen ML-Test). Leer = Seite meldet "nicht konfiguriert".
 	ClassifierURL string
 
+	// TunnelURL ist die Basis-URL des tunnel-service (Öffentlich-Seite).
+	// Leer = kein ngrok im Cluster, die Seite meldet "nicht konfiguriert".
+	TunnelURL string
+
 	Auth AuthConfig
 }
 
@@ -70,6 +74,7 @@ func Load() (Config, error) {
 		},
 		BotURL:        getenv("BOT_URL", "http://localhost:8080"),
 		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
+		TunnelURL:     os.Getenv("TUNNEL_URL"),
 		Auth: AuthConfig{
 			User:          getenv("ADMIN_USER", "admin"),
 			Password:      os.Getenv("ADMIN_PASSWORD"),

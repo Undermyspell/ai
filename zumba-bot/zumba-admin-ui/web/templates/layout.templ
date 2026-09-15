@@ -11,6 +11,10 @@ type PageMeta struct {
 	// Abmelden-Knopf.
 	AuthEnabled bool
 
+	// PublicOpen: gerade hängt etwas öffentlich im Netz. Bot- und ML-Test sind
+	// dann gesperrt und verschwinden aus dem Menü, und der Header sagt, warum.
+	PublicOpen bool
+
 	// Jahresbezug. Nur Seiten mit Auswertungszeitraum füllen das – Bot-Test
 	// und die ML-Seiten lassen es leer, dann entfällt der Umschalter.
 	Season         string // Label des angezeigten Stammtischjahres, z. B. "2026"
@@ -39,6 +43,7 @@ templ Layout(meta PageMeta) {
 			<script src="/static/js/htmx.min.js" defer></script>
 			<script src="/static/js/toast.js" defer></script>
 			<script src="/static/js/nav.js" defer></script>
+			<script src="/static/js/public.js" defer></script>
 		</head>
 		<body>
 			<div class="app">
@@ -60,7 +65,7 @@ templ Layout(meta PageMeta) {
 						}
 					</div>
 				</header>
-				@partials.Nav(meta.ActiveNav)
+				@partials.Nav(meta.ActiveNav, meta.PublicOpen)
 				<main class="app-main">
 					if meta.MockMode {
 						@partials.Banner("Mock-Daten aktiv – keine Verbindung zur Datenbank.")

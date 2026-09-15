@@ -1,0 +1,51 @@
+{{- if and .Values.ngrok.enabled .Values.ngrok.autoClose.enabled -}}
+# Sicherheitsnetz: schließt nachts alles, was noch offen ist. Der tunnel-service
+# hat eigene Ablauffristen — dieser Job ist der stumpfe zweite Riegel für den
+# Fall, dass die Frist nie greift (Container neu gestartet, Uhr verstellt).
+# Das Image ist das des tunnel-service, es bringt busybox-wget mit; so kommt
+# kein weiteres Fremd-Image in den Cluster.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "zumba.fullname" . }}-ngrok-close-all
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.ngrok.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.ngrok.autoClose.schedule | quote }}
+  timeZone: {{ .Values.ngrok.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            {{- include "zumba.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: ngrok-close-all
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: close-all
+            image: "{{ .Values.ngrok.controller.image.repository }}:{{ .Values.ngrok.controller.image.tag }}"
+            imagePullPolicy: {{ .Values.ngrok.controller.image.pullPolicy }}
+            command:
+            - sh
+            - -c
+            - |
+              set -e
+              wget -q -O- --post-data='' \
+                http://{{ include "zumba.fullname" . }}-ngrok:{{ .Values.ngrok.service.port }}/close-all
+              echo
+            resources:
+              requests:
+                cpu: 10m
+                memory: 16Mi
+              limits:
+                cpu: 100m
+                memory: 32Mi
+{{- end }}

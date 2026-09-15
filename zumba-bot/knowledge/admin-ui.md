@@ -82,6 +82,31 @@ Tabelle `ml_test_messages`: gesammelte Beispielnachrichten für den
 Classifier-Vergleich (LLM vs. eigenes Modell); manueller Klassifikations-Test
 gegen den Classifier-Service.
 
+### Öffentlich (`/public`)
+
+Schaltet Wrapped und das Admin-UI über ngrok ins Internet — für den Moment, in
+dem man den Wrapped-Link in die Gruppe schickt. Je Ziel eine Karte mit Zustand
+(*nicht erreichbar · baut auf · öffentlich erreichbar · baut ab · Fehler*),
+Adresse samt Kopierknopf, Laufzeit und Aufrufzähler. Beim Einschalten wählt man
+2, 8 oder 24 Stunden; danach schließt der Tunnel von selbst, spätestens nachts
+um drei.
+
+Die Seite fragt den Zustand laufend nach — alle 2 Sekunden, solange etwas auf-
+oder abbaut, sonst gemächlicher. Der Aufbau dauert ein paar Sekunden, deshalb
+gibt es die Zwischenzustände überhaupt.
+
+Zwei Dinge, die dranhängen:
+
+- **Bot-Test und ML-Test sind gesperrt, solange etwas offen ist** (im Menü
+  ausgeblendet, Aufruf gibt 403). Der Preview-Modus des Bot-Tests schickt eine
+  echte WhatsApp-Nachricht — das darf niemand auslösen, der zufällig auf der
+  öffentlichen Adresse landet.
+- **Der Login bremst Fehlversuche exponentiell** (0,5 s, 1 s, 2 s … bis 30 s,
+  Rücksetzung nach erfolgreicher Anmeldung oder 15 Minuten Ruhe). Bewusst keine
+  Sperre: die ließe sich von außen auslösen, um den Besitzer auszusperren.
+
+Ohne `TUNNEL_URL` (kein ngrok im Cluster) zeigt die Seite nur einen Hinweis.
+
 ## Verhalten ohne Datenbank
 
 Ist die DB nicht erreichbar, läuft das UI mit Mock-Daten weiter (nur

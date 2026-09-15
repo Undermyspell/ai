@@ -162,6 +162,8 @@ Each environment has its own encrypted SealedSecrets (safe to commit to git):
 - `evolution-api-secrets`: Evolution API key
 - `whatsapp-bot-secrets`: WhatsApp bot secrets (Gemini key, group JIDs)
 - `rclone-config`: rclone.conf for the Postgres backup upload to Google Drive (see "Postgres-Backup")
+- `admin-ui-secrets`: Admin-UI login (`ADMIN_PASSWORD`, `SESSION_SECRET`)
+- `ngrok-secrets`: ngrok authtoken for the public-access tunnels (see "Öffentlicher Zugang (ngrok)")
 
 **⚠️ Important:** Staging and production use **different** secrets!
 
@@ -298,6 +300,57 @@ kubectl delete pvc zumba-n8n-data -n zumba-staging
 kubectl delete pod <pod-name> -n zumba-staging
 # 3. New PVC will be created with new size
 ```
+
+---
+
+## 🌍 Öffentlicher Zugang (ngrok)
+
+Wrapped und Admin-UI lassen sich zeitweise ins Internet schalten (Admin-UI → „Öffentlich").
+Im Cluster läuft dafür ein Pod mit zwei Containern: der **ngrok-Agent** (`start --none`,
+Agent-API nur auf `127.0.0.1:4040`) und der **tunnel-service**, der ihn steuert und die
+Ablauffristen hält. Templates: `templates/ngrok/`, gated per `ngrok.enabled`.
+
+### Einmalige Einrichtung
+
+```bash
+# 1. Authtoken im ngrok-Dashboard holen (Agents → Authtokens).
+#    Empfehlung: einen eigenen Token je Cluster anlegen, dann lässt er sich
+#    einzeln widerrufen.
+
+# 2. SealedSecret anlegen (Token NICHT in die Shell-History, daher -r/-s lesen)
+cd deployment/scripts
+read -rs NGROK_TOKEN && ./create-sealed-secret.sh staging ngrok-secrets NGROK_AUTHTOKEN="$NGROK_TOKEN" && unset NGROK_TOKEN
+```
+
+Danach das erzeugte `environments/staging/sealed-secrets/ngrok-secrets.yaml` in
+`environments/staging/kustomization.yaml` unter `resources:` eintragen — sonst wird es
+nie ausgerollt.
+
+**Reihenfolge beachten:** erst Secret committen, dann `ngrok.enabled: true`. Fehlt das
+Secret, bleibt der Pod in `CreateContainerConfigError` stehen (der Rest des Clusters
+läuft normal weiter).
+
+### Bedienung und Abschaltung
+
+Geschaltet wird ausschließlich im Admin-UI unter „Öffentlich". Zu geht der Tunnel auf
+drei Wegen: von Hand, nach Ablauf der gewählten Laufzeit (`ngrok.defaultTTL`, Deckel
+`ngrok.maxTTL`), oder durch den CronJob `zumba-ngrok-close-all` (`ngrok.autoClose`).
+
+```bash
+# Was hängt gerade öffentlich?
+kubectl exec -n zumba-staging deploy/zumba-ngrok -c tunnel-service --   wget -qO- http://localhost:8080/status
+
+# Not-Aus von der Kommandozeile
+kubectl exec -n zumba-staging deploy/zumba-ngrok -c tunnel-service --   wget -qO- --post-data='' http://localhost:8080/close-all
+
+# Logs des Agenten
+kubectl logs -n zumba-staging deploy/zumba-ngrok -c agent
+```
+
+Ziele stehen in `ngrok.targets` (Name, Anzeigename, Service-Suffix, Port). Die Adressen
+kommen ausschließlich von dort — das Admin-UI schickt nur einen Namen. Ein Tunnel zeigt
+**direkt auf den Service**, nicht über Traefik (Host-Header-Match und https-Umleitung
+würden sonst dazwischenfunken).
 
 ---
 

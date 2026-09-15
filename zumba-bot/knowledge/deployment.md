@@ -31,10 +31,41 @@ SealedSecrets. Chart und Umgebungen müssen deshalb zusammen im
 | zumba-classifier | ML-Schattenmodell für den Klassifikator-Vergleich |
 | wrapped | Jahresrückblick (seit 08/2026) |
 | zumba-renderer | HTML → PNG (headless Chromium) für die Statistik-Bild-Karte (seit 08/2026) |
+| ngrok | Agent + tunnel-service: öffentlicher Zugang auf Knopfdruck (seit 09/2026) |
 
-Erreichbarkeit: nur im Heimnetz, HTTP über Traefik-IngressRoutes. n8n,
-Admin-UI und Wrapped haben je einen eigenen Hostnamen — die konkreten Hosts
+Erreichbarkeit: im Normalfall nur im Heimnetz, HTTP über Traefik-IngressRoutes.
+n8n, Admin-UI und Wrapped haben je einen eigenen Hostnamen — die konkreten Hosts
 stehen pro Umgebung in `environments/<env>/values.yaml` (nicht in der Doku).
+
+## Öffentlicher Zugang auf Zeit (ngrok)
+
+Wrapped und Admin-UI lassen sich vorübergehend ins Internet schalten, ohne am
+Router etwas zu öffnen. Zuständig ist ein Pod mit zwei Containern:
+
+- **ngrok-Agent**, gestartet mit `start --none` — verbunden, aber ohne einen
+  einzigen Tunnel. Seine Agent-API lauscht auf `127.0.0.1:4040` und ist damit
+  nur im eigenen Pod erreichbar. Das ist der springende Punkt: die API kennt
+  keine Authentifizierung und könnte jedes Ziel im Namespace veröffentlichen,
+  auch Postgres.
+- **tunnel-service** (`tunnel-service/`) — die schmale Fassade davor. Er kennt
+  eine feste Ziel-Liste (Adressen kommen nie aus dem Request), hält die
+  Ablauffristen und wird vom Admin-UI unter „Öffentlich" bedient.
+
+Der Tunnel zeigt **direkt auf den Service**, nicht über Traefik: die
+IngressRoutes matchen auf ihren Hostnamen (der ngrok-Host liefe ins Leere), und
+die https-Umleitung des Admin-UI würde über ngrok zur Endlosschleife.
+
+Abgeschaltet wird dreifach: von Hand im Admin-UI, nach Ablauf der gewählten
+Laufzeit (Vorgabe 2 h, Deckel 24 h), und als stumpfes Netz per CronJob um
+03:00. Stirbt der Pod, sind Tunnel und Fristen ohnehin gleichzeitig weg —
+deshalb sitzen Agent und tunnel-service zusammen in einem Pod.
+
+Solange ein Tunnel offen ist, sperrt das Admin-UI Bot-Test und ML-Test: der
+Preview-Modus des Bot-Tests verschickt echte WhatsApp-Nachrichten.
+
+Der Authtoken liegt im SealedSecret `ngrok-secrets` (`NGROK_AUTHTOKEN`). Ohne
+ihn startet der Agent-Container nicht — alles andere im Cluster bleibt davon
+unberührt.
 
 ## Image-Versorgung (Besonderheit: keine Registry)
 

@@ -175,3 +175,19 @@ wrapped selector labels
 {{ include "zumba.selectorLabels" . }}
 app.kubernetes.io/component: wrapped
 {{- end }}
+
+{{/*
+ngrok specific labels
+*/}}
+{{- define "zumba.ngrok.labels" -}}
+{{ include "zumba.labels" . }}
+app.kubernetes.io/component: ngrok
+{{- end }}
+
+{{/*
+ngrok selector labels
+*/}}
+{{- define "zumba.ngrok.selectorLabels" -}}
+{{ include "zumba.selectorLabels" . }}
+app.kubernetes.io/component: ngrok
+{{- end }}

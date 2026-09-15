@@ -23,4 +23,9 @@ data:
   # Manueller ML-Test: Admin-UI ruft den classifier-service direkt
   CLASSIFIER_URL: http://{{ include "zumba.fullname" . }}-classifier:{{ .Values.classifier.service.port }}
   {{- end }}
+  {{- if .Values.ngrok.enabled }}
+  # Öffentlich-Schalter: das Admin-UI redet mit dem tunnel-service, nie mit der
+  # ngrok-Agent-API selbst (die kann zu viel, siehe tunnel-service/README.md).
+  TUNNEL_URL: http://{{ include "zumba.fullname" . }}-ngrok:{{ .Values.ngrok.service.port }}
+  {{- end }}
 {{- end }}

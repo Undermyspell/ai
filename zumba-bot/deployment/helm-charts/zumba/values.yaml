@@ -333,3 +333,62 @@ wrapped:
   ingress:
     enabled: true
     host: zumba-wrapped.example.com  # per-environment überschreiben
+
+# ngrok: öffentlicher Zugang auf Knopfdruck. Der Pod läuft dauerhaft, tunnelt
+# aber nur, wenn jemand im Admin-UI drückt — und schließt nach Ablauf der Frist
+# von selbst wieder. Zwei Container: der ngrok-Agent und der tunnel-service,
+# der ihn steuert (siehe tunnel-service/README.md).
+ngrok:
+  enabled: false  # Auf true setzen, sobald Authtoken-Secret und Image da sind
+  image:
+    repository: ngrok/ngrok
+    tag: "3-alpine"
+    pullPolicy: IfNotPresent
+  controller:
+    image:
+      repository: zumba-tunnel
+      tag: "latest"
+      pullPolicy: IfNotPresent
+  authtoken:
+    # Authtoken des ngrok-Accounts, SealedSecret
+    # environments/<env>/sealed-secrets/ngrok-secrets.yaml
+    existingSecret: ngrok-secrets
+    key: NGROK_AUTHTOKEN
+  # Freischaltbare Ziele. "service" ist der Suffix des Cluster-Services
+  # ({{ fullname }}-<service>), der Rest ist Anzeige. Adressen stehen nur hier:
+  # das Admin-UI schickt einen Namen, nie eine Adresse.
+  targets:
+    - name: wrapped
+      label: Wrapped
+      service: wrapped
+      port: 8080
+    - name: admin
+      label: Admin-UI
+      service: admin-ui
+      port: 8080
+  # Laufzeit eines Tunnels. Ohne Angabe gilt defaultTTL, maxTTL deckelt jede
+  # Anfrage aus dem UI — ein Tunnel ohne Ende wäre das Gegenteil von temporär.
+  defaultTTL: 2h
+  maxTTL: 24h
+  autoClose:
+    enabled: true
+    schedule: "0 3 * * *"  # täglich 03:00, zweiter Riegel neben der Frist
+  timeZone: Europe/Berlin
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    agent:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    controller:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
