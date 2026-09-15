@@ -16,11 +16,14 @@ data:
   # kennt keine Authentifizierung und kann beliebige Tunnel aufmachen — sie
   # darf deshalb nur aus dem eigenen Pod erreichbar sein, nicht als Service im
   # Namespace. Der Authtoken kommt per NGROK_AUTHTOKEN aus dem Secret.
+  # Im v3-Schema liegen diese Felder unter "agent:" — auf oberster Ebene
+  # lehnt der Agent die Datei ab ("field web_addr not found").
   ngrok.yml: |
     version: "3"
-    web_addr: 127.0.0.1:4040
-    log: stdout
-    log_level: info
+    agent:
+      web_addr: 127.0.0.1:4040
+      log: stdout
+      log_level: info
   # Die Ziel-Liste des tunnel-service. Adressen stehen ausschließlich hier;
   # ein Aufrufer wählt nur den Namen und kann sich kein eigenes Ziel wünschen.
   TUNNEL_TARGETS: {{ toJson $targets | quote }}
