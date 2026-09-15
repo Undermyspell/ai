@@ -13,3 +13,4 @@ resources:
 - sealed-secrets/whatsapp-bot-secrets.yaml
 - sealed-secrets/rclone-config.yaml
 - sealed-secrets/admin-ui-secrets.yaml
+- sealed-secrets/ngrok-secrets.yaml

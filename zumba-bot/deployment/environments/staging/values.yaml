@@ -100,7 +100,7 @@ adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.4.2"
+    tag: "0.5.0"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io
@@ -118,3 +118,13 @@ wrapped:
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-wrapped-stage.192.168.178.46.nip.io
+
+# Öffentlicher Zugang auf Knopfdruck (ngrok-Agent + tunnel-service). Der Pod
+# läuft dauerhaft, Tunnel sind beim Start immer zu.
+ngrok:
+  enabled: true
+  controller:
+    image:
+      repository: zumba-tunnel
+      tag: "0.1.0"
+      pullPolicy: IfNotPresent
