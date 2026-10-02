@@ -52,6 +52,11 @@ func main() {
 		if err := pgStore.EnsureStrafenSchema(context.Background()); err != nil {
 			log.Printf("⚠️  strafen Schema: %v", err)
 		}
+		// Modellwahl des Bots (Seite /ki-modell). Die Startwerte trägt der
+		// Bot ein – er kennt GEMINI_MODEL/-FALLBACK_MODEL.
+		if err := pgStore.EnsureClassifierSchema(context.Background()); err != nil {
+			log.Printf("⚠️  classifier_models Schema: %v", err)
+		}
 		st = pgStore
 		defer pg.Close()
 	}

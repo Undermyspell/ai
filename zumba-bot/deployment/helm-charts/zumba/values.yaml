@@ -181,9 +181,11 @@ whatsappBot:
     DB_PORT: "5432"
     DB_USER: n8n
     DB_SSLMODE: disable
-    # Gemini-Modelle (Primär + Fallback wie im n8n-Agent)
-    GEMINI_MODEL: gemini-2.5-flash
-    GEMINI_FALLBACK_MODEL: gemini-3-flash-preview
+    # Classifier-Modelle (Haupt + Fallback, beide über die Gemini-API). Nur
+    # Startwerte: der Bot trägt sie in classifier_models ein, solange dort
+    # nichts gewählt ist – umgestellt wird im Admin-UI (Seite KI-Modell).
+    GEMINI_MODEL: gemma-4-31b-it
+    GEMINI_FALLBACK_MODEL: gemini-3.8-flash
     # Evolution API
     EVOLUTION_INSTANCE: whatsapp
     # Hinweis: ZUMBA_GROUP_JID + PREVIEW_JID (statische WhatsApp-Nummern) liegen

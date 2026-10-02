@@ -10,8 +10,13 @@ beantworten, Wochenreport verschicken.
 Webhook). Nachrichten außerhalb der Gruppe oder von unbekannten Nummern
 werden ignoriert.
 
-**Klassifikation**: Ein LLM (Google Gemini) beurteilt jede Nachricht mit
-genau drei möglichen Ergebnissen:
+**Klassifikation**: Ein LLM über die Gemini-API beurteilt jede Nachricht mit
+genau drei möglichen Ergebnissen. Welches Modell das ist (Haupt- und
+Fallback-Modell), stellt das Admin-UI auf der Seite *KI-Modell* um; der Bot
+liest die Wahl vor jeder Nachricht aus `classifier_models`, die Werte aus dem
+Deployment sind nur der Startwert. Liefert das Hauptmodell einen Fehler oder
+antwortet nicht innerhalb von 30 Sekunden, fragt der Bot das Fallback; scheitert
+auch das, gilt die Nachricht als `invalid`.
 
 | Ergebnis | Bedeutung | Wirkung |
 |---|---|---|

@@ -9,6 +9,7 @@ import (
 
 	"github.com/michael/zumba-shared/domain"
 	"github.com/michael/zumba-shared/penalty"
+	sharedstore "github.com/michael/zumba-shared/store"
 
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 )
@@ -22,6 +23,7 @@ type Mock struct {
 	excludedDays []time.Time // Thursdays
 	strafen      []penalty.Row
 	nextStrafeID int64
+	classifier   ClassifierModels
 	seasons      []Season
 }
 
@@ -659,4 +661,27 @@ func (m *Mock) LoescheStrafe(_ context.Context, id int64) error {
 		}
 	}
 	return fmt.Errorf("LoescheStrafe: Strafe %d nicht gefunden", id)
+}
+
+// --- KI-Modell: Mock (in-memory, Startwerte wie im Deployment) ---
+
+func (m *Mock) ClassifierModels(context.Context) (ClassifierModels, error) {
+	if m.classifier.Primary.Model == "" && m.classifier.Fallback.Model == "" {
+		m.classifier.Primary.Model = "gemma-4-31b-it"
+		m.classifier.Fallback.Model = "gemini-3.8-flash"
+	}
+	return m.classifier, nil
+}
+
+func (m *Mock) SetClassifierModel(_ context.Context, rolle, model string) error {
+	set := sharedstore.ClassifierModel{Model: model, UpdatedAt: time.Now()}
+	switch rolle {
+	case sharedstore.ClassifierPrimary:
+		m.classifier.Primary = set
+	case sharedstore.ClassifierFallback:
+		m.classifier.Fallback = set
+	default:
+		return fmt.Errorf("SetClassifierModel: unbekannte Rolle %q", rolle)
+	}
+	return nil
 }

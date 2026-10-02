@@ -1,0 +1,91 @@
+package kimodell
+
+// VM ist die fertige Anzeige der KI-Modell-Seite: je Rolle (Haupt, Fallback)
+// eine Karte mit der Modell-Auswahl.
+type VM struct {
+	Roles []RoleVM
+}
+
+type RoleVM struct {
+	Rolle string // primary | fallback (Formularwert)
+	Title string
+	Hint  string
+	// Current: aktives Modell; "" = noch nicht gesetzt (der Bot nimmt dann
+	// den Wert aus dem Deployment).
+	Current string
+	// CurrentKnown: Current steht in der Auswahl. Sonst zeigt die Karte den
+	// Namen gesondert an, damit nichts unsichtbar aktiv ist.
+	CurrentKnown bool
+	SinceText    string
+	Options      []OptionVM
+}
+
+type OptionVM struct {
+	ID       string
+	Label    string
+	Hint     string
+	Selected bool
+	// Disabled: das Modell ist schon in der anderen Rolle – Haupt und
+	// Fallback gleich zu setzen hieße, es gibt keinen Fallback.
+	Disabled bool
+}
+
+templ Page(vm VM) {
+	<div class="page-header enter">
+		<div class="eyebrow">Bot</div>
+		<h1>KI-Modell</h1>
+		<p class="meta">
+			Welches Modell entscheidet, ob eine Nachricht in der Gruppe eine Zu- oder
+			Absage ist. Antwortet das Hauptmodell nicht, fragt der Bot das Fallback.
+			Eine Umstellung gilt ab der nächsten Nachricht.
+		</p>
+	</div>
+	@Region(vm)
+}
+
+// Region ist das HTMX-Swap-Ziel: nach jedem Umschalten kommt sie neu vom
+// Server, damit Auswahl und gesperrte Optionen den echten Stand zeigen.
+templ Region(vm VM) {
+	<div id="model-region" class="model-region enter">
+		for _, r := range vm.Roles {
+			@roleCard(r)
+		}
+		<p class="model-foot">
+			Grenzen pro Minute und Tag: kostenloses Kontingent von Google AI Studio.
+			Ein Donnerstag braucht etwa zehn Aufrufe, fehlgeschlagene zählen mit.
+		</p>
+	</div>
+}
+
+templ roleCard(r RoleVM) {
+	<section class="model-card">
+		<header class="model-card-head">
+			<h2>{ r.Title }</h2>
+			if r.SinceText != "" {
+				<span class="model-since">{ r.SinceText }</span>
+			}
+		</header>
+		<p class="model-hint">{ r.Hint }</p>
+		if r.Current == "" {
+			<p class="model-note">Noch nicht gesetzt – der Bot nimmt den Wert aus dem Deployment.</p>
+		} else if !r.CurrentKnown {
+			<p class="model-note">Aktiv: <code>{ r.Current }</code> (nicht in der Auswahl)</p>
+		}
+		<form hx-post="/ki-modell" hx-trigger="change" hx-target="#model-region" hx-swap="outerHTML">
+			<input type="hidden" name="rolle" value={ r.Rolle }/>
+			<div class="seg seg-wide" role="radiogroup" aria-label={ r.Title }>
+				for _, o := range r.Options {
+					<label class="seg-opt">
+						<input type="radio" name="model" value={ o.ID } checked?={ o.Selected } disabled?={ o.Disabled }/>
+						<span class="seg-face">
+							<span class="seg-text">
+								{ o.Label }
+								<small>{ o.Hint }</small>
+							</span>
+						</span>
+					</label>
+				}
+			</div>
+		</form>
+	</section>
+}

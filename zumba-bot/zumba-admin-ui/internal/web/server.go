@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf16"
 
 	"github.com/a-h/templ"
 
@@ -113,6 +114,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /ml-test/judge/{id}", sealed(s.handleMLTestJudge))
 	mux.HandleFunc("DELETE /ml-test/{id}", sealed(s.handleMLTestDelete))
 	mux.HandleFunc("GET /ml-doku", s.handleMLDocs)
+	// KI-Modell des Bots. Nicht gesperrt bei offenem Tunnel: Umschalten
+	// verschickt nichts, es ändert nur die nächste Klassifizierung.
+	mux.HandleFunc("GET /ki-modell", s.handleKIModell)
+	mux.HandleFunc("POST /ki-modell", s.handleKIModellSet)
 
 	// Öffentlich-Seite. Schalten geht nur, wenn es einen tunnel-service gibt —
 	// ohne ihn zeigt die Seite bloß den Hinweis.
@@ -706,8 +711,31 @@ func (s *Server) fail(w http.ResponseWriter, what string, err error) {
 
 func (s *Server) triggerToast(w http.ResponseWriter, level, msg string) {
 	// JSON object form of HX-Trigger so the client receives event detail.
-	payload := fmt.Sprintf(`{"showToast":{"level":%q,"msg":%q}}`, level, msg)
+	// Header-Werte liest der Browser als Latin-1 – Umlaute gehen deshalb als
+	// \uXXXX-Escapes raus, sonst steht im Toast "kÃ¶nnen".
+	payload := fmt.Sprintf(`{"showToast":{"level":%s,"msg":%s}}`, jsonASCII(level), jsonASCII(msg))
 	w.Header().Set("HX-Trigger", payload)
+}
+
+// jsonASCII kodiert s als JSON-String, der nur aus ASCII besteht.
+func jsonASCII(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch {
+		case r == '"' || r == '\\':
+			b.WriteByte('\\')
+			b.WriteRune(r)
+		case r < 0x20 || r >= 0x7f:
+			for _, u := range utf16.Encode([]rune{r}) {
+				fmt.Fprintf(&b, `\u%04x`, u)
+			}
+		default:
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
 }
 
 func logRequests(next http.Handler) http.Handler {

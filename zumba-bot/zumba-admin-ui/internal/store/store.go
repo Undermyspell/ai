@@ -111,6 +111,12 @@ type Store interface {
 	JudgeMLTest(ctx context.Context, id int64, expectedLabel string) (*MLTestMessage, error)
 	DeleteMLTest(ctx context.Context, id int64) error
 
+	// KI-Modell des Bots (classifier_models): Haupt- und Fallback-Modell,
+	// umschaltbar auf der Seite /ki-modell. Der Bot liest die Wahl vor jeder
+	// Klassifizierung.
+	ClassifierModels(ctx context.Context) (ClassifierModels, error)
+	SetClassifierModel(ctx context.Context, rolle, model string) error
+
 	// Strafen-Feature. ListSeasonStrafen liefert alle Zeilen EINES Jahres
 	// (inkl. beglichen und geloescht – Lösch-/Begleich-Zeitpunkte resetten
 	// den Fehltage-Zähler).

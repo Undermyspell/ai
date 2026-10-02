@@ -1621,3 +1621,24 @@ h3 { font-size: 17px; line-height: 1.25; }
 .public-offline p { font-size: 13px; color: var(--ink-soft); font-family: var(--font-mono); margin: 2px 0 0; }
 
 .nav-more-note { font-size: 12px; color: var(--ink-faint); padding: var(--space-2) var(--space-3) 0; line-height: 1.4; }
+
+/* ── KI-Modell (Classifier-Wahl des Bots) ────────────────────────────────── */
+.model-region { display: grid; gap: var(--space-4); }
+.model-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card);
+}
+.model-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-1); }
+.model-card-head h2 { font-size: 20px; margin: 0; }
+.model-since { font-size: 12px; color: var(--ink-faint); }
+.model-hint { font-size: 13px; color: var(--ink-soft); margin-bottom: var(--space-3); }
+.model-note { font-size: 13px; color: var(--accent-strong); margin-bottom: var(--space-3); }
+.model-note code { font-family: var(--font-mono); }
+.model-card .seg-face { justify-content: center; text-align: center; }
+.model-card .seg-opt input:disabled + .seg-face { opacity: .45; cursor: not-allowed; }
+.model-card form.htmx-request { opacity: .6; pointer-events: none; }
+.model-foot { font-size: 12px; color: var(--ink-faint); line-height: 1.4; }
+

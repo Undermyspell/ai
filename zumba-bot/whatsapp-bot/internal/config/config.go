@@ -65,9 +65,11 @@ func (d DBConfig) DSN() string {
 }
 
 type GeminiConfig struct {
-	APIKey        string
-	Model         string // Primärmodell (n8n: "Gemine 2.5-flash", Index 0)
-	FallbackModel string // Fallback (n8n: "Gemini-3-flash-preview", Index 1)
+	APIKey string
+	// Startwerte der Modellwahl – umgestellt wird danach im Admin-UI
+	// (Tabelle classifier_models).
+	Model         string // Hauptmodell
+	FallbackModel string // Fallback, wenn das Hauptmodell nicht antwortet
 }
 
 type EvolutionConfig struct {
@@ -109,8 +111,8 @@ func Load() (Config, error) {
 		},
 		Gemini: GeminiConfig{
 			APIKey:        os.Getenv("GEMINI_API_KEY"),
-			Model:         getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-			FallbackModel: getenv("GEMINI_FALLBACK_MODEL", "gemini-3-flash-preview"),
+			Model:         getenv("GEMINI_MODEL", "gemma-4-31b-it"),
+			FallbackModel: getenv("GEMINI_FALLBACK_MODEL", "gemini-3.8-flash"),
 		},
 		Evolution: EvolutionConfig{
 			URL:      getenv("EVOLUTION_URL", "http://localhost:8090"),

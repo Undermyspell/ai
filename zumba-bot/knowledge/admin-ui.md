@@ -77,6 +77,16 @@ die Nummerierung bleibt lückenlos. Der Modus „Vorschau
 an meine Nummer“ verschickt entsprechend Text oder Bild an die Testnummer —
 nie an die Gruppe.
 
+### KI-Modell (`/ki-modell`)
+
+Welches Modell die Gruppen-Nachrichten klassifiziert: je eine Karte für
+Haupt- und Fallback-Modell, Auswahl zwischen Gemma 4 31B, Gemini 3.8 Flash und
+Gemini 3.5 Flash Lite. Ein Klick schaltet sofort um (Tabelle
+`classifier_models`), der Bot nimmt die Wahl ab der nächsten Nachricht. Das
+Modell der jeweils anderen Rolle ist gesperrt – gleich gesetzt gäbe es keinen
+Fallback. Unter jedem Modell stehen die Grenzen des kostenlosen Kontingents;
+ein Donnerstag braucht etwa zehn Aufrufe.
+
 ### ML-Testdaten
 Tabelle `ml_test_messages`: gesammelte Beispielnachrichten für den
 Classifier-Vergleich (LLM vs. eigenes Modell); manueller Klassifikations-Test

@@ -25,6 +25,9 @@ type spyStore struct {
 	nextStrafeID     int64
 	beglichenStrafe  int64
 	geloeschteStrafe int64
+
+	classifier store.ClassifierModels
+	setModel   string // "rolle=model" des letzten SetClassifierModel
 }
 
 func newSpyStore() *spyStore {
@@ -232,5 +235,14 @@ func (s *spyStore) LoescheStrafe(_ context.Context, id int64) error {
 			s.strafen[i].GeloeschtAm = &now
 		}
 	}
+	return nil
+}
+
+func (s *spyStore) ClassifierModels(context.Context) (store.ClassifierModels, error) {
+	return s.classifier, nil
+}
+
+func (s *spyStore) SetClassifierModel(_ context.Context, rolle, model string) error {
+	s.setModel = rolle + "=" + model
 	return nil
 }

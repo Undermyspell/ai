@@ -53,6 +53,16 @@ func main() {
 		log.Printf("⚠️  strafen Schema: %v", err)
 	}
 	cl := classifier.NewGemini(cfg.Gemini.APIKey, cfg.Gemini.Model, cfg.Gemini.FallbackModel)
+	// Modellwahl (Admin-UI-Seite "KI-Modell"): GEMINI_MODEL/-FALLBACK_MODEL
+	// sind nur der Startwert, danach gilt die Tabelle – ohne Neustart.
+	if err := st.EnsureClassifierSchema(context.Background(), cfg.Gemini.Model, cfg.Gemini.FallbackModel); err != nil {
+		log.Printf("⚠️  classifier_models Schema: %v (Modelle aus der Konfiguration)", err)
+	} else {
+		cl.Models = st
+		if p, f, err := st.ClassifierModels(context.Background()); err == nil {
+			log.Printf("🧠 Classifier: %s (Fallback %s)", p, f)
+		}
+	}
 
 	var snd web.Sender
 	switch cfg.Output.Mode {

@@ -1,6 +1,7 @@
 // Package classifier portiert den n8n-Node "Absagen Classifier": ein Gemini-Agent,
 // der eine WhatsApp-Nachricht als Zusage ("true"), Absage ("false") oder
-// "invalid" klassifiziert. Primärmodell + Fallback wie im Workflow (needsFallback).
+// "invalid" klassifiziert. Primärmodell + Fallback wie im Workflow (needsFallback);
+// welche Modelle das sind, stellt das Admin-UI zur Laufzeit um (ModelSource).
 package classifier
 
 import (
@@ -10,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -29,11 +31,22 @@ const (
 
 const geminiBaseURL = "https://generativelanguage.googleapis.com/v1beta/models"
 
+// ModelSource liefert die aktuelle Modellwahl (Tabelle classifier_models,
+// umgestellt im Admin-UI). Leere Werte heißen "nicht gesetzt".
+type ModelSource interface {
+	ClassifierModels(ctx context.Context) (primary, fallback string, err error)
+}
+
 type Gemini struct {
 	apiKey        string
-	model         string
+	model         string // aus der Konfiguration – gilt, solange Models nichts liefert
 	fallbackModel string
+	baseURL       string
 	http          *http.Client
+
+	// Models wird vor jeder Klassifizierung gefragt, damit eine Umstellung
+	// ohne Neustart greift. nil = nur die Konfiguration.
+	Models ModelSource
 }
 
 func NewGemini(apiKey, model, fallbackModel string) *Gemini {
@@ -41,8 +54,30 @@ func NewGemini(apiKey, model, fallbackModel string) *Gemini {
 		apiKey:        apiKey,
 		model:         model,
 		fallbackModel: fallbackModel,
+		baseURL:       geminiBaseURL,
 		http:          &http.Client{Timeout: 30 * time.Second},
 	}
+}
+
+// models liefert Haupt- und Fallback-Modell für den nächsten Aufruf. Ist die
+// Wahl nicht lesbar, klassifiziert der Bot trotzdem – mit der Konfiguration.
+func (g *Gemini) models(ctx context.Context) (primary, fallback string) {
+	primary, fallback = g.model, g.fallbackModel
+	if g.Models == nil {
+		return primary, fallback
+	}
+	p, f, err := g.Models.ClassifierModels(ctx)
+	if err != nil {
+		log.Printf("⚠️  classifier: Modellwahl nicht lesbar: %v (→ %s / %s)", err, primary, fallback)
+		return primary, fallback
+	}
+	if p != "" {
+		primary = p
+	}
+	if f != "" {
+		fallback = f
+	}
+	return primary, fallback
 }
 
 // Classification ist das Ergebnis eines Classifier-Laufs inkl. Gemini-Roh-Antwort
@@ -57,10 +92,11 @@ type Classification struct {
 // nicht eindeutige Antwort (alles außer "true"/"false") wird zu Invalid – so
 // löst der nachgelagerte Switch (n8n) bei "invalid" keine DB-Aktion aus.
 func (g *Gemini) Classify(ctx context.Context, message string) (Classification, error) {
-	model := g.model
+	model, fallback := g.models(ctx)
+	primary := model
 	raw, err := g.generate(ctx, model, message)
-	if err != nil && g.fallbackModel != "" && g.fallbackModel != g.model {
-		model = g.fallbackModel
+	if err != nil && fallback != "" && fallback != primary {
+		model = fallback
 		raw, err = g.generate(ctx, model, message)
 	}
 	if err != nil {
@@ -116,7 +152,7 @@ func (g *Gemini) generate(ctx context.Context, model, message string) (string, e
 		return "", fmt.Errorf("marshal: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s:generateContent", geminiBaseURL, model)
+	url := fmt.Sprintf("%s/%s:generateContent", g.baseURL, model)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(buf))
 	if err != nil {
 		return "", fmt.Errorf("new request: %w", err)
