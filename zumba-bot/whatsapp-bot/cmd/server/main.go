@@ -56,12 +56,14 @@ func main() {
 	// Modellwahl (Admin-UI-Seite "KI-Modell"): GEMINI_MODEL/-FALLBACK_MODEL
 	// sind nur der Startwert, danach gilt die Tabelle – ohne Neustart.
 	if err := st.EnsureClassifierSchema(context.Background(), cfg.Gemini.Model, cfg.Gemini.FallbackModel); err != nil {
-		log.Printf("⚠️  classifier_models Schema: %v (Modelle aus der Konfiguration)", err)
-	} else {
-		cl.Models = st
-		if p, f, err := st.ClassifierModels(context.Background()); err == nil {
-			log.Printf("🧠 Classifier: %s (Fallback %s)", p, f)
-		}
+		log.Printf("⚠️  classifier_models Schema: %v", err)
+	}
+	// Auch nach einem Fehler beim Anlegen: die Wahl wird vor jeder Nachricht
+	// gelesen, fehlt sie (noch), gilt für die Lücke die Konfiguration. Sonst
+	// erreicht eine Umstellung im Admin-UI den Bot erst nach einem Neustart.
+	cl.Models = st
+	if p, f, err := st.ClassifierModels(context.Background()); err == nil {
+		log.Printf("🧠 Classifier: %s (Fallback %s)", p, f)
 	}
 
 	var snd web.Sender

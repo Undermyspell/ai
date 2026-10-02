@@ -27,9 +27,14 @@ type ClassifierModels struct {
 }
 
 // EnsureClassifierSchema legt die Tabelle der Modellwahl idempotent an.
-// whatsapp-bot und zumba-admin-ui rufen sie beide beim Start.
+// whatsapp-bot und zumba-admin-ui rufen sie beide beim Start – beim Deploy
+// oft in derselben Sekunde, und zwei parallele CREATE TABLE IF NOT EXISTS
+// kollidieren an pg_type. Der Advisory-Lock reiht sie hintereinander: ohne
+// Parameter läuft der Block als eine Simple Query in einer impliziten
+// Transaktion, der Lock hält bis zu deren Ende.
 func EnsureClassifierSchema(ctx context.Context, e Execer) error {
 	const q = `
+		SELECT pg_advisory_xact_lock(hashtext('classifier_models'));
 		CREATE TABLE IF NOT EXISTS classifier_models (
 		  rolle      TEXT PRIMARY KEY CHECK (rolle IN ('primary','fallback')),
 		  model      TEXT NOT NULL,
