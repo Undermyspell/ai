@@ -96,6 +96,9 @@ func (g *Gemini) Classify(ctx context.Context, message string) (Classification, 
 	primary := model
 	raw, err := g.generate(ctx, model, message)
 	if err != nil && fallback != "" && fallback != primary {
+		// Sonst sieht man nur den Fehler des Fallbacks – warum das
+		// Hauptmodell ausfiel, ginge verloren.
+		log.Printf("⚠️  classifier: %v (→ Fallback %s)", err, fallback)
 		model = fallback
 		raw, err = g.generate(ctx, model, message)
 	}
