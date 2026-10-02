@@ -64,7 +64,7 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.3.6"
+    tag: "0.3.7"
     pullPolicy: IfNotPresent
   env:
     # Gruppen-"statistik" antwortet als Bild-Karte (Fallback Text)
@@ -100,7 +100,7 @@ adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.5.2"
+    tag: "0.6.0"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io
