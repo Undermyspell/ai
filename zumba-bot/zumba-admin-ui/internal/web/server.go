@@ -1,17 +1,12 @@
 package web
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf16"
@@ -26,12 +21,6 @@ import (
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
 	"github.com/michael/zumba-admin-ui/internal/tunnel"
 	"github.com/michael/zumba-admin-ui/web/templates"
-	"github.com/michael/zumba-admin-ui/web/templates/bottest"
-	"github.com/michael/zumba-admin-ui/web/templates/dashboard"
-	"github.com/michael/zumba-admin-ui/web/templates/days"
-	"github.com/michael/zumba-admin-ui/web/templates/excluded"
-	"github.com/michael/zumba-admin-ui/web/templates/members"
-	"github.com/michael/zumba-admin-ui/web/templates/partials"
 )
 
 type Server struct {
@@ -200,6 +189,7 @@ func (s *Server) meta(title, active string) templates.PageMeta {
 		MockMode:    s.mockMode,
 		AuthEnabled: s.cfg.Auth.Enabled(),
 		PublicOpen:  open,
+		Next:        s.nextStammtisch(),
 	}
 }
 
@@ -238,312 +228,6 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/dashboard", http.StatusTemporaryRedirect)
 }
 
-func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	season, ok := s.pageSeason(w, r)
-	if !ok {
-		return
-	}
-	period := season.Period
-
-	board, err := s.store.Leaderboard(ctx, period)
-	if err != nil {
-		s.fail(w, "leaderboard", err)
-		return
-	}
-
-	strip, err := s.buildStrip(ctx, period, 0, len(board)) // alle Donnerstage – auf dem Dashboard auswählbar
-	if err != nil {
-		s.fail(w, "strip", err)
-		return
-	}
-
-	totalThursdays := 0
-	totalAtt := 0
-	totalAbs := 0
-	pctSum := 0.0
-	for _, r := range board {
-		if r.ThursdayCount > totalThursdays {
-			totalThursdays = r.ThursdayCount
-		}
-		totalAtt += r.AttendanceCount
-		totalAbs += r.AwayCount
-		pctSum += r.AttendPercent
-	}
-	avgRate := 0
-	if len(board) > 0 {
-		avgRate = int(pctSum/float64(len(board)) + 0.5)
-	}
-
-	vm := dashboard.ViewModel{
-		PeriodStart:      timeutil.FormatDEShort(period.Start),
-		PeriodEnd:        timeutil.FormatDEShort(period.End),
-		TotalThursdays:   totalThursdays,
-		TotalUsers:       len(board),
-		TotalAttendances: totalAtt,
-		TotalAbsences:    totalAbs,
-		AverageRate:      avgRate,
-		StripItems:       strip,
-		Leaderboard:      board,
-	}
-
-	s.render(w, r, s.seasonMeta(r, "Dashboard", "dashboard", season), dashboard.Page(vm))
-}
-
-// Mitglieder sind jetzt direkt im Dashboard integriert; alte /members-Links umleiten.
-func (s *Server) handleMembers(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/dashboard", http.StatusMovedPermanently)
-}
-
-func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	season, ok := s.pageSeason(w, r)
-	if !ok {
-		return
-	}
-	period := season.Period
-	userId := r.PathValue("userId")
-
-	user, err := s.store.GetUser(ctx, userId)
-	if err != nil {
-		s.fail(w, "user", err)
-		return
-	}
-	if user == nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	stats, err := s.store.UserLeaderboardRow(ctx, period, userId)
-	if err != nil {
-		s.fail(w, "leaderboard", err)
-		return
-	}
-
-	thursdays, err := s.store.ListThursdays(ctx, period)
-	if err != nil {
-		s.fail(w, "thursdays", err)
-		return
-	}
-	absences, err := s.store.ListUserAbsences(ctx, period, userId)
-	if err != nil {
-		s.fail(w, "absences", err)
-		return
-	}
-	absenceMap := make(map[string]*string, len(absences))
-	for _, a := range absences {
-		absenceMap[timeutil.FormatISO(a.Date)] = a.Message
-	}
-
-	entries := make([]members.DetailEntry, 0, len(thursdays))
-	for _, t := range thursdays {
-		key := timeutil.FormatISO(t)
-		msg, absent := absenceMap[key]
-		entries = append(entries, members.DetailEntry{Date: t, Absent: absent, Message: msg})
-	}
-
-	s.render(w, r, s.seasonMeta(r, user.Name, "dashboard", season),
-		members.Detail(members.DetailVM{
-			User: *user, Stats: stats, Entries: entries, ReadOnly: archived(season),
-		}))
-}
-
-func (s *Server) handleDays(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	season, ok := s.pageSeason(w, r)
-	if !ok {
-		return
-	}
-	period := season.Period
-
-	users, err := s.store.ListUsers(ctx)
-	if err != nil {
-		s.fail(w, "users", err)
-		return
-	}
-	dayAbsences, err := s.store.ListDayAbsences(ctx, period)
-	if err != nil {
-		s.fail(w, "day absences", err)
-		return
-	}
-	strip, err := s.buildStrip(ctx, period, 12, len(users))
-	if err != nil {
-		s.fail(w, "strip", err)
-		return
-	}
-
-	cards := make([]days.DayCard, 0, len(dayAbsences))
-	for _, d := range dayAbsences {
-		cards = append(cards, days.DayCard{
-			Date:          d.Date,
-			Attendance:    len(users) - len(d.AbsentUserIDs),
-			AwayCount:     len(d.AbsentUserIDs),
-			AbsentUserIDs: d.AbsentUserIDs,
-		})
-	}
-
-	s.render(w, r, s.seasonMeta(r, "Donnerstage", "days", season),
-		days.List(days.ListVM{StripItems: strip, Days: cards, TotalUsers: len(users)}))
-}
-
-func (s *Server) handleDayDetail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	dateStr := r.PathValue("date")
-	date, err := timeutil.ParseISO(dateStr)
-	if err != nil {
-		http.Error(w, "ungültiges Datum", http.StatusBadRequest)
-		return
-	}
-
-	users, err := s.store.ListUsers(ctx)
-	if err != nil {
-		s.fail(w, "users", err)
-		return
-	}
-	isExcluded, err := s.store.IsExcludedDay(ctx, date)
-	if err != nil {
-		s.fail(w, "excluded", err)
-		return
-	}
-
-	var cells []days.Cell
-	if !isExcluded {
-		dayAbsences, err := s.store.AbsencesOn(ctx, date)
-		if err != nil {
-			s.fail(w, "absences", err)
-			return
-		}
-		absMap := make(map[string]*string, len(dayAbsences))
-		for _, a := range dayAbsences {
-			absMap[a.UserID] = a.Message
-		}
-		cells = make([]days.Cell, 0, len(users))
-		for _, u := range users {
-			msg, absent := absMap[u.ID]
-			cells = append(cells, days.Cell{
-				UserID:  u.ID,
-				Name:    u.Name,
-				Absent:  absent,
-				Message: msg,
-			})
-		}
-		sort.SliceStable(cells, func(i, j int) bool {
-			if cells[i].Absent != cells[j].Absent {
-				return !cells[i].Absent // present first
-			}
-			return cells[i].Name < cells[j].Name
-		})
-	}
-
-	season, err := s.store.SeasonAt(ctx, date)
-	if err != nil && !errors.Is(err, domain.ErrNoSeason) {
-		s.fail(w, "season", err)
-		return
-	}
-	// Ohne gepflegtes Jahr ist der Tag nicht auswertbar – anzeigen ja,
-	// ändern nein.
-	readOnly := err != nil || archived(season)
-
-	s.render(w, r, s.meta(timeutil.FormatDEShort(date), "days"),
-		days.Detail(days.DetailVM{Date: date, Excluded: isExcluded, Cells: cells, ReadOnly: readOnly}))
-}
-
-func (s *Server) handleExcluded(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	season, ok := s.pageSeason(w, r)
-	if !ok {
-		return
-	}
-	all, err := s.store.ListExcludedDays(ctx, season.Period)
-	if err != nil {
-		s.fail(w, "excluded", err)
-		return
-	}
-	s.render(w, r, s.seasonMeta(r, "Sperrtage", "excluded", season),
-		excluded.List(excluded.ListVM{Days: all, ReadOnly: archived(season)}))
-}
-
-func (s *Server) handleAddExcluded(w http.ResponseWriter, r *http.Request) {
-	date, err := timeutil.ParseISO(r.FormValue("date"))
-	if err != nil {
-		s.triggerToast(w, "error", "Ungültiges Datum.")
-		http.Error(w, "ungültiges Datum", http.StatusUnprocessableEntity)
-		return
-	}
-	if !timeutil.IsThursday(date) {
-		s.triggerToast(w, "error", "Nur Donnerstage können gesperrt werden.")
-		http.Error(w, "kein Donnerstag", http.StatusUnprocessableEntity)
-		return
-	}
-	if !s.requireWritable(w, r, date) {
-		return
-	}
-	if err := s.store.InsertExcludedDay(r.Context(), date); err != nil {
-		s.fail(w, "insert excluded", err)
-		return
-	}
-	s.triggerToast(w, "success", "Sperrtag angelegt.")
-	s.renderExcludedList(w, r)
-}
-
-func (s *Server) handleDeleteExcluded(w http.ResponseWriter, r *http.Request) {
-	date, err := timeutil.ParseISO(r.PathValue("date"))
-	if err != nil {
-		http.Error(w, "ungültiges Datum", http.StatusUnprocessableEntity)
-		return
-	}
-	if !s.requireWritable(w, r, date) {
-		return
-	}
-	if err := s.store.DeleteExcludedDay(r.Context(), date); err != nil {
-		s.fail(w, "delete excluded", err)
-		return
-	}
-	s.triggerToast(w, "success", "Sperrtag entfernt.")
-	s.renderExcludedList(w, r)
-}
-
-// renderExcludedList renders just the list region (HTMX swap target).
-func (s *Server) renderExcludedList(w http.ResponseWriter, r *http.Request) {
-	season, ok := s.pageSeason(w, r)
-	if !ok {
-		return
-	}
-	all, err := s.store.ListExcludedDays(r.Context(), season.Period)
-	if err != nil {
-		s.fail(w, "excluded", err)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	vm := excluded.ListVM{Days: all, ReadOnly: archived(season)}
-	if err := excluded.ListRegion(vm).Render(r.Context(), w); err != nil {
-		log.Printf("render excluded region: %v", err)
-	}
-}
-
-// buildStrip baut die Donnerstags-Kacheln aus einer einzigen SQL-Abfrage
-// (Union, Abmelde-Zahl, Limit und Sortierung passieren in der DB).
-// limit == 0 => alle (Dashboard); limit > 0 => nur die jüngsten N.
-func (s *Server) buildStrip(ctx context.Context, period timeutil.Period, limit, totalUsers int) ([]partials.ThursdayStripItem, error) {
-	days, err := s.store.ThursdayStrip(ctx, period, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]partials.ThursdayStripItem, 0, len(days))
-	for _, d := range days {
-		if d.Excluded {
-			out = append(out, partials.ThursdayStripItem{Date: d.Date, Excluded: true})
-			continue
-		}
-		out = append(out, partials.ThursdayStripItem{
-			Date: d.Date,
-			Rate: partials.RateLabel(totalUsers-d.Away, totalUsers),
-		})
-	}
-	return out, nil
-}
-
 func (s *Server) handleToggleAbsence(w http.ResponseWriter, r *http.Request) {
 	userID := r.FormValue("userId")
 	date, err := timeutil.ParseISO(r.FormValue("date"))
@@ -564,144 +248,14 @@ func (s *Server) handleToggleAbsence(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "toggle absence", err)
 		return
 	}
+	// Keine HTML-Antwort: „absenceChanged" lässt jede Ansicht, die an
+	// Anwesenheiten hängt (#page, das Bottom-Sheet), sich selbst neu laden.
 	if nowAbsent {
-		s.triggerToast(w, "success", "Als abgemeldet markiert.")
+		s.triggerToast(w, "success", "Als abgemeldet markiert.", "absenceChanged")
 	} else {
-		s.triggerToast(w, "success", "Als anwesend markiert.")
+		s.triggerToast(w, "success", "Als anwesend markiert.", "absenceChanged")
 	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// Der Toggle kommt nur aus einem schreibbaren Jahr zurück (requireWritable
-	// oben), also nie read-only.
-	if err := partials.AbsenceToggle(userID, date, nowAbsent, false).Render(r.Context(), w); err != nil {
-		log.Printf("render toggle: %v", err)
-	}
-}
-
-var botExampleKinds = map[string]bool{"statistik": true, "absage": true, "zusage": true}
-
-func (s *Server) loadExample(kind string) (string, bool) {
-	if !botExampleKinds[kind] {
-		return "", false
-	}
-	raw, err := bottest.Examples.ReadFile("examples/" + kind + ".json")
-	if err != nil {
-		return "", false
-	}
-	var pretty bytes.Buffer
-	if err := json.Indent(&pretty, raw, "", "  "); err != nil {
-		return string(raw), true
-	}
-	return pretty.String(), true
-}
-
-func (s *Server) handleBotTest(w http.ResponseWriter, r *http.Request) {
-	def, _ := s.loadExample("statistik")
-	s.render(w, r, s.meta("Bot-Test", "bottest"),
-		bottest.Page(bottest.PageVM{DefaultKind: "statistik", DefaultJSON: def}))
-}
-
-func (s *Server) handleBotTestExample(w http.ResponseWriter, r *http.Request) {
-	body, ok := s.loadExample(r.PathValue("kind"))
-	if !ok {
-		http.Error(w, "unbekannt", http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	_, _ = w.Write([]byte(body))
-}
-
-// botOutcome mirrors the whatsapp-bot Outcome JSON.
-type botOutcome struct {
-	Path           string `json:"path"`
-	Classification string `json:"classification"`
-	Action         string `json:"action"`
-	Message        string `json:"message"`
-	Recipient      string `json:"recipient"`
-	Date           string `json:"date"`
-	UserID         string `json:"userId"`
-	Reason         string `json:"reason"`
-	DryRun         bool   `json:"dryRun"`
-	PreviewTo      string `json:"previewTo"`
-	ImageBase64    string `json:"imageBase64"`
-}
-
-// modeQuery übersetzt den Modus der Bot-Test-Seite in den Query-Parameter des Bots.
-// Die Testseite kennt nur dryrun und preview – sie löst NIE einen echten
-// Gruppen-Versand aus (der passiert nur über echte Statistik-Webhooks + CronJob).
-func modeQuery(mode string) string {
-	if mode == "preview" {
-		return "?preview=true"
-	}
-	return "?dryRun=true"
-}
-
-// handleBotTestRun führt den gewählten Testlauf aus. Das Szenario bestimmt den
-// Bot-Endpoint: "wochenreport" ruft /weekly-report ohne Body auf, alles andere
-// schickt das Beispiel-Event an /test. Modus, Stichtag und Ausgabeformat gelten
-// für beide Wege – deshalb liegt alles in einem Formular.
-func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	weekly := r.FormValue("szenario") == "wochenreport"
-	endpoint := "/test"
-	if weekly {
-		endpoint = "/weekly-report"
-	}
-	url := strings.TrimRight(s.cfg.BotURL, "/") + endpoint + modeQuery(r.FormValue("mode"))
-
-	// Stichtag gilt für den Statistik-Pfad wie für den Wochenreport.
-	if date := r.FormValue("date"); date != "" {
-		url += "&date=" + date
-	}
-	if r.FormValue("format") == "image" {
-		url += "&format=image"
-		if cs := r.FormValue("cardStyle"); cs != "" {
-			url += "&cardStyle=" + cs
-		}
-	} else if style := r.FormValue("style"); style != "" && style != "klassik" {
-		// Alternative Textdesigns kennt nur der /test-Endpoint.
-		url += "&style=" + style
-	}
-
-	if weekly {
-		s.proxyBot(w, r, url, nil)
-		return
-	}
-	s.proxyBot(w, r, url, strings.NewReader(r.FormValue("payload")))
-}
-
-// proxyBot schickt eine POST-Anfrage an den Bot und rendert dessen Outcome
-// (bzw. ein Fehler-Panel) als HTMX-Fragment.
-func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, body io.Reader) {
-	client := &http.Client{Timeout: 35 * time.Second}
-	req, err := http.NewRequestWithContext(r.Context(), "POST", url, body)
-	if err != nil {
-		_ = bottest.ErrorPanel(err.Error()).Render(r.Context(), w)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		_ = bottest.ErrorPanel("Bot nicht erreichbar: "+err.Error()).Render(r.Context(), w)
-		return
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		_ = bottest.ErrorPanel("Bot-Status "+resp.Status+": "+string(respBody)).Render(r.Context(), w)
-		return
-	}
-	var out botOutcome
-	if err := json.Unmarshal(respBody, &out); err != nil {
-		_ = bottest.ErrorPanel("Antwort nicht lesbar: "+err.Error()).Render(r.Context(), w)
-		return
-	}
-	_ = bottest.Response(bottest.ResponseVM{
-		Path: out.Path, Classification: out.Classification, Action: out.Action,
-		Message: out.Message, Recipient: out.Recipient, Date: out.Date, UserID: out.UserID,
-		DryRun: out.DryRun, PreviewTo: out.PreviewTo, ImageBase64: out.ImageBase64,
-	}).Render(r.Context(), w)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) fail(w http.ResponseWriter, what string, err error) {
@@ -709,12 +263,17 @@ func (s *Server) fail(w http.ResponseWriter, what string, err error) {
 	http.Error(w, "interner Fehler", http.StatusInternalServerError)
 }
 
-func (s *Server) triggerToast(w http.ResponseWriter, level, msg string) {
+// triggerToast zeigt im Browser einen Toast; events sind weitere
+// HTMX-Ereignisse, die mit derselben Antwort ausgelöst werden.
+func (s *Server) triggerToast(w http.ResponseWriter, level, msg string, events ...string) {
 	// JSON object form of HX-Trigger so the client receives event detail.
 	// Header-Werte liest der Browser als Latin-1 – Umlaute gehen deshalb als
 	// \uXXXX-Escapes raus, sonst steht im Toast "kÃ¶nnen".
-	payload := fmt.Sprintf(`{"showToast":{"level":%s,"msg":%s}}`, jsonASCII(level), jsonASCII(msg))
-	w.Header().Set("HX-Trigger", payload)
+	payload := fmt.Sprintf(`{"showToast":{"level":%s,"msg":%s}`, jsonASCII(level), jsonASCII(msg))
+	for _, ev := range events {
+		payload += fmt.Sprintf(`,%s:true`, jsonASCII(ev))
+	}
+	w.Header().Set("HX-Trigger", payload+"}")
 }
 
 // jsonASCII kodiert s als JSON-String, der nur aus ASCII besteht.

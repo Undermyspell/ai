@@ -15,58 +15,53 @@ type VM struct {
 }
 
 templ Page(vm VM) {
-	<div class="page-header enter">
-		<div class="eyebrow">ML-Klassifikator</div>
-		<h1>Shadow-Modus</h1>
-		<p class="meta">
-			Das eigene Modell klassifiziert jede Nachricht parallel zu Gemini.
-			Abweichungen prüfen und das korrekte Label setzen — geprüfte Einträge
-			werden Trainings- und Testdaten.
-		</p>
-	</div>
 	@Stats(vm.Stats)
+	<p class="card-sub" style="margin-top:-8px">
+		Das eigene Modell klassifiziert jede Nachricht parallel zu Gemini. Abweichungen
+		prüfen und das korrekte Label setzen — geprüfte Einträge werden Trainings- und Testdaten.
+	</p>
 	@List(vm)
 }
 
 templ Stats(st store.MLShadowStats) {
-	<div class="ml-stats enter">
-		<div class="ml-stat">
-			<span class="ml-stat-num">{ strconv.Itoa(st.Total) }</span>
-			<span class="ml-stat-label">Nachrichten</span>
-		</div>
-		<div class="ml-stat">
-			<span class="ml-stat-num">{ strconv.Itoa(st.WithModel) }</span>
-			<span class="ml-stat-label">Modell-Antworten</span>
-		</div>
-		<div class="ml-stat">
-			<span class="ml-stat-num">{ agreementPct(st) }</span>
-			<span class="ml-stat-label">Übereinstimmung</span>
-		</div>
-		for _, ls := range st.PerLabel {
-			<div class="ml-stat ml-stat-sub">
-				<span class="ml-stat-num">{ labelPct(ls) }</span>
-				<span class="ml-stat-label"><span class={ "ml-badge", "ml-" + ls.Label }>{ labelText(ls.Label) }</span> { fmt.Sprintf("%d/%d", ls.Agree, ls.Total) }</span>
+	<section class="grid-4">
+		<div class="tile"><div class="tile-body"><div class="tile-label">Nachrichten</div><div class="tile-value is-big">{ strconv.Itoa(st.Total) }</div></div></div>
+		<div class="tile"><div class="tile-body"><div class="tile-label">Modell-Antworten</div><div class="tile-value is-big">{ strconv.Itoa(st.WithModel) }</div></div></div>
+		<div class="tile">
+			<div class="tile-body">
+				<div class="tile-label">Übereinstimmung</div>
+				<div class="tile-value is-big t-blue">{ agreementPct(st) }</div>
+				if len(st.PerLabel) > 0 {
+					<div class="ml-labels" style="margin-top:4px">
+						for _, ls := range st.PerLabel {
+							<span class={ "lbl", "lbl-" + ls.Label } title={ fmt.Sprintf("%d/%d einig", ls.Agree, ls.Total) }>{ labelText(ls.Label) } { labelPct(ls) }</span>
+						}
+					</div>
+				}
 			</div>
-		}
-	</div>
+		</div>
+		<div class="tile"><div class="tile-body"><div class="tile-label">Geprüft</div><div class="tile-value is-big t-green">{ strconv.Itoa(st.Verified) }</div></div></div>
+	</section>
 }
 
 templ List(vm VM) {
-	<div id="ml-list" class="ml-list enter">
-		<div class="ml-toolbar">
+	<div id="ml-list" class="stack" style="gap:12px">
+		<div class="toolbar">
 			if vm.OnlyDisagree {
-				<button type="button" class="btn-secondary btn-sm" hx-get="/ml-shadow?filter=alle" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">Alle anzeigen</button>
-				<span class="ml-filter-hint">Nur Abweichungen &amp; Modell-Ausfälle</span>
+				<button type="button" class="btn btn-ghost btn-sm" style="background:var(--sel)" hx-get="/ml-shadow?filter=alle" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">Alle anzeigen</button>
+				<span class="card-sub">Nur Abweichungen &amp; Modell-Ausfälle</span>
 			} else {
-				<button type="button" class="btn-secondary btn-sm" hx-get="/ml-shadow?filter=disagree" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">Nur Abweichungen</button>
+				<button type="button" class="btn btn-ghost btn-sm" hx-get="/ml-shadow?filter=disagree" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">Nur Abweichungen</button>
 			}
-			<button type="button" class="btn-secondary btn-sm" hx-get="/ml-shadow" hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">↻ Aktualisieren</button>
+			<button type="button" class="btn btn-ghost btn-sm" hx-get={ refreshHref(vm) } hx-target="#ml-list" hx-select="#ml-list" hx-swap="outerHTML">↻ Aktualisieren</button>
 		</div>
 		if len(vm.Messages) == 0 {
-			<div class="trace-empty">
-				<span class="te-glyph">🤖</span>
-				<p>Noch keine Shadow-Einträge. Sobald der Bot donnerstags Nachrichten klassifiziert, erscheinen sie hier.</p>
-			</div>
+			<section class="card">
+				<div class="empty">
+					<span class="empty-ico" aria-hidden="true">🤖</span>
+					<p>Noch keine Shadow-Einträge. Sobald der Bot donnerstags Nachrichten klassifiziert, erscheinen sie hier.</p>
+				</div>
+			</section>
 		} else {
 			<div class="ml-rows">
 				for _, m := range vm.Messages {
@@ -78,7 +73,7 @@ templ List(vm VM) {
 }
 
 templ Row(m store.MLMessage) {
-	<div class={ "ml-row", templ.KV("ml-row-disagree", isDisagree(m)), templ.KV("ml-row-verified", m.Verified) } id={ rowID(m.ID) }>
+	<div class={ "ml-row", rowClass(m) } id={ rowID(m.ID) }>
 		<div class="ml-row-head">
 			<span class="ml-time">{ m.CreatedAt.Format("02.01. 15:04") }</span>
 			<span class="ml-user">{ orDash(m.UserName) }</span>
@@ -86,42 +81,31 @@ templ Row(m store.MLMessage) {
 		</div>
 		<div class="ml-msg">{ m.Message }</div>
 		<div class="ml-labels">
-			<span class="ml-source">Gemini</span>
-			<span class={ "ml-badge", "ml-" + m.GeminiLabel }>{ labelText(m.GeminiLabel) }</span>
-			<span class="ml-source">Modell</span>
+			Gemini
+			<span class={ "lbl", "lbl-" + m.GeminiLabel }>{ labelText(m.GeminiLabel) }</span>
+			Modell
 			if m.ModelLabel != nil {
-				<span class={ "ml-badge", "ml-" + *m.ModelLabel }>{ labelText(*m.ModelLabel) }</span>
+				<span class={ "lbl", "lbl-" + *m.ModelLabel }>{ labelText(*m.ModelLabel) }</span>
 				if m.ModelConfidence != nil {
 					<span class="ml-conf">{ fmt.Sprintf("%.0f %%", *m.ModelConfidence*100) }</span>
 				}
 			} else {
-				<span class="ml-badge ml-missing">keine Antwort</span>
+				<span class="lbl lbl-missing">keine Antwort</span>
 			}
 		</div>
 		<div class="ml-verify">
 			if m.Verified {
-				<span class="ml-verified-tag">
-					✔ geprüft:
-					<span class={ "ml-badge", "ml-" + effectiveLabel(m) }>{ labelText(effectiveLabel(m)) }</span>
-				</span>
+				<span class="ml-verified">✔ geprüft: { labelText(effectiveLabel(m)) }</span>
 				if m.ModelLabel != nil {
-					if *m.ModelLabel == effectiveLabel(m) {
-						<span class="ml-verdict ml-verdict-ok">Modell ✓</span>
-					} else {
-						<span class="ml-verdict ml-verdict-bad">Modell ✗</span>
-					}
+					@verdict("Modell", *m.ModelLabel == effectiveLabel(m))
 				}
-				if m.GeminiLabel == effectiveLabel(m) {
-					<span class="ml-verdict ml-verdict-ok">Gemini ✓</span>
-				} else {
-					<span class="ml-verdict ml-verdict-bad">Gemini ✗</span>
-				}
+				@verdict("Gemini", m.GeminiLabel == effectiveLabel(m))
 			} else {
-				<span class="ml-source">Richtig ist:</span>
+				<span class="cap">Richtig ist:</span>
 				for _, l := range []string{"true", "false", "invalid"} {
 					<button
 						type="button"
-						class={ "ml-verify-btn", "ml-" + l }
+						class="ml-pick"
 						hx-post={ verifyHref(m.ID, l) }
 						hx-target={ "#" + rowID(m.ID) }
 						hx-swap="outerHTML"
@@ -138,13 +122,39 @@ templ Row(m store.MLMessage) {
 	</div>
 }
 
+templ verdict(who string, ok bool) {
+	if ok {
+		<span class="pill is-solid-green">{ who } ✓</span>
+	} else {
+		<span class="pill is-solid-red">{ who } ✗</span>
+	}
+}
+
 func rowID(id int64) string { return "ml-row-" + strconv.FormatInt(id, 10) }
 
 func verifyHref(id int64, label string) string {
 	return "/ml-shadow/verify/" + strconv.FormatInt(id, 10) + "?label=" + label
 }
 
+func refreshHref(vm VM) string {
+	if vm.OnlyDisagree {
+		return "/ml-shadow?filter=disagree"
+	}
+	return "/ml-shadow"
+}
+
 func isDisagree(m store.MLMessage) bool { return m.Agree == nil || !*m.Agree }
+
+func rowClass(m store.MLMessage) string {
+	switch {
+	case m.Verified:
+		return "is-ok"
+	case isDisagree(m):
+		return "is-bad"
+	default:
+		return ""
+	}
+}
 
 func agreeGlyph(m store.MLMessage) string {
 	switch {

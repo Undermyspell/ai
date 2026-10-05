@@ -1,6 +1,10 @@
 package public
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/michael/zumba-admin-ui/web/templates/partials"
+)
 
 // VM ist die fertige Anzeige der Öffentlich-Seite. Umrechnungen (Restzeit,
 // Zustandstexte) passieren im Handler, hier wird nur noch ausgegeben.
@@ -17,11 +21,13 @@ type VM struct {
 type TargetVM struct {
 	Name        string
 	Label       string
+	Path        string // Pfad hinter der Adresse, z. B. "/2026"
 	State       string // inactive | opening | active | closing | error
 	StateText   string
 	URL         string
-	SinceText   string
-	ExpiresText string
+	SinceText   string // "offen seit 19:20"
+	ExpiresText string // "schließt 21:20 (noch 1 h 58 min)"
+	LeftPct     int    // Restlaufzeit in Prozent der Gesamtlaufzeit
 	Error       string
 	// Busy: baut gerade auf oder ab — Knöpfe sind dann gesperrt.
 	Busy   bool
@@ -35,114 +41,194 @@ type TTLOption struct {
 }
 
 templ Page(vm VM) {
-	<div class="page-header enter">
-		<div class="eyebrow">Zugang von außen</div>
-		<h1>Öffentlich</h1>
-		<p class="meta">
-			Schaltet Wrapped und das Admin-UI über einen ngrok-Tunnel ins Internet.
-			Der Tunnel schließt nach Ablauf der gewählten Zeit von selbst, spätestens
-			nachts um drei.
-		</p>
-	</div>
 	if vm.Configured {
 		@Cards(vm)
 	} else {
-		<div class="trace-empty enter">
-			<span class="te-glyph">🔌</span>
-			<p>Kein tunnel-service konfiguriert (TUNNEL_URL fehlt).</p>
-		</div>
+		<section class="card">
+			@partials.Empty("🔌", "Kein tunnel-service konfiguriert (TUNNEL_URL fehlt).")
+		</section>
 	}
 }
 
-// Cards ist der pollende Teil: die Karte tauscht sich selbst aus. Während ein
-// Auf- oder Abbau läuft alle 2 Sekunden, sonst gemächlicher — der Zustand
+// Cards ist der pollende Teil: die Ansicht tauscht sich selbst aus. Während
+// ein Auf- oder Abbau läuft alle 2 Sekunden, sonst gemächlicher — der Zustand
 // ändert sich dann ja nur, wenn jemand drückt.
 templ Cards(vm VM) {
-	<div
+	<section
 		id="public-status"
-		class="public-status enter"
+		class="grid-side"
 		hx-get="/public/status"
 		hx-trigger={ pollTrigger(vm) }
 		hx-target="this"
 		hx-swap="outerHTML"
+		hx-disinherit="*"
 	>
-		if vm.Err != "" {
-			<div class="public-offline">
-				<span class="po-glyph">⚠️</span>
-				<div>
-					<strong>tunnel-service nicht erreichbar</strong>
-					<p>{ vm.Err }</p>
+		<div class="stack">
+			<div class="card" style="padding:20px 22px">
+				<div class="card-head">
+					<div>
+						<div class="card-title">Zugang von außen</div>
+						<div class="card-sub">Für den Moment, in dem der Wrapped-Link in die Gruppe geht. Schließt von selbst – spätestens nachts um drei.</div>
+					</div>
+					if anyOpen(vm) {
+						<span class="pill is-green">● etwas ist öffentlich</span>
+					} else {
+						<span class="pill">○ alles zu</span>
+					}
+				</div>
+				<div class={ "route", templ.KV("is-open", anyOpen(vm)) }>
+					@routeStep("🍓", "Raspberry Pi 5", "k3s · Heimnetz")
+					@routeStep("⇄", "tunnel-service", "Sidecar am ngrok-Agent")
+					@routeStep("☁", "ngrok", "öffentliche Adresse")
+					@routeStep("📱", "Handy / Gruppe", "WhatsApp-Link")
 				</div>
 			</div>
+			if vm.Err != "" {
+				<div class="public-offline">
+					<span aria-hidden="true">⚠️</span>
+					<div>
+						<strong>tunnel-service nicht erreichbar</strong>
+						<p>{ vm.Err }</p>
+					</div>
+				</div>
+			}
+			<div class="target-grid">
+				for _, t := range vm.Targets {
+					@target(t, vm.TTLOptions)
+				}
+			</div>
+		</div>
+		<div class="stack side-col">
+			<div class="card" style="padding:20px">
+				<div class="card-title-sm" style="margin-bottom:10px">Sicherheit</div>
+				<div class="stack-sm">
+					if anyOpen(vm) {
+						@safety("is-red", "Bot-Test", "gesperrt, solange ein Tunnel offen ist")
+						@safety("is-red", "ML-Test", "gesperrt (403)")
+					} else {
+						@safety("is-green", "Bot-Test", "frei – nichts öffentlich")
+						@safety("is-green", "ML-Test", "frei")
+					}
+					@safety("is-green", "Login", "bremst Fehlversuche exponentiell, keine Sperre")
+					@safety("is-blue", "Auto-Schluss", "nach Laufzeit, spätestens 03:00 Uhr")
+				</div>
+				if anyOpen(vm) {
+					<form hx-post="/public/close-all" hx-target="#public-status" hx-swap="outerHTML" style="margin-top:12px">
+						<button type="submit" class="btn btn-danger-solid btn-block" style="padding:11px;font-weight:800">Alles schließen</button>
+					</form>
+				}
+			</div>
+		</div>
+	</section>
+}
+
+templ routeStep(icon, label, sub string) {
+	<div class="route-step">
+		<div class="route-node">
+			<span class="emo" aria-hidden="true">{ icon }</span>
+			<div style="min-width:0">
+				<div class="route-label">{ label }</div>
+				<div class="route-sub">{ sub }</div>
+			</div>
+		</div>
+		<span class="route-link" aria-hidden="true"></span>
+	</div>
+}
+
+templ safety(class, label, text string) {
+	<div class="safety-row">
+		<span class={ "dot", class }></span>
+		<span>
+			<span class="safety-label">{ label }</span>
+			<span class="safety-text">{ text }</span>
+		</span>
+	</div>
+}
+
+templ target(t TargetVM, opts []TTLOption) {
+	<div class={ "card", "target", stateClass(t) }>
+		if t.Active {
+			<span class="target-glow" aria-hidden="true"></span>
 		}
-		for _, t := range vm.Targets {
-			@card(t, vm.TTLOptions)
+		<div class="target-head">
+			<span class="status-ring" aria-hidden="true"><i></i></span>
+			<div style="min-width:0">
+				<div class="target-name">{ t.Label }</div>
+				<div class="target-state">{ t.StateText }</div>
+			</div>
+			if t.Path != "" {
+				<span class="target-path">{ t.Path }</span>
+			}
+		</div>
+		if t.Error != "" {
+			<p class="target-err">{ t.Error }</p>
 		}
-		if anyOpen(vm) {
-			<form hx-post="/public/close-all" hx-target="#public-status" hx-swap="outerHTML">
-				<button type="submit" class="public-panic">Alles schließen</button>
+		if t.Active {
+			<div style="position:relative">
+				<div class="tile-label" style="margin-bottom:4px">Öffentliche Adresse</div>
+				if t.URL != "" {
+					<a class="target-url" href={ templ.SafeURL(t.URL) } target="_blank" rel="noopener noreferrer">{ t.URL }</a>
+					<div class="target-btns">
+						<button type="button" class="btn btn-primary btn-sm" data-copy={ t.URL } title="Adresse kopieren">Kopieren</button>
+						<form hx-post="/public/notify" hx-target="#public-status" hx-swap="outerHTML">
+							<input type="hidden" name="target" value={ t.Name }/>
+							<button type="submit" class="btn btn-ghost btn-sm" title="Adresse per WhatsApp an die eigene Nummer schicken">📱 Aufs Handy</button>
+						</form>
+					</div>
+				}
+			</div>
+			if t.ExpiresText != "" {
+				<div>
+					<div class="target-left"><span>{ t.SinceText }</span><span>{ t.ExpiresText }</span></div>
+					<span class="meter meter-6 meter-green"><span style={ partials.Var("width", strconv.Itoa(t.LeftPct)+"%") }></span></span>
+				</div>
+			} else if t.SinceText != "" {
+				<div class="target-left"><span>{ t.SinceText }</span></div>
+			}
+			<form hx-post="/public/close" hx-target="#public-status" hx-swap="outerHTML">
+				<input type="hidden" name="target" value={ t.Name }/>
+				<button type="submit" class="btn btn-danger">Schließen</button>
+			</form>
+		} else if t.Busy {
+			<div class="target-busy">ngrok { busyText(t) } – dauert ein paar Sekunden…</div>
+		} else {
+			<form class="open-form" hx-post="/public/open" hx-target="#public-status" hx-swap="outerHTML">
+				<input type="hidden" name="target" value={ t.Name }/>
+				<div>
+					<div class="tile-label" style="margin-bottom:6px">Laufzeit</div>
+					<div class="seg" role="radiogroup" aria-label="Laufzeit" id={ "ttl-" + t.Name } hx-preserve="true">
+						for _, o := range opts {
+							<label>
+								<input type="radio" name="hours" value={ strconv.Itoa(o.Hours) } checked?={ o.Selected }/>
+								<span class="seg-face">{ o.Label }</span>
+							</label>
+						}
+					</div>
+				</div>
+				<button type="submit" class="btn btn-primary btn-lg">Öffentlich schalten</button>
 			</form>
 		}
 	</div>
 }
 
-templ card(t TargetVM, opts []TTLOption) {
-	<section class={ "public-card", "is-" + t.State }>
-		<header class="public-card-head">
-			<h2>{ t.Label }</h2>
-			<span class={ "public-badge", "pb-" + t.State }>
-				if t.Busy {
-					<span class="pb-spinner" aria-hidden="true"></span>
-				}
-				{ t.StateText }
-			</span>
-		</header>
-		if t.Active && t.URL != "" {
-			<div class="public-url">
-				<a href={ templ.SafeURL(t.URL) } target="_blank" rel="noopener noreferrer">{ t.URL }</a>
-				<button type="button" class="public-copy" data-copy={ t.URL } title="Adresse kopieren">Kopieren</button>
-				<form hx-post="/public/notify" hx-target="#public-status" hx-swap="outerHTML">
-					<input type="hidden" name="target" value={ t.Name }/>
-					<button type="submit" class="public-copy" title="Adresse per WhatsApp an die eigene Nummer schicken">📱 Aufs Handy</button>
-				</form>
-			</div>
-			<p class="public-meta">
-				{ t.SinceText }
-				if t.ExpiresText != "" {
-					<span class="public-sep">·</span>
-					{ t.ExpiresText }
-				}
-			</p>
-		}
-		if t.Error != "" {
-			<p class="public-err">{ t.Error }</p>
-		}
-		<div class="public-actions">
-			if t.Active {
-				<form hx-post="/public/close" hx-target="#public-status" hx-swap="outerHTML">
-					<input type="hidden" name="target" value={ t.Name }/>
-					<button type="submit" class="public-stop">Schließen</button>
-				</form>
-			} else {
-				<form hx-post="/public/open" hx-target="#public-status" hx-swap="outerHTML">
-					<input type="hidden" name="target" value={ t.Name }/>
-					<label class="public-ttl">
-						für
-						<select name="hours" id={ "ttl-" + t.Name } hx-preserve="true">
-							for _, o := range opts {
-								if o.Selected {
-									<option value={ strconv.Itoa(o.Hours) } selected>{ o.Label }</option>
-								} else {
-									<option value={ strconv.Itoa(o.Hours) }>{ o.Label }</option>
-								}
-							}
-						</select>
-					</label>
-					<button type="submit" class="btn-primary" disabled?={ t.Busy }>Öffentlich schalten</button>
-				</form>
-			}
-		</div>
-	</section>
+func stateClass(t TargetVM) string {
+	switch {
+	case t.Active:
+		return "is-active"
+	case t.Busy:
+		return "is-busy"
+	case t.State == "error":
+		return "is-error"
+	default:
+		return ""
+	}
+}
+
+func busyText(t TargetVM) string {
+	if t.State == "closing" {
+		return "schließt den Tunnel"
+	}
+	return "baut den Tunnel auf"
 }
 
 // pollTrigger: schnell nachfragen, solange sich etwas bewegt.

@@ -172,17 +172,28 @@ func (s *Server) publicVM(ctx context.Context) public.VM {
 			Busy:      t.State == tunnel.StateOpening || t.State == tunnel.StateClosing,
 			Active:    t.State == tunnel.StateActive,
 		}
+		tv.Path = targetPaths[t.Name]
 		if t.Since != nil {
-			tv.SinceText = "seit " + t.Since.Local().Format("15:04")
+			tv.SinceText = "offen seit " + t.Since.Local().Format("15:04")
 		}
 		if t.ExpiresAt != nil && t.State == tunnel.StateActive {
-			tv.ExpiresText = "schließt " + t.ExpiresAt.Local().Format("15:04") + " (noch " + humanRest(t.ExpiresAt.Sub(now)) + ")"
+			rest := t.ExpiresAt.Sub(now)
+			tv.ExpiresText = "schließt " + t.ExpiresAt.Local().Format("15:04") + " (noch " + humanRest(rest) + ")"
+			tv.LeftPct = 100
+			if t.Since != nil {
+				if total := t.ExpiresAt.Sub(*t.Since); total > 0 {
+					tv.LeftPct = max(0, min(100, int(rest*100/total)))
+				}
+			}
 		}
 		vm.Targets = append(vm.Targets, tv)
 	}
 	vm.TTLOptions = ttlOptions(status.DefaultTTLSeconds, status.MaxTTLSeconds)
 	return vm
 }
+
+// targetPaths: wohin die öffentliche Adresse führt (nur Anzeige).
+var targetPaths = map[string]string{"wrapped": "/2026", "admin": "/dashboard"}
 
 func stateText(state tunnel.State) string {
 	switch state {

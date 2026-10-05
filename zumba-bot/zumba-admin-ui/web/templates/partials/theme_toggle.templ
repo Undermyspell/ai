@@ -1,8 +1,66 @@
 package partials
 
+import "fmt"
+
+// Fonts lädt Plus Jakarta Sans (Text) und JetBrains Mono (Zahlen, Daten, IDs).
+templ Fonts() {
+	<link rel="preconnect" href="https://fonts.googleapis.com"/>
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+	<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+}
+
+// ThemeToggle schaltet Hell/Dunkel um (theme.js setzt das Symbol).
 templ ThemeToggle() {
-	<button class="theme-toggle" type="button" aria-label="Theme umschalten">
-		<span class="icon">☀</span>
-		<span class="label">Tagesbar</span>
+	<button class="icon-btn chrome theme-toggle" type="button" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten">
+		<span class="icon" aria-hidden="true">☾</span>
+	</button>
+}
+
+// NextStammtisch füllt die Karte unten in der Seitenleiste.
+type NextStammtisch struct {
+	Label  string // "Do, 09.10."
+	InDays int    // 0 = heute
+	// LastISO ist der jüngste Donnerstag bis heute – der Knopf öffnet ihn im
+	// Bottom-Sheet zum Eintragen.
+	LastISO string
+}
+
+func (n NextStammtisch) when() string {
+	switch n.InDays {
+	case 0:
+		return "heute"
+	case 1:
+		return "morgen"
+	default:
+		return fmt.Sprintf("in %d Tagen", n.InDays)
+	}
+}
+
+templ nextCard(n NextStammtisch) {
+	if n.Label != "" {
+		<div class="side-cta">
+			<div class="side-cta-label">Nächster Stammtisch</div>
+			<div class="side-cta-date">{ n.Label }</div>
+			<div class="side-cta-sub">{ n.when() } · Report 21:00</div>
+			if n.LastISO != "" {
+				@SheetButton(n.LastISO, "", "") {
+					Letzten Do. eintragen
+				}
+			}
+		</div>
+	}
+}
+
+// SheetButton öffnet den Donnerstag date im Bottom-Sheet.
+templ SheetButton(date, class, title string) {
+	<button
+		type="button"
+		class={ class }
+		if title != "" {
+			title={ title }
+		}
+		{ OpenSheet(date)... }
+	>
+		{ children... }
 	</button>
 }

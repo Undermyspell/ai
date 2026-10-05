@@ -25,9 +25,12 @@ ist.
 ## Was man damit macht
 
 ### Anwesenheiten korrigieren
-Dashboard mit Mitgliedern und Donnerstagen. Anwesenheit lässt sich pro
-Person/Tag umschalten — fachlich heißt das: eine Absage-Zeile anlegen oder
-löschen (Anwesenheit per Default, es gibt nur Absagen). Typische Fälle:
+Dashboard, Donnerstage (Kacheln + Matrix Mitglieder × Donnerstage) und
+Mitglieder. Anwesenheit lässt sich überall pro Person/Tag umschalten – in der
+Matrix, im Mitglieder-Verlauf und im Bottom-Sheet „Donnerstag bearbeiten", das
+sich von jedem Donnerstag aus öffnet (Seitenleiste: „Letzten Do. eintragen").
+Fachlich heißt das: eine Absage-Zeile anlegen oder löschen (Anwesenheit per
+Default, es gibt nur Absagen). Typische Fälle:
 jemand hat mündlich abgesagt, jemand stand trotz Absage plötzlich da,
 Bot hat eine Nachricht falsch klassifiziert.
 
@@ -37,7 +40,9 @@ WhatsApp-Absage; für Timing-Auswertungen entsprechend mit Vorsicht genießen).
 
 ### Sperrtage pflegen
 Donnerstage, an denen kein Stammtisch stattfindet (Feiertage, Sommerpause).
-Nur Donnerstage sind zulässig — die Eingabe validiert das. Gesperrte Tage
+Ein Jahreskalender zeigt alle Donnerstage des Stammtischjahres; Klick sperrt
+bzw. gibt frei. Feiertage, die auf einen Donnerstag fallen, schlägt die Seite
+vor. Nur Donnerstage sind zulässig — die Eingabe validiert das. Gesperrte Tage
 verschwinden aus sämtlichen Auswertungen (Statistik, Strafen, Wrapped).
 
 ### Strafen verwalten (`/strafen`)
@@ -57,35 +62,37 @@ vom Bot erkannt. Das UI zeigt auch erkannte, noch nicht persistierte
 Kandidaten an.
 
 ### Bot-Test (`/bot-test`)
-Spielwiese gegen den echten Bot ohne WhatsApp — ein Formular in vier
-Schritten:
+Spielwiese gegen den echten Bot ohne WhatsApp, als Chat-Simulation:
 
-1. **Szenario** — Statistik, Absage, Zusage oder Wochenreport. Die ersten
-   drei schicken eine Beispielnachricht durch die komplette Verarbeitung,
-   der Wochenreport löst den Donnerstagsreport aus.
-2. **Beispiel-Nachricht** — das Webhook-JSON, frei editierbar (entfällt beim
-   Wochenreport).
-3. **Ausgabe** — „💬 Nachricht" (Text, inkl. alternativer Statistik-Designs)
-   oder „🖼️ Bild" (PNG-Karte mit Design-Auswahl). Entfällt bei
-   Absage/Zusage, weil dort nur klassifiziert wird.
-4. **Versand** — Dry-Run oder Vorschau an die eigene Nummer, dazu ein
-   optionaler Stichtag.
+- **Szenario** — Statistik, Absage, Zusage oder Wochenreport. Die ersten
+  drei schicken eine Beispielnachricht durch die komplette Verarbeitung,
+  der Wochenreport löst den Donnerstagsreport aus.
+- **Nachricht** — steht als Sprechblase im Chat und lässt sich direkt
+  bearbeiten; darunter liegt das vollständige Webhook-JSON, ebenfalls frei
+  editierbar (entfällt beim Wochenreport).
+- **Ausgabe** — „💬 Nachricht" (Text, inkl. alternativer Statistik-Designs)
+  oder „🖼️ Bild" (PNG-Karte mit Design-Auswahl). Entfällt bei
+  Absage/Zusage, weil dort nur klassifiziert wird.
+- **Versand** — Dry-Run oder Vorschau an die eigene Nummer, dazu ein
+  optionaler Stichtag.
 
-Danach zeigt das UI das strukturierte Ergebnis (Klassifikation, DB-Wirkung,
-Antworttext bzw. Bild). Nicht zutreffende Schritte blendet die Seite aus,
-die Nummerierung bleibt lückenlos. Der Modus „Vorschau
-an meine Nummer“ verschickt entsprechend Text oder Bild an die Testnummer —
-nie an die Gruppe.
+Danach antwortet der Bot im Chat (Antworttext bzw. Bild, bei Absage/Zusage
+die Klassifikation samt DB-Wirkung), daneben zeigt ein Verarbeitungspfad,
+welche Schritte gelaufen sind. Der Modus „Vorschau an meine Nummer“
+verschickt entsprechend Text oder Bild an die Testnummer — nie an die
+Gruppe.
 
 ### KI-Modell (`/ki-modell`)
 
-Welches Modell die Gruppen-Nachrichten klassifiziert: je eine Karte für
-Haupt- und Fallback-Modell, Auswahl zwischen Gemma 4 31B, Gemini 3.8 Flash und
-Gemini 3.5 Flash Lite. Ein Klick schaltet sofort um (Tabelle
+Welches Modell die Gruppen-Nachrichten klassifiziert: oben der Weg einer
+Nachricht (Hauptmodell → bei Fehler Fallback → Label), darunter je eine Karte
+für Gemma 4 31B, Gemini 3.8 Flash und Gemini 3.5 Flash Lite mit den Knöpfen
+„Als Hauptmodell" / „Als Fallback". Ein Klick schaltet sofort um (Tabelle
 `classifier_models`), der Bot nimmt die Wahl ab der nächsten Nachricht. Das
 Modell der jeweils anderen Rolle ist gesperrt – gleich gesetzt gäbe es keinen
-Fallback. Unter jedem Modell stehen die Grenzen des kostenlosen Kontingents;
-ein Donnerstag braucht etwa zehn Aufrufe.
+Fallback. Jede Karte zeigt die Grenzen des kostenlosen Kontingents, die
+Seitenspalte rechnet vor, ob es reicht: ein Donnerstag braucht etwa zehn
+Aufrufe.
 
 ### ML-Testdaten
 Tabelle `ml_test_messages`: gesammelte Beispielnachrichten für den

@@ -1,45 +1,74 @@
 package partials
 
 type navItem struct {
-	Key   string
-	Href  string
-	Icon  string
-	Label string
+	Key     string
+	Href    string
+	Icon    string
+	Label   string
+	Short   string // Beschriftung in der Leiste am unteren Rand
+	Heading string // Überschrift der Topbar
 }
 
-// Die Leiste am unteren Rand trägt nur die vier Punkte der täglichen Pflege —
-// neun Einträge nebeneinander waren auf dem Handy weder lesbar noch treffbar.
-var primaryNav = []navItem{
-	{Key: "dashboard", Href: "/dashboard", Icon: "📊", Label: "Dashboard"},
-	{Key: "days", Href: "/days", Icon: "📅", Label: "Donnerstage"},
-	{Key: "excluded", Href: "/excluded", Icon: "🚫", Label: "Sperrtage"},
-	{Key: "strafen", Href: "/strafen", Icon: "💸", Label: "Strafen"},
+// mainNav ist die tägliche Pflege, toolNav die Bot- und ML-Werkzeuge. Auf dem
+// Desktop stehen beide Gruppen untereinander in der Seitenleiste.
+var mainNav = []navItem{
+	{Key: "dashboard", Href: "/dashboard", Icon: "⌂", Label: "Dashboard", Short: "Start", Heading: "Servus 👋"},
+	{Key: "days", Href: "/days", Icon: "▦", Label: "Donnerstage", Short: "Tage", Heading: "Alle Stammtisch-Tage"},
+	{Key: "members", Href: "/members", Icon: "☺", Label: "Mitglieder", Short: "Runde", Heading: "Die Tafelrunde"},
+	{Key: "strafen", Href: "/strafen", Icon: "€", Label: "Strafen", Short: "Kasse", Heading: "Strafenkasse"},
+	{Key: "excluded", Href: "/excluded", Icon: "⊘", Label: "Sperrtage", Heading: "Ausgeschlossene Donnerstage"},
 }
 
-// Die Werkzeuge stecken hinter „Mehr" — Bot- und ML-Seiten braucht man selten
-// und nie unterwegs. Auf dem Desktop zeigt die Seitenleiste beide Gruppen
-// untereinander, dort ist Platz genug.
-var moreNav = []navItem{
-	{Key: "public", Href: "/public", Icon: "🌍", Label: "Öffentlich"},
-	{Key: "bottest", Href: "/bot-test", Icon: "🤖", Label: "Bot-Test"},
-	{Key: "kimodell", Href: "/ki-modell", Icon: "🎛️", Label: "KI-Modell"},
-	{Key: "trace", Href: "/trace", Icon: "📜", Label: "Verlauf"},
-	{Key: "mlshadow", Href: "/ml-shadow", Icon: "🧠", Label: "ML-Shadow"},
-	{Key: "mltest", Href: "/ml-test", Icon: "🧪", Label: "ML-Test"},
-	{Key: "mldocs", Href: "/ml-doku", Icon: "📖", Label: "ML-Doku"},
+var toolNav = []navItem{
+	{Key: "bottest", Href: "/bot-test", Icon: "▶", Label: "Bot-Test", Heading: "Bot ohne WhatsApp testen"},
+	{Key: "trace", Href: "/trace", Icon: "≡", Label: "Verlauf", Heading: "Bot-Verlauf"},
+	{Key: "kimodell", Href: "/ki-modell", Icon: "◈", Label: "KI-Modell", Heading: "Welches Modell klassifiziert"},
+	{Key: "public", Href: "/public", Icon: "⊕", Label: "Öffentlich", Heading: "Zugang von außen"},
+	{Key: "mlshadow", Href: "/ml-shadow", Icon: "◐", Label: "ML-Shadow", Heading: "Shadow-Modus"},
+	{Key: "mltest", Href: "/ml-test", Icon: "⚗", Label: "ML-Test", Heading: "Manueller Test"},
+	{Key: "mldocs", Href: "/ml-doku", Icon: "¶", Label: "ML-Doku", Heading: "Dokumentation"},
 }
+
+// Die Leiste am unteren Rand trägt nur vier Punkte plus „Mehr" — neun
+// Einträge nebeneinander waren auf dem Handy weder lesbar noch treffbar.
+var bottomKeys = []string{"dashboard", "days", "members", "strafen"}
 
 // sealedWhilePublic: diese Seiten sind gesperrt, solange ein Tunnel offen ist
 // (Bot-Test kann echte Nachrichten verschicken). Sie aus dem Menü zu nehmen
 // erspart den Klick ins Leere.
 var sealedWhilePublic = map[string]bool{"bottest": true, "mltest": true}
 
-func visibleMore(publicOpen bool) []navItem {
-	if !publicOpen {
-		return moreNav
+func findNav(key string) (navItem, bool) {
+	for _, list := range [][]navItem{mainNav, toolNav} {
+		for _, it := range list {
+			if it.Key == key {
+				return it, true
+			}
+		}
 	}
-	out := make([]navItem, 0, len(moreNav))
-	for _, item := range moreNav {
+	return navItem{}, false
+}
+
+// Crumb ist der Brotkrumen der Topbar: der Menüpunkt, sonst der Seitentitel.
+func Crumb(active, title string) string {
+	if it, ok := findNav(active); ok {
+		return it.Label
+	}
+	return title
+}
+
+// DefaultHeading ist die Überschrift eines Menüpunkts.
+func DefaultHeading(active string) string {
+	it, _ := findNav(active)
+	return it.Heading
+}
+
+func visibleTools(publicOpen bool) []navItem {
+	if !publicOpen {
+		return toolNav
+	}
+	out := make([]navItem, 0, len(toolNav))
+	for _, item := range toolNav {
 		if !sealedWhilePublic[item.Key] {
 			out = append(out, item)
 		}
@@ -47,50 +76,117 @@ func visibleMore(publicOpen bool) []navItem {
 	return out
 }
 
-// inMore: liegt die aktive Seite im Mehr-Menü, wird der Knopf selbst markiert —
-// sonst sähe die Leiste aus, als wäre gar nichts ausgewählt.
-func inMore(active string) bool {
-	for _, item := range moreNav {
-		if item.Key == active {
+// moreItems: was auf dem Handy hinter „Mehr" steckt — alles, was nicht in
+// der Leiste steht.
+func moreItems(publicOpen bool) []navItem {
+	out := []navItem{}
+	for _, it := range mainNav {
+		if !inBottom(it.Key) {
+			out = append(out, it)
+		}
+	}
+	return append(out, visibleTools(publicOpen)...)
+}
+
+func inBottom(key string) bool {
+	for _, k := range bottomKeys {
+		if k == key {
 			return true
 		}
 	}
 	return false
 }
 
-templ Nav(active string, publicOpen bool) {
-	<nav class="app-nav" aria-label="Hauptnavigation">
-		for _, item := range primaryNav {
-			@navLink(item, item.Key == active)
+func bottomItems() []navItem {
+	out := make([]navItem, 0, len(bottomKeys))
+	for _, k := range bottomKeys {
+		it, _ := findNav(k)
+		out = append(out, it)
+	}
+	return out
+}
+
+func badgeFor(key string, publicOpen bool) (string, string) {
+	if key == "public" && publicOpen {
+		return "offen", "is-green"
+	}
+	return "", ""
+}
+
+templ Side(active string, publicOpen bool, next NextStammtisch) {
+	<aside class="side" aria-label="Seitenleiste">
+		<a href="/dashboard" class="side-brand">
+			<span class="logo">Z</span>
+			<span class="side-word">Zumba Admin</span>
+		</a>
+		<nav class="stack-sm" aria-label="Hauptnavigation" style="gap:4px">
+			for _, it := range mainNav {
+				@sideLink(it, it.Key == active, publicOpen)
+			}
+			<div class="nav-group">Bot &amp; ML</div>
+			for _, it := range visibleTools(publicOpen) {
+				@sideLink(it, it.Key == active, publicOpen)
+			}
+			if publicOpen {
+				<p class="nav-note">Bot- und ML-Test gesperrt, solange ein Tunnel offen ist.</p>
+			}
+		</nav>
+		@nextCard(next)
+	</aside>
+}
+
+templ sideLink(it navItem, active bool, publicOpen bool) {
+	<a
+		href={ templ.URL(it.Href) }
+		class={ "nav-link", templ.KV("is-active", active) }
+		if active {
+			aria-current="page"
 		}
-		<details class="nav-more">
-			<summary class={ "nav-more-toggle", templ.KV("is-active", inMore(active)) }>
-				<span class="icon" aria-hidden="true">⋯</span>
-				<span class="label">Mehr</span>
+	>
+		<span class="nav-ico" aria-hidden="true">{ it.Icon }</span>
+		{ it.Label }
+		if b, cls := badgeFor(it.Key, publicOpen); b != "" {
+			<span class={ "nav-badge", cls }>{ b }</span>
+		}
+	</a>
+}
+
+templ BottomNav(active string, publicOpen bool) {
+	<nav class="bottom-nav" aria-label="Navigation">
+		for _, it := range bottomItems() {
+			<a
+				href={ templ.URL(it.Href) }
+				class={ "bn-link", templ.KV("is-active", it.Key == active) }
+				if it.Key == active {
+					aria-current="page"
+				}
+			>
+				<span class="bn-ico" aria-hidden="true">{ it.Icon }</span>
+				{ it.Short }
+			</a>
+		}
+		<details class="more">
+			<summary class={ templ.KV("is-active", !inBottom(active) && active != "") }>
+				<span class="bn-ico" aria-hidden="true">⋯</span>
+				Mehr
 			</summary>
-			<div class="nav-more-panel">
-				<p class="nav-more-head">Werkzeuge</p>
-				for _, item := range visibleMore(publicOpen) {
-					@navLink(item, item.Key == active)
+			<div class="more-panel">
+				for _, it := range moreItems(publicOpen) {
+					<a
+						href={ templ.URL(it.Href) }
+						class={ templ.KV("is-active", it.Key == active) }
+						if it.Key == active {
+							aria-current="page"
+						}
+					>
+						<span class="nav-ico" aria-hidden="true">{ it.Icon }</span>
+						{ it.Label }
+					</a>
 				}
 				if publicOpen {
-					<p class="nav-more-note">Bot- und ML-Test gesperrt, solange ein Tunnel offen ist.</p>
+					<p class="nav-note">Bot- und ML-Test gesperrt, solange ein Tunnel offen ist.</p>
 				}
 			</div>
 		</details>
 	</nav>
-}
-
-templ navLink(item navItem, active bool) {
-	if active {
-		<a href={ templ.URL(item.Href) } aria-current="page">
-			<span class="icon">{ item.Icon }</span>
-			<span class="label">{ item.Label }</span>
-		</a>
-	} else {
-		<a href={ templ.URL(item.Href) }>
-			<span class="icon">{ item.Icon }</span>
-			<span class="label">{ item.Label }</span>
-		</a>
-	}
 }

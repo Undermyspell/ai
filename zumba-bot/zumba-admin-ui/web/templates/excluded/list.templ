@@ -1,70 +1,188 @@
 package excluded
 
-import (
-	"fmt"
-	"time"
-
-	"github.com/michael/zumba-admin-ui/internal/timeutil"
-)
+import "strconv"
 
 type ListVM struct {
-	Days []time.Time // newest first
+	Label       string // Stammtischjahr, z. B. "2026"
+	Months      []Month
+	Locked      []Locked // neueste zuerst
+	Suggestions []Suggestion
 	// ReadOnly: abgeschlossenes Stammtischjahr (Archivansicht).
 	ReadOnly bool
 }
 
+type Month struct {
+	Label string
+	Year  int
+	Days  []Day
+}
+
+type Day struct {
+	ISO     string
+	Day     int
+	Sub     string // "65%", "KW 41" oder "✕"
+	Title   string
+	Class   string
+	Locked  bool
+	Current bool
+}
+
+type Locked struct {
+	ISO   string
+	Label string
+	Sub   string // "KW 20 · 2026-05-14"
+}
+
+type Suggestion struct {
+	Label string
+	ISO   string
+	Date  string
+	Done  bool
+}
+
 templ List(vm ListVM) {
-	<div class="page-header enter">
-		<div class="eyebrow">Sperrtage</div>
-		<h1>Ausgeschlossene Donnerstage</h1>
-		<p class="meta">Diese Tage zählen nicht in der Auswertung.</p>
-	</div>
-	if !vm.ReadOnly {
-		<form class="excluded-form enter" hx-post="/excluded" hx-target="#excluded-region" hx-swap="outerHTML">
-			<input type="date" name="date" required aria-label="Donnerstag wählen"/>
-			<button type="submit" class="btn-primary">Sperrtag anlegen</button>
-		</form>
-	}
 	@ListRegion(vm)
 }
 
+// ListRegion ist das HTMX-Swap-Ziel: nach jedem Sperren/Freigeben kommt die
+// ganze Ansicht neu, damit Kalender, Liste und Vorschläge zusammenpassen.
 templ ListRegion(vm ListVM) {
-	<div id="excluded-region">
-		if len(vm.Days) == 0 {
-			<div class="empty">
-				<div class="icon">📭</div>
-				<p>Keine Sperrtage in der aktuellen Saison.</p>
+	<section id="excluded-region" class="grid-side">
+		<div class="card">
+			<div class="card-head">
+				<div>
+					<div class="card-title">Stammtischjahr { vm.Label } · alle Donnerstage</div>
+					<div class="card-sub">
+						if vm.ReadOnly {
+							Archiv, nur Ansicht. Gesperrte Tage fallen aus Statistik, Strafen und Wrapped.
+						} else {
+							Donnerstag anklicken = sperren / freigeben. Gesperrte Tage fallen aus Statistik, Strafen und Wrapped.
+						}
+					</div>
+				</div>
+				<div class="legend">
+					<span><i class="lg-good"></i>stattgefunden</span>
+					<span><i class="lg-up"></i>kommend</span>
+					<span><i class="lg-red"></i>gesperrt</span>
+				</div>
 			</div>
-		} else {
-			<div class="list enter">
-				for _, d := range vm.Days {
-					@row(d, vm.ReadOnly)
+			<div class="cal-grid">
+				for _, m := range vm.Months {
+					<div class="cal-month">
+						<div class="cal-month-head"><span>{ m.Label }</span><span>{ strconv.Itoa(m.Year) }</span></div>
+						<div class="cal-days">
+							for _, d := range m.Days {
+								<button
+									type="button"
+									class={ "cal-day", d.Class, templ.KV("is-current", d.Current) }
+									title={ d.Title }
+									aria-label={ d.Title }
+									aria-pressed={ strconv.FormatBool(d.Locked) }
+									{ dayToggle(d, vm.ReadOnly)... }
+								>
+									<span class="d">{ strconv.Itoa(d.Day) }</span>
+									<span class="s">{ d.Sub }</span>
+								</button>
+							}
+						</div>
+					</div>
 				}
 			</div>
-		}
-	</div>
-}
-
-templ row(d time.Time, readOnly bool) {
-	<div class="excluded-row">
-		<span class="marker"></span>
-		<div>
-			<div class="label">{ timeutil.FormatDE(d) }</div>
-			<div class="iso">{ fmt.Sprintf("KW %d · %s", isoWeek(d), timeutil.FormatISO(d)) }</div>
 		</div>
-		if !readOnly {
-			<button
-				class="btn-danger"
-				hx-delete={ "/excluded/" + timeutil.FormatISO(d) }
-				hx-target="#excluded-region"
-				hx-swap="outerHTML"
-				hx-confirm="Sperrtag wirklich entfernen?"
-			>Entfernen</button>
-		}
-	</div>
+		<div class="stack side-col">
+			<div class="card">
+				<div class="card-head">
+					<div class="card-title-sm">Gesperrt</div>
+					<span class="card-meta">{ strconv.Itoa(len(vm.Locked)) } Tage</span>
+				</div>
+				<div class="rows" style="margin-top:6px">
+					for _, l := range vm.Locked {
+						<div class="ex-row">
+							<span>
+								<span class="ex-label">{ l.Label }</span>
+								<span class="ex-iso">{ l.Sub }</span>
+							</span>
+							if !vm.ReadOnly {
+								<button
+									type="button"
+									class="btn btn-danger btn-xs"
+									hx-delete={ "/excluded/" + l.ISO }
+									hx-target="#excluded-region"
+									hx-swap="outerHTML"
+									hx-confirm="Sperrtag wirklich freigeben? Der Donnerstag zählt dann wieder in Statistik und Strafen."
+								>Freigeben</button>
+							}
+						</div>
+					}
+				</div>
+				if len(vm.Locked) == 0 {
+					<p class="card-sub" style="padding:10px 0">Keine Sperrtage – jeder Donnerstag zählt.</p>
+				}
+			</div>
+			if len(vm.Suggestions) > 0 {
+				<div class="card">
+					<div class="card-title-sm">Vorschläge</div>
+					<div class="card-sub" style="margin-bottom:10px">Feiertage, die auf einen Donnerstag fallen</div>
+					<div class="stack-sm" style="gap:6px">
+						for _, sg := range vm.Suggestions {
+							<button
+								type="button"
+								class="suggest"
+								disabled?={ sg.Done || vm.ReadOnly }
+								if !sg.Done && !vm.ReadOnly {
+									hx-post="/excluded"
+									hx-vals={ `{"date":"` + sg.ISO + `"}` }
+									hx-target="#excluded-region"
+									hx-swap="outerHTML"
+								}
+							>
+								<span>
+									<span class="suggest-label">{ sg.Label }</span>
+									<span class="suggest-date">{ sg.Date }</span>
+								</span>
+								<span class="suggest-act">
+									if sg.Done {
+										✓ gesperrt
+									} else {
+										+ sperren
+									}
+								</span>
+							</button>
+						}
+					</div>
+				</div>
+			}
+			if !vm.ReadOnly {
+				<div class="card">
+					<div class="card-title-sm" style="margin-bottom:8px">Datum eingeben</div>
+					<form data-thursday-form hx-post="/excluded" hx-target="#excluded-region" hx-swap="outerHTML">
+						<div class="ex-form">
+							<input class="input" type="date" name="date" required aria-label="Donnerstag wählen"/>
+							<button type="submit" class="btn btn-primary">Sperren</button>
+						</div>
+						<div class="form-msg" role="status"></div>
+					</form>
+				</div>
+			}
+		</div>
+	</section>
 }
 
-func isoWeek(t time.Time) int {
-	_, w := t.ISOWeek()
-	return w
+func dayToggle(d Day, readOnly bool) templ.Attributes {
+	if readOnly {
+		return templ.Attributes{"disabled": true}
+	}
+	if d.Locked {
+		return templ.Attributes{
+			"hx-delete": "/excluded/" + d.ISO,
+			"hx-target": "#excluded-region",
+			"hx-swap":   "outerHTML",
+		}
+	}
+	return templ.Attributes{
+		"hx-post":   "/excluded",
+		"hx-vals":   `{"date":"` + d.ISO + `"}`,
+		"hx-target": "#excluded-region",
+		"hx-swap":   "outerHTML",
+	}
 }

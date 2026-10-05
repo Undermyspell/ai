@@ -11,42 +11,51 @@ import (
 
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
+	"github.com/michael/zumba-admin-ui/web/emoji"
 	"github.com/michael/zumba-admin-ui/web/templates/strafen"
 )
 
-// strafenVM bewertet die Strafen eines Stammtischjahres zum heutigen Tag
-// (Stichtag-Simulation gibt es nur auf der Bot-Test-Seite über den
+// strafenLage ist die bewertete Strafenlage eines Stammtischjahres zum
+// heutigen Tag (Stichtag-Simulation gibt es nur auf der Bot-Test-Seite über den
 // Wochenreport-Endpoint). Im Archiv ist der Stichtag das Jahresende, damit ein
 // abgeschlossenes Jahr denselben Stand zeigt wie an seinem letzten Tag.
-//
-// Neu erkannte Fehltage-Strafen werden idempotent persistiert (Marker), damit
-// sie sofort begleich-/löschbar sind – dieselbe Erkennung läuft auch im Bot
-// beim Report. In abgeschlossenen Jahren wird NICHT mehr geschrieben: das
-// bloße Öffnen einer Archivseite darf keine Zeilen anlegen.
-func (s *Server) strafenVM(ctx context.Context, season store.Season) (strafen.PageVM, error) {
-	readOnly := archived(season)
+type strafenLage struct {
+	stichtag  time.Time
+	users     []store.User
+	thursdays []time.Time // gültige Donnerstage bis zum Stichtag, neueste zuerst
+	entries   []penalty.Entry
+}
+
+// strafenLage bewertet die Strafen. Mit persist werden neu erkannte
+// Fehltage-Strafen idempotent persistiert (Marker), damit sie sofort
+// begleich-/löschbar sind – dieselbe Erkennung läuft auch im Bot beim Report.
+// In abgeschlossenen Jahren wird NIE geschrieben: das bloße Öffnen einer
+// Archivseite darf keine Zeilen anlegen. Das Dashboard liest nur (persist
+// = false) und zählt Kandidaten trotzdem als offen.
+func (s *Server) strafenLage(ctx context.Context, season store.Season, persist bool) (strafenLage, error) {
+	persist = persist && !archived(season)
 	stichtag := season.ClampAsOf(timeutil.StartOfDay(time.Now()))
 	users, err := s.store.ListUsers(ctx)
 	if err != nil {
-		return strafen.PageVM{}, err
+		return strafenLage{}, err
 	}
 	period := timeutil.Period{Start: season.Start, End: stichtag}
 	absences, err := s.store.ListAbsences(ctx, period)
 	if err != nil {
-		return strafen.PageVM{}, err
+		return strafenLage{}, err
 	}
-	excluded, err := s.store.ListExcludedDays(ctx, period)
+	excludedDays, err := s.store.ListExcludedDays(ctx, period)
 	if err != nil {
-		return strafen.PageVM{}, err
+		return strafenLage{}, err
 	}
 	rows, err := s.store.ListSeasonStrafen(ctx, season)
 	if err != nil {
-		return strafen.PageVM{}, err
+		return strafenLage{}, err
 	}
 	// Für das No-Show-Formular: nur echte Stammtisch-Donnerstage anbieten.
 	thursdays, err := s.store.ListThursdays(ctx, period)
 	if err != nil {
-		return strafen.PageVM{}, err
+		return strafenLage{}, err
 	}
 
 	input := func(rows []penalty.Row) penalty.Input {
@@ -54,7 +63,7 @@ func (s *Server) strafenVM(ctx context.Context, season store.Season) (strafen.Pa
 		for _, a := range absences {
 			byUser[a.UserID] = append(byUser[a.UserID], a.Date)
 		}
-		in := penalty.Input{Excluded: excluded, Rows: rows}
+		in := penalty.Input{Excluded: excludedDays, Rows: rows}
 		for _, u := range users {
 			in.Users = append(in.Users, penalty.UserData{
 				UserID: u.ID, Name: u.Name,
@@ -71,7 +80,7 @@ func (s *Server) strafenVM(ctx context.Context, season store.Season) (strafen.Pa
 	// Aktions-Buttons echte IDs haben.
 	persisted := false
 	for _, e := range entries {
-		if e.ID != 0 || readOnly {
+		if e.ID != 0 || !persist {
 			continue
 		}
 		if err := s.store.InsertAutoStrafe(ctx, e.UserID, e.Datum); err != nil {
@@ -82,30 +91,50 @@ func (s *Server) strafenVM(ctx context.Context, season store.Season) (strafen.Pa
 	}
 	if persisted {
 		if rows, err = s.store.ListSeasonStrafen(ctx, season); err != nil {
-			return strafen.PageVM{}, err
+			return strafenLage{}, err
 		}
 		entries = penalty.Assess(input(rows), stichtag)
 	}
+	return strafenLage{stichtag: stichtag, users: users, thursdays: thursdays, entries: entries}, nil
+}
 
-	vm := strafen.PageVM{
-		Users:         users,
-		Thursdays:     thursdays,
-		NoShowDefault: penalty.NoShowDefault,
-		ReadOnly:      readOnly,
+// strafenVM baut die Strafen-Seite aus der (persistierten) Strafenlage.
+func (s *Server) strafenVM(ctx context.Context, season store.Season) (strafen.PageVM, error) {
+	lage, err := s.strafenLage(ctx, season, true)
+	if err != nil {
+		return strafen.PageVM{}, err
 	}
-	for _, e := range entries {
+	vm := strafen.PageVM{
+		Users:         lage.users,
+		NoShowDefault: penalty.NoShowDefault,
+		ReadOnly:      archived(season),
+	}
+	for _, t := range lage.thursdays {
+		vm.Thursdays = append(vm.Thursdays, strafen.Option{Value: timeutil.FormatISO(t), Label: timeutil.FormatDE(t)})
+	}
+	for _, e := range lage.entries {
 		if e.Status == penalty.StatusGeloescht {
 			continue
 		}
 		row := strafen.Row{
-			ID: e.ID, UserName: e.Name, Art: e.Art, Datum: e.Datum,
+			ID: e.ID, UserName: e.Name, Emoji: emoji.For(e.Name), Art: e.Art, Datum: e.Datum,
 			Tage: e.Tage, Betrag: e.Betrag, Status: e.Status,
 			BeglichenAm: e.BeglichenAm,
-			Sichtbar:    penalty.VisibleAt(e, stichtag),
+			Sichtbar:    penalty.VisibleAt(e, lage.stichtag),
 		}
 		if e.Status == penalty.StatusBeglichen && e.BeglichenAm != nil {
 			bis := penalty.NextThursday(*e.BeglichenAm)
 			row.SichtbarBis = &bis
+		}
+		switch e.Status {
+		case penalty.StatusOffen:
+			vm.OffenSum += e.Betrag
+			vm.OffenCount++
+		case penalty.StatusBeglichen:
+			vm.BeglichenSum += e.Betrag
+		}
+		if row.Sichtbar {
+			vm.ReportCount++
 		}
 		vm.Rows = append(vm.Rows, row)
 	}
@@ -122,7 +151,9 @@ func (s *Server) handleStrafen(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "strafen", err)
 		return
 	}
-	s.render(w, r, s.seasonMeta(r, "Strafen", "strafen", season), strafen.Page(vm))
+	meta := s.seasonMeta(r, "Strafen", "strafen", season)
+	meta.RefreshURL = r.URL.RequestURI()
+	s.render(w, r, meta, strafen.Page(vm))
 }
 
 func (s *Server) handleAddStrafe(w http.ResponseWriter, r *http.Request) {

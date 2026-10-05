@@ -1,75 +1,176 @@
 package days
 
 import (
-	"fmt"
-	"time"
+	"strconv"
 
-	"github.com/michael/zumba-admin-ui/internal/timeutil"
-	"github.com/michael/zumba-admin-ui/web/emoji"
 	"github.com/michael/zumba-admin-ui/web/templates/partials"
 )
 
-type DetailVM struct {
-	Date     time.Time
+// SheetVM ist ein Donnerstag zum Bearbeiten – im Bottom-Sheet oder als
+// eigene Seite (Direktaufruf /days/{date}).
+type SheetVM struct {
+	ISO      string
+	Long     string // "Donnerstag, 2. Oktober 2026"
+	KW       int
 	Excluded bool
-	Cells    []Cell
+	Present  int
+	Absent   int
+	Cells    []Person
+	PrevISO  string
+	NextISO  string
+	Strip    []Chip
 	// ReadOnly: der Tag liegt in einem abgeschlossenen (oder gar keinem)
 	// Stammtischjahr – Anzeige ja, Änderungen nein.
 	ReadOnly bool
 }
 
-type Cell struct {
+type Person struct {
 	UserID  string
 	Name    string
+	Emoji   string
 	Absent  bool
-	Message *string
+	Message string
 }
 
-templ Detail(vm DetailVM) {
-	<div class="page-header enter">
-		<div class="eyebrow">Donnerstag</div>
-		<h1>{ timeutil.FormatDE(vm.Date) }</h1>
+type Chip struct {
+	ISO    string
+	Label  string
+	Active bool
+}
+
+// Sheet ist das Bottom-Sheet samt Overlay. Die Animation hängt am Rahmen,
+// getauscht wird beim Blättern und nach jedem Umschalten nur #sheet-body.
+templ Sheet(vm SheetVM) {
+	<div class="sheet-overlay" data-sheet-close></div>
+	<div class="sheet" role="dialog" aria-modal="true" aria-label="Donnerstag bearbeiten" tabindex="-1">
+		@SheetBody(vm, true)
+	</div>
+}
+
+// SheetBody lädt sich bei „absenceChanged" selbst neu – egal, ob die Änderung
+// im Sheet oder darunter auf der Seite passiert ist.
+templ SheetBody(vm SheetVM, inSheet bool) {
+	<div
+		id="sheet-body"
+		if inSheet {
+			hx-get={ "/days/" + vm.ISO + "?sheet=1" }
+			hx-trigger="absenceChanged from:body"
+			hx-select="#sheet-body"
+			hx-target="this"
+			hx-swap="outerHTML"
+			hx-disinherit="*"
+		}
+	>
+		<div class="sheet-head">
+			@stepButton(vm.PrevISO, "‹", "Vorheriger Donnerstag", inSheet)
+			<div class="sheet-title">
+				<div class="sheet-date">{ vm.Long }</div>
+				<div class="sheet-meta">
+					if vm.Excluded {
+						Sperrtag · KW { strconv.Itoa(vm.KW) }
+					} else {
+						<strong class="t-green">{ strconv.Itoa(vm.Present) }</strong> da ·
+						<strong class="t-red">{ strconv.Itoa(vm.Absent) }</strong> abgemeldet ·
+						KW { strconv.Itoa(vm.KW) }
+					}
+				</div>
+			</div>
+			@stepButton(vm.NextISO, "›", "Nächster Donnerstag", inSheet)
+		</div>
+		if len(vm.Strip) > 0 {
+			<div class="sheet-strip">
+				for _, c := range vm.Strip {
+					if inSheet {
+						<button
+							type="button"
+							class={ templ.KV("is-active", c.Active) }
+							hx-get={ "/days/" + c.ISO + "?sheet=1" }
+							hx-select="#sheet-body"
+							hx-target="#sheet-body"
+							hx-swap="outerHTML"
+						>{ c.Label }</button>
+					} else {
+						<a href={ templ.URL("/days/" + c.ISO) } class={ templ.KV("is-active", c.Active) }>{ c.Label }</a>
+					}
+				}
+			</div>
+		}
 		if vm.Excluded {
-			<p class="meta"><strong>Ausgeschlossen.</strong> Dieser Tag zählt nicht in die Auswertung.</p>
+			<p class="sheet-note">Dieser Donnerstag ist gesperrt und zählt nicht in die Auswertung.</p>
 		} else {
-			<p class="meta">{ fmt.Sprintf("%d von %d Personen abgemeldet", absentCount(vm.Cells), len(vm.Cells)) }</p>
+			if vm.ReadOnly {
+				<p class="sheet-note" style="padding-top:0">Abgeschlossenes Stammtischjahr – nur Ansicht.</p>
+			}
+			<div class="sheet-grid">
+				for _, c := range vm.Cells {
+					<button
+						type="button"
+						class={ "person", templ.KV("is-absent", c.Absent) }
+						title={ personTitle(c, vm.ReadOnly) }
+						{ partials.Toggle(c.UserID, vm.ISO, vm.ReadOnly)... }
+					>
+						<span class="emo-box is-34" aria-hidden="true">{ c.Emoji }</span>
+						<span class="person-text">
+							<span class="person-name">{ c.Name }</span>
+							<span class="person-status">{ status(c) }</span>
+						</span>
+					</button>
+				}
+			</div>
+		}
+		if inSheet {
+			<div class="sheet-foot">
+				<button type="button" class="btn btn-primary" data-sheet-close>Fertig</button>
+			</div>
 		}
 	</div>
-	if !vm.Excluded {
-		<div class="attendance-grid enter">
-			for _, c := range vm.Cells {
-				@cellRow(vm.Date, c, vm.ReadOnly)
-			}
-		</div>
+}
+
+templ stepButton(iso, glyph, label string, inSheet bool) {
+	if iso == "" {
+		<button type="button" class="btn btn-nav" disabled aria-label={ label }>{ glyph }</button>
+	} else if inSheet {
+		<button
+			type="button"
+			class="btn btn-nav"
+			aria-label={ label }
+			title={ label }
+			hx-get={ "/days/" + iso + "?sheet=1" }
+			hx-select="#sheet-body"
+			hx-target="#sheet-body"
+			hx-swap="outerHTML"
+		>{ glyph }</button>
+	} else {
+		<a class="btn btn-nav" href={ templ.URL("/days/" + iso) } aria-label={ label } title={ label }>{ glyph }</a>
 	}
 }
 
-templ cellRow(date time.Time, c Cell, readOnly bool) {
-	<div class={ "attendance-cell", cellClass(c.Absent) }>
-		<span class="emoji">{ emoji.For(c.Name) }</span>
-		<div>
-			<div class="name">{ c.Name }</div>
-			if c.Absent && c.Message != nil && *c.Message != "" {
-				<div class="msg">„{ *c.Message }"</div>
-			}
-		</div>
-		@partials.AbsenceToggle(c.UserID, date, c.Absent, readOnly)
-	</div>
+// Detail ist der Direktaufruf als eigene Seite.
+templ Detail(vm SheetVM) {
+	<a class="back-link" href="/days">← Alle Donnerstage</a>
+	<section class="card card-flush" style="max-width:720px">
+		@SheetBody(vm, false)
+	</section>
 }
 
-func cellClass(absent bool) string {
-	if absent {
-		return "absent"
+func status(c Person) string {
+	if !c.Absent {
+		return "anwesend"
 	}
-	return "present"
+	if c.Message != "" {
+		return "„" + c.Message + "“"
+	}
+	return "abgemeldet"
 }
 
-func absentCount(cells []Cell) int {
-	n := 0
-	for _, c := range cells {
+func personTitle(c Person, readOnly bool) string {
+	t := c.Name + " – " + status(c)
+	if !readOnly {
 		if c.Absent {
-			n++
+			t += " · Klick = anwesend"
+		} else {
+			t += " · Klick = abgemeldet"
 		}
 	}
-	return n
+	return t
 }

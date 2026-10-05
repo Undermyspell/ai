@@ -3,51 +3,47 @@ package trace
 import "github.com/michael/zumba-admin-ui/internal/store"
 
 templ Detail(t store.Trace) {
-	<div class="page-header enter">
-		<div class="eyebrow">
-			<a href="/trace" class="back-link">← Verlauf</a>
+	<a class="back-link" href="/trace">← Verlauf</a>
+	<section class="card">
+		<div class="card-head" style="margin-bottom:14px">
+			<div>
+				<div class="card-title">Event #{ itoa(t.ID) }</div>
+				<div class="card-sub">{ FmtTime(t.CreatedAt) } · { orDash(t.UserName) }</div>
+			</div>
+			if t.HasError {
+				<span class="pill is-red">⚠ Fehler im Verlauf</span>
+			}
 		</div>
-		<h1>Event #{ itoa(t.ID) }</h1>
-		<p class="meta">{ FmtTime(t.CreatedAt) } · { orDash(t.UserName) }</p>
-	</div>
-
-	<div class="trace-detail enter">
-		<dl class="trace-facts">
+		<dl class="facts">
 			<div><dt>Pfad</dt><dd>{ PathIcon(t.Path) } { PathLabel(t.Path) }</dd></div>
 			if t.Classification != "" {
 				<div><dt>Klassifizierung</dt><dd>{ ClassLabel(t.Classification) } <span class="muted">({ t.Classification })</span></dd></div>
 			}
 			<div><dt>Aktion</dt><dd>{ ActionLabel(t.Action) }</dd></div>
-			<div><dt>Typ</dt><dd class="mono">{ orDash(t.MessageType) }</dd></div>
-			if t.HasError {
-				<div><dt>Status</dt><dd class="bad">⚠ Fehler im Verlauf</dd></div>
-			}
+			<div><dt>Typ</dt><dd class="is-mono">{ orDash(t.MessageType) }</dd></div>
 		</dl>
-
 		if t.Message != "" {
-			<div class="trace-msg">
-				<span class="tm-label">Nachricht</span>
+			<div class="quote" style="margin-top:16px">
+				<span class="cap">Nachricht</span>
 				<p>{ t.Message }</p>
 			</div>
 		}
-
-		<div class="flow-card">
-			<div class="flow-head">
-				<span class="fh-title">Verarbeitungspfad</span>
-				<div class="flow-legend">
-					<span class="lg taken">genommen</span>
-					<span class="lg skipped">übersprungen</span>
-					<span class="lg error">Fehler</span>
-				</div>
+	</section>
+	<section class="card card-flush">
+		<div class="flow-card-head">
+			<div class="card-title">Verarbeitungspfad</div>
+			<div class="flow-legend">
+				<span class="lg taken">genommen</span>
+				<span class="lg skipped">übersprungen</span>
+				<span class="lg error">Fehler</span>
 			</div>
-			@FlowGraph(BuildGraph(t.Steps))
 		</div>
-
+		@FlowGraph(BuildGraph(t.Steps))
 		if t.RawPayload != "" {
-			<details class="trace-raw">
-				<summary>Roh-Payload (Evolution-Event)</summary>
-				<pre class="mono">{ t.RawPayload }</pre>
+			<details class="raw" style="border-top:1px solid var(--line)">
+				<summary>{ "{ }" } Roh-Payload (Evolution-Event)</summary>
+				<pre>{ t.RawPayload }</pre>
 			</details>
 		}
-	</div>
+	</section>
 }

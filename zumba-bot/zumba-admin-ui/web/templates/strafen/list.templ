@@ -6,14 +6,17 @@ import (
 	"time"
 
 	"github.com/michael/zumba-shared/penalty"
+
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
+	"github.com/michael/zumba-admin-ui/web/templates/partials"
 )
 
 // Row ist eine bewertete Strafe für die Anzeige (gelöschte sind schon gefiltert).
 type Row struct {
 	ID          int64
 	UserName    string
+	Emoji       string
 	Art         penalty.Art
 	Datum       time.Time // fehltage: Serienstart; noshow: Tag
 	Tage        int       // nur fehltage
@@ -24,106 +27,170 @@ type Row struct {
 	Sichtbar    bool       // erscheint im Report zum Stichtag
 }
 
+type Option struct {
+	Value string
+	Label string
+}
+
 type PageVM struct {
 	Users         []store.User
-	Thursdays     []time.Time // gültige Donnerstage (ohne Sperrtage), neueste zuerst
+	Thursdays     []Option // gültige Donnerstage (ohne Sperrtage), neueste zuerst
 	Rows          []Row
 	NoShowDefault int
+
+	OffenSum     int
+	OffenCount   int
+	BeglichenSum int
+	ReportCount  int
+
 	// ReadOnly: abgeschlossenes Stammtischjahr (Archivansicht).
 	ReadOnly bool
 }
 
 templ Page(vm PageVM) {
-	<div class="page-header enter">
-		<div class="eyebrow">Strafen</div>
-		<h1>Strafenkasse</h1>
-		<p class="meta">
-			Automatisch: ab { strconv.Itoa(penalty.MinFehltage) } Fehltagen in Folge { strconv.Itoa(penalty.BasisBetrag) }€, jeder weitere +{ strconv.Itoa(penalty.ProTagBetrag) }€.
-			Manuell: nicht abgemeldet und nicht gekommen ({ strconv.Itoa(penalty.NoShowDefault) }€).
-			Begleichen friert den Zähler ein – die nächste Serie zählt von vorn.
-		</p>
-	</div>
-	if !vm.ReadOnly {
-		@noShowForm(vm)
-	}
 	@ListRegion(vm)
 }
 
-templ noShowForm(vm PageVM) {
-	<form
-		class="excluded-form enter"
-		hx-post="/strafen"
-		hx-target="#strafen-region"
-		hx-swap="outerHTML"
-	>
-		<select name="userId" required aria-label="Mitglied">
-			<option value="" disabled selected>Mitglied wählen…</option>
-			for _, u := range vm.Users {
-				<option value={ u.ID }>{ u.Name }</option>
-			}
-		</select>
-		<select name="datum" required aria-label="Donnerstag des No-Shows">
-			<option value="" disabled selected>Donnerstag wählen…</option>
-			for _, d := range vm.Thursdays {
-				<option value={ timeutil.FormatISO(d) }>{ timeutil.FormatDE(d) }</option>
-			}
-		</select>
-		<input type="number" name="betrag" min="1" value={ strconv.Itoa(vm.NoShowDefault) } aria-label="Betrag in Euro"/>
-		<button type="submit" class="btn-primary">No-Show-Strafe anlegen</button>
-	</form>
-}
-
+// ListRegion ist das HTMX-Swap-Ziel: Kacheln und Liste kommen nach jeder
+// Aktion gemeinsam neu. Der Filter bleibt per hx-preserve stehen.
 templ ListRegion(vm PageVM) {
-	<div id="strafen-region">
-		if len(vm.Rows) == 0 {
-			<div class="empty">
-				<div class="icon">🎉</div>
-				<p>Keine Strafen. Brave Truppe.</p>
+	<div id="strafen-region" class="stack">
+		<section class="grid-4">
+			<div class="tile">
+				<div class="tile-body">
+					<div class="tile-label">Offen</div>
+					<div class="tile-value is-big t-red">{ strconv.Itoa(vm.OffenSum) } €</div>
+				</div>
 			</div>
-		} else {
-			<div class="list enter">
-				for _, r := range vm.Rows {
-					@row(r, vm.ReadOnly)
-				}
+			<div class="tile">
+				<div class="tile-body">
+					<div class="tile-label">Beglichen</div>
+					<div class="tile-value is-big t-green">{ strconv.Itoa(vm.BeglichenSum) } €</div>
+				</div>
 			</div>
-		}
+			<div class="tile">
+				<div class="tile-body">
+					<div class="tile-label">Im nächsten Report</div>
+					<div class="tile-value is-big">{ strconv.Itoa(vm.ReportCount) }</div>
+				</div>
+			</div>
+			<div class="tile">
+				<div class="tile-body">
+					<div class="tile-label">Regel</div>
+					<div class="tile-text">
+						{ fmt.Sprintf("%d Fehltage in Folge = %d €, jede weitere Woche +%d €. No-Show manuell (%d €). Begleichen setzt den Zähler zurück.",
+							penalty.MinFehltage, penalty.BasisBetrag, penalty.ProTagBetrag, penalty.NoShowDefault) }
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="grid-r3">
+			<div class="card card-flush strafen-card">
+				<div class="s-filter">
+					<div class="seg seg-inline" id="strafen-filter" hx-preserve="true" role="radiogroup" aria-label="Filter">
+						<label><input type="radio" name="sf" id="sf-alle" checked/><span class="seg-face">Alle</span></label>
+						<label><input type="radio" name="sf" id="sf-offen"/><span class="seg-face">Offen</span></label>
+						<label><input type="radio" name="sf" id="sf-beglichen"/><span class="seg-face">Beglichen</span></label>
+					</div>
+				</div>
+				<div class="s-list">
+					if len(vm.Rows) == 0 {
+						@partials.Empty("🎉", "Keine Strafen. Brave Truppe.")
+					} else {
+						<div class="rows">
+							for _, r := range vm.Rows {
+								@row(r, vm.ReadOnly)
+							}
+						</div>
+						<div class="s-empty-filter empty">
+							<span class="empty-ico" aria-hidden="true">🎉</span>
+							<p>Nichts in diesem Filter.</p>
+						</div>
+					}
+				</div>
+			</div>
+			if !vm.ReadOnly {
+				@noShowForm(vm)
+			}
+		</section>
 	</div>
 }
 
+templ noShowForm(vm PageVM) {
+	<form class="card" hx-post="/strafen" hx-target="#strafen-region" hx-swap="outerHTML">
+		<div class="card-title">No-Show eintragen</div>
+		<div class="card-sub" style="margin-bottom:14px">Nicht abgemeldet und nicht gekommen.</div>
+		<div class="stack-sm" style="gap:10px">
+			<label class="field">
+				<span class="field-label">Mitglied</span>
+				<select class="select" name="userId" required>
+					<option value="" disabled selected>Mitglied wählen…</option>
+					for _, u := range vm.Users {
+						<option value={ u.ID }>{ u.Name }</option>
+					}
+				</select>
+			</label>
+			<label class="field">
+				<span class="field-label">Donnerstag</span>
+				<select class="select" name="datum" required>
+					for i, d := range vm.Thursdays {
+						<option value={ d.Value } selected?={ i == 0 }>{ d.Label }</option>
+					}
+				</select>
+			</label>
+			<label class="field">
+				<span class="field-label">Betrag €</span>
+				<input class="input" type="number" name="betrag" min="1" value={ strconv.Itoa(vm.NoShowDefault) }/>
+			</label>
+			<button type="submit" class="btn btn-primary">Strafe anlegen</button>
+		</div>
+	</form>
+}
+
 templ row(r Row, readOnly bool) {
-	<div class="excluded-row strafen-row">
-		<span class={ "marker", templ.KV("offen", r.Status == penalty.StatusOffen), templ.KV("beglichen", r.Status == penalty.StatusBeglichen) }></span>
-		<div>
-			<div class="label">
-				{ r.UserName } – { strconv.Itoa(r.Betrag) }€
+	<div class={ "s-row", "is-" + string(r.Status) }>
+		<span class="emo-box is-36" aria-hidden="true">{ r.Emoji }</span>
+		<span style="min-width:0">
+			<span class="s-head">
+				<span class="s-name">{ r.UserName }</span>
+				<span class="s-amount">{ strconv.Itoa(r.Betrag) } €</span>
+				if r.Art == penalty.ArtNoShow {
+					<span class="pill pill-caps is-amber">No-Show</span>
+				} else {
+					<span class="pill pill-caps is-red">Fehltage</span>
+				}
 				if r.Status == penalty.StatusBeglichen {
-					<span class="badge beglichen">beglichen</span>
+					<span class="pill pill-caps is-green">beglichen</span>
 				}
 				if r.Sichtbar {
-					<span class="badge report">im Report</span>
+					<span class="pill pill-caps is-blue">im Report</span>
 				}
-			</div>
-			<div class="iso">{ beschreibung(r) }</div>
-		</div>
-		<div class="strafen-actions">
-			if !readOnly && r.Status == penalty.StatusOffen {
+			</span>
+			<span class="s-desc">{ beschreibung(r) }</span>
+		</span>
+		if !readOnly {
+			<span class="s-actions">
+				if r.Status == penalty.StatusOffen {
+					<button
+						type="button"
+						class="btn btn-success btn-sm"
+						hx-post={ fmt.Sprintf("/strafen/%d/begleichen", r.ID) }
+						hx-target="#strafen-region"
+						hx-swap="outerHTML"
+					>Beglichen</button>
+				}
 				<button
-					class="btn-secondary btn-sm"
-					hx-post={ fmt.Sprintf("/strafen/%d/begleichen", r.ID) }
-					hx-target="#strafen-region"
-					hx-swap="outerHTML"
-				>Beglichen</button>
-			}
-			if !readOnly {
-				<button
-					class="btn-danger btn-sm"
+					type="button"
+					class="btn btn-ghost btn-sm"
+					title="Löschen (für Testeinträge)"
+					aria-label="Strafe löschen"
 					hx-delete={ fmt.Sprintf("/strafen/%d", r.ID) }
 					hx-target="#strafen-region"
 					hx-swap="outerHTML"
 					hx-confirm="Strafe wirklich löschen? Normalerweise werden Strafen nur beglichen – Löschen ist für Testeinträge gedacht und startet den Fehltage-Zähler neu."
-				>Löschen</button>
-			}
-		</div>
+				>✕</button>
+			</span>
+		}
 	</div>
 }
 

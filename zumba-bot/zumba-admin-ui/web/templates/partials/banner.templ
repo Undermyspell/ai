@@ -2,7 +2,15 @@ package partials
 
 templ Banner(text string) {
 	<div class="banner" role="status">
-		<span class="icon">⚠</span>
-		<div><strong>Hinweis.</strong> { text }</div>
+		<span class="banner-ico" aria-hidden="true">⚠</span>
+		<div>{ text }</div>
+	</div>
+}
+
+// Empty ist der leere Zustand einer Liste oder Karte.
+templ Empty(icon, text string) {
+	<div class="empty">
+		<span class="empty-ico" aria-hidden="true">{ icon }</span>
+		<p>{ text }</p>
 	</div>
 }

@@ -1,0 +1,59 @@
+package members
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/michael/zumba-admin-ui/web/templates/partials"
+)
+
+// ListVM ist die Tafelrunde: eine Ring-Karte je Mitglied, in Ranglisten-
+// Reihenfolge.
+type ListVM struct {
+	Cards []Card
+	Query string // ?jahr= für Links
+	// Search ist der Suchbegriff aus der Topbar ("" = alle).
+	Search string
+}
+
+type Card struct {
+	UserID string
+	Name   string
+	Emoji  string
+	Pct    int
+	Attend int
+	Away   int
+	Streak int
+}
+
+templ List(vm ListVM) {
+	if vm.Search != "" {
+		<div class="row">
+			<span class="muted">{ fmt.Sprintf("%d Treffer für „%s“", len(vm.Cards), vm.Search) }</span>
+			<a class="card-link" href={ templ.URL("/members" + vm.Query) }>Alle zeigen</a>
+		</div>
+	}
+	if len(vm.Cards) == 0 {
+		<section class="card">
+			@partials.Empty("🔍", "Niemand gefunden.")
+		</section>
+	} else {
+		<section class="member-grid">
+			for i, c := range vm.Cards {
+				<a
+					class="member-card"
+					href={ templ.URL("/members/" + c.UserID + vm.Query) }
+					style={ partials.Var("animation-delay", strconv.Itoa(min(i, 20)*25)+"ms") }
+				>
+					<span class="ring" style={ partials.Ring(c.Pct) }>
+						<span class="ring-in" aria-hidden="true">{ c.Emoji }</span>
+					</span>
+					<span class="member-name">{ c.Name }</span>
+					<span class="member-pct">{ strconv.Itoa(c.Pct) }%</span>
+					<span class="member-meta">{ fmt.Sprintf("%d da · %d weg", c.Attend, c.Away) }</span>
+					<span class={ "streak-chip", partials.StreakClass(c.Streak) }>{ partials.StreakText(c.Streak) }</span>
+				</a>
+			}
+		</section>
+	}
+}

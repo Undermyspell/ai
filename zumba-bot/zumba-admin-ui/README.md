@@ -5,7 +5,10 @@ Admin-Weboberfläche für Stammtisch-Daten. Sister-App zu `../wrapped/`, teilt s
 ## Stack
 - Go 1.27 + a-h/templ + lib/pq
 - HTMX 2.0.10 (vendored unter `assets/static/js/htmx.min.js`) für inline Edits
-- Plain CSS mit Custom Properties (light/dark Theme)
+- Plain CSS mit Custom Properties: dunkler Glas-Look mit blauem Akzent, helles
+  Theme per `data-theme` (Tokens oben in `assets/static/css/styles.css`)
+- Wenig JavaScript (`assets/static/js/ui.js`): Bottom-Sheet, „Mehr"-Menü,
+  Matrix-Spaltenauswahl, Bot-Test-Sprechblase ↔ Webhook-JSON
 - Embedded static assets (`go:embed`)
 
 ## Lokal starten
@@ -54,19 +57,35 @@ EXCLUDE-Constraint). Ohne `?jahr=` gilt das heute laufende Jahr, `?jahr=2025`
 öffnet ein Archiv. Abgeschlossene Jahre sind read-only – der Server lehnt
 Schreibzugriffe auf sie ab (HTTP 409), unabhängig vom Parameter.
 
-## Phase 2: schreibende Operationen
+## Seiten und schreibende Operationen
 
-- **An-/Abwesenheit umschalten** (Tages- und Mitgliederdetail): Klick auf den Toggle pro
-  Donnerstag legt eine Absage an bzw. löscht sie (HTMX, Toast-Feedback).
-- **Sperrtage verwalten** (`/excluded`): Donnerstag anlegen (serverseitig validiert) oder löschen.
+- **Dashboard**: Kennzahlen, „Zuletzt am Stammtisch" (‹ › blättert per `?tag=`),
+  Teilnahme-Gauge, laufende Absage-Serien, Saisonverlauf, Rangliste.
+- **Donnerstage** (`/days`): Kacheln aller Donnerstage und die Anwesenheits-Matrix
+  Mitglieder × Donnerstage (Zelle = umschalten).
+- **Bottom-Sheet „Donnerstag bearbeiten"**: `GET /days/{date}?sheet=1` lädt es in
+  `#sheet` – von Kacheln, Balken, der Seitenleiste („Letzten Do. eintragen") und
+  dem Dashboard aus. Ohne `?sheet` ist `/days/{date}` eine eigene Seite.
+- **Mitglieder** (`/members`, Suche oben per `?q=`, ein Treffer springt direkt
+  zum Mitglied) und Mitglied-Detail mit Verlauf.
+- **An-/Abwesenheit umschalten**: `POST /toggle-absence` antwortet ohne HTML, nur
+  mit Toast und dem HTMX-Ereignis `absenceChanged`. Darauf lädt sich `#page`
+  (Seiten mit `RefreshURL`) und ein offenes Bottom-Sheet selbst neu – so bleibt
+  alles stimmig, egal wo geklickt wurde.
+- **Sperrtage** (`/excluded`): Jahreskalender aller Donnerstage, Klick sperrt bzw.
+  gibt frei; dazu Feiertags-Vorschläge (Feiertage, die auf einen Donnerstag fallen)
+  und Datumseingabe (serverseitig auf Donnerstag validiert).
 
 ## Bot-Test-Seite (`/bot-test`)
 
-Ein Formular in vier Schritten (Szenario → Beispiel-JSON → Ausgabe → Versand), das
-serverseitig an den `whatsapp-bot` proxyt: Die Szenarien Statistik/Absage/Zusage gehen
-an `BOT_URL/test`, das Szenario Wochenreport an `BOT_URL/weekly-report`. Nicht zutreffende
-Schritte blendet die Seite per CSS aus (`:has()`), die Schrittnummern zählt ein
-CSS-Counter — deshalb kommt die Seite ohne eigenes JavaScript aus.
+Drei Spalten: Einstellungen (Szenario, Ausgabe, Versand, Stichtag), Chat-Simulation
+und Verarbeitungspfad. Das Formular proxyt serverseitig an den `whatsapp-bot`: Die
+Szenarien Statistik/Absage/Zusage gehen an `BOT_URL/test`, das Szenario Wochenreport
+an `BOT_URL/weekly-report`. Die eingehende Nachricht steht als editierbare
+Sprechblase im Chat; `ui.js` spiegelt sie in `message.conversation` des
+Webhook-JSON (das JSON ist das abgeschickte Feld und hat Vorrang). Die Antwort des
+Bots erscheint als Bot-Blase, den Verarbeitungspfad schickt der Server per
+`hx-swap-oob` mit. Nicht zutreffende Optionen blendet die Seite per CSS aus (`:has()`).
 
 Der Bot **umgeht** dabei die Donnerstag-/Gruppen-Guards, läuft aber immer als Dry-Run —
 DB-Writes und Gruppen-Versand passieren nie; der Modus „Vorschau an meine Nummer“

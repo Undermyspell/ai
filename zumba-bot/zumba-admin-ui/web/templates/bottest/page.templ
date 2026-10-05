@@ -3,6 +3,9 @@ package bottest
 type PageVM struct {
 	DefaultKind string // "statistik"
 	DefaultJSON string // pretty example for DefaultKind
+	// Model ist das aktive Hauptmodell (nur Anzeige im Verarbeitungspfad).
+	Model string
+	Time  string // Uhrzeit an der Sprechblase
 }
 
 type styleOption struct{ ID, Label string }
@@ -38,122 +41,122 @@ var styleOptions = []styleOption{
 type szenario struct {
 	ID, Icon, Label, Hint string
 	HasPayload            bool
-	HasOutput             bool // erzeugt eine Statistik (Ausgabe-Format wählbar)
 }
 
 var szenarien = []szenario{
-	{"statistik", "📊", "Statistik", "Rangliste auf Zuruf", true, true},
-	{"absage", "🚫", "Absage", "Klassifikation prüfen", true, false},
-	{"zusage", "✅", "Zusage", "Klassifikation prüfen", true, false},
-	{"wochenreport", "📅", "Wochenreport", "Donnerstag 21:00", false, true},
+	{"statistik", "📊", "Statistik", "Rangliste auf Zuruf", true},
+	{"absage", "🚫", "Absage", "Klassifikation prüfen", true},
+	{"zusage", "✅", "Zusage", "Klassifikation prüfen", true},
+	{"wochenreport", "📅", "Wochenreport", "Donnerstag 21:00", false},
 }
 
 templ Page(vm PageVM) {
-	<div class="page-header enter">
-		<div class="eyebrow">WhatsApp-Bot</div>
-		<h1>Bot-Test</h1>
-		<p class="meta">Szenario wählen, Optionen setzen, Test starten. Es geht nie etwas an die Zumba-Gruppe.</p>
-	</div>
 	<form
-		class="bt enter"
+		class="bot-grid"
 		hx-post="/bot-test/run"
 		hx-target="#bot-response"
 		hx-swap="innerHTML"
 		hx-indicator="#bt-start"
 	>
-		<section class="bt-panel">
-			<div class="bt-head">
-				<span class="bt-step"></span>
-				<h2>Szenario</h2>
-			</div>
-			<div class="seg seg-wide" role="radiogroup" aria-label="Szenario">
-				for _, s := range szenarien {
-					@szenarioOption(s, vm.DefaultKind)
-				}
-			</div>
-		</section>
-		<section class="bt-panel only-payload">
-			<div class="bt-head">
-				<span class="bt-step"></span>
-				<h2>Beispiel-Nachricht</h2>
-				<span class="bt-hint">Evolution-Webhook-Event — frei editierbar</span>
-			</div>
-			<textarea id="bot-json" name="payload" rows="14" spellcheck="false">{ vm.DefaultJSON }</textarea>
-		</section>
-		<div class="bt-grid">
-			<section class="bt-panel only-output">
-				<div class="bt-head">
-					<span class="bt-step"></span>
-					<h2>Ausgabe</h2>
+		<div class="card bot-settings">
+			<div>
+				<div class="cap">Szenario</div>
+				<div class="scen-list" role="radiogroup" aria-label="Szenario">
+					for _, s := range szenarien {
+						@szenarioOption(s, vm.DefaultKind)
+					}
 				</div>
+			</div>
+			<div class="only-output">
+				<div class="cap">Ausgabe</div>
 				<div class="seg" role="radiogroup" aria-label="Ausgabeformat">
-					<label class="seg-opt">
-						<input type="radio" name="format" value="text" id="fmt-text" checked/>
-						<span class="seg-face"><span class="seg-ico">💬</span>Nachricht</span>
-					</label>
-					<label class="seg-opt">
-						<input type="radio" name="format" value="image" id="fmt-image"/>
-						<span class="seg-face"><span class="seg-ico">🖼️</span>Bild</span>
-					</label>
+					<label><input type="radio" name="format" value="text" id="fmt-text" checked/><span class="seg-face">💬 Nachricht</span></label>
+					<label><input type="radio" name="format" value="image" id="fmt-image"/><span class="seg-face">🖼️ Bild</span></label>
 				</div>
-				<div class="bt-field only-text">
-					<label for="bot-style">Text-Design</label>
-					<select id="bot-style" name="style" class="bt-select">
+				<label class="field only-text">
+					<span class="field-label">Text-Design</span>
+					<select class="select" name="style">
 						for _, o := range styleOptions {
 							<option value={ o.ID }>{ o.Label }</option>
 						}
 					</select>
-					<p class="bt-note">Live geht immer „Klassik" raus.</p>
-				</div>
-				<div class="bt-field only-image">
-					<label for="bot-card-style">Bild-Design</label>
-					<select id="bot-card-style" name="cardStyle" class="bt-select">
+					<span class="hint">Live geht immer „Klassik" raus.</span>
+				</label>
+				<label class="field only-image">
+					<span class="field-label">Bild-Design</span>
+					<select class="select" name="cardStyle">
 						for _, o := range cardStyleOptions {
 							<option value={ o.ID }>{ o.Label }</option>
 						}
 					</select>
-					<p class="bt-note">PNG-Karte über den Renderer. Live läuft immer „Wrapped".</p>
-				</div>
-			</section>
-			<section class="bt-panel">
-				<div class="bt-head">
-					<span class="bt-step"></span>
-					<h2>Versand</h2>
-				</div>
-				<label class="opt-card">
-					<input type="radio" name="mode" value="dryrun" checked/>
-					<span class="oc-title">Dry-Run</span>
-					<span class="oc-hint">Nur hier im UI — nichts gesendet, nichts in die DB geschrieben.</span>
+					<span class="hint">PNG-Karte über den Renderer. Live läuft immer „Wrapped".</span>
 				</label>
-				<label class="opt-card">
-					<input type="radio" name="mode" value="preview"/>
-					<span class="oc-title">📱 Vorschau an meine Nummer</span>
-					<span class="oc-hint">Zusätzlich als echte WhatsApp an dich — nie an die Gruppe.</span>
-				</label>
-				<div class="bt-field">
-					<label for="bt-date">Stichtag <span class="bt-optional">optional</span></label>
-					<input type="date" id="bt-date" name="date" class="bt-input"/>
-					<p class="bt-note">Simuliert den Versandtag für Rangliste und Strafen. Beim Wochenreport erzwingt ein Stichtag den Dry-Run.</p>
+			</div>
+			<div>
+				<div class="cap">Versand</div>
+				<div class="seg" role="radiogroup" aria-label="Versand">
+					<label><input type="radio" name="mode" value="dryrun" id="mode-dryrun" checked/><span class="seg-face">Dry-Run</span></label>
+					<label><input type="radio" name="mode" value="preview" id="mode-preview"/><span class="seg-face">📱 An mich</span></label>
 				</div>
-			</section>
-		</div>
-		<div class="bt-bar">
-			<button type="submit" id="bt-start" class="btn-primary">Test starten</button>
-			<span class="bt-bar-note">Echte Gruppen-Nachrichten entstehen nur durch reale „statistik"-Anfragen und den Wochenreport-CronJob.</span>
-		</div>
-		<section class="bt-result">
-			<div class="bt-head">
-				<h2>Ergebnis</h2>
+				<p class="hint only-dry">Nur hier im UI — nichts gesendet, nichts in die DB geschrieben.</p>
+				<p class="hint only-preview">Zusätzlich als echte WhatsApp an deine Nummer — nie an die Gruppe.</p>
+				<label class="field">
+					<span class="field-label">Stichtag <span style="opacity:.7">optional</span></span>
+					<input class="input" type="date" name="date"/>
+					<span class="hint">Simuliert den Versandtag für Rangliste und Strafen. Beim Wochenreport erzwingt ein Stichtag den Dry-Run.</span>
+				</label>
 			</div>
-			<div id="bot-response" class="bot-response">
-				<p class="bt-empty">Noch kein Durchlauf. Der Bot verarbeitet die Anfrage komplett — Klassifikation, DB-Wirkung, Antwort — und zeigt sie hier.</p>
+			<button type="submit" id="bt-start" class="btn btn-primary" style="padding:12px;font-size:14px;font-weight:800">▶ Test starten</button>
+			<p class="hint">Es geht nie etwas an die Gruppe. Echte Gruppen-Nachrichten entstehen nur durch reale „statistik"-Anfragen und den Wochenreport-CronJob.</p>
+		</div>
+		<div class="card chat">
+			<div class="chat-head">
+				<span class="chat-avatar" aria-hidden="true">🍻</span>
+				<div>
+					<div class="chat-title">Zumba-Gruppe <small>· Simulation</small></div>
+					<div class="chat-sub">Donnerstag</div>
+				</div>
+				<span class="chat-mode">
+					<span class="pill pill-mono is-blue only-dry">DRY-RUN</span>
+					<span class="pill pill-mono is-amber only-preview">VORSCHAU → eigene Nummer</span>
+				</span>
 			</div>
-		</section>
+			<div class="chat-body">
+				<div class="msg-in only-payload">
+					<span class="msg-avatar" aria-hidden="true">🍺</span>
+					<div class="bubble-in">
+						<div class="bubble-sender" id="bot-sender">Max</div>
+						<textarea id="bot-msg" rows="2" aria-label="Nachricht (bearbeitbar)" spellcheck="false"></textarea>
+						<div class="bubble-foot"><span>✎ Text direkt bearbeiten</span><span>{ vm.Time }</span></div>
+					</div>
+				</div>
+				<div class="cron-chip only-cron">⏰ CronJob · Donnerstag 21:00 · Wochenreport</div>
+				<div id="bot-response" aria-live="polite"></div>
+				<div class="bot-idle">Noch kein Durchlauf – links Szenario wählen und „Test starten".</div>
+			</div>
+			<details class="chat-json only-payload">
+				<summary>{ "{ }" } Webhook-JSON (Evolution-Event) anzeigen</summary>
+				<textarea id="bot-json" name="payload" rows="14" spellcheck="false" aria-label="Webhook-JSON">{ vm.DefaultJSON }</textarea>
+			</details>
+		</div>
+		<div class="card bot-path" style="padding:20px">
+			<div class="card-title-sm">Verarbeitungspfad</div>
+			<div class="card-sub path-note-wait">füllt sich nach dem Testlauf</div>
+			<div class="card-sub path-note-done">so lief die Verarbeitung</div>
+			for _, s := range szenarien {
+				<div class="timeline steps-wait" data-for={ s.ID }>
+					for _, st := range WaitingSteps(s.ID, vm.Model) {
+						@step(st)
+					}
+				</div>
+			}
+			<div id="bot-path-result"></div>
+		</div>
 	</form>
 }
 
 templ szenarioOption(s szenario, active string) {
-	<label class="seg-opt">
+	<label class="scen">
 		if s.HasPayload {
 			<input
 				type="radio"
@@ -169,12 +172,23 @@ templ szenarioOption(s szenario, active string) {
 		} else {
 			<input type="radio" name="szenario" value={ s.ID } id={ "sz-" + s.ID }/>
 		}
-		<span class="seg-face">
-			<span class="seg-ico">{ s.Icon }</span>
-			<span class="seg-text">
-				{ s.Label }
-				<small>{ s.Hint }</small>
-			</span>
+		<span class="scen-ico" aria-hidden="true">{ s.Icon }</span>
+		<span>
+			<span class="scen-label">{ s.Label }</span>
+			<span class="scen-hint">{ s.Hint }</span>
 		</span>
+		<span class="scen-radio" aria-hidden="true"></span>
 	</label>
+}
+
+templ step(st Step) {
+	<div class={ "tl-step", "is-" + st.State }>
+		<span class="tl-rail"><span class="tl-dot"></span><span class="tl-line"></span></span>
+		<div class="tl-body">
+			<div class="tl-label">{ st.Label }</div>
+			if st.Detail != "" {
+				<div class="tl-detail">{ st.Detail }</div>
+			}
+		</div>
+	</div>
 }

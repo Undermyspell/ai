@@ -8,64 +8,68 @@ import (
 )
 
 templ Page(tests []store.MLTestMessage, classifierConfigured bool) {
-	<div class="page-header enter">
-		<div class="eyebrow">ML-Klassifikator</div>
-		<h1>Manueller Test</h1>
-		<p class="meta">
-			Nachricht eintippen → das Modell klassifiziert sie. Danach bewerten:
-			passt, oder das richtige Label hinterlegen. Bewertete Einträge fließen
-			als Trainingsdaten in die nächste Modell-Version.
-		</p>
-	</div>
-	<div class="ml-test-form enter">
+	<section class="card">
+		<div class="card-title">Nachricht klassifizieren</div>
+		<div class="card-sub">
+			Eintippen → das eigene Modell antwortet. Danach bewerten: passt, oder das richtige
+			Label hinterlegen. Bewertete Einträge fließen als Trainingsdaten in die nächste Modell-Version.
+		</div>
 		if classifierConfigured {
-			<form hx-post="/ml-test/run" hx-target="#mltest-list" hx-select="#mltest-list" hx-swap="outerHTML" hx-on::after-request="if(event.detail.successful) this.reset()">
-				<textarea name="message" rows="2" required placeholder="z.B. „muss mi heit obmeldn ❌“ oder „bin doch dabei 🍻“"></textarea>
-				<button type="submit" class="btn-primary">Klassifizieren</button>
+			<form
+				class="ml-input"
+				hx-post="/ml-test/run"
+				hx-target="#mltest-list"
+				hx-select="#mltest-list"
+				hx-swap="outerHTML"
+				hx-on::after-request="if(event.detail.successful) this.reset()"
+			>
+				<input class="input" type="text" name="message" required autocomplete="off" placeholder="z.B. „muss mi heit obmeldn ❌“ oder „bin doch dabei 🍻“" aria-label="Nachricht"/>
+				<button type="submit" class="btn btn-primary">Klassifizieren</button>
 			</form>
 		} else {
-			<div class="trace-empty">
-				<span class="te-glyph">🔌</span>
+			<div class="empty" style="padding:24px 8px 8px">
+				<span class="empty-ico" aria-hidden="true">🔌</span>
 				<p>Kein classifier-service konfiguriert (CLASSIFIER_URL fehlt).</p>
 			</div>
 		}
-	</div>
+	</section>
 	@List(tests)
 }
 
 templ List(tests []store.MLTestMessage) {
-	<div id="mltest-list" class="ml-list enter">
+	<div id="mltest-list" class="ml-rows">
 		if len(tests) == 0 {
-			<div class="trace-empty">
-				<span class="te-glyph">🧪</span>
-				<p>Noch keine Testfälle. Oben eine Nachricht eintippen.</p>
-			</div>
+			<section class="card">
+				<div class="empty">
+					<span class="empty-ico" aria-hidden="true">🧪</span>
+					<p>Noch keine Testfälle. Oben eine Nachricht eintippen.</p>
+				</div>
+			</section>
 		} else {
-			<div class="ml-rows">
-				for _, t := range tests {
-					@Row(t)
-				}
-			</div>
+			for _, t := range tests {
+				@Row(t)
+			}
 		}
 	</div>
 }
 
 templ Row(t store.MLTestMessage) {
-	<div class={ "ml-row", templ.KV("ml-row-verified", isCorrect(t)), templ.KV("ml-row-disagree", isWrong(t)) } id={ rowID(t.ID) }>
+	<div class={ "ml-row", templ.KV("is-ok", isCorrect(t)), templ.KV("is-bad", isWrong(t)) } id={ rowID(t.ID) }>
 		<div class="ml-row-head">
 			<span class="ml-time">{ t.CreatedAt.Format("02.01. 15:04") }</span>
-			switch {
+			switch  {
 				case t.ExpectedLabel == nil:
-					<span class="ml-verdict ml-verdict-open">offen — bitte bewerten</span>
+					<span class="pill is-dashed-blue">offen — bitte bewerten</span>
 				case *t.ExpectedLabel == t.ModelLabel:
-					<span class="ml-verdict ml-verdict-ok">✓ PASST</span>
+					<span class="pill is-solid-green">✓ PASST</span>
 				default:
-					<span class="ml-verdict ml-verdict-bad">✗ FALSCH</span>
+					<span class="pill is-solid-red">✗ FALSCH</span>
 			}
 			<button
 				type="button"
-				class="ml-delete-btn"
+				class="ml-del"
 				title="Testfall löschen"
+				aria-label="Testfall löschen"
 				hx-delete={ "/ml-test/" + strconv.FormatInt(t.ID, 10) }
 				hx-target={ "#" + rowID(t.ID) }
 				hx-swap="outerHTML"
@@ -74,19 +78,19 @@ templ Row(t store.MLTestMessage) {
 		</div>
 		<div class="ml-msg">{ t.Message }</div>
 		<div class="ml-labels">
-			<span class="ml-source">Modell</span>
-			<span class={ "ml-badge", "ml-" + t.ModelLabel }>{ labelText(t.ModelLabel) }</span>
+			Modell
+			<span class={ "lbl", "lbl-" + t.ModelLabel }>{ labelText(t.ModelLabel) }</span>
 			<span class="ml-conf">{ fmt.Sprintf("%.0f %%", t.ModelConfidence*100) }</span>
 			if t.ExpectedLabel != nil && *t.ExpectedLabel != t.ModelLabel {
-				<span class="ml-source">richtig wäre</span>
-				<span class={ "ml-badge", "ml-" + *t.ExpectedLabel }>{ labelText(*t.ExpectedLabel) }</span>
+				richtig wäre
+				<span class={ "lbl", "lbl-" + *t.ExpectedLabel }>{ labelText(*t.ExpectedLabel) }</span>
 			}
 		</div>
 		if t.ExpectedLabel == nil {
 			<div class="ml-verify">
-				<span class="ml-source">Richtig ist:</span>
+				<span class="cap">Richtig ist:</span>
 				for _, l := range []string{"true", "false", "invalid"} {
-					<button type="button" class={ "ml-verify-btn", "ml-" + l } hx-post={ judgeHref(t.ID, l) } hx-target={ "#" + rowID(t.ID) } hx-swap="outerHTML">
+					<button type="button" class="ml-pick" hx-post={ judgeHref(t.ID, l) } hx-target={ "#" + rowID(t.ID) } hx-swap="outerHTML">
 						if l == t.ModelLabel {
 							{ "✓ " + labelText(l) + " (wie Modell)" }
 						} else {

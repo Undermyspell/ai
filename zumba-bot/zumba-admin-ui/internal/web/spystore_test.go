@@ -98,9 +98,6 @@ func (s *spyStore) ListAbsences(_ context.Context, _ timeutil.Period) ([]store.A
 func (s *spyStore) Leaderboard(_ context.Context, _ timeutil.Period) ([]store.LeaderboardRow, error) {
 	return nil, nil
 }
-func (s *spyStore) UserLeaderboardRow(_ context.Context, _ timeutil.Period, _ string) (store.LeaderboardRow, error) {
-	return store.LeaderboardRow{}, nil
-}
 func (s *spyStore) ListUserAbsences(_ context.Context, _ timeutil.Period, userID string) ([]store.Absence, error) {
 	var out []store.Absence
 	for _, a := range s.absences {
@@ -121,9 +118,6 @@ func (s *spyStore) AbsencesOn(_ context.Context, date time.Time) ([]store.Absenc
 }
 func (s *spyStore) IsExcludedDay(_ context.Context, _ time.Time) (bool, error) { return false, nil }
 func (s *spyStore) ThursdayStrip(_ context.Context, _ timeutil.Period, _ int) ([]store.StripDay, error) {
-	return nil, nil
-}
-func (s *spyStore) ListDayAbsences(_ context.Context, _ timeutil.Period) ([]store.DayAbsences, error) {
 	return nil, nil
 }
 func (s *spyStore) ToggleAbsence(ctx context.Context, userID string, date time.Time) (bool, error) {

@@ -2,124 +2,341 @@ package dashboard
 
 import (
 	"fmt"
+	"strconv"
 
-	"github.com/michael/zumba-admin-ui/internal/store"
-	"github.com/michael/zumba-admin-ui/internal/timeutil"
-	"github.com/michael/zumba-admin-ui/web/emoji"
 	"github.com/michael/zumba-admin-ui/web/templates/partials"
 )
 
+// ViewModel ist die fertig gerechnete Anzeige des Dashboards; die Templates
+// geben nur noch aus.
 type ViewModel struct {
-	PeriodStart       string
-	PeriodEnd         string
-	TotalThursdays    int
-	TotalUsers        int
-	TotalAttendances  int
-	TotalAbsences     int
-	AverageRate       int // 0..100, rounded
-	StripItems        []partials.ThursdayStripItem
-	Leaderboard       []store.LeaderboardRow
+	U int // Mitglieder
+
+	AvgRate       int
+	AvgDelta      string // "+3 % ggü. 2025" (leer = kein Vorjahr)
+	AvgDeltaClass string
+
+	OffenSum   int
+	OffenCount int
+
+	DayCount      int // gültige Donnerstage bisher
+	ExcludedCount int
+
+	Day       DayVM
+	Next      partials.NextStammtisch
+	Attention []AttnRow
+	Months    []Month
+	Range     string // "Dez – Okt"
+	Top       []RankRow
+
+	// Query hält ?jahr= für Links fest ("" = laufendes Jahr).
+	Query    string
+	ReadOnly bool
 }
+
+// DayVM ist der ausgewählte Donnerstag („Zuletzt am Stammtisch").
+type DayVM struct {
+	ISO        string
+	DM         string // "02.10."
+	Long       string // "2. Oktober 2026"
+	Present    int
+	Absent     []Person
+	Pct        int
+	Delta      string // "+2 zur Vorwoche"
+	DeltaClass string
+	PrevHref   string
+	NextHref   string
+}
+
+type Person struct {
+	UserID  string
+	Name    string
+	Emoji   string
+	Message string
+}
+
+type AttnRow struct {
+	UserID string
+	Name   string
+	Emoji  string
+	Weeks  int
+	Meter  int    // 0..100
+	Class  string // is-amber | is-red
+	Badge  string
+}
+
+type Month struct {
+	Label string
+	Bars  []Bar
+}
+
+type Bar struct {
+	ISO      string
+	Title    string
+	H        int
+	Class    string
+	Excluded bool
+}
+
+type RankRow struct {
+	Rank   int
+	UserID string
+	Name   string
+	Emoji  string
+	Pct    int
+	Streak int
+}
+
+func (vm ViewModel) href(path string) string { return path + vm.Query }
 
 templ Page(vm ViewModel) {
-	<div class="page-header enter">
-		<div class="eyebrow">Zumba · Admin</div>
-		<h1>Stammtisch-Logbuch</h1>
-		<p class="meta">Saison <strong>{ vm.PeriodStart }</strong> – <strong>{ vm.PeriodEnd }</strong></p>
+	<section class="grid-4">
+		@tile("Ø Quote", strconv.Itoa(vm.AvgRate)+"%", vm.AvgDelta, vm.AvgDeltaClass, "%")
+		<div class="tile">
+			<div class="tile-body">
+				<div class="tile-label">Zuletzt da · { vm.Day.DM }</div>
+				<div class="tile-value">
+					<span class="nw">{ strconv.Itoa(vm.Day.Present) }<span class="of">/{ strconv.Itoa(vm.U) }</span></span>
+					if vm.Day.Delta != "" {
+						<span class={ "tile-sub", vm.Day.DeltaClass }>{ vm.Day.Delta }</span>
+					}
+				</div>
+			</div>
+			<span class="tile-ico" aria-hidden="true">✓</span>
+		</div>
+		if vm.OffenCount > 0 {
+			@tile("Kasse offen", strconv.Itoa(vm.OffenSum)+" €", fmt.Sprintf("%d %s", vm.OffenCount, strafenWord(vm.OffenCount)), "is-red", "€")
+		} else {
+			@tile("Kasse offen", "0 €", "alles beglichen", "is-green", "€")
+		}
+		@tile("Donnerstage", strconv.Itoa(vm.DayCount), fmt.Sprintf("· %d gesperrt", vm.ExcludedCount), "", "▦")
+	</section>
+	<section class="grid-r2">
+		@lastDay(vm)
+		@gauge(vm)
+		@attention(vm)
+	</section>
+	<section class="grid-r3">
+		@seasonChart(vm)
+		@ranking(vm)
+	</section>
+}
+
+templ tile(label, value, sub, subClass, icon string) {
+	<div class="tile">
+		<div class="tile-body">
+			<div class="tile-label">{ label }</div>
+			<div class="tile-value">
+				<span class="nw">{ value }</span>
+				if sub != "" {
+					<span class={ "tile-sub", subClass }>{ sub }</span>
+				}
+			</div>
+		</div>
+		<span class="tile-ico" aria-hidden="true">{ icon }</span>
 	</div>
-	<section class="grid-stats">
-		@statCard("Donnerstage", fmt.Sprintf("%d", vm.TotalThursdays), "bisher")
-		@statCardAccent("Quote", fmt.Sprintf("%d%%", vm.AverageRate), "Ø Teilnahme")
-		@statCard("Zusagen", fmt.Sprintf("%d", vm.TotalAttendances), "")
-		@statCard("Absagen", fmt.Sprintf("%d", vm.TotalAbsences), "")
-	</section>
-	<section class="section">
-		<div class="section-head">
-			<div class="title">
-				<h2>Donnerstage</h2>
-				<span class="count">{ fmt.Sprintf("%d Termine – zum Öffnen anklicken", len(vm.StripItems)) }</span>
+}
+
+templ lastDay(vm ViewModel) {
+	<div class="card dash-last">
+		<span class="glow-deco" aria-hidden="true"></span>
+		<div class="dash-last-head">
+			<div>
+				<div class="dash-last-sub">
+					Zuletzt am Stammtisch
+					if vm.Next.Label != "" {
+						· nächster <strong>{ vm.Next.Label }</strong> { nextWhen(vm.Next.InDays) }
+					}
+				</div>
+				<div class="dash-last-date">{ vm.Day.Long }</div>
+			</div>
+			<div class="row" style="gap:6px;flex-wrap:nowrap">
+				@navButton(vm.Day.PrevHref, "‹", "Vorheriger Donnerstag")
+				@navButton(vm.Day.NextHref, "›", "Nächster Donnerstag")
 			</div>
 		</div>
-		@partials.ThursdayStrip(vm.StripItems)
-	</section>
-	<section class="section">
-		<div class="section-head">
-			<div class="title">
-				<h2>Tafelrunde</h2>
-				<span class="count">{ fmt.Sprintf("%d Mitglieder", vm.TotalUsers) }</span>
-			</div>
-		</div>
-		<div class="list enter">
-			for i, r := range vm.Leaderboard {
-				@leaderboardRow(i+1, r)
+		<div class="dash-chips">
+			<span class="chips-label">Abgemeldet:</span>
+			for _, p := range vm.Day.Absent {
+				<button
+					type="button"
+					class="chip-absent"
+					title={ chipTitle(p, vm.ReadOnly) }
+					{ partials.Toggle(p.UserID, vm.Day.ISO, vm.ReadOnly)... }
+				>
+					<span class="emo">{ p.Emoji }</span>
+					{ p.Name }
+					if !vm.ReadOnly {
+						<span class="x" aria-hidden="true">✕</span>
+					}
+				</button>
+			}
+			if len(vm.Day.Absent) == 0 {
+				<span class="full">niemand – volle Runde 🍻</span>
 			}
 		</div>
-	</section>
+		<div class="dash-actions">
+			if vm.Day.ISO != "" {
+				@partials.SheetButton(vm.Day.ISO, "btn btn-primary", "") {
+					Anwesenheit bearbeiten →
+				}
+			}
+			<a class="btn btn-ghost" href={ templ.URL(vm.href("/days")) }>Alle Donnerstage</a>
+		</div>
+	</div>
 }
 
-templ statCard(label, value, sub string) {
-	<div class="stat-card">
-		<div class="label">{ label }</div>
-		<div class="value">{ value }</div>
-		if sub != "" {
-			<div class="sub">{ sub }</div>
+templ navButton(href, glyph, label string) {
+	if href == "" {
+		<button type="button" class="btn btn-nav" disabled aria-label={ label }>{ glyph }</button>
+	} else {
+		<a
+			class="btn btn-nav"
+			href={ templ.URL(href) }
+			aria-label={ label }
+			title={ label }
+			hx-get={ href }
+			hx-target="#page"
+			hx-select="#page"
+			hx-swap="outerHTML"
+			hx-push-url="true"
+		>{ glyph }</a>
+	}
+}
+
+templ gauge(vm ViewModel) {
+	<div class="card gauge-card">
+		<div class="card-headline" style="align-self:flex-start">
+			<div class="card-title">Teilnahme</div>
+			<div class="card-sub">am { vm.Day.DM }</div>
+		</div>
+		<div class="gauge" role="img" aria-label={ fmt.Sprintf("%d Prozent anwesend", vm.Day.Pct) }>
+			<div class="gauge-arc" style={ partials.Var("--deg", fmt.Sprintf("%ddeg", vm.Day.Pct*180/100)) }></div>
+			<div class="gauge-hole"></div>
+			<div class="gauge-val">{ strconv.Itoa(vm.Day.Pct) }%</div>
+		</div>
+		<div class="gauge-scale"><span>0%</span><span>100%</span></div>
+		<div class="gauge-box">
+			<strong>{ strconv.Itoa(vm.Day.Present) } von { strconv.Itoa(vm.U) }</strong>
+			<div>Saison-Ø { strconv.Itoa(vm.AvgRate) } %</div>
+		</div>
+	</div>
+}
+
+templ attention(vm ViewModel) {
+	<div class="card">
+		<div class="card-title">Absage-Serien</div>
+		<div class="card-sub">Strafe ab 5 Wochen in Folge</div>
+		if len(vm.Attention) == 0 {
+			<div class="empty" style="padding:24px 8px">
+				<span class="empty-ico" aria-hidden="true">🍻</span>
+				<p>Keine Serie in Sicht.</p>
+			</div>
+		} else {
+			<div class="attn-list">
+				for _, r := range vm.Attention {
+					<a class={ "attn-row", r.Class } href={ templ.URL("/members/" + r.UserID + vm.Query) }>
+						<span class="emo" aria-hidden="true">{ r.Emoji }</span>
+						<span style="min-width:0">
+							<span class="attn-name">{ r.Name }</span>
+							<span class="meter"><span style={ partials.Var("width", strconv.Itoa(r.Meter)+"%") }></span></span>
+						</span>
+						<span class="attn-badge">{ r.Badge }</span>
+					</a>
+				}
+			</div>
 		}
 	</div>
 }
 
-templ statCardAccent(label, value, sub string) {
-	<div class="stat-card accent">
-		<div class="label">{ label }</div>
-		<div class="value">{ value }</div>
-		if sub != "" {
-			<div class="sub">{ sub }</div>
-		}
-	</div>
-}
-
-templ leaderboardRow(rank int, r store.LeaderboardRow) {
-	<a class="member-row" href={ templ.URL(fmt.Sprintf("/members/%s", r.UserID)) }>
-		<div class={ "rank", rankMedalClass(rank) }>{ fmt.Sprintf("%d", rank) }</div>
-		<div class="who">
-			<span class="emoji">{ emoji.For(r.UserName) }</span>
+templ seasonChart(vm ViewModel) {
+	<div class="card">
+		<div class="card-head">
 			<div>
-				<div class="name">{ r.UserName }</div>
-				<div class="meta">{ fmt.Sprintf("%d von %d Donnerstagen · %d Absagen", r.AttendanceCount, r.ThursdayCount, r.AwayCount) }</div>
+				<div class="card-title">Saisonverlauf</div>
+				<div class="card-sub">Anwesende je Donnerstag · Balken antippen</div>
+			</div>
+			<span class="card-meta">{ vm.Range }</span>
+		</div>
+		<div class="chart-scroll" id="chart-scroll" data-scroll-end>
+			<div class="bar-chart">
+				for _, m := range vm.Months {
+					<div class="bar-month" style={ partials.Var("flex-grow", strconv.Itoa(len(m.Bars))) }>
+						<div class="bar-days">
+							for _, b := range m.Bars {
+								if b.Excluded {
+									<span class={ "bar", b.Class } title={ b.Title }></span>
+								} else {
+									<button
+										type="button"
+										class={ "bar", b.Class }
+										style={ partials.Var("--h", strconv.Itoa(b.H)+"%") }
+										title={ b.Title }
+										aria-label={ b.Title }
+										{ partials.OpenSheet(b.ISO)... }
+									></button>
+								}
+							}
+						</div>
+						<div class="bar-label">{ m.Label }</div>
+					</div>
+				}
 			</div>
 		</div>
-		<div class="stats">
-			<div class="pct">{ fmt.Sprintf("%d%%", percentInt(r.AttendPercent)) }</div>
-			@streakChip(r.Streak)
+	</div>
+}
+
+templ ranking(vm ViewModel) {
+	<div class="card">
+		<div class="card-head">
+			<div class="card-title">Rangliste</div>
+			<a class="card-link" href={ templ.URL(vm.href("/members")) }>Alle Mitglieder →</a>
 		</div>
-	</a>
+		<div class="card-sub" style="margin-bottom:10px">wie im WhatsApp-Report</div>
+		<div>
+			for _, r := range vm.Top {
+				<a class="rank-row" href={ templ.URL("/members/" + r.UserID + vm.Query) }>
+					<span class={ "rank-no", templ.KV("is-top", r.Rank <= 3) }>{ strconv.Itoa(r.Rank) }</span>
+					<span class="emo-box" aria-hidden="true">{ r.Emoji }</span>
+					<span style="min-width:0">
+						<span class="rank-name">{ r.Name }</span>
+						<span class="meter meter-3 meter-grad"><span style={ partials.Var("width", strconv.Itoa(r.Pct)+"%") }></span></span>
+					</span>
+					<span class="rank-stats">
+						<span class="rank-pct">{ strconv.Itoa(r.Pct) }%</span>
+						<span class={ "streak", partials.StreakClass(r.Streak) }>{ partials.StreakText(r.Streak) }</span>
+					</span>
+				</a>
+			}
+		</div>
+	</div>
 }
 
-templ streakChip(streak int) {
-	if streak > 0 {
-		<span class="streak hot">{ fmt.Sprintf("🔥 +%d", streak) }</span>
-	} else if streak < 0 {
-		<span class="streak cold">{ fmt.Sprintf("🧊 %d", streak) }</span>
-	} else {
-		<span class="streak">–</span>
+func strafenWord(n int) string {
+	if n == 1 {
+		return "Strafe"
 	}
+	return "Strafen"
 }
 
-func rankMedalClass(rank int) string {
-	switch rank {
+func nextWhen(days int) string {
+	switch days {
+	case 0:
+		return "heute"
 	case 1:
-		return "medal-1"
-	case 2:
-		return "medal-2"
-	case 3:
-		return "medal-3"
+		return "morgen"
 	default:
-		return ""
+		return fmt.Sprintf("in %d Tagen", days)
 	}
 }
 
-func percentInt(p float64) int {
-	return int(p + 0.5)
+func chipTitle(p Person, readOnly bool) string {
+	t := p.Name + " – abgemeldet"
+	if p.Message != "" {
+		t += ": „" + p.Message + "“"
+	}
+	if !readOnly {
+		t += " · Klick = anwesend"
+	}
+	return t
 }
-
-// satisfy import (timeutil used elsewhere)
-var _ = timeutil.IsThursday

@@ -40,12 +40,6 @@ type StripDay struct {
 	Away     int
 }
 
-// DayAbsences sind die Abmeldungen eines gültigen Donnerstags (GROUP BY in SQL).
-type DayAbsences struct {
-	Date          time.Time
-	AbsentUserIDs []string
-}
-
 // Season ist ein Stammtischjahr: gepflegter Auswertungszeitraum mit Label
 // ("2026"). Jedes Jahr hat eigene Start-/Enddaten, keine Kalendergrenzen.
 type Season = domain.Season
@@ -73,13 +67,9 @@ type Store interface {
 	// ListUserAbsences liefert nur die Abmeldungen eines Users im Zeitraum.
 	ListUserAbsences(ctx context.Context, p timeutil.Period, userID string) ([]Absence, error)
 	Leaderboard(ctx context.Context, p timeutil.Period) ([]LeaderboardRow, error)
-	// UserLeaderboardRow liefert die Leaderboard-Zeile eines einzelnen Users.
-	UserLeaderboardRow(ctx context.Context, p timeutil.Period, userID string) (LeaderboardRow, error)
 	// ThursdayStrip liefert die jüngsten Donnerstage (inkl. Sperrtage) bis
 	// heute mit Abmelde-Zahl, aufsteigend sortiert; limit 0 = alle.
 	ThursdayStrip(ctx context.Context, p timeutil.Period, limit int) ([]StripDay, error)
-	// ListDayAbsences gruppiert Abmeldungen je gültigem Donnerstag (neueste zuerst).
-	ListDayAbsences(ctx context.Context, p timeutil.Period) ([]DayAbsences, error)
 
 	InsertAbsence(ctx context.Context, userID string, date time.Time, message *string) error
 	DeleteAbsence(ctx context.Context, userID string, date time.Time) error
@@ -170,6 +160,7 @@ type MLShadowStats struct {
 	Total     int // alle protokollierten Nachrichten
 	WithModel int // davon mit Modell-Antwort
 	Agree     int // davon Übereinstimmung Gemini == Modell
+	Verified  int // davon per Hand geprüft
 	PerLabel  []MLLabelStat
 }
 

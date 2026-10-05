@@ -1,176 +1,150 @@
 package members
 
 import (
-	"fmt"
-	"time"
+	"strconv"
 
-	"github.com/michael/zumba-admin-ui/internal/store"
-	"github.com/michael/zumba-admin-ui/internal/timeutil"
-	"github.com/michael/zumba-admin-ui/web/emoji"
 	"github.com/michael/zumba-admin-ui/web/templates/partials"
 )
 
 type DetailVM struct {
-	User    store.User
-	Stats   store.LeaderboardRow
-	Entries []DetailEntry // newest first
+	UserID string
+	Name   string
+	Emoji  string
+	Rank   int // 0 = nicht in der Rangliste
+	U      int
+	Pct    int
+	Attend int
+	Away   int
+	Streak int
+	// Strip: ein Feld je Donnerstag, links = älter (inkl. Sperrtage).
+	Strip []Dot
+	// Entries: gültige Donnerstage, neueste zuerst.
+	Entries []Entry
 	// ReadOnly: abgeschlossenes Stammtischjahr (Archivansicht).
 	ReadOnly bool
+	Query    string
 }
 
-type DetailEntry struct {
-	Date    time.Time
+type Dot struct {
+	ISO      string
+	Absent   bool
+	Excluded bool
+	Title    string
+}
+
+type Entry struct {
+	ISO     string
+	Label   string // "Do., 2. Oktober 2026"
 	Absent  bool
-	Message *string
+	Message string
 }
 
 templ Detail(vm DetailVM) {
-	<div class="page-header enter">
-		<div class="eyebrow">Mitglied</div>
-		<h1>{ emoji.For(vm.User.Name) } { vm.User.Name }</h1>
-		<p class="meta">{ fmt.Sprintf("%d/%d Donnerstage besucht – %d%% Quote", vm.Stats.AttendanceCount, vm.Stats.ThursdayCount, percentInt(vm.Stats.AttendPercent)) }</p>
-	</div>
-	<section class="grid-stats">
-		@statCard("Zusagen", fmt.Sprintf("%d", vm.Stats.AttendanceCount), "")
-		@statCard("Absagen", fmt.Sprintf("%d", vm.Stats.AwayCount), "")
-		@statCardAccent("Quote", fmt.Sprintf("%d%%", percentInt(vm.Stats.AttendPercent)), "Ø")
-		@statStreak(vm.Stats.Streak)
-	</section>
-	<section class="section">
-		<div class="section-head">
-			<div class="title">
-				<h2>Überblick</h2>
-				<span class="count">{ fmt.Sprintf("%d anwesend · %d abgemeldet", vm.Stats.AttendanceCount, vm.Stats.AwayCount) }</span>
+	<a class="back-link" href={ templ.URL("/members" + vm.Query) }>← Alle Mitglieder</a>
+	<section class="grid-4">
+		<div class="tile who-tile">
+			<span class="who-emo" aria-hidden="true">{ vm.Emoji }</span>
+			<div>
+				<div class="who-name">{ vm.Name }</div>
+				<div class="tile-label">
+					if vm.Rank > 0 {
+						Platz { strconv.Itoa(vm.Rank) } von { strconv.Itoa(vm.U) }
+					} else {
+						noch nicht in der Rangliste
+					}
+				</div>
 			</div>
 		</div>
-		@attendanceStrip(vm.Entries)
-	</section>
-	<section class="section">
-		<div class="section-head">
-			<div class="title">
-				<h2>Verlauf</h2>
-				<span class="count">{ fmt.Sprintf("%d Donnerstage", len(vm.Entries)) }</span>
+		<div class="tile">
+			<div class="tile-body">
+				<div class="tile-label">Quote</div>
+				<div class="tile-value is-big t-blue">{ strconv.Itoa(vm.Pct) }%</div>
 			</div>
 		</div>
-		<div class="list">
-			for _, e := range vm.Entries {
-				@entryRow(vm.User.ID, e, vm.ReadOnly)
-			}
+		<div class="tile">
+			<div class="tile-body">
+				<div class="tile-label">Da / Weg</div>
+				<div class="tile-value is-big"><span class="t-green">{ strconv.Itoa(vm.Attend) }</span> / <span class="t-red">{ strconv.Itoa(vm.Away) }</span></div>
+			</div>
+		</div>
+		<div class="tile">
+			<div class="tile-body">
+				<div class="tile-label">Aktuelle Serie</div>
+				<div class={ "tile-value", "is-big", streakColor(vm.Streak) }>{ partials.StreakText(vm.Streak) }</div>
+			</div>
 		</div>
 	</section>
-}
-
-// attendanceStrip zeigt eine Kachel pro Donnerstag (chronologisch, links = älter):
-// grün = anwesend, rot = abgemeldet. Klick führt zum jeweiligen Donnerstag.
-templ attendanceStrip(entries []DetailEntry) {
-	<div class="att-strip" aria-label="Anwesenheit pro Donnerstag">
-		for _, e := range chrono(entries) {
-			<a
-				class={ "att-dot", templ.KV("absent", e.Absent), templ.KV("present", !e.Absent) }
-				href={ templ.URL("/days/" + timeutil.FormatISO(e.Date)) }
-				title={ attTitle(e) }
-			></a>
-		}
-	</div>
-}
-
-func chrono(entries []DetailEntry) []DetailEntry {
-	out := make([]DetailEntry, len(entries))
-	for i, e := range entries {
-		out[len(entries)-1-i] = e
-	}
-	return out
-}
-
-func attTitle(e DetailEntry) string {
-	s := timeutil.FormatDE(e.Date)
-	if e.Absent {
-		s += " – abgemeldet"
-		if e.Message != nil && *e.Message != "" {
-			s += ": " + *e.Message
-		}
-		return s
-	}
-	return s + " – anwesend"
-}
-
-templ entryRow(userID string, e DetailEntry, readOnly bool) {
-	<div class={ "attendance-cell", entryClass(e.Absent) }>
-		<span class="emoji">{ statusEmoji(e.Absent) }</span>
-		<div>
-			<div class="name">{ timeutil.FormatDE(e.Date) }</div>
-			if e.Absent && e.Message != nil && *e.Message != "" {
-				<div class="msg">„{ *e.Message }"</div>
-			}
-		</div>
-		@partials.AbsenceToggle(userID, e.Date, e.Absent, readOnly)
-	</div>
-}
-
-templ statCard(label, value, sub string) {
-	<div class="stat-card">
-		<div class="label">{ label }</div>
-		<div class="value">{ value }</div>
-		if sub != "" {
-			<div class="sub">{ sub }</div>
-		}
-	</div>
-}
-
-templ statCardAccent(label, value, sub string) {
-	<div class="stat-card accent">
-		<div class="label">{ label }</div>
-		<div class="value">{ value }</div>
-		if sub != "" {
-			<div class="sub">{ sub }</div>
-		}
-	</div>
-}
-
-templ statStreak(streak int) {
-	<div class={ "stat-card", streakBgClass(streak) }>
-		<div class="label">Streak</div>
-		<div class="value">
-			if streak > 0 {
-				{ fmt.Sprintf("🔥 +%d", streak) }
-			} else if streak < 0 {
-				{ fmt.Sprintf("🧊 %d", streak) }
+	<section class="card">
+		<div class="card-title">Verlauf</div>
+		<div class="card-sub">
+			if vm.ReadOnly {
+				Archiv, nur Ansicht · links = älter
 			} else {
-				{ "–" }
+				Kachel antippen schaltet um · links = älter
 			}
 		</div>
-		<div class="sub">aktuell</div>
-	</div>
+		<div class="strip-dots">
+			for _, d := range vm.Strip {
+				if d.Excluded {
+					<span class="strip-dot is-excluded" title={ d.Title }></span>
+				} else {
+					<button
+						type="button"
+						class={ "strip-dot", templ.KV("is-absent", d.Absent) }
+						title={ d.Title }
+						aria-label={ d.Title }
+						{ partials.Toggle(vm.UserID, d.ISO, vm.ReadOnly)... }
+					></button>
+				}
+			}
+		</div>
+		<div class="rows entry-list">
+			for _, e := range vm.Entries {
+				<div class={ "entry-row", templ.KV("is-absent", e.Absent) }>
+					<span class="entry-ico" aria-hidden="true">
+						if e.Absent {
+							✕
+						} else {
+							✓
+						}
+					</span>
+					<span class="entry-text">
+						<span class="entry-date">{ e.Label }</span>
+						if e.Absent {
+							<span class="entry-msg">{ entryMsg(e) }</span>
+						}
+					</span>
+					<button
+						type="button"
+						class={ "toggle-btn", templ.KV("is-absent", e.Absent) }
+						{ partials.Toggle(vm.UserID, e.ISO, vm.ReadOnly)... }
+					>
+						if e.Absent {
+							Abgemeldet
+						} else {
+							Anwesend
+						}
+					</button>
+				</div>
+			}
+		</div>
+	</section>
 }
 
-func entryClass(absent bool) string {
-	if absent {
-		return "absent"
+func entryMsg(e Entry) string {
+	if e.Message == "" {
+		return "ohne Nachricht"
 	}
-	return "present"
+	return "„" + e.Message + "“"
 }
 
-func statusEmoji(absent bool) string {
-	if absent {
-		return "✕"
+func streakColor(streak int) string {
+	switch {
+	case streak > 0:
+		return "t-green"
+	case streak < 0:
+		return "t-red"
+	default:
+		return "faint"
 	}
-	return "✓"
-}
-
-func statusLabel(absent bool) string {
-	if absent {
-		return "Abgemeldet"
-	}
-	return "Anwesend"
-}
-
-func streakBgClass(streak int) string {
-	if streak > 0 {
-		return "accent"
-	}
-	return ""
-}
-
-func percentInt(p float64) int {
-	return int(p + 0.5)
 }

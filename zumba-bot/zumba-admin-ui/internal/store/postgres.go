@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lib/pq"
-
 	sharedstore "github.com/michael/zumba-shared/store"
 
 	"github.com/michael/zumba-admin-ui/internal/db"
@@ -166,11 +164,6 @@ func (s *Postgres) Leaderboard(ctx context.Context, p timeutil.Period) ([]Leader
 	return sharedstore.Leaderboard(ctx, s.db, p)
 }
 
-// UserLeaderboardRow filtert die Leaderboard-CTE in SQL auf einen User.
-func (s *Postgres) UserLeaderboardRow(ctx context.Context, p timeutil.Period, userID string) (LeaderboardRow, error) {
-	return sharedstore.UserLeaderboardRow(ctx, s.db, p, userID)
-}
-
 // ThursdayStrip aggregiert die Strip-Kacheln komplett in SQL: Donnerstage bis
 // heute (inkl. Sperrtage), Abmelde-Zahl je Tag, jüngste N, aufsteigend.
 func (s *Postgres) ThursdayStrip(ctx context.Context, p timeutil.Period, limit int) ([]StripDay, error) {
@@ -200,40 +193,6 @@ func (s *Postgres) ThursdayStrip(ctx context.Context, p timeutil.Period, limit i
 		var d StripDay
 		if err := rows.Scan(&d.Date, &d.Excluded, &d.Away); err != nil {
 			return nil, fmt.Errorf("ThursdayStrip scan: %w", err)
-		}
-		out = append(out, d)
-	}
-	return out, rows.Err()
-}
-
-// ListDayAbsences gruppiert Abmeldungen je gültigem Donnerstag in SQL
-// (GROUP BY + array_agg statt Go-Maps), neueste zuerst.
-func (s *Postgres) ListDayAbsences(ctx context.Context, p timeutil.Period) ([]DayAbsences, error) {
-	const q = `
-		WITH days AS (
-			SELECT d::date AS day
-			FROM generate_series($1::date, LEAST($2::date, current_date), interval '1 day') AS d
-			WHERE EXTRACT(DOW FROM d) = 4
-			  AND d::date NOT IN (SELECT date FROM excluded_days)
-		)
-		SELECT day,
-		       COALESCE(array_agg(a."userId" ORDER BY a."userId")
-		                FILTER (WHERE a."userId" IS NOT NULL), '{}')
-		FROM days
-		LEFT JOIN stammtisch_abwesenheit a ON a.date = day
-		GROUP BY day
-		ORDER BY day DESC`
-	rows, err := s.db.QueryContext(ctx, q, p.Start, p.EffectiveEnd())
-	if err != nil {
-		return nil, fmt.Errorf("ListDayAbsences: %w", err)
-	}
-	defer rows.Close()
-
-	var out []DayAbsences
-	for rows.Next() {
-		var d DayAbsences
-		if err := rows.Scan(&d.Date, pq.Array(&d.AbsentUserIDs)); err != nil {
-			return nil, fmt.Errorf("ListDayAbsences scan: %w", err)
 		}
 		out = append(out, d)
 	}
@@ -449,9 +408,10 @@ func (s *Postgres) MLShadowStats(ctx context.Context) (MLShadowStats, error) {
 	const totals = `
 		SELECT count(*),
 		       count(*) FILTER (WHERE model_label IS NOT NULL),
-		       count(*) FILTER (WHERE agree)
+		       count(*) FILTER (WHERE agree),
+		       count(*) FILTER (WHERE verified)
 		FROM ml_messages`
-	if err := s.db.QueryRowContext(ctx, totals).Scan(&st.Total, &st.WithModel, &st.Agree); err != nil {
+	if err := s.db.QueryRowContext(ctx, totals).Scan(&st.Total, &st.WithModel, &st.Agree, &st.Verified); err != nil {
 		return st, fmt.Errorf("MLShadowStats: %w", err)
 	}
 	const perLabel = `

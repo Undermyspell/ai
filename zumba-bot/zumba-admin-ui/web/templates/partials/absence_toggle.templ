@@ -1,38 +1,33 @@
 package partials
 
-import (
-	"time"
+import "encoding/json"
 
-	"github.com/michael/zumba-admin-ui/internal/timeutil"
-)
-
-// AbsenceToggle rendert einen Button, der die An-/Abwesenheit eines Mitglieds
-// für einen Donnerstag umschaltet. Er postet an /toggle-absence und ersetzt
-// sich selbst durch die vom Server neu gerenderte Antwort.
-// readOnly = abgeschlossenes Stammtischjahr: der Zustand bleibt sichtbar, die
-// Schaltfläche ist inaktiv. Der Server lehnt solche Schreibversuche ohnehin
-// ab (requireWritable) – das hier ist nur die sichtbare Hälfte.
-templ AbsenceToggle(userID string, date time.Time, absent, readOnly bool) {
+// Toggle sind die HTMX-Attribute, die die An-/Abwesenheit eines Mitglieds
+// für einen Donnerstag umschalten. Der Server antwortet ohne Inhalt, nur mit
+// Toast und dem Ereignis „absenceChanged" – darauf lädt sich jede Ansicht,
+// die an Anwesenheiten hängt (#page, das Bottom-Sheet), selbst neu. So bleibt
+// alles stimmig, egal von wo aus geschaltet wurde.
+//
+// Im Archiv (readOnly) bleibt der Knopf sichtbar, aber ohne Aktion; der
+// Server lehnt solche Schreibversuche ohnehin ab (requireWritable).
+func Toggle(userID, iso string, readOnly bool) templ.Attributes {
 	if readOnly {
-		<span class={ "toggle", "is-readonly", templ.KV("is-absent", absent), templ.KV("is-present", !absent) }>
-			if absent {
-				Abgemeldet
-			} else {
-				Anwesend
-			}
-		</span>
-	} else {
-		<button
-			class={ "toggle", templ.KV("is-absent", absent), templ.KV("is-present", !absent) }
-			hx-post="/toggle-absence"
-			hx-vals={ `{"userId":"` + userID + `","date":"` + timeutil.FormatISO(date) + `"}` }
-			hx-swap="outerHTML"
-		>
-			if absent {
-				Abgemeldet
-			} else {
-				Anwesend
-			}
-		</button>
+		return templ.Attributes{"disabled": true}
+	}
+	vals, _ := json.Marshal(map[string]string{"userId": userID, "date": iso})
+	return templ.Attributes{
+		"hx-post": "/toggle-absence",
+		"hx-vals": string(vals),
+		"hx-swap": "none",
+	}
+}
+
+// OpenSheet sind die HTMX-Attribute, die den Donnerstag iso im Bottom-Sheet
+// öffnen.
+func OpenSheet(iso string) templ.Attributes {
+	return templ.Attributes{
+		"hx-get":    "/days/" + iso + "?sheet=1",
+		"hx-target": "#sheet",
+		"hx-swap":   "innerHTML",
 	}
 }

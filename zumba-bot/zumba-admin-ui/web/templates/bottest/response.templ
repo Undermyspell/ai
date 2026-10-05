@@ -1,5 +1,36 @@
 package bottest
 
+// Step ist ein Punkt im Verarbeitungspfad. State: wait | done | skipped | error.
+type Step struct {
+	Label  string
+	Detail string
+	State  string
+}
+
+// WaitingSteps sind die Schritte eines Szenarios vor dem Testlauf.
+func WaitingSteps(szenario, model string) []Step {
+	wait := func(labels ...string) []Step {
+		out := make([]Step, len(labels))
+		for i, l := range labels {
+			out[i] = Step{Label: l, State: "wait"}
+		}
+		out[0].Detail = "wartet"
+		return out
+	}
+	classifier := "Klassifikator"
+	if model != "" {
+		classifier += " (" + model + ")"
+	}
+	switch szenario {
+	case "wochenreport":
+		return wait("CronJob ausgelöst", "Rangliste + Strafen berechnen", "Rendern", "An Gruppe senden")
+	case "absage", "zusage":
+		return wait("Webhook empfangen", "„statistik“?", "Guards: Typ · Gruppe · Donnerstag", classifier, "DB-Aktion")
+	default:
+		return wait("Webhook empfangen", "„statistik“?", "Rangliste berechnen", "Rendern", "An Gruppe senden")
+	}
+}
+
 type ResponseVM struct {
 	Path           string
 	Classification string
@@ -11,59 +42,89 @@ type ResponseVM struct {
 	DryRun         bool
 	PreviewTo      string
 	ImageBase64    string // PNG-Karte (format=image), base64 ohne data:-Präfix
+	Time           string // "20:12"
+	Steps          []Step
+	Meta           string // Fußzeile des Verarbeitungspfads
 }
 
 templ Response(vm ResponseVM) {
-	<div class="bot-result enter">
-		if vm.PreviewTo != "" {
-			<div class="badge preview">📱 Vorschau — auch an { vm.PreviewTo } gesendet</div>
-		} else if vm.DryRun {
-			<div class="badge dryrun">🧪 Dry-Run — nichts gesendet/geschrieben</div>
-		}
-		if vm.Path == "statistik" {
-			if vm.ImageBase64 != "" {
-				<div class="wa-bubble wa-bubble-image">
-					<img class="wa-image" alt="Statistik-Karte" src={ templ.SafeURL("data:image/png;base64," + vm.ImageBase64) }/>
-				</div>
-			} else {
-				<div class="wa-bubble">
-					<pre>{ vm.Message }</pre>
-				</div>
-			}
-			if vm.PreviewTo != "" {
-				<div class="wa-meta">Als Vorschau an { vm.PreviewTo } gesendet (nicht an die Gruppe).</div>
-			} else if vm.DryRun {
-				<div class="wa-meta">Würde an { vm.Recipient } gehen (nicht gesendet).</div>
-			} else {
-				<div class="wa-meta">Gesendet an { vm.Recipient }.</div>
-			}
-		} else if vm.Path == "classify" {
-			<div class="badges">
-				<span class={ "badge", "cls-" + vm.Classification }>{ classificationLabel(vm.Classification) }</span>
-				<span class="badge action">{ actionLabel(vm.Action) }</span>
+	if vm.Path == "statistik" {
+		if vm.ImageBase64 != "" {
+			<div class="bubble-out is-image">
+				<img alt="Statistik-Karte" src={ templ.SafeURL("data:image/png;base64," + vm.ImageBase64) }/>
+				<div class="bubble-out-foot">{ vm.Time } ✓✓</div>
 			</div>
-			<div class="wa-meta">User: { vm.UserID } · Datum: { vm.Date }</div>
-			<div class="wa-bubble"><pre>{ vm.Message }</pre></div>
 		} else {
-			<div class="wa-meta">Ignoriert (Guards aktiv).</div>
+			<div class="bubble-out">
+				<div class="bubble-out-head">🤖 Zumba-Bot</div>
+				<pre>{ vm.Message }</pre>
+				<div class="bubble-out-foot">{ vm.Time } ✓✓</div>
+			</div>
+		}
+		<div class="bot-meta">
+			if vm.PreviewTo != "" {
+				Als Vorschau an { vm.PreviewTo } gesendet – nicht an die Gruppe.
+			} else if vm.DryRun {
+				Würde an { orDash(vm.Recipient) } gehen – nicht gesendet.
+			} else {
+				Gesendet an { vm.Recipient }.
+			}
+		</div>
+	} else if vm.Path == "classify" {
+		<div class={ "sys-chip", clsClass(vm.Classification) }>
+			{ "Klassifikation: " + classificationLabel(vm.Classification) + " → " + actionLabel(vm.Action) + " · keine Antwort in die Gruppe" }
+		</div>
+		if vm.Message != "" {
+			<div class="bubble-out">
+				<div class="bubble-out-head">🤖 Zumba-Bot</div>
+				<pre>{ vm.Message }</pre>
+				<div class="bubble-out-foot">{ vm.Time } ✓✓</div>
+			</div>
+		}
+		<div class="bot-meta">User { orDash(vm.UserID) } · Datum { orDash(vm.Date) }</div>
+	} else {
+		<div class="sys-chip">Ignoriert – die Guards haben die Nachricht aussortiert.</div>
+	}
+	<div id="bot-path-result" hx-swap-oob="innerHTML">
+		<div class="timeline">
+			for _, st := range vm.Steps {
+				@step(st)
+			}
+		</div>
+		if vm.Meta != "" {
+			<div class="tl-meta">{ vm.Meta }</div>
 		}
 	</div>
 }
 
 templ ErrorPanel(msg string) {
-	<div class="bot-error enter">
-		<strong>Fehler:</strong> { msg }
+	<div class="bot-error"><strong>Fehler:</strong> { msg }</div>
+	<div id="bot-path-result" hx-swap-oob="innerHTML">
+		<div class="timeline">
+			@step(Step{Label: "Bot-Aufruf", Detail: "fehlgeschlagen", State: "error"})
+		</div>
 	</div>
 }
 
 func classificationLabel(c string) string {
 	switch c {
 	case "true":
-		return "Zusage (true)"
+		return "Zusage"
 	case "false":
-		return "Absage (false)"
+		return "Absage"
 	default:
 		return "invalid"
+	}
+}
+
+func clsClass(c string) string {
+	switch c {
+	case "true":
+		return "is-green"
+	case "false":
+		return "is-red"
+	default:
+		return ""
 	}
 }
 
@@ -80,4 +141,11 @@ func actionLabel(a string) string {
 	default:
 		return "keine DB-Aktion"
 	}
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "—"
+	}
+	return s
 }

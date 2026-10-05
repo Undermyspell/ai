@@ -1,91 +1,250 @@
 package kimodell
 
-// VM ist die fertige Anzeige der KI-Modell-Seite: je Rolle (Haupt, Fallback)
-// eine Karte mit der Modell-Auswahl.
+import "strconv"
+
+// VM ist die fertige Anzeige der KI-Modell-Seite.
 type VM struct {
-	Roles []RoleVM
+	Primary  Ref
+	Fallback Ref
+	Since    string // "02.10.2026, 19:14" – letzte Umstellung
+	Models   []Model
+	Quota    []Quota
+	// Unknown: eine Rolle steht auf einem Modell außerhalb der Auswahl (oder
+	// ist noch leer) – sonst wäre etwas unsichtbar aktiv.
+	Unknown []string
+	Shadow  Shadow
 }
 
-type RoleVM struct {
-	Rolle string // primary | fallback (Formularwert)
-	Title string
-	Hint  string
-	// Current: aktives Modell; "" = noch nicht gesetzt (der Bot nimmt dann
-	// den Wert aus dem Deployment).
-	Current string
-	// CurrentKnown: Current steht in der Auswahl. Sonst zeigt die Karte den
-	// Namen gesondert an, damit nichts unsichtbar aktiv ist.
-	CurrentKnown bool
-	SinceText    string
-	Options      []OptionVM
+// Ref ist das Modell einer Rolle im Routing-Bild.
+type Ref struct {
+	Label  string
+	Limits string
 }
 
-type OptionVM struct {
-	ID       string
-	Label    string
-	Hint     string
-	Selected bool
-	// Disabled: das Modell ist schon in der anderen Rolle – Haupt und
-	// Fallback gleich zu setzen hieße, es gibt keinen Fallback.
-	Disabled bool
+// Model ist eine Karte der Modellauswahl.
+type Model struct {
+	ID         string
+	Label      string
+	PerMin     string
+	PerDay     string
+	Meter      int    // Anteil eines Donnerstags am Tageslimit, 3..100
+	MeterClass string // is-green | is-amber | is-red
+	Note       string
+	NoteRed    bool
+	IsPrimary  bool
+	IsFallback bool
+}
+
+type Quota struct {
+	Role  string
+	Label string
+	Text  string
+	Pct   string
+	Class string // is-green | is-amber | is-red
+}
+
+type Shadow struct {
+	AgreePct string
+	Verified int
+	Total    int
 }
 
 templ Page(vm VM) {
-	<div class="page-header enter">
-		<div class="eyebrow">Bot</div>
-		<h1>KI-Modell</h1>
-		<p class="meta">
-			Welches Modell entscheidet, ob eine Nachricht in der Gruppe eine Zu- oder
-			Absage ist. Antwortet das Hauptmodell nicht, fragt der Bot das Fallback.
-			Eine Umstellung gilt ab der nächsten Nachricht.
-		</p>
-	</div>
 	@Region(vm)
 }
 
-// Region ist das HTMX-Swap-Ziel: nach jedem Umschalten kommt sie neu vom
-// Server, damit Auswahl und gesperrte Optionen den echten Stand zeigen.
+// Region ist das HTMX-Swap-Ziel: nach jedem Umschalten kommt die ganze Seite
+// neu, damit Routing, Karten und Kontingent den echten Stand zeigen.
 templ Region(vm VM) {
-	<div id="model-region" class="model-region enter">
-		for _, r := range vm.Roles {
-			@roleCard(r)
-		}
-		<p class="model-foot">
-			Grenzen pro Minute und Tag: kostenloses Kontingent von Google AI Studio.
-			Ein Donnerstag braucht etwa zehn Aufrufe, fehlgeschlagene zählen mit.
-		</p>
-	</div>
-}
-
-templ roleCard(r RoleVM) {
-	<section class="model-card">
-		<header class="model-card-head">
-			<h2>{ r.Title }</h2>
-			if r.SinceText != "" {
-				<span class="model-since">{ r.SinceText }</span>
-			}
-		</header>
-		<p class="model-hint">{ r.Hint }</p>
-		if r.Current == "" {
-			<p class="model-note">Noch nicht gesetzt – der Bot nimmt den Wert aus dem Deployment.</p>
-		} else if !r.CurrentKnown {
-			<p class="model-note">Aktiv: <code>{ r.Current }</code> (nicht in der Auswahl)</p>
-		}
-		<form hx-post="/ki-modell" hx-trigger="change" hx-target="#model-region" hx-swap="outerHTML">
-			<input type="hidden" name="rolle" value={ r.Rolle }/>
-			<div class="seg seg-wide" role="radiogroup" aria-label={ r.Title }>
-				for _, o := range r.Options {
-					<label class="seg-opt">
-						<input type="radio" name="model" value={ o.ID } checked?={ o.Selected } disabled?={ o.Disabled }/>
-						<span class="seg-face">
-							<span class="seg-text">
-								{ o.Label }
-								<small>{ o.Hint }</small>
-							</span>
-						</span>
-					</label>
+	<section id="model-region" class="grid-side">
+		<div class="stack">
+			<div class="card">
+				<div class="card-head">
+					<div>
+						<div class="card-title">Wer entscheidet?</div>
+						<div class="card-sub">Jede Gruppen-Nachricht am Donnerstag läuft diesen Weg. Eine Umstellung gilt ab der nächsten Nachricht.</div>
+					</div>
+					if vm.Since != "" {
+						<span class="card-sub">zuletzt geändert { vm.Since }</span>
+					}
+				</div>
+				<div class="flow">
+					<div class="flow-box is-msg">
+						<span class="emo" aria-hidden="true">💬</span>
+						<div>
+							<div class="flow-name" style="font-size:12px">Nachricht</div>
+							<div class="flow-sub">„obmeldn muas i mi heid“</div>
+						</div>
+					</div>
+					<span class="flow-arrow" aria-hidden="true">──▶</span>
+					<div class="flow-box is-primary">
+						<div class="flow-cap">Hauptmodell</div>
+						<div class="flow-name">{ orUnset(vm.Primary.Label) }</div>
+						<div class="flow-sub">{ vm.Primary.Limits }</div>
+					</div>
+					<span class="flow-arrow" aria-hidden="true"><span class="when">bei Fehler</span><span>──▶</span></span>
+					<div class="flow-box is-fallback">
+						<div class="flow-cap">Fallback</div>
+						<div class="flow-name">{ orUnset(vm.Fallback.Label) }</div>
+						<div class="flow-sub">{ vm.Fallback.Limits }</div>
+					</div>
+					<span class="flow-arrow" aria-hidden="true">──▶</span>
+					<div class="flow-box">
+						<div class="flow-name" style="font-size:12px">Label</div>
+						<div class="flow-labels">
+							<span class="pill is-green">Zusage</span>
+							<span class="pill is-red">Absage</span>
+							<span class="pill">invalid</span>
+						</div>
+					</div>
+				</div>
+				for _, u := range vm.Unknown {
+					<p class="hint" style="margin-top:12px">{ u }</p>
 				}
 			</div>
-		</form>
+			<div>
+				<div class="cap" style="margin:0 4px 10px">Verfügbare Modelle · Rolle per Klick zuweisen</div>
+				<div class="model-grid">
+					for _, m := range vm.Models {
+						@modelCard(m)
+					}
+				</div>
+				<p class="hint" style="margin:10px 4px 0">
+					Grenzen pro Minute und Tag: kostenloses Kontingent von Google AI Studio.
+					Haupt- und Fallback-Modell müssen sich unterscheiden.
+				</p>
+			</div>
+		</div>
+		<div class="stack side-col">
+			<div class="card" style="padding:20px">
+				<div class="card-title-sm">Reicht das Kontingent?</div>
+				<div class="card-sub" style="margin-bottom:12px">Ein Donnerstag braucht etwa 10 Aufrufe, fehlgeschlagene zählen mit.</div>
+				<div class="stack-sm" style="gap:10px">
+					for _, q := range vm.Quota {
+						<div class="quota-row">
+							<span class={ "dot", q.Class }></span>
+							<span>
+								<span class="quota-title">{ q.Role } · { q.Label }</span>
+								<span class="quota-text">{ q.Text }</span>
+							</span>
+							<span class={ "quota-pct", quotaText(q.Class) }>{ q.Pct }</span>
+						</div>
+					}
+				</div>
+			</div>
+			<div class="card" style="padding:20px">
+				<div class="card-head">
+					<div class="card-title-sm">Eigenes Modell</div>
+					<span class="pill pill-caps is-amber">Shadow</span>
+				</div>
+				<div class="card-meta" style="margin:2px 0 10px">classifier-service · läuft parallel mit</div>
+				<div class="grid-2">
+					<div class="mini-stat">
+						<div class="mini-stat-label">Übereinstimmung</div>
+						<div class="mini-stat-value t-blue">{ vm.Shadow.AgreePct }</div>
+					</div>
+					<div class="mini-stat">
+						<div class="mini-stat-label">Geprüft</div>
+						<div class="mini-stat-value">{ strconv.Itoa(vm.Shadow.Verified) }<span class="muted" style="font-size:13px;font-weight:600">/ { strconv.Itoa(vm.Shadow.Total) }</span></div>
+					</div>
+				</div>
+				<p class="card-sub" style="margin:10px 0">Entscheidet noch nicht. Der ehrliche Abnahmetest ist der Shadow-Modus.</p>
+				<a class="card-link" href="/ml-shadow">Abweichungen prüfen →</a>
+			</div>
+		</div>
 	</section>
+}
+
+templ modelCard(m Model) {
+	<section
+		class={ "card", "model-card", templ.KV("is-primary", m.IsPrimary), templ.KV("is-fallback", m.IsFallback) }
+		data-model={ m.ID }
+		data-role={ role(m) }
+	>
+		<div class="model-head">
+			<div>
+				<div class="model-name">{ m.Label }</div>
+				<div class="model-id">{ m.ID }</div>
+			</div>
+			if m.IsPrimary {
+				<span class="pill pill-caps is-blue">Hauptmodell</span>
+			} else if m.IsFallback {
+				<span class="pill pill-caps is-amber">Fallback</span>
+			} else {
+				<span class="pill pill-caps">frei</span>
+			}
+		</div>
+		<div class="model-limits">
+			<div class="model-kv"><span>pro Tag</span><span>{ m.PerDay }</span></div>
+			<span class={ "meter", "meter-5", m.MeterClass }><span style={ "width:" + strconv.Itoa(m.Meter) + "%" }></span></span>
+			<div class="model-kv"><span>pro Minute</span><span>{ m.PerMin }</span></div>
+			<div class={ "model-note", templ.KV("is-red", m.NoteRed) }>{ m.Note }</div>
+		</div>
+		<div class="model-actions">
+			@roleButton(m, "primary", "Hauptmodell", m.IsPrimary, m.IsFallback, "btn-role-p")
+			@roleButton(m, "fallback", "Fallback", m.IsFallback, m.IsPrimary, "btn-role-f")
+		</div>
+	</section>
+}
+
+// roleButton: aktiv = Häkchen, gesperrt = das Modell hat schon die andere
+// Rolle (Haupt und Fallback gleich hieße, es gibt keinen Fallback).
+templ roleButton(m Model, rolle, title string, on, otherRole bool, class string) {
+	<form hx-post="/ki-modell" hx-target="#model-region" hx-swap="outerHTML">
+		<input type="hidden" name="rolle" value={ rolle }/>
+		<input type="hidden" name="model" value={ m.ID }/>
+		<button
+			type="submit"
+			class={ "btn", "btn-ghost", class, templ.KV("is-on", on) }
+			disabled?={ on || otherRole }
+			aria-pressed={ boolStr(on) }
+			if otherRole {
+				title={ "ist schon " + otherTitle(rolle) }
+			}
+		>
+			if on {
+				✓ { title }
+			} else {
+				Als { title }
+			}
+		</button>
+	</form>
+}
+
+func role(m Model) string {
+	switch {
+	case m.IsPrimary:
+		return "primary"
+	case m.IsFallback:
+		return "fallback"
+	default:
+		return ""
+	}
+}
+
+func otherTitle(rolle string) string {
+	if rolle == "primary" {
+		return "Fallback"
+	}
+	return "Hauptmodell"
+}
+
+func boolStr(b bool) string { return strconv.FormatBool(b) }
+
+func orUnset(s string) string {
+	if s == "" {
+		return "nicht gesetzt"
+	}
+	return s
+}
+
+func quotaText(class string) string {
+	switch class {
+	case "is-red":
+		return "t-red"
+	case "is-amber":
+		return "t-amber"
+	default:
+		return "t-green"
+	}
 }

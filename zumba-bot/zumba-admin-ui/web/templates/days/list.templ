@@ -1,63 +1,173 @@
 package days
 
 import (
-	"fmt"
-	"time"
+	"strconv"
 
-	"github.com/michael/zumba-admin-ui/internal/timeutil"
 	"github.com/michael/zumba-admin-ui/web/templates/partials"
 )
 
+// ListVM ist die Donnerstage-Seite: Kacheln aller Donnerstage und die
+// Anwesenheits-Matrix Mitglieder × Donnerstage.
 type ListVM struct {
-	StripItems []partials.ThursdayStripItem
-	Days       []DayCard
-	TotalUsers int
+	Tiles []Tile
+	Cols  []Col
+	Rows  []Row
+	// SelISO ist die vorausgewählte Matrix-Spalte (jüngster gültiger Tag).
+	SelISO   string
+	SelInfo  string
+	ReadOnly bool
+	Query    string // ?jahr= für Links
 }
 
-type DayCard struct {
-	Date            time.Time
-	Attendance      int
-	AwayCount       int
-	AbsentUserIDs   []string // for dot rendering: present users get a green dot, others red
+type Tile struct {
+	ISO      string
+	Day      int
+	Month    string
+	Title    string
+	Class    string // Farbstufe (partials.Tier)
+	Excluded bool
+	Current  bool
 }
 
-var monthsAbbr = []string{
-	"Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-	"Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+type Col struct {
+	ISO        string
+	Day        string // "02"
+	Month      string // "Okt"
+	Info       string // Anzeige rechts oben bei Auswahl
+	Excluded   bool
+	MonthStart bool
+	Present    int
+	CountClass string
+}
+
+type Row struct {
+	UserID string
+	Name   string
+	Emoji  string
+	Pct    int
+	Cells  []Cell
+}
+
+// Cell ist eine Zelle der Matrix.
+type Cell struct {
+	ISO      string
+	Absent   bool
+	Excluded bool
+	// NotYet: das Mitglied war an dem Tag noch nicht dabei.
+	NotYet bool
+	Title  string
+	Border bool
 }
 
 templ List(vm ListVM) {
-	<div class="page-header enter">
-		<div class="eyebrow">Donnerstage</div>
-		<h1>Stammtisch-Tage</h1>
-		<p class="meta">{ fmt.Sprintf("%d Donnerstage, exklusive Sperrtage.", len(vm.Days)) }</p>
-	</div>
-	@partials.ThursdayStrip(vm.StripItems)
-	<div class="stack enter">
-		for _, d := range vm.Days {
-			@dayCard(d, vm.TotalUsers)
+	<section class="card">
+		<div class="card-head">
+			<div>
+				<div class="card-title">Alle Donnerstage</div>
+				<div class="card-sub">Kachel antippen → bearbeiten. Heller = mehr da.</div>
+			</div>
+			<div class="legend">
+				<span><i class="lg-top"></i>≥85 %</span>
+				<span><i class="lg-good"></i>≥70 %</span>
+				<span><i class="lg-low"></i>darunter</span>
+				<span><i class="lg-ex"></i>Sperrtag</span>
+			</div>
+		</div>
+		if len(vm.Tiles) == 0 {
+			@partials.Empty("📭", "Noch keine Donnerstage in diesem Stammtischjahr.")
+		} else {
+			<div class="day-tiles">
+				for _, t := range vm.Tiles {
+					if t.Excluded {
+						<span class="day-tile is-excluded" title={ t.Title }>
+							<span class="d">{ strconv.Itoa(t.Day) }</span>
+							<span class="m">{ t.Month }</span>
+						</span>
+					} else {
+						<button
+							type="button"
+							class={ "day-tile", t.Class, templ.KV("is-current", t.Current) }
+							title={ t.Title }
+							{ partials.OpenSheet(t.ISO)... }
+						>
+							<span class="d">{ strconv.Itoa(t.Day) }</span>
+							<span class="m">{ t.Month }</span>
+						</button>
+					}
+				}
+			</div>
 		}
-	</div>
+	</section>
+	if len(vm.Rows) > 0 && len(vm.Cols) > 0 {
+		@matrix(vm)
+	}
 }
 
-templ dayCard(d DayCard, totalUsers int) {
-	<a class="day-card" href={ templ.URL(fmt.Sprintf("/days/%s", timeutil.FormatISO(d.Date))) }>
-		<div class="date">
-			<div class="num">{ fmt.Sprintf("%d", d.Date.Day()) }</div>
-			<div class="month">{ monthsAbbr[int(d.Date.Month())-1] }</div>
+templ matrix(vm ListVM) {
+	<section class="card card-flush">
+		<div class="matrix-head">
+			<div>
+				<div class="card-title">Anwesenheits-Matrix</div>
+				<div class="card-sub">
+					Mitglieder × Donnerstage ·
+					if vm.ReadOnly {
+						Archiv, nur Ansicht
+					} else {
+						Zelle anklicken schaltet um
+					}
+				</div>
+			</div>
+			<span class="card-meta" id="mx-info">{ vm.SelInfo }</span>
 		</div>
-		<div class="summary">
-			<div class="name">{ timeutil.FormatDE(d.Date) }</div>
-			<div class="meta">{ fmt.Sprintf("%d anwesend · %d abgemeldet", d.Attendance, d.AwayCount) }</div>
-		</div>
-		<div class="dots" aria-hidden="true">
-			for i := 0; i < totalUsers; i++ {
-				if i < d.Attendance {
-					<span class="dot"></span>
-				} else {
-					<span class="dot absent"></span>
+		<div class="matrix-wrap" id="matrix-scroll" data-scroll-end>
+			<div class="matrix" style={ partials.Var("--cols", strconv.Itoa(len(vm.Cols))) } data-sel={ vm.SelISO }>
+				<div class="mx-corner">Mitglied</div>
+				for _, c := range vm.Cols {
+					<button
+						type="button"
+						class={ "mx-col", templ.KV("is-excluded", c.Excluded), templ.KV("mx-b", c.MonthStart) }
+						data-key={ c.ISO }
+						data-info={ c.Info }
+						title={ c.Info }
+					>
+						<span class="mo">{ c.Month }</span>
+						<span class="dd">{ c.Day }</span>
+					</button>
 				}
-			}
+				<div class="mx-q">Quote</div>
+				for _, r := range vm.Rows {
+					<a class="mx-name" href={ templ.URL("/members/" + r.UserID + vm.Query) }>
+						<span class="emo" aria-hidden="true">{ r.Emoji }</span>
+						<span class="nm">{ r.Name }</span>
+					</a>
+					for _, c := range r.Cells {
+						if c.Excluded || c.NotYet {
+							<span class={ "mx-cell", "is-excluded", templ.KV("mx-b", c.Border) } data-key={ c.ISO } title={ c.Title }><i></i></span>
+						} else {
+							<button
+								type="button"
+								class={ "mx-cell", templ.KV("is-absent", c.Absent), templ.KV("mx-b", c.Border) }
+								data-key={ c.ISO }
+								title={ c.Title }
+								aria-label={ c.Title }
+								{ partials.Toggle(r.UserID, c.ISO, vm.ReadOnly)... }
+							><i></i></button>
+						}
+					}
+					<span class="mx-pct">{ strconv.Itoa(r.Pct) }%</span>
+				}
+				<div class="mx-foot-label">Anwesend</div>
+				for _, c := range vm.Cols {
+					<span class={ "mx-count", c.CountClass, templ.KV("mx-b", c.MonthStart) } data-key={ c.ISO }>
+						if c.Excluded {
+							–
+						} else {
+							{ strconv.Itoa(c.Present) }
+						}
+					</span>
+				}
+				<span></span>
+			</div>
 		</div>
-	</a>
+	</section>
 }

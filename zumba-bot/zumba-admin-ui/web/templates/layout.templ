@@ -3,24 +3,29 @@ package templates
 import "github.com/michael/zumba-admin-ui/web/templates/partials"
 
 type PageMeta struct {
+	// Title steht im Browser-Tab; Heading ist die Überschrift der Topbar
+	// (leer = Standardüberschrift des Menüpunkts, sonst Title).
 	Title     string
-	ActiveNav string // "dashboard" | "members" | "days" | "excluded"
+	Heading   string
+	ActiveNav string // Schlüssel aus partials.Nav, z. B. "dashboard"
 	MockMode  bool
-
-	// AuthEnabled: Login ist konfiguriert – dann bekommt der Header einen
+	// AuthEnabled: Login ist konfiguriert – dann bekommt die Topbar einen
 	// Abmelden-Knopf.
 	AuthEnabled bool
-
 	// PublicOpen: gerade hängt etwas öffentlich im Netz. Bot- und ML-Test sind
-	// dann gesperrt und verschwinden aus dem Menü, und der Header sagt, warum.
+	// dann gesperrt und verschwinden aus dem Menü.
 	PublicOpen bool
-
 	// Jahresbezug. Nur Seiten mit Auswertungszeitraum füllen das – Bot-Test
 	// und die ML-Seiten lassen es leer, dann entfällt der Umschalter.
 	Season         string // Label des angezeigten Stammtischjahres, z. B. "2026"
 	SeasonRange    string // "1. Dez – 30. Nov"
 	SeasonArchived bool   // Jahr vorbei: Ansicht ist read-only
 	Seasons        []SeasonLink
+	// Next ist die Karte „Nächster Stammtisch" in der Seitenleiste.
+	Next partials.NextStammtisch
+	// RefreshURL: die Seite hängt an Anwesenheiten. Ändert irgendwo eine
+	// Abmeldung (auch im Bottom-Sheet), lädt sich #page von hier neu.
+	RefreshURL string
 }
 
 // SeasonLink ist ein Eintrag des Jahres-Umschalters.
@@ -30,78 +35,100 @@ type SeasonLink struct {
 	Active bool
 }
 
+func heading(meta PageMeta) string {
+	if meta.Heading != "" {
+		return meta.Heading
+	}
+	if h := partials.DefaultHeading(meta.ActiveNav); h != "" {
+		return h
+	}
+	return meta.Title
+}
+
 templ Layout(meta PageMeta) {
 	<!DOCTYPE html>
-	<html lang="de" data-theme="light">
+	<html lang="de" data-theme="dark">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-			<meta name="color-scheme" content="light dark"/>
+			<meta name="color-scheme" content="dark light"/>
 			<title>{ meta.Title } · Zumba Admin</title>
+			@partials.Fonts()
 			<link rel="stylesheet" href="/static/css/styles.css"/>
 			<script src="/static/js/theme.js"></script>
 			<script src="/static/js/htmx.min.js" defer></script>
 			<script src="/static/js/toast.js" defer></script>
-			<script src="/static/js/nav.js" defer></script>
+			<script src="/static/js/ui.js" defer></script>
 			<script src="/static/js/public.js" defer></script>
 		</head>
 		<body>
-			<div class="app">
-				<header class="app-header">
-					<a href="/dashboard" class="app-brand">
-						<span class="glyph">𝔃</span>
-						<span class="wordmark">Zumba</span>
-						<span class="tag">Logbuch</span>
-					</a>
-					<div class="app-actions">
-						@partials.ThemeToggle()
-						if meta.AuthEnabled {
-							<form method="post" action="/logout">
-								<button class="logout-button" type="submit" title="Abmelden">
-									<span class="icon" aria-hidden="true">⏻</span>
-									<span class="label">Abmelden</span>
-								</button>
+			<div class="shell">
+				@partials.Side(meta.ActiveNav, meta.PublicOpen, meta.Next)
+				<main class="main">
+					<header class="topbar">
+						<div class="topbar-titles">
+							<div class="crumb">Zumba <span class="sep">/</span> <span class="here">{ partials.Crumb(meta.ActiveNav, meta.Title) }</span></div>
+							<h1 class="top-title">{ heading(meta) }</h1>
+						</div>
+						<div class="top-actions">
+							<form class="search chrome" action="/members" method="get" role="search">
+								<span aria-hidden="true">⌕</span>
+								<input type="search" name="q" placeholder="Mitglied suchen…" aria-label="Mitglied suchen"/>
 							</form>
-						}
-					</div>
-				</header>
-				@partials.Nav(meta.ActiveNav, meta.PublicOpen)
-				<main class="app-main">
+							if len(meta.Seasons) > 1 {
+								@seasonSwitch(meta)
+							}
+							@partials.ThemeToggle()
+							if meta.AuthEnabled {
+								<form method="post" action="/logout">
+									<button class="icon-btn chrome" type="submit" title="Abmelden" aria-label="Abmelden">⏻</button>
+								</form>
+							}
+						</div>
+					</header>
 					if meta.MockMode {
 						@partials.Banner("Mock-Daten aktiv – keine Verbindung zur Datenbank.")
-					}
-					if meta.Season != "" {
-						@seasonPicker(meta)
 					}
 					if meta.SeasonArchived {
 						@partials.Banner("Stammtischjahr " + meta.Season + " ist abgeschlossen – Archivansicht, keine Änderungen möglich.")
 					}
-					{ children... }
+					if meta.RefreshURL != "" {
+						<div
+							id="page"
+							hx-get={ meta.RefreshURL }
+							hx-trigger="absenceChanged from:body"
+							hx-select="#page"
+							hx-swap="outerHTML"
+							hx-disinherit="*"
+						>
+							{ children... }
+						</div>
+					} else {
+						<div id="page">
+							{ children... }
+						</div>
+					}
 				</main>
-				<div id="toast-stack" class="toast-stack" aria-live="polite"></div>
 			</div>
+			@partials.BottomNav(meta.ActiveNav, meta.PublicOpen)
+			<div id="sheet"></div>
+			<div id="toast-stack" class="toast-stack" aria-live="polite"></div>
 		</body>
 	</html>
 }
 
-// seasonPicker zeigt das angezeigte Stammtischjahr und die Umschalt-Links auf
-// die übrigen (Archiv). Der Link behält den aktuellen Pfad und tauscht nur
-// ?jahr= aus.
-templ seasonPicker(meta PageMeta) {
-	<nav class="season-picker" aria-label="Stammtischjahr">
-		<span class="season-range">{ meta.SeasonRange }</span>
-		<ul>
-			for _, s := range meta.Seasons {
-				<li>
-					<a
-						href={ templ.SafeURL(s.Href) }
-						class={ "season-link", templ.KV("is-active", s.Active) }
-						if s.Active {
-							aria-current="page"
-						}
-					>{ s.Label }</a>
-				</li>
-			}
-		</ul>
+// seasonSwitch zeigt die Stammtischjahre als Segment. Der Link behält den
+// aktuellen Pfad und tauscht nur ?jahr= aus.
+templ seasonSwitch(meta PageMeta) {
+	<nav class="season-seg chrome" aria-label={ "Stammtischjahr (" + meta.SeasonRange + ")" } title={ meta.SeasonRange }>
+		for _, s := range meta.Seasons {
+			<a
+				href={ templ.SafeURL(s.Href) }
+				class={ templ.KV("is-active", s.Active) }
+				if s.Active {
+					aria-current="page"
+				}
+			>{ s.Label }</a>
+		}
 	</nav>
 }

@@ -238,19 +238,6 @@ func (m *Mock) Leaderboard(ctx context.Context, p timeutil.Period) ([]Leaderboar
 	return rows, nil
 }
 
-func (m *Mock) UserLeaderboardRow(ctx context.Context, p timeutil.Period, userID string) (LeaderboardRow, error) {
-	rows, err := m.Leaderboard(ctx, p)
-	if err != nil {
-		return LeaderboardRow{}, err
-	}
-	for _, r := range rows {
-		if r.UserID == userID {
-			return r, nil
-		}
-	}
-	return LeaderboardRow{}, nil
-}
-
 func (m *Mock) ListUserAbsences(ctx context.Context, p timeutil.Period, userID string) ([]Absence, error) {
 	all, err := m.ListAbsences(ctx, p)
 	if err != nil {
@@ -316,25 +303,6 @@ func (m *Mock) ThursdayStrip(_ context.Context, p timeutil.Period, limit int) ([
 	for _, d := range days {
 		k := timeutil.FormatISO(d)
 		out = append(out, StripDay{Date: d, Excluded: excluded[k], Away: away[k]})
-	}
-	return out, nil
-}
-
-func (m *Mock) ListDayAbsences(ctx context.Context, p timeutil.Period) ([]DayAbsences, error) {
-	thursdays, err := m.ListThursdays(ctx, p) // newest first, ohne Sperrtage
-	if err != nil {
-		return nil, err
-	}
-	byDate := make(map[string][]string)
-	for _, a := range m.absences {
-		k := timeutil.FormatISO(a.Date)
-		byDate[k] = append(byDate[k], a.UserID)
-	}
-	out := make([]DayAbsences, 0, len(thursdays))
-	for _, t := range thursdays {
-		ids := byDate[timeutil.FormatISO(t)]
-		sort.Strings(ids)
-		out = append(out, DayAbsences{Date: t, AbsentUserIDs: ids})
 	}
 	return out, nil
 }
@@ -532,6 +500,9 @@ func (m *Mock) MLShadowStats(_ context.Context) (MLShadowStats, error) {
 		}
 		if msg.Agree != nil && *msg.Agree {
 			st.Agree++
+		}
+		if msg.Verified {
+			st.Verified++
 		}
 		ls, ok := per[msg.GeminiLabel]
 		if !ok {

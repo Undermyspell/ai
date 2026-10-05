@@ -37,7 +37,7 @@ func TestKIModellPageShowsSelection(t *testing.T) {
 		t.Fatalf("code = %d, want 200", rec.Code)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Hauptmodell", "Fallback", "Gemini 3.5 Flash Lite", `value="gemma-4-31b-it" checked`} {
+	for _, want := range []string{"Hauptmodell", "Fallback", "Gemini 3.5 Flash Lite", `data-model="gemma-4-31b-it" data-role="primary"`, `data-model="gemini-3.8-flash" data-role="fallback"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("Seite enthält %q nicht", want)
 		}

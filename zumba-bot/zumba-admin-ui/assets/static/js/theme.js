@@ -1,41 +1,41 @@
+// Hell/Dunkel. Läuft synchron im <head>, damit die Seite nicht erst im
+// falschen Theme aufblitzt. Ohne gespeicherte Wahl gilt die Systemeinstellung.
 (function () {
   var KEY = "zumba-admin-theme";
   var root = document.documentElement;
 
-  function effectiveTheme(stored) {
-    if (stored === "light" || stored === "dark") return stored;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  function stored() {
+    try { return localStorage.getItem(KEY); } catch (e) { return null; }
+  }
+
+  function effectiveTheme(s) {
+    if (s === "light" || s === "dark") return s;
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   }
 
   function apply(theme) {
     root.setAttribute("data-theme", theme);
-    var btn = document.querySelector(".theme-toggle");
-    if (btn) {
-      btn.querySelector(".icon").textContent = theme === "dark" ? "☾" : "☀";
-      btn.querySelector(".label").textContent = theme === "dark" ? "Nachtschicht" : "Tagesbar";
-    }
+    document.querySelectorAll(".theme-toggle .icon").forEach(function (el) {
+      el.textContent = theme === "dark" ? "☾" : "☀";
+    });
   }
 
-  // Run synchronously to avoid FOUC. The script is loaded in <head>.
-  apply(effectiveTheme(localStorage.getItem(KEY)));
+  apply(effectiveTheme(stored()));
 
   document.addEventListener("DOMContentLoaded", function () {
-    apply(effectiveTheme(localStorage.getItem(KEY)));
+    apply(effectiveTheme(stored()));
 
     document.addEventListener("click", function (e) {
-      var btn = e.target.closest(".theme-toggle");
-      if (!btn) return;
+      if (!e.target.closest(".theme-toggle")) return;
       e.preventDefault();
-      var current = root.getAttribute("data-theme") || "light";
-      var next = current === "dark" ? "light" : "dark";
-      localStorage.setItem(KEY, next);
+      var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      try { localStorage.setItem(KEY, next); } catch (err) { /* privates Fenster */ }
       apply(next);
     });
 
-    // Follow system if user hasn't picked manually
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
-      if (localStorage.getItem(KEY)) return;
-      apply(e.matches ? "dark" : "light");
+    window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", function (e) {
+      if (stored()) return;
+      apply(e.matches ? "light" : "dark");
     });
   });
 })();

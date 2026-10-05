@@ -97,7 +97,7 @@ func TestStrafenSeitePersistiertAutoStrafe(t *testing.T) {
 	if len(spy.strafen) != 1 || spy.strafen[0].Art != penalty.ArtFehltage {
 		t.Fatalf("Auto-Strafe nicht persistiert: %+v", spy.strafen)
 	}
-	if !strings.Contains(rec.Body.String(), "25€") {
-		t.Errorf("25€ nicht in der Seite")
+	if !strings.Contains(rec.Body.String(), "25 €") {
+		t.Errorf("25 € nicht in der Seite")
 	}
 }
