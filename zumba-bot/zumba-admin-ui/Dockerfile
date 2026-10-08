@@ -3,7 +3,7 @@
 # Für den Pi (arm64) lässt es sich auch auf einem amd64-Rechner bauen – ohne
 # Emulator, Go kompiliert quer:
 #   docker buildx build --platform linux/arm64 -f zumba-admin-ui/Dockerfile -t zumba-admin-ui:<tag> --load .
-FROM --platform=$BUILDPLATFORM golang:1.27.1-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine AS builder
 ARG TARGETOS TARGETARCH
 
 WORKDIR /app
