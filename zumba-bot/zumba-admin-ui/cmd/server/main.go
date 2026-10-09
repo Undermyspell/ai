@@ -57,6 +57,11 @@ func main() {
 		if err := pgStore.EnsureClassifierSchema(context.Background()); err != nil {
 			log.Printf("⚠️  classifier_models Schema: %v", err)
 		}
+		// Bild-Designs des Bots (Seite /bild-designs). Die Startrotation trägt
+		// der Bot ein – er kennt CARD_STYLES.
+		if err := pgStore.EnsureCardSchema(context.Background()); err != nil {
+			log.Printf("⚠️  card_settings Schema: %v", err)
+		}
 		st = pgStore
 		defer pg.Close()
 	}

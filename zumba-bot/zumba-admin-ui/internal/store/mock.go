@@ -24,6 +24,7 @@ type Mock struct {
 	strafen      []penalty.Row
 	nextStrafeID int64
 	classifier   ClassifierModels
+	cards        CardSettings
 	seasons      []Season
 }
 
@@ -632,6 +633,32 @@ func (m *Mock) LoescheStrafe(_ context.Context, id int64) error {
 		}
 	}
 	return fmt.Errorf("LoescheStrafe: Strafe %d nicht gefunden", id)
+}
+
+// --- Bild-Designs: Mock (in-memory, Startrotation wie auf Staging) ---
+
+func (m *Mock) CardSettings(context.Context) (CardSettings, error) {
+	if !m.cards.RotationGesetzt {
+		m.cards.RotationGesetzt = true
+		m.cards.Rotation = []string{"arena", "formular", "wrapped", "bierdeckel", "zeitung"}
+		m.cards.UpdatedAt = time.Now()
+	}
+	return m.cards, nil
+}
+
+func (m *Mock) SetCardRotation(ctx context.Context, rotation []string) error {
+	m.CardSettings(ctx)
+	m.cards.Rotation, m.cards.UpdatedAt = rotation, time.Now()
+	return nil
+}
+
+func (m *Mock) SetNextCard(ctx context.Context, tag time.Time, style string) error {
+	m.CardSettings(ctx)
+	m.cards.Naechster, m.cards.UpdatedAt = nil, time.Now()
+	if style != "" {
+		m.cards.Naechster = &sharedstore.NextCard{Tag: tag, Style: style}
+	}
+	return nil
 }
 
 // --- KI-Modell: Mock (in-memory, Startwerte wie im Deployment) ---

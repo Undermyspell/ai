@@ -173,9 +173,80 @@
     }
   });
 
+  /* ── Warteschlange sortieren (Bild-Designs) ───────────────────────────
+     Ziehen am Griff (Maus und Finger über Pointer Events) oder Pfeiltasten
+     auf dem Griff. Nach dem Loslassen bekommt das Formular ein
+     „sortiert"-Event, HTMX speichert die neue Reihenfolge. */
+  var drag = null;
+
+  function sortiert(list) {
+    list.dispatchEvent(new Event("sortiert", { bubbles: true }));
+  }
+
+  function order(list) {
+    return Array.prototype.map.call(list.children, function (li) { return li.dataset.id; }).join(",");
+  }
+
+  document.addEventListener("pointerdown", function (e) {
+    var handle = e.target.closest(".queue-handle");
+    if (!handle || e.button > 0) return;
+    var item = handle.closest(".queue-item");
+    var list = item && item.closest("[data-sortable]");
+    if (!list) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    drag = { item: item, list: list, handle: handle, start: order(list) };
+    item.classList.add("is-dragging");
+    document.body.classList.add("is-sorting");
+  });
+
+  document.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    // Das gezogene Element wandert an die Stelle, über deren Mitte der
+    // Zeiger gerade steht.
+    var siblings = Array.prototype.filter.call(drag.list.children, function (li) { return li !== drag.item; });
+    var before = null;
+    for (var i = 0; i < siblings.length; i++) {
+      var r = siblings[i].getBoundingClientRect();
+      if (e.clientY < r.top + r.height / 2) { before = siblings[i]; break; }
+    }
+    if (before !== drag.item.nextElementSibling) drag.list.insertBefore(drag.item, before);
+  });
+
+  function endDrag() {
+    if (!drag) return;
+    var d = drag;
+    drag = null;
+    d.item.classList.remove("is-dragging");
+    document.body.classList.remove("is-sorting");
+    if (order(d.list) !== d.start) sortiert(d.list);
+  }
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
+
+  document.addEventListener("keydown", function (e) {
+    var handle = e.target.closest && e.target.closest(".queue-handle");
+    if (!handle || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+    var item = handle.closest(".queue-item");
+    var list = item.closest("[data-sortable]");
+    var ziel = e.key === "ArrowUp" ? item.previousElementSibling : item.nextElementSibling;
+    if (!ziel) return;
+    e.preventDefault();
+    list.insertBefore(item, e.key === "ArrowUp" ? ziel : ziel.nextElementSibling);
+    // Nach dem Speichern tauscht HTMX die Liste aus – den Fokus danach
+    // wieder auf denselben Griff setzen, damit man weiterdrücken kann.
+    window.__queueFocus = item.dataset.id;
+    sortiert(list);
+  });
+
   document.addEventListener("htmx:load", function () {
     applySel();
     scrollEnds();
+    if (window.__queueFocus) {
+      var h = document.querySelector('.queue-item[data-id="' + window.__queueFocus + '"] .queue-handle');
+      window.__queueFocus = null;
+      if (h) h.focus();
+    }
   });
 
   applySel();

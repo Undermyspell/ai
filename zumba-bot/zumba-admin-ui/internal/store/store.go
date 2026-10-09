@@ -107,6 +107,13 @@ type Store interface {
 	ClassifierModels(ctx context.Context) (ClassifierModels, error)
 	SetClassifierModel(ctx context.Context, rolle, model string) error
 
+	// Bild-Designs des Bots (card_settings): Rotation und Einmal-Auswahl für
+	// den nächsten Wochenreport, gepflegt auf der Seite /bild-designs. Der
+	// Bot liest sie vor jeder Karte.
+	CardSettings(ctx context.Context) (CardSettings, error)
+	SetCardRotation(ctx context.Context, rotation []string) error
+	SetNextCard(ctx context.Context, tag time.Time, style string) error
+
 	// Strafen-Feature. ListSeasonStrafen liefert alle Zeilen EINES Jahres
 	// (inkl. beglichen und geloescht – Lösch-/Begleich-Zeitpunkte resetten
 	// den Fehltage-Zähler).

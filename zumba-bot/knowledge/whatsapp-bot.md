@@ -87,9 +87,10 @@ unabhängige Schalter steuern den Live-Betrieb (beide auf Staging seit
 - **Wochenreport**: Helm `whatsappBot.weeklyReport.format: text|image`
   (hängt `?format=image` an die CronJob-URL)
 
-Es gibt fünfzehn Bild-Designs. Welche davon im Umlauf sind, steuert
-`CARD_STYLES` (siehe unten); im Bot-Test sind immer alle wählbar
-(Auswahl „Bild-Design", `?cardStyle=`).
+Es gibt fünfzehn Bild-Designs (Katalog: `shared/cards`). Welche davon im
+Umlauf sind und welche Karte der nächste Wochenreport bekommt, stellt das
+Admin-UI ein (Seite „Bild-Designs", siehe unten); im Bot-Test sind immer alle
+wählbar (Auswahl „Bild-Design", `?cardStyle=`).
 
 | Design | Idee | An-/Abwesenheit |
 |---|---|---|
@@ -118,28 +119,42 @@ eingebettete latin-Subsets). Gipfelbuch, Kassenbon und Hochrechnung nennen das
 Stammtischjahr („Saison 2026") — es kommt aus `seasons`, ohne gepflegtes Jahr
 steht dort das Kalenderjahr.
 
-### Design-Rotation (`CARD_STYLES`)
+### Design-Warteschlange (Admin-UI „Bild-Designs", Tabelle `card_settings`)
 
-`CARD_STYLES` ist eine Komma-Liste von Design-IDs (Helm:
-`whatsappBot.env.CARD_STYLES`), leer = immer das Live-Design. Unbekannte IDs
-beendet der Bot beim Start mit Fehler.
+Welche Designs im Umlauf sind, steht als **Warteschlange** in `card_settings`
+(eine Zeile) und wird im Admin-UI unter `/bild-designs` per Drag & Drop
+gepflegt. Der Bot liest die Tabelle vor jeder Karte – eine Änderung greift
+ohne Neustart oder Deployment.
 
-- **„statistik" auf Zuruf** zieht je Aufruf zufällig aus der Liste — sie kann
-  mehrmals am Tag kommen, ein fester Durchlauf wäre da nur berechenbar.
-- **Wochenreport** geht die Liste der Reihe nach durch: Position =
-  Wochenindex (Tage seit der Unix-Epoche / 7) modulo Listenlänge. Ein Design
-  ist damit erst wieder dran, wenn alle anderen einmal dran waren. Ein je
-  Durchlauf neu gewürfelter Zufall kann das nicht garantieren (dort kommt
-  dasselbe Design an der Durchlauf-Grenze schnell wieder), deshalb der feste
-  Umlauf — die Reihenfolge bestimmt `CARD_STYLES`.
-- Das braucht **keinen gespeicherten Zustand**: Neustart, Wiederholungslauf
-  und Dry-Run im Admin-UI liefern dasselbe Design wie der echte Versand. Tag 0
-  der Epoche war ein Donnerstag, die Wochen wechseln also im Takt des Reports
-  — ein Nachhol-Lauf am Freitag bleibt beim Design des Vortags.
+- **Wochenreport:** es kommt das **oberste** Design der Schlange. Nach dem
+  echten Versand (nicht bei Dry-Run/Vorschau) rückt der Bot die Schlange
+  weiter: das gesendete Design wandert ans Ende (`AdvanceCardQueue`). So
+  stimmt „oben kommt als nächstes" jede Woche. Fällt ein Donnerstag aus (Bot
+  weg, kein Versand), rückt nichts weiter – das Design kommt dann eben eine
+  Woche später.
+- **Wiederholungslauf** am selben Tag (`zuletzt_tag`/`zuletzt_style`) nimmt
+  das schon gesendete Design und rückt nicht ein zweites Mal weiter; auch ein
+  Dry-Run danach zeigt die gesendete Karte.
+- **Einmal-Auswahl:** für den nächsten Wochenreport lässt sich ein Design fest
+  wählen (`naechster_tag` + `naechster_style`). Sie ersetzt genau diesen
+  Donnerstag und bewegt die Schlange nicht – das oberste Design kommt dann
+  eine Woche später.
+- **„statistik" auf Zuruf** zieht je Aufruf zufällig aus den Designs der
+  Schlange (die Reihenfolge spielt dort keine Rolle).
+- **`CARD_STYLES`** (Helm: `whatsappBot.env.CARD_STYLES`, Komma-Liste) ist nur
+  der **Startwert**: der Bot trägt ihn beim Start ein, solange noch keine
+  Schlange gespeichert ist (`rotation IS NULL`); eine leere `CARD_STYLES`
+  schreibt nichts. Ohne gespeicherte Schlange oder wenn die DB nicht
+  antwortet, rechnet der Bot wie früher über `CARD_STYLES`: Position =
+  Wochenindex (Tage seit der Unix-Epoche / 7) modulo Listenlänge, ohne
+  gespeicherten Zustand. Unbekannte IDs in `CARD_STYLES` beenden den Bot beim
+  Start; unbekannte IDs in der Tabelle (etwa nach dem Entfernen eines Designs)
+  überspringt er.
 - Der Bot-Test wählt weiterhin selbst: ein ausdrückliches `?cardStyle=`
-  schlägt die Rotation.
+  schlägt Schlange und Einmal-Auswahl; ohne (Option „Wie live") wählt der Bot
+  wie im Betrieb.
 
-Auf Staging seit 08/2026 im Umlauf: `wrapped,bierdeckel,zeitung,arena,formular`.
+Startwert auf Staging (`CARD_STYLES`): `arena,formular,wrapped,bierdeckel,zeitung`.
 
 Schlägt Rendern oder Bild-Versand fehl, geht der Report **als Text** raus
 (Fallback — er muss immer ankommen). Der Wochenreport trägt auf der Karte

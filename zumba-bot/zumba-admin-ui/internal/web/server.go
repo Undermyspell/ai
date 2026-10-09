@@ -107,6 +107,11 @@ func (s *Server) Routes() http.Handler {
 	// verschickt nichts, es ändert nur die nächste Klassifizierung.
 	mux.HandleFunc("GET /ki-modell", s.handleKIModell)
 	mux.HandleFunc("POST /ki-modell", s.handleKIModellSet)
+	// Bild-Designs des Bots: Rotation und Karte des nächsten Wochenreports.
+	// Wie das KI-Modell nicht gesperrt – Speichern verschickt nichts.
+	mux.HandleFunc("GET /bild-designs", s.handleBildDesigns)
+	mux.HandleFunc("POST /bild-designs/rotation", s.handleBildDesignsRotation)
+	mux.HandleFunc("POST /bild-designs/naechster", s.handleBildDesignsNaechster)
 
 	// Öffentlich-Seite. Schalten geht nur, wenn es einen tunnel-service gibt —
 	// ohne ihn zeigt die Seite bloß den Hinweis.

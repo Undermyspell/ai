@@ -98,8 +98,16 @@ func main() {
 		log.Fatalf("❌ CARD_STYLES: %v", err)
 	}
 	srv.Cards = report.NewCardRotation(cardStyles)
-	if len(cardStyles) > 0 {
-		log.Printf("🎨 Bild-Designs in Rotation: %s", strings.Join(cardStyles, ", "))
+	// Bild-Designs (Admin-UI-Seite "Bild-Designs"): CARD_STYLES ist nur der
+	// Startwert, danach gilt die Tabelle – gelesen vor jeder Karte.
+	if err := st.EnsureCardSchema(context.Background(), cardStyles); err != nil {
+		log.Printf("⚠️  card_settings Schema: %v", err)
+	}
+	srv.CardSettings = st
+	if cs, err := st.CardSettings(context.Background()); err == nil && cs.RotationGesetzt {
+		log.Printf("🎨 Bild-Designs in Rotation: %s", strings.Join(cs.Rotation, ", "))
+	} else if len(cardStyles) > 0 {
+		log.Printf("🎨 Bild-Designs in Rotation (CARD_STYLES): %s", strings.Join(cardStyles, ", "))
 	}
 	if cfg.StatsFormat == "image" {
 		log.Printf("🖼  \"statistik\"-Antwort als Bild (STATS_FORMAT=image)")

@@ -14,7 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/michael/zumba-shared/cards"
 	"github.com/michael/zumba-shared/penalty"
+	sharedstore "github.com/michael/zumba-shared/store"
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
 	"github.com/michael/zumba-whatsapp-bot/internal/report"
@@ -76,9 +78,74 @@ type Server struct {
 	// "image" schickt die PNG-Karte (Fallback Text), sonst Text.
 	StatsFormat string
 
-	// Cards wählt das Bild-Design je Karte (von main aus CARD_STYLES gesetzt;
-	// Nullwert = immer das Live-Design).
+	// Cards ist die Rotation aus CARD_STYLES (von main gesetzt; Nullwert =
+	// immer das Live-Design). Sie gilt nur, solange CardSettings nichts
+	// liefert – ohne DB-Einstellungen oder wenn die DB nicht antwortet.
 	Cards report.CardRotation
+
+	// CardSettings liefert die im Admin-UI gepflegten Bild-Designs
+	// (Warteschlange und Einmal-Auswahl für den nächsten Wochenreport); vor
+	// jeder Karte gelesen, damit eine Änderung ohne Neustart greift. Nach dem
+	// Versand eines Wochenreports rückt der Bot die Schlange darüber weiter.
+	// nil = nur Cards.
+	CardSettings CardSettingsSource
+}
+
+// CardSettingsSource liefert die Bild-Design-Einstellungen und hält den
+// gesendeten Wochenreport fest.
+type CardSettingsSource interface {
+	CardSettings(ctx context.Context) (sharedstore.CardSettings, error)
+	AdvanceCardQueue(ctx context.Context, tag time.Time, style string, fest bool) error
+}
+
+// cardSettings liest die Einstellungen aus dem Admin-UI; ok=false heißt: es
+// gilt nur CARD_STYLES (keine Quelle oder DB-Fehler).
+func (s *Server) cardSettings(ctx context.Context) (sharedstore.CardSettings, bool) {
+	if s.CardSettings == nil {
+		return sharedstore.CardSettings{}, false
+	}
+	cs, err := s.CardSettings.CardSettings(ctx)
+	if err != nil {
+		log.Printf("⚠️  card_settings: %v – Rotation aus CARD_STYLES", err)
+		return sharedstore.CardSettings{}, false
+	}
+	return cs, true
+}
+
+// cardRotation ist die Auswahl für die "statistik" auf Zuruf: die
+// Warteschlange aus dem Admin-UI (als Menge), sonst CARD_STYLES.
+func (s *Server) cardRotation(ctx context.Context) report.CardRotation {
+	if cs, ok := s.cardSettings(ctx); ok && cs.RotationGesetzt {
+		return report.NewCardRotation(cs.Rotation)
+	}
+	return s.Cards
+}
+
+// weeklyCard ist das Design des Wochenreports am Tag asOf samt Quelle
+// (cards.Quelle…; "" = Datumsrechnung über CARD_STYLES, dann rückt nichts
+// weiter). Mit gespeicherter Warteschlange kommt deren oberstes Design.
+func (s *Server) weeklyCard(ctx context.Context, asOf time.Time) (style, quelle string) {
+	cs, ok := s.cardSettings(ctx)
+	if !ok {
+		return s.Cards.ForWeek(asOf), ""
+	}
+	var next *cards.Next
+	if cs.Naechster != nil {
+		next = &cards.Next{Tag: cs.Naechster.Tag, Style: cs.Naechster.Style}
+	}
+	var last *cards.Last
+	if cs.Zuletzt != nil {
+		last = &cards.Last{Tag: cs.Zuletzt.Tag, Style: cs.Zuletzt.Style}
+	}
+	if !cs.RotationGesetzt {
+		// Noch keine Schlange gespeichert: CARD_STYLES per Datumsrechnung,
+		// Einmal-Auswahl und Wiederholung gelten trotzdem.
+		if style, quelle := cards.ForQueue(nil, next, last, asOf); quelle != cards.QuelleSchlange {
+			return style, quelle
+		}
+		return s.Cards.ForWeek(asOf), ""
+	}
+	return cards.ForQueue(cs.Rotation, next, last, asOf)
 }
 
 func New(st store.Store, cl Classifier, snd Sender, groupJID string, loc *time.Location) *Server {
@@ -265,7 +332,7 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asO
 	// Das Design wird je Aufruf neu gezogen – "statistik" kann mehrmals am Tag
 	// kommen, ein fester Durchlauf wäre da nur berechenbar.
 	if s.StatsFormat == "image" {
-		style := s.Cards.Random()
+		style := s.cardRotation(ctx).Random()
 		if png, err := s.renderCardStyled(ctx, style, stats, entries, asOf, false); err != nil {
 			rec.Step(tracestore.NodeSendStats, tracestore.OutcomeError, "Bild-Karte rendern", err.Error()+" – Fallback auf Text")
 			log.Printf("⚠️  Bild-Karte(%s): %v – Fallback auf Text", receiver, err)
@@ -339,11 +406,15 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 
 	out := Outcome{Path: "statistik", Message: text, Recipient: s.groupJID, DryRun: !send}
 
-	// Ohne ausdrückliches ?cardStyle (Bot-Test) bestimmt der Stichtag das
-	// Design: Durchlauf durch CARD_STYLES, jedes Design einmal je Runde.
-	style := q.Get("cardStyle")
+	// Ohne ausdrückliches ?cardStyle (Bot-Test) bestimmt das Admin-UI das
+	// Design: die Einmal-Auswahl für diesen Donnerstag, sonst das oberste der
+	// Warteschlange (ohne gespeicherte Schlange: Durchlauf durch CARD_STYLES).
+	style, quelle := q.Get("cardStyle"), ""
 	if style == "" {
-		style = s.Cards.ForWeek(asOf)
+		style, quelle = s.weeklyCard(ctx, asOf)
+		if quelle == cards.QuelleFest {
+			log.Printf("🎯 Wochenreport-Design für %s fest gewählt: %s", asOf.Format("02.01."), style)
+		}
 	}
 
 	var png []byte
@@ -382,6 +453,9 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 			log.Printf("⚠️  Wochenreport-Versand(%s): %v", s.groupJID, err)
 		} else {
 			log.Printf("📅 Wochenreport gesendet an %s", s.groupJID)
+			if png != nil {
+				s.advanceCards(ctx, asOf, style, quelle)
+			}
 		}
 	}
 	if preview && text != "" {
@@ -395,6 +469,20 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)
+}
+
+// advanceCards hält nach dem echten Versand fest, welches Design rausging,
+// und rückt die Warteschlange weiter (nur wenn das Design aus dem Admin-UI
+// kam – nicht bei ?cardStyle oder der CARD_STYLES-Datumsrechnung).
+func (s *Server) advanceCards(ctx context.Context, asOf time.Time, style, quelle string) {
+	if s.CardSettings == nil || (quelle != cards.QuelleSchlange && quelle != cards.QuelleFest) {
+		return
+	}
+	if err := s.CardSettings.AdvanceCardQueue(ctx, asOf, style, quelle == cards.QuelleFest); err != nil {
+		log.Printf("⚠️  Warteschlange weiterrücken: %v", err)
+		return
+	}
+	log.Printf("🎨 Wochenreport-Design %s gesendet – Warteschlange weitergerückt", style)
 }
 
 // renderCardStyled rendert die Karte im gewählten Design; unbekannte/leere
@@ -535,7 +623,12 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 	var png []byte
 	if asImage && out.Path == "statistik" && out.stats != nil {
 		var err error
-		png, err = s.renderCardStyled(r.Context(), q.Get("cardStyle"), out.stats, out.penalties, asOf, false)
+		// Ohne Design-Wahl wie live: zufällig aus der Rotation.
+		style := q.Get("cardStyle")
+		if style == "" {
+			style = s.cardRotation(r.Context()).Random()
+		}
+		png, err = s.renderCardStyled(r.Context(), style, out.stats, out.penalties, asOf, false)
 		if err != nil {
 			http.Error(w, "Bild-Rendering fehlgeschlagen: "+err.Error(), http.StatusBadGateway)
 			return

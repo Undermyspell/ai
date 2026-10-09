@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/michael/zumba-shared/cards"
 	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
@@ -172,6 +173,22 @@ func TestWetterSkala(t *testing.T) {
 	for betrag, want := range map[int]int{25: 1, 30: 2, 45: 2, 50: 3, 95: 3, 100: 4} {
 		if got := warnstufe(betrag); got != want {
 			t.Errorf("warnstufe(%d) = %d, will %d", betrag, got, want)
+		}
+	}
+}
+
+// Der Katalog in shared/cards (Admin-UI-Auswahl, CARD_STYLES-Prüfung) und die
+// Templates hier müssen deckungsgleich sein – sonst bietet das Admin-UI ein
+// Design an, das der Bot stillschweigend durch das Live-Design ersetzt.
+func TestKatalogPasstZuDenTemplates(t *testing.T) {
+	katalog := cards.Catalog()
+	styles := CardStyles()
+	if len(katalog) != len(styles) {
+		t.Fatalf("Katalog %d Designs, Templates %d", len(katalog), len(styles))
+	}
+	for i, s := range styles {
+		if katalog[i].ID != s.ID || katalog[i].Label != s.Label {
+			t.Errorf("Position %d: Katalog %+v, Template %s/%s", i, katalog[i], s.ID, s.Label)
 		}
 	}
 }

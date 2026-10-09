@@ -94,6 +94,22 @@ Fallback. Jede Karte zeigt die Grenzen des kostenlosen Kontingents, die
 Seitenspalte rechnet vor, ob es reicht: ein Donnerstag braucht etwa zehn
 Aufrufe.
 
+### Bild-Designs (`/bild-designs`)
+
+Welche Karte der Bot als Bild schickt. Oben der **nächste Wochenreport**
+(Datum, welches Design kommt) mit einer Auswahl „Rotation" oder ein
+bestimmtes Design – das gilt nur für diesen einen Donnerstag, die
+Warteschlange rückt dann eine Woche nach hinten. Darunter die
+**Warteschlange**: oben kommt am nächsten Donnerstag, jede Zeile zeigt ihr
+Datum. Sortiert wird am Griff ⠿ per Drag & Drop (Maus und Finger) oder mit
+↑/↓ auf dem Griff; Häkchen weg nimmt ein Design raus, ein Häkchen unter
+„Nicht im Umlauf" stellt es hinten an. Jede Änderung speichert sofort. Nach
+jedem Wochenreport wandert das gesendete Design ans Ende. Die Seitenspalte
+zeigt den zuletzt gesendeten Report und die nächsten acht Donnerstage.
+Gespeichert wird in `card_settings`; der Bot liest die Tabelle vor jeder
+Karte. Wie beim KI-Modell gesperrt ist die Seite bei offenem Tunnel nicht –
+Speichern verschickt nichts.
+
 ### ML-Testdaten
 Tabelle `ml_test_messages`: gesammelte Beispielnachrichten für den
 Classifier-Vergleich (LLM vs. eigenes Modell); manueller Klassifikations-Test

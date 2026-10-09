@@ -1,5 +1,7 @@
 package bottest
 
+import "github.com/michael/zumba-shared/cards"
+
 type PageVM struct {
 	DefaultKind string // "statistik"
 	DefaultJSON string // pretty example for DefaultKind
@@ -10,24 +12,15 @@ type PageVM struct {
 
 type styleOption struct{ ID, Label string }
 
-// cardStyleOptions spiegelt report.CardStyles() im Bot — die Bild-Designs.
-// "wrapped" ist das Live-Design, der Rest ist reine Testspielwiese.
-var cardStyleOptions = []styleOption{
-	{"wrapped", "Wrapped (live)"},
-	{"bierdeckel", "Bierdeckel hell"},
-	{"bierdeckel-dunkel", "Bierdeckel dunkel"},
-	{"tafel", "Kreidetafel"},
-	{"masskrug", "Maßkrug"},
-	{"zeitung", "Zeitung"},
-	{"arena", "Arena"},
-	{"stempelkarte", "Treuekarte"},
-	{"sammelkarten", "Sammelalbum"},
-	{"formular", "Amtsformular"},
-	{"abfahrtstafel", "Abfahrtstafel"},
-	{"kassenbon", "Kassenbon"},
-	{"gipfelbuch", "Gipfelbuch"},
-	{"wetterbericht", "Wetterbericht"},
-	{"hochrechnung", "Hochrechnung"},
+// cardStyleOptions: die Bild-Designs aus dem gemeinsamen Katalog, davor
+// „wie live" (leer = der Bot wählt wie im Betrieb: Wochenreport nach
+// /bild-designs, „statistik" zufällig aus der Rotation).
+func cardStyleOptions() []styleOption {
+	opts := []styleOption{{"", "Wie live (Rotation / Bild-Designs)"}}
+	for _, s := range cards.Catalog() {
+		opts = append(opts, styleOption{s.ID, s.Label})
+	}
+	return opts
 }
 
 // styleOptions spiegelt report.Styles() im Bot. "klassik" ist die Live-Nachricht.
@@ -90,11 +83,11 @@ templ Page(vm PageVM) {
 				<label class="field only-image">
 					<span class="field-label">Bild-Design</span>
 					<select class="select" name="cardStyle">
-						for _, o := range cardStyleOptions {
+						for _, o := range cardStyleOptions() {
 							<option value={ o.ID }>{ o.Label }</option>
 						}
 					</select>
-					<span class="hint">PNG-Karte über den Renderer. Live läuft immer „Wrapped".</span>
+					<span class="hint">PNG-Karte über den Renderer. Welche Designs live laufen, steht unter <a href="/bild-designs">Bild-Designs</a>.</span>
 				</label>
 			</div>
 			<div>

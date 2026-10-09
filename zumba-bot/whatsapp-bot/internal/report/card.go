@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/michael/zumba-shared/cards"
 	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
@@ -115,9 +116,9 @@ var botJPG []byte
 // CardWidth ist die Viewport-Breite, mit der die Karte gerendert werden muss.
 const CardWidth = 720
 
-// DefaultCardStyle ist das Design des Live-Betriebs (Gruppen-Statistik und
-// Wochenreport). Die übrigen Stile sind reine Bot-Test-Spielwiese.
-const DefaultCardStyle = "wrapped"
+// DefaultCardStyle ist das Live-Design – es kommt, wenn keine Rotation
+// gepflegt ist und für unbekannte IDs.
+const DefaultCardStyle = cards.Default
 
 // CardStyle ist ein auswählbares Design der Bild-Karte.
 type CardStyle struct {
@@ -129,8 +130,8 @@ type CardStyle struct {
 	skin  string // Farbwelt innerhalb eines Templates (leer = Standard)
 }
 
-// CardStyles listet alle Bild-Designs; "wrapped" ist das Live-Design, der
-// Rest ist Bot-Test-Spielwiese.
+// CardStyles listet alle Bild-Designs in Katalog-Reihenfolge (IDs und Labels
+// wie shared/cards). Welche davon im Umlauf sind, pflegt das Admin-UI.
 func CardStyles() []CardStyle {
 	return []CardStyle{
 		{ID: "wrapped", Label: "Wrapped (live)", tmpl: parseCard("wrapped", cardTmplSrc), fonts: withAnton},

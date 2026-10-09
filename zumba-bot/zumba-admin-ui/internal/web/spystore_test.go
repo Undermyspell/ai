@@ -6,6 +6,7 @@ import (
 
 	"github.com/michael/zumba-shared/domain"
 	"github.com/michael/zumba-shared/penalty"
+	sharedstore "github.com/michael/zumba-shared/store"
 
 	"github.com/michael/zumba-admin-ui/internal/store"
 	"github.com/michael/zumba-admin-ui/internal/timeutil"
@@ -28,6 +29,8 @@ type spyStore struct {
 
 	classifier store.ClassifierModels
 	setModel   string // "rolle=model" des letzten SetClassifierModel
+
+	cards store.CardSettings
 }
 
 func newSpyStore() *spyStore {
@@ -238,5 +241,22 @@ func (s *spyStore) ClassifierModels(context.Context) (store.ClassifierModels, er
 
 func (s *spyStore) SetClassifierModel(_ context.Context, rolle, model string) error {
 	s.setModel = rolle + "=" + model
+	return nil
+}
+
+func (s *spyStore) CardSettings(context.Context) (store.CardSettings, error) {
+	return s.cards, nil
+}
+
+func (s *spyStore) SetCardRotation(_ context.Context, rotation []string) error {
+	s.cards.RotationGesetzt, s.cards.Rotation = true, rotation
+	return nil
+}
+
+func (s *spyStore) SetNextCard(_ context.Context, tag time.Time, style string) error {
+	s.cards.Naechster = nil
+	if style != "" {
+		s.cards.Naechster = &sharedstore.NextCard{Tag: tag, Style: style}
+	}
 	return nil
 }

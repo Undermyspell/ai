@@ -69,8 +69,8 @@ whatsappBot:
   env:
     # Gruppen-"statistik" antwortet als Bild-Karte (Fallback Text)
     STATS_FORMAT: image
-    # Diese fünf Designs sind im Umlauf: "statistik" zufällig, Wochenreport
-    # der Reihe nach (jedes Design einmal je fünf Wochen)
+    # Startwert der Rotation – gepflegt wird sie im Admin-UI ("Bild-Designs");
+    # eine Änderung hier greift nur, solange dort nichts gespeichert ist.
     CARD_STYLES: "arena,formular,wrapped,bierdeckel,zeitung"
   weeklyReport:
     enabled: true

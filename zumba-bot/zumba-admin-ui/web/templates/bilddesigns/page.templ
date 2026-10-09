@@ -1,0 +1,180 @@
+package bilddesigns
+
+import "strconv"
+
+// VM ist die fertige Anzeige der Seite „Bild-Designs".
+type VM struct {
+	Termin     string // "Do., 15. Oktober 2026 · 21:00" – der nächste Wochenreport
+	TerminKurz string // "15.10."
+	Kommt      string // ID des Designs, das dann kommt
+	KommtLabel string
+	Fest       bool   // per Einmal-Auswahl festgelegt (sonst Rotation)
+	FestID     string // gewähltes Design ("" = Rotation)
+	// RotationKommt: was die Rotation an dem Tag bringen würde.
+	RotationKommt string
+	RotationLeer  bool
+	// Schlange: Designs im Umlauf in ihrer Reihenfolge (oben = nächster
+	// Donnerstag), Frei: der Rest, Alle: Katalog für die Einmal-Auswahl.
+	Schlange []Design
+	Frei     []Design
+	Alle     []Design
+	Wochen   []Woche
+	Zuletzt  string // "08.10. · Arena" – zuletzt an die Gruppe gesendet
+	// Unbekannt: IDs in der Rotation, die es nicht (mehr) gibt – der Bot
+	// überspringt sie.
+	Unbekannt []string
+	// OhneDB: noch keine Rotation gespeichert – der Bot nimmt CARD_STYLES.
+	OhneDB bool
+	Since  string
+}
+
+// Design ist ein Eintrag der Rotationsauswahl.
+type Design struct {
+	ID    string
+	Label string
+	Platz int    // Position in der Warteschlange (1-basiert), 0 = nicht im Umlauf
+	Datum string // nächster Donnerstag, an dem es kommt ("22.10.")
+}
+
+// Woche ist eine Zeile der Vorschau.
+type Woche struct {
+	Datum string
+	Label string
+	Fest  bool
+}
+
+templ Page(vm VM) {
+	@Region(vm)
+}
+
+// Region ist das HTMX-Swap-Ziel: nach jedem Speichern kommt die ganze Seite
+// neu, damit Vorschau und Auswahl den gespeicherten Stand zeigen.
+templ Region(vm VM) {
+	<section id="cards-region" class="grid-side">
+		<div class="stack">
+			<div class="card">
+				<div class="card-head">
+					<div>
+						<div class="card-title">Nächster Wochenreport</div>
+						<div class="card-sub">{ vm.Termin }</div>
+					</div>
+					if vm.Fest {
+						<span class="pill pill-caps is-amber">fest gewählt</span>
+					} else {
+						<span class="pill pill-caps is-blue">Rotation</span>
+					}
+				</div>
+				<div class="next-card">
+					<span class="next-card-cap">Am { vm.TerminKurz } kommt</span>
+					<span class="next-card-name" data-kommt={ vm.Kommt }>{ vm.KommtLabel }</span>
+				</div>
+				<form class="next-form" hx-post="/bild-designs/naechster" hx-target="#cards-region" hx-swap="outerHTML">
+					<label class="field" style="flex:1">
+						<span class="field-label">Design für diesen Donnerstag</span>
+						<select class="select" name="style">
+							<option value="" selected?={ vm.FestID == "" }>Rotation ({ vm.RotationKommt })</option>
+							for _, d := range vm.Alle {
+								<option value={ d.ID } selected?={ vm.FestID == d.ID }>{ d.Label }</option>
+							}
+						</select>
+					</label>
+					<button type="submit" class="btn btn-primary">Übernehmen</button>
+				</form>
+				<p class="hint" style="margin-top:10px">
+					Gilt nur für den { vm.TerminKurz } – die Warteschlange rückt dann eine Woche nach hinten. „Wochenreport testen" im Bot-Test zeigt dieselbe Karte.
+				</p>
+			</div>
+			<form
+				class="card"
+				hx-post="/bild-designs/rotation"
+				hx-trigger="change, sortiert"
+				hx-target="#cards-region"
+				hx-swap="outerHTML"
+			>
+				<div class="card-head">
+					<div>
+						<div class="card-title">Warteschlange</div>
+						<div class="card-sub">Oben kommt am nächsten Donnerstag, dann der Reihe nach. Nach jedem Wochenreport wandert das gesendete Design ans Ende. Per ⠿ verschieben, per Häkchen raus- oder reinnehmen – speichert sofort.</div>
+					</div>
+					if vm.Since != "" {
+						<span class="card-sub">zuletzt geändert { vm.Since }</span>
+					}
+				</div>
+				<ol class="queue" data-sortable>
+					for _, d := range vm.Schlange {
+						@queueItem(d, true)
+					}
+				</ol>
+				if vm.RotationLeer {
+					<p class="hint" style="margin-top:10px">Keine Designs in der Warteschlange – es kommt immer das Live-Design (Wrapped).</p>
+				}
+				for _, id := range vm.Unbekannt {
+					<p class="hint" style="margin-top:10px">„{ id }" steht in der Warteschlange, gibt es aber nicht (mehr) – der Bot überspringt es. Die nächste Änderung räumt es weg.</p>
+				}
+				if len(vm.Frei) > 0 {
+					<div class="cap" style="margin:18px 2px 8px">Nicht im Umlauf · anhaken = hinten anstellen</div>
+					<ul class="queue queue-off">
+						for _, d := range vm.Frei {
+							@queueItem(d, false)
+						}
+					</ul>
+				}
+			</form>
+		</div>
+		<div class="stack side-col">
+			<div class="card" style="padding:20px">
+				<div class="card-title-sm">Die nächsten Donnerstage</div>
+				<div class="card-sub" style="margin-bottom:12px">Wochenreport um 21:00</div>
+				if vm.Zuletzt != "" {
+					<div class="week-row is-last">
+						<span class="week-date">zuletzt</span>
+						<span class="week-name">{ vm.Zuletzt }</span>
+					</div>
+				}
+				<div class="stack-sm">
+					for i, w := range vm.Wochen {
+						<div class={ "week-row", templ.KV("is-next", i == 0) }>
+							<span class="week-date">{ w.Datum }</span>
+							<span class="week-name">{ w.Label }</span>
+							if w.Fest {
+								<span class="pill pill-caps is-amber">fest</span>
+							}
+						</div>
+					}
+				</div>
+			</div>
+			<div class="card" style="padding:20px">
+				<div class="card-title-sm">Woher kommt das?</div>
+				<p class="card-sub" style="margin-top:6px">
+					Der Bot liest diese Einstellungen vor jeder Karte – Änderungen greifen sofort, ohne Deployment.
+					<code>CARD_STYLES</code> im Deployment ist nur der Startwert beim ersten Hochfahren.
+				</p>
+				if vm.OhneDB {
+					<p class="hint" style="margin-top:8px">Noch keine Rotation gespeichert: bis dahin nimmt der Bot <code>CARD_STYLES</code> – die Vorschau links kennt sie nicht und zeigt nur Wrapped.</p>
+				}
+			</div>
+		</div>
+	</section>
+}
+
+// queueItem ist eine Zeile der Warteschlange: Griff zum Verschieben (nur im
+// Umlauf), Häkchen, Name, Platz.
+templ queueItem(d Design, aktiv bool) {
+	<li class={ "queue-item", templ.KV("is-on", aktiv) } data-id={ d.ID }>
+		if aktiv {
+			<button type="button" class="queue-handle" aria-label={ d.Label + " verschieben (Pfeiltasten)" } title="Ziehen oder mit ↑/↓ verschieben">⠿</button>
+			<span class="queue-pos">{ strconv.Itoa(d.Platz) }</span>
+		}
+		<label class="queue-label">
+			<input type="checkbox" name="style" value={ d.ID } checked?={ aktiv }/>
+			<span class="design-check" aria-hidden="true"></span>
+			<span class="design-text">
+				<span class="design-name">{ d.Label }</span>
+				<span class="design-id">{ d.ID }</span>
+			</span>
+		</label>
+		if d.Datum != "" {
+			<span class={ "queue-date", templ.KV("is-next", d.Platz == 1) }>{ d.Datum }</span>
+		}
+	</li>
+}
