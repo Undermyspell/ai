@@ -1,0 +1,21 @@
+# Sealed-Secrets-Controller – nur für die (Neu-)Installation, NICHT von ArgoCD
+# verwaltet:  kubectl apply -k deployment/sealed-secrets
+#
+# Der Controller läuft ohne Schlüsselrotation (--key-renew-period=0): alle
+# SealedSecrets in Git sind mit EINEM Schlüssel versiegelt, der im
+# Passwortmanager liegt. Das Argument muss schon beim ersten Start gesetzt
+# sein – sonst erzeugt der Controller beim Anblick eines älteren
+# wiederhergestellten Schlüssels sofort einen neuen.
+# Ablauf: ../DISASTER-RECOVERY.md (Schritt 3).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.34.0/controller.yaml
+patches:
+  - target:
+      kind: Deployment
+      name: sealed-secrets-controller
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args
+        value: ["--key-renew-period=0"]

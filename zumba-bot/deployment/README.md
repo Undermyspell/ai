@@ -2,6 +2,8 @@
 
 Production-ready GitOps deployment of n8n workflow automation platform to k3s Kubernetes cluster using ArgoCD, Helm, and Kustomize.
 
+> 🆘 **Pi oder SD-Karte kaputt?** → [DISASTER-RECOVERY.md](DISASTER-RECOVERY.md)
+
 ## 📋 Overview
 
 **What's Deployed:**
@@ -176,9 +178,10 @@ Secrets in Git ohne diesen Schlüssel wertlos.
 
 - **Rotation ist aus** (seit 2026-10-09): Der Controller läuft mit
   `--key-renew-period=0` und erzeugt keine neuen Schlüssel mehr. Er ist
-  **nicht** per GitOps verwaltet (einmalig per `kubectl apply` aus dem
-  Upstream-`controller.yaml` installiert, v0.34.0); das Argument wurde per
-  `kubectl patch` gesetzt – bei einer Neuinstallation wieder setzen.
+  **nicht** per GitOps verwaltet; installiert wird er über
+  `deployment/sealed-secrets/` (`kubectl apply -k`, Upstream v0.34.0 plus
+  dieses Argument). Auf dem laufenden Cluster wurde das Argument am
+  2026-10-09 per `kubectl patch` nachgezogen.
 - **Alle SealedSecrets sind mit dem aktuellen Schlüssel versiegelt**
   (`sealed-secrets-keymgkzw`, Zertifikat gültig bis 2036; per
   `kubeseal --re-encrypt` umgestellt). Für die Wiederherstellung reicht
@@ -191,15 +194,15 @@ kubectl get secret -n kube-system sealed-secrets-keymgkzw -o yaml > sealed-secre
 ```
 
 - **Wiederherstellen** auf einem neuen Cluster – **vor** dem ersten Sync der
-  SealedSecrets:
+  SealedSecrets, erst der Schlüssel, dann der Controller (die Kustomization in
+  `sealed-secrets/` setzt `--key-renew-period=0` gleich beim ersten Start):
 
 ```bash
-kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.34.0/controller.yaml
-kubectl -n kube-system patch deploy sealed-secrets-controller --type json \
-  -p '[{"op":"add","path":"/spec/template/spec/containers/0/args","value":["--key-renew-period=0"]}]'
 kubectl apply -f sealed-secrets-key.yaml
-kubectl -n kube-system delete pod -l name=sealed-secrets-controller   # Schlüssel neu einlesen
+kubectl apply -k deployment/sealed-secrets
 ```
+
+  Der komplette Ablauf steht in [DISASTER-RECOVERY.md](DISASTER-RECOVERY.md).
 
 - Neue Secrets mit `create-sealed-secret.sh` werden automatisch mit diesem
   Schlüssel versiegelt. Wird je wieder ein neuer Schlüssel erzeugt
@@ -453,15 +456,14 @@ rclone ls gdrive:zumba-backups/staging
 
 ### Restore
 
+Nur in eine **leere** Instanz (neuer Cluster) – der vollständige Ablauf mit
+der richtigen Reihenfolge steht in [DISASTER-RECOVERY.md](DISASTER-RECOVERY.md)
+(Schritt 5):
+
 ```bash
-# Dump holen
 rclone copy gdrive:zumba-backups/staging/zumba-pg-<DATUM>.sql.gz .
-
-# In (leere) Instanz einspielen — Staging-Postgres ist extern auf Port 5433 erreichbar
-gunzip -c zumba-pg-<DATUM>.sql.gz | psql -h 192.168.178.46 -p 5433 -U n8n -d postgres
-
-# Danach Pods neu starten
-kubectl rollout restart deployment/zumba-n8n -n zumba-staging
+gunzip -c zumba-pg-<DATUM>.sql.gz | kubectl -n zumba-staging exec -i zumba-postgres-0 -- psql -U n8n -d postgres
+kubectl -n zumba-staging rollout restart deploy/zumba-evolution-api
 ```
 
 ---

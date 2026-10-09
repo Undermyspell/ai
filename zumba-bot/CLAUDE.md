@@ -72,6 +72,8 @@ GitOps via ArgoCD `ApplicationSet` → 2 Applications: `zumba-staging` (ns `zumb
 
 Because of source 1's relative `valueFiles`, the Helm chart and `environments/` must stay co-located under `deployment/`. Renovate updates the n8n image tag in `helm-charts/zumba/values.yaml` and the local `docker-compose.yml` together (see recent commits).
 
+**Disaster recovery** (Pi/SD card lost): runbook in `deployment/DISASTER-RECOVERY.md` — order matters (Sealed-Secrets key before ArgoCD, DB restore before the images). The Sealed-Secrets controller runs without key rotation and is installed via `deployment/sealed-secrets/` (not ArgoCD-managed); its single private key lives in the user's password manager.
+
 Secrets are encrypted **per environment** with bitnami SealedSecrets and committed to git; staging and production use different keys. Generate via `deployment/scripts/create-sealed-secret.sh <env> <name> KEY=VALUE...` — see `deployment/README.md` for the full operator runbook (rotation, restart, troubleshooting, ArgoCD UI access).
 
 Common ops shortcuts:
