@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -46,6 +47,21 @@ var cardSammelkartenSrc string
 //go:embed card-formular.tmpl
 var cardFormularSrc string
 
+//go:embed card-abfahrtstafel.tmpl
+var cardAbfahrtstafelSrc string
+
+//go:embed card-kassenbon.tmpl
+var cardKassenbonSrc string
+
+//go:embed card-gipfelbuch.tmpl
+var cardGipfelbuchSrc string
+
+//go:embed card-wetterbericht.tmpl
+var cardWetterberichtSrc string
+
+//go:embed card-hochrechnung.tmpl
+var cardHochrechnungSrc string
+
 // Display-Fonts als eingebettete latin-Subsets: der Renderer-Container hat
 // keinen Netzzugriff, Google-Fonts-Links scheiden aus. Im Container selbst
 // liegen nur Noto Sans/Serif, DejaVu Mono und Noto Color Emoji.
@@ -58,6 +74,27 @@ var playfairWoff2 []byte
 
 //go:embed assets/caveat-latin.woff2
 var caveatWoff2 []byte
+
+// Barlow Condensed und Space Mono gibt es nur als statische Schnitte – je
+// Gewicht eine Datei.
+//
+//go:embed assets/barlow-condensed-500-latin.woff2
+var barlow500Woff2 []byte
+
+//go:embed assets/barlow-condensed-600-latin.woff2
+var barlow600Woff2 []byte
+
+//go:embed assets/barlow-condensed-700-latin.woff2
+var barlow700Woff2 []byte
+
+//go:embed assets/barlow-condensed-800-latin.woff2
+var barlow800Woff2 []byte
+
+//go:embed assets/space-mono-400-latin.woff2
+var spaceMono400Woff2 []byte
+
+//go:embed assets/space-mono-700-latin.woff2
+var spaceMono700Woff2 []byte
 
 // Das offizielle Stammtisch-Emblem, kreisrund freigestellt (256px, PNG mit
 // Alpha). Jedes Design führt es — mal als Wappen neben dem Titel, mal als
@@ -98,6 +135,11 @@ func CardStyles() []CardStyle {
 		{ID: "stempelkarte", Label: "Treuekarte", tmpl: parseCard("stempelkarte", cardStempelkarteSrc), fonts: withCaveat},
 		{ID: "sammelkarten", Label: "Sammelalbum", tmpl: parseCard("sammelkarten", cardSammelkartenSrc), fonts: withAnton},
 		{ID: "formular", Label: "Amtsformular", tmpl: parseCard("formular", cardFormularSrc), fonts: withAnton},
+		{ID: "abfahrtstafel", Label: "Abfahrtstafel", tmpl: parseCard("abfahrtstafel", cardAbfahrtstafelSrc), fonts: fontMix(withAnton, withBarlow, withSpaceMono)},
+		{ID: "kassenbon", Label: "Kassenbon", tmpl: parseCard("kassenbon", cardKassenbonSrc), fonts: withSpaceMono},
+		{ID: "gipfelbuch", Label: "Gipfelbuch", tmpl: parseCard("gipfelbuch", cardGipfelbuchSrc), fonts: withCaveat},
+		{ID: "wetterbericht", Label: "Wetterbericht", tmpl: parseCard("wetterbericht", cardWetterberichtSrc), fonts: fontMix(withAnton, withBarlow, withSpaceMono)},
+		{ID: "hochrechnung", Label: "Hochrechnung", tmpl: parseCard("hochrechnung", cardHochrechnungSrc), fonts: fontMix(withAnton, withBarlow, withSpaceMono)},
 	}
 }
 
@@ -111,6 +153,17 @@ type cardFonts struct {
 	Anton    template.URL
 	Playfair template.URL
 	Caveat   template.URL
+
+	// Schriften mit mehreren statischen Schnitten: das Template legt je
+	// Eintrag ein @font-face an.
+	Barlow    []fontFace // Barlow Condensed
+	SpaceMono []fontFace
+}
+
+// fontFace ist ein einzelner Schnitt einer Schrift.
+type fontFace struct {
+	Weight int
+	URL    template.URL
 }
 
 func fontURL(b []byte) template.URL {
@@ -138,14 +191,36 @@ func withAnton(f *cardFonts)    { f.Anton = fontURL(antonWoff2) }
 func withPlayfair(f *cardFonts) { f.Playfair = fontURL(playfairWoff2) }
 func withCaveat(f *cardFonts)   { f.Caveat = fontURL(caveatWoff2); f.Anton = fontURL(antonWoff2) }
 
+func withBarlow(f *cardFonts) {
+	f.Barlow = []fontFace{
+		{500, fontURL(barlow500Woff2)}, {600, fontURL(barlow600Woff2)},
+		{700, fontURL(barlow700Woff2)}, {800, fontURL(barlow800Woff2)},
+	}
+}
+
+func withSpaceMono(f *cardFonts) {
+	f.SpaceMono = []fontFace{{400, fontURL(spaceMono400Woff2)}, {700, fontURL(spaceMono700Woff2)}}
+}
+
+// fontMix kombiniert mehrere Font-Helfer für Designs mit mehreren Schriften.
+func fontMix(fs ...func(*cardFonts)) func(*cardFonts) {
+	return func(f *cardFonts) {
+		for _, with := range fs {
+			with(f)
+		}
+	}
+}
+
 type cardUser struct {
 	Medal      string // 🥇/🥈/🥉, sonst leer (dann zählt Rank)
 	Rank       int
 	Name       string
 	Attendance int
 	Away       int
+	Termine    int     // Attendance+Away: die für das Mitglied zählenden Stammtische
 	Percent    string  // formatiert, ohne %-Zeichen
 	PercentVal float64 // für die Balkenbreite
+	Quote      int     // Percent gerundet (Designs mit ganzzahliger Quote)
 	Streak     int
 	StreakAbs  int    // Betrag der Serie (Designs setzen das Vorzeichen selbst)
 	StreakTag  string // "🔥+4" / "❄️-2" / leer
@@ -163,6 +238,14 @@ type cardUser struct {
 	Pausen  []int
 	Lit     []int
 	Dark    []int
+
+	// Bergprofil ("gipfelbuch"): RidgeX ist die Fahnenposition in Prozent
+	// der Breite (Rang gleichmäßig verteilt), FahneHoch die längere Stange
+	// (jeder zweite, damit sich die Beschriftungen nicht überlappen), Letzter
+	// bekommt wie die Top 3 den Namen statt der Platzziffer.
+	RidgeX    float64
+	FahneHoch bool
+	Letzter   bool
 }
 
 // cardStroke ist ein einzelner Strich der Strichliste.
@@ -211,10 +294,22 @@ type cardData struct {
 	WeeklyNote bool
 	Datum      string // "6.8.2026"
 	DatumLang  string // "6. August 2026"
+	Year       string // Stammtischjahr ("2026")
 	Total      int
+
+	AvgPercent  int // Ø-Quote aller Mitglieder, gerundet
+	TotalAttend int // Summe aller Anwesenheiten
+	TotalAway   int // Summe aller Absagen
+	SitzGrad    int // Anteil der Anwesenheiten als Winkel eines Halbkreises (0–180)
+	OffenSum    int // Summe der offenen Strafen in €
+
+	// Ridge ist das clip-path-Polygon des Bergprofils ("gipfelbuch"): ein
+	// Punkt je Mitglied, Höhe = Quote.
+	Ridge template.CSS
 
 	GoatName    string
 	GoatPercent string
+	GoatQuote   int // GoatPercent gerundet
 
 	MaxStreak      int
 	MaxStreakNames string
@@ -226,21 +321,22 @@ type cardData struct {
 	Users   []cardUser
 	Strafen []cardStrafe
 
-	Skin  string       // Farbwelt-Variante des gewählten Designs
+	Skin  string // Farbwelt-Variante des gewählten Designs
 	Fonts cardFonts
 	Logo  template.URL // Stammtisch-Emblem als Data-URL
 }
 
 // BuildCardHTML baut die Karte im Live-Design (siehe DefaultCardStyle).
 func BuildCardHTML(rows []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) (string, error) {
-	return BuildCardHTMLByStyle(DefaultCardStyle, rows, entries, asOf, weekly)
+	return BuildCardHTMLByStyle(DefaultCardStyle, rows, entries, asOf, "", weekly)
 }
 
 // BuildCardHTMLByStyle baut das self-contained HTML der Statistik-Karte im
 // gewählten Design (unbekannt/leer → Live-Design). entries dürfen leer sein
-// (dann erscheint die "Keine offenen Strafen"-Zeile); weekly stellt den
-// Wochenreport-Hinweis voran.
-func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Entry, asOf time.Time, weekly bool) (string, error) {
+// (dann erscheint die "Keine offenen Strafen"-Zeile); season ist das Label
+// des Stammtischjahres ("2026", leer → Kalenderjahr von asOf); weekly stellt
+// den Wochenreport-Hinweis voran.
+func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Entry, asOf time.Time, season string, weekly bool) (string, error) {
 	styles := CardStyles()
 	sel := styles[0]
 	for _, s := range styles {
@@ -254,16 +350,22 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 		WeeklyNote: weekly,
 		Datum:      fmt.Sprintf("%d.%d.%d", asOf.Day(), int(asOf.Month()), asOf.Year()),
 		DatumLang:  fmt.Sprintf("%d. %s %d", asOf.Day(), monatDE[asOf.Month()], asOf.Year()),
+		Year:       season,
 		Skin:       sel.skin,
 		Logo:       logoURL(),
+	}
+	if data.Year == "" {
+		data.Year = fmt.Sprint(asOf.Year())
 	}
 	sel.fonts(&data.Fonts)
 
 	if len(rows) > 0 {
 		a := analyze(rows)
 		data.Total = a.total
+		data.AvgPercent = a.avgPercent
 		data.GoatName = a.mvp.Name
 		data.GoatPercent = fmtNum(a.mvp.Percent)
+		data.GoatQuote = int(math.Round(a.mvp.Percent))
 
 		maxStreak, minStreak := a.hottest.Streak, a.coldest.Streak
 		streakNames := func(streak int) string {
@@ -286,7 +388,8 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 			data.MinIce = coldEmoji(minStreak)
 		}
 
-		for _, u := range a.users {
+		n := len(a.users)
+		for i, u := range a.users {
 			medal := ""
 			if u.rank <= 3 {
 				medal = u.medal
@@ -299,16 +402,25 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 			}
 			data.Users = append(data.Users, cardUser{
 				Medal: medal, Rank: u.rank, Name: u.Name,
-				Attendance: u.Attendance, Away: u.Away,
-				Percent: fmtNum(u.Percent), PercentVal: u.Percent,
+				Attendance: u.Attendance, Away: u.Away, Termine: u.Attendance + u.Away,
+				Percent: fmtNum(u.Percent), PercentVal: u.Percent, Quote: int(math.Round(u.Percent)),
 				Streak: u.Streak, StreakAbs: abs(u.Streak), StreakTag: tag, Top3: u.rank <= 3,
-				Bundles: bundles,
-				Rest:    rest,
-				Pausen:  make([]int, pausen),
-				Lit:     make([]int, u.Attendance),
-				Dark:    make([]int, u.Away),
+				Bundles:   bundles,
+				Rest:      rest,
+				Pausen:    make([]int, pausen),
+				Lit:       make([]int, u.Attendance),
+				Dark:      make([]int, u.Away),
+				RidgeX:    ridgeX(i, n),
+				FahneHoch: i%2 == 1,
+				Letzter:   i == n-1,
 			})
+			data.TotalAttend += u.Attendance
+			data.TotalAway += u.Away
 		}
+		if sum := data.TotalAttend + data.TotalAway; sum > 0 {
+			data.SitzGrad = int(math.Round(float64(data.TotalAttend) / float64(sum) * 180))
+		}
+		data.Ridge = ridgePolygon(data.Users)
 	}
 
 	// Sichtbarkeit + Sortierung wie StrafenBlock (offene zuerst).
@@ -335,6 +447,7 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 			s.Icon, s.Beglichen = "✅", true
 		} else {
 			s.Icon = "⚠️"
+			data.OffenSum += e.Betrag
 		}
 		data.Strafen = append(data.Strafen, s)
 	}
@@ -344,4 +457,31 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 		return "", fmt.Errorf("card template %q: %w", sel.ID, err)
 	}
 	return buf.String(), nil
+}
+
+// ridgeX verteilt die Ränge gleichmäßig über die Breite des Bergprofils
+// (0–100 %); ein einzelnes Mitglied steht in der Mitte.
+func ridgeX(i, n int) float64 {
+	if n < 2 {
+		return 50
+	}
+	return float64(i) / float64(n-1) * 100
+}
+
+// ridgePolygon baut den Bergkörper des "gipfelbuch": ein Punkt je Mitglied
+// bei (RidgeX, Quote), links und rechts etwas abfallend zur Grundlinie.
+func ridgePolygon(users []cardUser) template.CSS {
+	if len(users) == 0 {
+		return ""
+	}
+	hoehe := func(u cardUser, abfall float64) float64 {
+		return math.Min(100, 100-u.PercentVal+abfall)
+	}
+	first, last := users[0], users[len(users)-1]
+	pts := []string{"0% 100%", fmt.Sprintf("0%% %.1f%%", hoehe(first, 6))}
+	for _, u := range users {
+		pts = append(pts, fmt.Sprintf("%.1f%% %.1f%%", u.RidgeX, hoehe(u, 0)))
+	}
+	pts = append(pts, fmt.Sprintf("100%% %.1f%%", hoehe(last, 8)), "100% 100%")
+	return template.CSS("polygon(" + strings.Join(pts, ", ") + ")")
 }

@@ -87,7 +87,7 @@ unabhängige Schalter steuern den Live-Betrieb (beide auf Staging seit
 - **Wochenreport**: Helm `whatsappBot.weeklyReport.format: text|image`
   (hängt `?format=image` an die CronJob-URL)
 
-Es gibt zehn Bild-Designs. Welche davon im Umlauf sind, steuert
+Es gibt fünfzehn Bild-Designs. Welche davon im Umlauf sind, steuert
 `CARD_STYLES` (siehe unten); im Bot-Test sind immer alle wählbar
 (Auswahl „Bild-Design", `?cardStyle=`).
 
@@ -103,9 +103,20 @@ Es gibt zehn Bild-Designs. Welche davon im Umlauf sind, steuert
 | `stempelkarte` | Treuekarte aus Karton mit Perforationsrand | ein Feld je Stammtisch: gestempelt (das Emblem) vs. durchgestrichenes Leerfeld |
 | `sammelkarten` | Sammelalbum im Panini-Raster statt Tabelle | Punkt je Stammtisch: gold gefüllt = da, roter Ring = gefehlt |
 | `formular` | Amtliches Formblatt ZU-4, Schreibmaschinensatz, Gebührenbescheid | Kästchenmatrix: ausgefüllt = anwesend, leer/rot = gefehlt |
+| `abfahrtstafel` | Schwarze Bahnhofs-Anzeigetafel „Zumba Hbf", Fallblatt-Zeilen, Strafen als Störungsmeldungen | „37 da · 6 weg" je Zeile, Serie als Hinweis („pünktlich +4" / „verspätet −2" / „fällt aus −5") |
+| `kassenbon` | Thermo-Kassenbon auf dem Holztisch, Strafen als Nachberechnung, „OFFEN"-Summe und Strichcode | Menge „37x 6w" plus Quote je Posten, Serie als `[+4]`/`[−2]` |
+| `gipfelbuch` | Hüttenbuch der Zumba-Alm: Bergprofil (ein Gipfel je Mitglied, Höhe = Quote) über den Einträgen | Fahne je Mitglied (rot = laufende Pause), „37/43" im Eintrag |
+| `wetterbericht` | Stammtisch-Wetter: Großwetterlage, Hitzewelle/Kältefront, Wetterkachel je Mitglied | Quote als Temperatur, Wettersymbol nach Serie (Tropennacht … Dauerfrost) |
+| `hochrechnung` | Wahlabend-Hochrechnung: Balken je Mitglied mit Ø-Marke, Sitzverteilung als Halbkreis | Balken = Quote, Halbkreis = alle Anwesenheiten vs. Absagen, Serie als Gewinn/Verlust |
 
 In der Strichliste der Bierdeckel-Designs sind die Striche der **laufenden
 Serie** farbig abgesetzt (sie sind definitionsgemäß die zuletzt gemachten).
+
+Die fünf jüngeren Designs (Abfahrtstafel bis Hochrechnung) zeigen die Quote
+gerundet und bringen eigene Schriften mit (Barlow Condensed, Space Mono als
+eingebettete latin-Subsets). Gipfelbuch, Kassenbon und Hochrechnung nennen das
+Stammtischjahr („Saison 2026") — es kommt aus `seasons`, ohne gepflegtes Jahr
+steht dort das Kalenderjahr.
 
 ### Design-Rotation (`CARD_STYLES`)
 

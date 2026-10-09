@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Caveat";
+    src: url("{{.Fonts.Caveat}}") format("woff2");
+    font-weight: 400 700;
+  }
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  :root {
+    --papier: #eef1ea;
+    --tinte: #1f2a22;
+    --gruen: #2f5d46;
+    --grau: #5c6b60;
+    --rot: #a0442c;
+    --gelb: #ffd23f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--papier);
+    color: var(--tinte);
+    font-family: "Noto Sans", "DejaVu Sans", sans-serif, "Noto Color Emoji";
+  }
+  .hand { font-family: "Caveat", cursive; }
+  .anton { font-family: "Anton", sans-serif; font-weight: 400; }
+  /* Papier mit Höhenlinien im Hintergrund. */
+  .buch {
+    padding: 36px 40px 28px;
+    background:
+      repeating-radial-gradient(ellipse 900px 520px at 70% 110%, transparent 0 38px, rgba(60,90,70,.09) 38px 39px),
+      var(--papier);
+  }
+
+  header { display: flex; align-items: center; gap: 16px; }
+  .emblem {
+    flex-shrink: 0;
+    width: 74px; height: 74px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px var(--papier), 0 0 0 5px var(--gruen);
+  }
+  .titel { flex: 1; min-width: 0; }
+  .huette { font-size: 24px; color: var(--gruen); line-height: 1; }
+  h1 { font-size: 46px; line-height: 1; letter-spacing: .02em; }
+  /* Hüttenstempel mit der Zahl der Aufstiege. */
+  .stempel {
+    text-align: right;
+    border: 2px solid var(--gruen);
+    border-radius: 6px;
+    padding: 6px 12px;
+    transform: rotate(-4deg);
+    color: var(--gruen);
+  }
+  .stempel .was { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+  .stempel .zahl { font-size: 30px; line-height: 1; }
+  .weekly { margin-top: 10px; font-size: 20px; color: var(--grau); }
+
+  /* Bergprofil: Höhe = Anwesenheitsquote, ein Gipfel je Mitglied. Der
+     Abstand nach oben ist der Himmel für die Fahnen der Spitzenreiter. */
+  .profil {
+    position: relative;
+    margin-top: 80px;
+    height: 250px;
+    border-bottom: 2px solid var(--tinte);
+  }
+  /* Höhenlinien liegen über dem Berg, die Beschriftung auf einem
+     Papierschild, damit sie auch vor dem dunklen Hang lesbar bleibt. */
+  .hoehenlinie {
+    position: absolute; left: 0; right: 0;
+    z-index: 1;
+    border-top: 1px dashed rgba(47,93,70,.35);
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--grau);
+    text-align: right;
+    padding-right: 2px;
+  }
+  .hoehenlinie span { background: rgba(238,241,234,.85); padding: 0 3px; border-radius: 3px; }
+  .berg {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 100%;
+    background: linear-gradient(180deg, #ffffff 0%, #b9c9bd 18%, #5f8a6f 55%, var(--gruen) 100%);
+    opacity: .95;
+  }
+  .fahne {
+    position: absolute;
+    z-index: 2;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .fahne .schild {
+    font-size: 15px; font-weight: 700;
+    line-height: 1; white-space: nowrap;
+    color: var(--tinte);
+    background: rgba(238,241,234,.9);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .fahne.name .schild { font-size: 20px; }
+  /* Am Rand hängt das Schild nach innen statt über die Karte hinaus. */
+  .fahne.links .schild { transform: translateX(calc(50% - 6px)); }
+  .fahne.rechts .schild { transform: translateX(calc(-50% + 6px)); }
+  .fahne .stange { width: 2px; height: 14px; background: var(--tinte); }
+  .fahne.hoch .stange { height: 34px; }
+  .fahne.top .stange { height: 30px; }
+  .fahne.top.hoch .stange { height: 56px; }
+  .fahne .punkt {
+    width: 8px; height: 8px;
+    margin-top: -2px;
+    border-radius: 50%;
+    background: var(--gelb);
+    border: 2px solid var(--tinte);
+  }
+  .fahne.pause .punkt { background: var(--rot); }
+  .legende {
+    display: flex; justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--grau);
+  }
+
+  /* Gipfelbuch-Einträge, zweispaltig. */
+  .eintraege { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 36px; }
+  .eintrag {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 8px;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(31,42,34,.15);
+  }
+  .eintrag .platz { font-size: 15px; color: var(--gruen); }
+  .eintrag .nm {
+    font-size: 23px; font-weight: 500; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .eintrag.top .nm { font-weight: 700; }
+  .eintrag .tag { font-size: 17px; color: var(--grau); }
+  .eintrag .quote { font-size: 17px; }
+  .eintrag .quote small { font-size: 11px; }
+  .eintrag .quote .von { font-family: "Noto Sans", sans-serif; font-size: 11px; color: var(--grau); }
+
+  .rekorde { margin-top: 22px; display: flex; gap: 14px; }
+  .rekord { flex: 1; min-width: 0; }
+  .rekord .was { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--grau); }
+  .rekord .wer { font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .rekord .wer span { color: var(--gruen); }
+  .rekord.ruhe .wer span { color: var(--rot); }
+
+  .kasse {
+    position: relative;
+    margin-top: 22px;
+    padding: 16px 16px 12px;
+    border: 2px solid var(--tinte);
+    border-radius: 8px;
+    background: rgba(255,255,255,.5);
+  }
+  .kasse .kopf {
+    position: absolute; top: -12px; left: 14px;
+    padding: 0 8px;
+    background: var(--papier);
+    font-size: 22px; font-weight: 700; line-height: 1;
+    color: var(--rot);
+  }
+  .strafe { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; }
+  .strafe.beglichen { opacity: .5; }
+  .strafe .nm { font-size: 22px; font-weight: 700; }
+  .strafe .grund { flex: 1; font-size: 12px; color: var(--grau); }
+  .strafe .betrag { font-size: 18px; color: var(--rot); }
+  .strafe.beglichen .betrag { color: var(--grau); }
+  .sauber { font-size: 22px; color: var(--gruen); padding: 3px 0; }
+
+  .leer { margin-top: 40px; font-size: 28px; color: var(--grau); }
+
+  footer {
+    margin-top: 18px;
+    display: flex; justify-content: space-between;
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--grau);
+  }
+</style>
+</head>
+<body>
+<div class="buch">
+  <header>
+    <img class="emblem" src="{{.Logo}}" alt="Stammtisch Zumba">
+    <div class="titel">
+      <div class="huette hand">Hüttenbuch der Zumba-Alm · Saison {{.Year}}</div>
+      <h1 class="anton">GIPFELBUCH</h1>
+    </div>
+    <div class="stempel">
+      <div class="was">Aufstiege</div>
+      <div class="zahl anton">{{.Total}}</div>
+    </div>
+  </header>
+  {{if .WeeklyNote}}<div class="weekly hand">Eingetragen vom Hüttenwirt am Donnerstagabend, 21 Uhr</div>{{end}}
+
+  {{if .Users}}
+  <div class="profil">
+    <div class="hoehenlinie" style="top: 0%"><span>100 %</span></div>
+    <div class="hoehenlinie" style="top: 25%"><span>75 %</span></div>
+    <div class="hoehenlinie" style="top: 50%"><span>50 %</span></div>
+    <div class="hoehenlinie" style="top: 75%"><span>25 %</span></div>
+    <div class="berg" style="clip-path: {{.Ridge}}"></div>
+    {{range $i, $u := .Users}}
+    <div class="fahne{{if .Top3}} top{{end}}{{if .FahneHoch}} hoch{{end}}{{if or .Top3 .Letzter}} name{{end}}{{if lt .Streak 0}} pause{{end}}{{if and (eq $i 0) (not .Letzter)}} links{{else if and .Letzter (ne $i 0)}} rechts{{end}}"
+         style="left: {{printf "%.1f" .RidgeX}}%; bottom: {{printf "%.1f" .PercentVal}}%">
+      <span class="schild hand">{{if or .Top3 .Letzter}}{{.Name}}{{else}}{{.Rank}}{{end}}</span>
+      <span class="stange"></span>
+      <span class="punkt"></span>
+    </div>
+    {{end}}
+  </div>
+  <div class="legende"><span>Talstation · 0 %</span><span>Höhe = Anwesenheitsquote · Ziffer = Platz</span><span>Gipfelkreuz · 100 %</span></div>
+
+  <div class="eintraege">
+    {{$total := .Total}}
+    {{range .Users}}
+    <div class="eintrag{{if .Top3}} top{{end}}">
+      <span class="platz anton">{{.Rank}}</span>
+      <span class="nm hand">{{.Name}}
+        {{if gt .Streak 7}}<span class="tag">❤️‍🔥 Dauergast</span>
+        {{else if eq .Streak 1}}<span class="tag">🔥 1 Etappe</span>
+        {{else if gt .Streak 0}}<span class="tag">🔥 {{.StreakAbs}} Etappen</span>
+        {{else if lt .Streak -3}}<span class="tag">🧊 im Tal</span>
+        {{else if lt .Streak 0}}<span class="tag">❄️ {{.StreakAbs}} Wo. Pause</span>{{end}}
+      </span>
+      <span class="quote anton">{{.Quote}}<small> %</small> <span class="von">{{.Attendance}}/{{.Termine}}</span></span>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="rekorde">
+    <div class="rekord">
+      <div class="was">🐐 Gipfelstürmer</div>
+      <div class="wer hand">{{.GoatName}} <span>{{.GoatQuote}} %</span></div>
+    </div>
+    {{if .MaxStreak}}
+    <div class="rekord">
+      <div class="was">🔥 Längste Tour</div>
+      <div class="wer hand">{{.MaxStreakNames}} <span>{{.MaxStreak}} {{if eq .MaxStreak 1}}Etappe{{else}}Etappen{{end}}</span></div>
+    </div>
+    {{end}}
+    {{if .MinStreak}}
+    <div class="rekord ruhe">
+      <div class="was">🧊 Längste Hüttenruhe</div>
+      <div class="wer hand">{{.MinStreakNames}} <span>{{.MinStreak}} {{if eq .MinStreak 1}}Woche{{else}}Wochen{{end}}</span></div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="leer hand">Noch keine Aufstiege eingetragen · Keine Daten</div>
+  {{end}}
+
+  <div class="kasse">
+    <div class="kopf hand">Hüttenkasse · Strafen</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="strafe{{if .Beglichen}} beglichen{{end}}">
+        <span class="nm hand">{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+        <span class="betrag anton">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="sauber hand">Kasse stimmt – Keine offenen Strafen</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>🤖🍺 Hüttenwirt: Zumba-Bot</span>
+    <span>{{.DatumLang}}</span>
+  </footer>
+</div>
+</body>
+</html>

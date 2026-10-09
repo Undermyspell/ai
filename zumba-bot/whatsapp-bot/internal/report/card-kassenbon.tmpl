@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  {{range .Fonts.SpaceMono}}
+  @font-face {
+    font-family: "Space Mono";
+    src: url("{{.URL}}") format("woff2");
+    font-weight: {{.Weight}};
+  }
+  {{end}}
+  :root {
+    --holz: #3b2a1e;
+    --papier: #fbf8f0;
+    --druck: #1d1a16;
+    --blass: #5a544c;
+    --linie: #9a9388;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--holz);
+    font-family: "Space Mono", "DejaVu Sans Mono", monospace, "Noto Color Emoji";
+  }
+  /* Dunkler Holztisch mit Lichtfleck und feinen Brettfugen. */
+  .tisch {
+    display: flex; justify-content: center;
+    padding: 40px 0;
+    background:
+      radial-gradient(600px 300px at 50% 0%, rgba(255,220,160,.12), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 46px),
+      var(--holz);
+  }
+  .bon {
+    position: relative;
+    width: 470px;
+    padding: 30px 30px 26px;
+    background: var(--papier);
+    color: var(--druck);
+    font-size: 14px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.45);
+  }
+  /* Abgerissene Zackenkante oben und unten. */
+  .bon::before, .bon::after {
+    content: "";
+    position: absolute; left: 0; right: 0;
+    height: 8px;
+  }
+  .bon::before {
+    top: -8px;
+    background: radial-gradient(circle at 8px 0, transparent 0 7px, var(--papier) 7.5px) 0 0/16px 8px repeat-x;
+  }
+  .bon::after {
+    bottom: -8px;
+    background: radial-gradient(circle at 8px 8px, transparent 0 7px, var(--papier) 7.5px) 0 0/16px 8px repeat-x;
+  }
+
+  .kopf { text-align: center; }
+  .emblem {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    filter: grayscale(1) contrast(1.4);
+  }
+  .firma { font-weight: 700; font-size: 20px; letter-spacing: .08em; margin-top: 8px; }
+  .blass { font-size: 12px; color: var(--blass); }
+
+  .strich { border-top: 1px dashed var(--linie); margin: 12px 0 10px; }
+  .strich.oben { margin: 16px 0 10px; }
+  .strich.meta { margin: 10px 0 12px; }
+  .doppelt { border-top: 2px solid var(--druck); margin: 12px 0 8px; }
+
+  .zeile { display: flex; justify-content: space-between; gap: 8px; }
+  .pre { white-space: pre; }
+
+  .posten, .postenkopf {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    gap: 8px;
+  }
+  .postenkopf { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .posten { padding: 3px 0; }
+  .posten.top { font-weight: 700; }
+  .artikel { text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artikel span { font-size: 12px; color: var(--blass); font-weight: 400; }
+
+  .summe { font-size: 13px; }
+  .summe .wer { text-transform: uppercase; }
+
+  .titel { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .nachberechnung { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 3px 0; }
+  .nachberechnung .wer { text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nachberechnung .wer span { font-size: 12px; color: var(--blass); text-transform: none; }
+  .nachberechnung.beglichen { text-decoration: line-through; color: var(--linie); }
+  .nachberechnung.beglichen .wer span { color: var(--linie); }
+  .nichts { font-size: 12px; text-transform: uppercase; }
+
+  .offen { font-size: 20px; font-weight: 700; }
+
+  .barcode {
+    margin: 22px auto 6px;
+    width: 300px; height: 46px;
+    background: repeating-linear-gradient(90deg,
+      var(--druck) 0 2px, transparent 2px 4px,
+      var(--druck) 4px 7px, transparent 7px 9px,
+      var(--druck) 9px 10px, transparent 10px 14px);
+  }
+  .ziffern { text-align: center; font-size: 11px; color: var(--blass); letter-spacing: .2em; }
+  .dank { text-align: center; font-size: 12px; margin-top: 16px; line-height: 1.5; }
+  .leer { padding: 18px 0; text-align: center; font-size: 13px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="tisch">
+  <div class="bon">
+    <div class="kopf">
+      <img class="emblem" src="{{.Logo}}" alt="Stammtisch Zumba">
+      <div class="firma">STAMMTISCH ZUMBA</div>
+      <div class="blass">Filiale Donnerstag · Tisch hinten links</div>
+      <div class="blass">Kasse 1 · Bed.: Zumba-Bot</div>
+      {{if .WeeklyNote}}<div class="blass">** WOCHENREPORT DO 21:00 **</div>{{end}}
+    </div>
+
+    <div class="strich oben"></div>
+    <div class="zeile blass"><span>{{.Datum}} 21:00</span><span>Bon-Nr. {{.Total}}</span></div>
+    <div class="strich meta"></div>
+
+    {{if .Users}}
+    <div class="postenkopf"><span>POS</span><span>ARTIKEL</span><span class="pre">MENGE  QUOTE</span></div>
+    {{range .Users}}
+    <div class="posten{{if .Top3}} top{{end}}">
+      <span>{{printf "%02d" .Rank}}</span>
+      <span class="artikel">{{.Name}} {{if gt .Streak 0}}<span>[+{{.StreakAbs}}]</span>{{else if lt .Streak 0}}<span>[−{{.StreakAbs}}]</span>{{end}}</span>
+      <span class="pre">{{printf "%2dx %2dw %3d%%" .Attendance .Away .Quote}}</span>
+    </div>
+    {{end}}
+
+    <div class="strich"></div>
+    <div class="zeile summe"><span>STAMMTISCHE GESAMT</span><span>{{.Total}}</span></div>
+    <div class="zeile summe"><span>DURCHSCHNITTSQUOTE</span><span>{{.AvgPercent}}%</span></div>
+    <div class="zeile summe"><span>TREUESTER KUNDE</span><span class="wer">{{.GoatName}}</span></div>
+    {{else}}
+    <div class="leer">Keine Posten · Keine Daten</div>
+    {{end}}
+
+    <div class="strich"></div>
+    <div class="titel">STRAFEN / NACHBERECHNUNG</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="nachberechnung{{if .Beglichen}} beglichen{{end}}">
+        <span class="wer">{{.Name}} <span>{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span></span>
+        <span class="pre">{{printf "%3d" .Betrag}} EUR</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="nichts">Keine offenen Strafen</div>
+    {{end}}
+
+    <div class="doppelt"></div>
+    <div class="zeile offen"><span>OFFEN</span><span>{{.OffenSum}} EUR</span></div>
+    <div class="zeile blass"><span>enthält 0% MwSt · Zahlbar in Runden</span></div>
+
+    <div class="barcode"></div>
+    <div class="ziffern">{{.Year}} {{printf "%03d" .Total}} {{printf "%04d" .OffenSum}} {{printf "%03d" .AvgPercent}}</div>
+
+    <div class="dank">Vielen Dank für Ihren Besuch.<br>Bitte kommen Sie Donnerstag wieder.</div>
+  </div>
+</div>
+</body>
+</html>

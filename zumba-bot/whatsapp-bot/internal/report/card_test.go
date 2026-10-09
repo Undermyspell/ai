@@ -27,13 +27,13 @@ func TestBuildCardHTML(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		"Automatischer Wochenreport",     // weekly-Header
-		"31",                             // total aus erster Zeile (28+3)
-		"Anna", "🥇",                      // Rangliste mit Medaille
-		"width: 90.3%",                   // Balkenbreite
-		"❤️‍🔥&#43;9",                      // Streak-Tag > 7 ("+" HTML-escaped)
-		"6x in Folge gefehlt", "30€",     // Strafenblock
-		"data:font/woff2;base64,",        // eingebetteter Font
+		"Automatischer Wochenreport", // weekly-Header
+		"31",                         // total aus erster Zeile (28+3)
+		"Anna", "🥇",                  // Rangliste mit Medaille
+		"width: 90.3%",               // Balkenbreite
+		"❤️‍🔥&#43;9",                 // Streak-Tag > 7 ("+" HTML-escaped)
+		"6x in Folge gefehlt", "30€", // Strafenblock
+		"data:font/woff2;base64,", // eingebetteter Font
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("Karte enthält %q nicht", want)
@@ -68,7 +68,7 @@ func TestAlleCardStylesRendern(t *testing.T) {
 	asOf := time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC)
 
 	for _, s := range CardStyles() {
-		html, err := BuildCardHTMLByStyle(s.ID, rows, entries, asOf, true)
+		html, err := BuildCardHTMLByStyle(s.ID, rows, entries, asOf, "", true)
 		if err != nil {
 			t.Fatalf("%s: %v", s.ID, err)
 		}
@@ -81,7 +81,7 @@ func TestAlleCardStylesRendern(t *testing.T) {
 		if strings.Contains(html, "Pause -") {
 			t.Errorf("%s: doppeltes Minus in der Pausen-Anzeige", s.ID)
 		}
-		if _, err := BuildCardHTMLByStyle(s.ID, nil, nil, asOf, false); err != nil {
+		if _, err := BuildCardHTMLByStyle(s.ID, nil, nil, asOf, "", false); err != nil {
 			t.Errorf("%s (leer): %v", s.ID, err)
 		}
 	}
@@ -91,15 +91,71 @@ func TestUnbekannterCardStyleFaelltAufLiveZurueck(t *testing.T) {
 	rows := []store.Stat{{Name: "Anna", Attendance: 1, Away: 0, Percent: 100}}
 	asOf := time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC)
 
-	fallback, err := BuildCardHTMLByStyle("gibtsnicht", rows, nil, asOf, false)
+	fallback, err := BuildCardHTMLByStyle("gibtsnicht", rows, nil, asOf, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	live, err := BuildCardHTMLByStyle(DefaultCardStyle, rows, nil, asOf, false)
+	live, err := BuildCardHTMLByStyle(DefaultCardStyle, rows, nil, asOf, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if fallback != live {
 		t.Error("unbekannter Stil muss das Live-Design liefern")
+	}
+}
+
+// Die fünf Designs aus dem Statistik-Karten-Handoff rechnen sich ein paar
+// Kennzahlen selbst (Ø-Quote, Sitzverteilung, offene Summe, Saison).
+func TestHandoffCardStyles(t *testing.T) {
+	rows := []store.Stat{
+		{Name: "Anna", Attendance: 26, Away: 5, Percent: 83.9, Streak: 9},
+		{Name: "Börni", Attendance: 10, Away: 21, Percent: 32.3, Streak: -4},
+	}
+	beglichen := time.Date(2026, 8, 4, 0, 0, 0, 0, time.UTC)
+	entries := []penalty.Entry{
+		{Name: "Börni", Betrag: 30, Tage: 6, Art: penalty.ArtFehltage, Status: penalty.StatusOffen},
+		{Name: "Anna", Betrag: 50, Art: penalty.ArtNoShow, Datum: beglichen, Status: penalty.StatusBeglichen, BeglichenAm: &beglichen},
+	}
+	asOf := time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC)
+
+	for style, wants := range map[string][]string{
+		"abfahrtstafel": {"ZUMBA HBF", "❤️‍🔥 pünktlich +9", "🧊 fällt aus −4", "84%"},
+		// OFFEN zählt nur die offene Strafe; Strichcode = Jahr Total Offen Ø.
+		"kassenbon":     {"Bon-Nr. 31", "<span>OFFEN</span><span>30 EUR</span>", "2027 031 0030 058", "[−4]"},
+		"gipfelbuch":    {"Saison 2027", "26/31", "clip-path: polygon(0% 100%, 0% 22.1%, 0.0% 16.1%, 100.0% 67.7%, 100% 75.7%, 100% 100%)"},
+		"wetterbericht": {"Ø 58 % im Saisonmittel", "🌋", "Dauerfrost · Pause 4", "84°"},
+		// 36 da / 26 weg → 105° des Halbkreises gelb.
+		"hochrechnung": {"Stammtischwahl 2027", "#ffd23f 105deg", "DA 36", "WEG 26", "−4,0", "+9,0", "absolute Mehrheit"},
+	} {
+		html, err := BuildCardHTMLByStyle(style, rows, entries, asOf, "2027", true)
+		if err != nil {
+			t.Fatalf("%s: %v", style, err)
+		}
+		for _, want := range wants {
+			if !strings.Contains(html, want) {
+				t.Errorf("%s: %q fehlt", style, want)
+			}
+		}
+
+		leer, err := BuildCardHTMLByStyle(style, nil, nil, asOf, "", false)
+		if err != nil {
+			t.Fatalf("%s (leer): %v", style, err)
+		}
+		for _, want := range []string{"Keine Daten", "Keine offenen Strafen"} {
+			if !strings.Contains(leer, want) {
+				t.Errorf("%s (leer): %q fehlt", style, want)
+			}
+		}
+	}
+}
+
+func TestCardOhneSaisonNimmtKalenderjahr(t *testing.T) {
+	rows := []store.Stat{{Name: "Anna", Attendance: 1, Away: 0, Percent: 100}}
+	html, err := BuildCardHTMLByStyle("gipfelbuch", rows, nil, time.Date(2026, 12, 3, 0, 0, 0, 0, time.UTC), "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(html, "Saison 2026") {
+		t.Error("ohne Saison-Label muss das Kalenderjahr von asOf erscheinen")
 	}
 }

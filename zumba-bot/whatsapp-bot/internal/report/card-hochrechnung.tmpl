@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  {{range .Fonts.Barlow}}
+  @font-face {
+    font-family: "Barlow Condensed";
+    src: url("{{.URL}}") format("woff2");
+    font-weight: {{.Weight}};
+  }
+  {{end}}
+  {{range .Fonts.SpaceMono}}
+  @font-face {
+    font-family: "Space Mono";
+    src: url("{{.URL}}") format("woff2");
+    font-weight: {{.Weight}};
+  }
+  {{end}}
+  :root {
+    --studio: #0e1b3a;
+    --rot: #c8102e;
+    --gelb: #ffd23f;
+    --blau: #4f7fe0;
+    --hellblau: #9fb3e6;
+    --gruen: #7ee081;
+    --rosa: #ff6b7a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--studio);
+    color: #fff;
+    font-family: "Barlow Condensed", "Noto Sans", "DejaVu Sans", sans-serif, "Noto Color Emoji";
+  }
+  .anton { font-family: "Anton", sans-serif; font-weight: 400; }
+  .mono { font-family: "Space Mono", "DejaVu Sans Mono", monospace; }
+  .studio {
+    padding: 0 0 24px;
+    background: linear-gradient(135deg, rgba(255,255,255,.06), transparent 50%), var(--studio);
+  }
+  .klein { letter-spacing: .2em; text-transform: uppercase; color: var(--hellblau); }
+
+  /* Roter Live-Ticker über der Sendung. */
+  .ticker {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    background: var(--rot);
+    padding: 10px 36px;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: .25em; text-transform: uppercase;
+  }
+  .ticker span { white-space: nowrap; flex-shrink: 0; }
+
+  header { padding: 26px 36px 0; display: flex; align-items: center; gap: 18px; }
+  .emblem {
+    flex-shrink: 0;
+    width: 66px; height: 66px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px #fff;
+  }
+  .titel { flex: 1; min-width: 0; }
+  .titel .klein { font-size: 14px; letter-spacing: .25em; }
+  h1 { font-size: 48px; line-height: 1; letter-spacing: .02em; }
+
+  .auszaehlung {
+    padding: 22px 36px 0;
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 24px;
+    align-items: start;
+  }
+  .legende { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; margin-bottom: 8px; }
+  .legende span:last-child { text-align: right; }
+
+  /* Balken je Mitglied: Länge = Quote, gestrichelt = Durchschnitt. */
+  .partei {
+    display: grid;
+    grid-template-columns: 118px 1fr 54px 64px;
+    gap: 10px;
+    align-items: center;
+    padding: 3px 0;
+  }
+  .partei .nm {
+    font-size: 19px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .balken { position: relative; height: 22px; background: rgba(255,255,255,.08); }
+  .balken .wert, .balken .schnitt { position: absolute; top: 0; bottom: 0; left: 0; }
+  .balken .wert { background: var(--rot); }
+  .balken .wert.ueber { background: var(--blau); }
+  .balken .wert.top { background: var(--gelb); }
+  .balken .schnitt { border-right: 2px dashed rgba(255,255,255,.5); }
+  .partei .quote { font-size: 21px; text-align: right; }
+  .partei .delta { font-size: 13px; font-weight: 700; text-align: right; color: var(--hellblau); }
+  .partei .delta.plus { color: var(--gruen); }
+  .partei .delta.minus { color: var(--rosa); }
+  .fussnote { font-size: 11px; letter-spacing: .14em; margin-top: 6px; }
+
+  .seite { display: flex; flex-direction: column; gap: 14px; }
+  .sitze { text-align: center; }
+  .sitze .klein { font-size: 12px; }
+  /* Halbkreis: gelb = Anwesenheiten, rot = Absagen. */
+  .halbkreis {
+    position: relative;
+    width: 200px; height: 100px;
+    margin: 8px auto 0;
+    border-radius: 200px 200px 0 0;
+    overflow: hidden;
+  }
+  .halbkreis .innen {
+    position: absolute; left: 50px; right: 50px; bottom: 0;
+    height: 50px;
+    border-radius: 100px 100px 0 0;
+    background: var(--studio);
+  }
+  .sitze .zahlen { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-top: 4px; }
+  .sitze .da { color: var(--gelb); }
+  .sitze .weg { color: var(--rosa); }
+
+  .kasten { background: rgba(255,255,255,.08); border-radius: 8px; padding: 10px 12px; }
+  .kasten .klein { font-size: 11px; }
+  .kasten .wer { font-size: 20px; font-weight: 800; line-height: 1.1; }
+  .kasten .wer.sieger { font-size: 24px; }
+  .kasten .unter { font-size: 14px; color: #cfe6ff; }
+  .kasten .plus { color: var(--gruen); }
+  .kasten .minus { color: var(--rosa); }
+
+  .befragung {
+    margin: 22px 36px 0;
+    background: #fff;
+    color: var(--studio);
+    border-radius: 6px;
+    padding: 12px 16px;
+  }
+  .befragung .kopf { font-size: 12px; font-weight: 700; letter-spacing: .25em; text-transform: uppercase; color: var(--rot); }
+  .strafe {
+    display: flex; gap: 10px; align-items: baseline;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(14,27,58,.12);
+  }
+  .strafe.beglichen { opacity: .5; }
+  .strafe .nm { font-size: 20px; font-weight: 700; text-transform: uppercase; }
+  .strafe .grund { flex: 1; font-size: 14px; color: #4a5a80; }
+  .strafe .betrag { font-size: 20px; color: var(--rot); }
+  .sauber { font-size: 18px; font-weight: 700; padding: 4px 0; }
+
+  .leer { padding: 30px 36px 0; font-size: 24px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--hellblau); }
+
+  footer {
+    margin: 16px 36px 0;
+    display: flex; justify-content: space-between;
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--hellblau);
+  }
+</style>
+</head>
+<body>
+<div class="studio">
+  <div class="ticker">
+    <span>● Live · Wahlstudio Zumba</span>
+    <span>{{if .WeeklyNote}}Wochenreport{{else}}Auf Zuruf{{end}} · 21:00 Uhr</span>
+  </div>
+  <header>
+    <img class="emblem" src="{{.Logo}}" alt="Stammtisch Zumba">
+    <div class="titel">
+      <div class="klein">Stammtischwahl {{.Year}} · {{.Total}} Wahlgänge ausgezählt</div>
+      <h1 class="anton">HOCHRECHNUNG</h1>
+    </div>
+  </header>
+
+  {{if .Users}}
+  <div class="auszaehlung">
+    <div>
+      <div class="legende klein"><span>Stimmenanteile · Anwesenheit in %</span><span>Gewinne / Verluste = laufende Serie</span></div>
+      {{$avg := .AvgPercent}}
+      {{range .Users}}
+      <div class="partei">
+        <span class="nm">{{.Name}}</span>
+        <span class="balken">
+          <span class="wert{{if .Top3}} top{{else if ge .Quote $avg}} ueber{{end}}" style="width: {{printf "%.1f" .PercentVal}}%"></span>
+          <span class="schnitt" style="width: {{$avg}}%"></span>
+        </span>
+        <span class="quote anton">{{.Quote}}</span>
+        {{if gt .Streak 0}}<span class="delta mono plus">+{{.StreakAbs}},0</span>
+        {{else if lt .Streak 0}}<span class="delta mono minus">−{{.StreakAbs}},0</span>
+        {{else}}<span class="delta mono">±0,0</span>{{end}}
+      </div>
+      {{end}}
+      <div class="fussnote klein">┊ gestrichelt = Durchschnitt {{.AvgPercent}} %</div>
+    </div>
+
+    <div class="seite">
+      <div class="sitze">
+        <div class="klein">Sitzverteilung</div>
+        <div class="halbkreis" style="background: conic-gradient(from 270deg at 50% 100%, #ffd23f {{.SitzGrad}}deg, #c8102e 0 180deg, transparent 0)">
+          <div class="innen"></div>
+        </div>
+        <div class="zahlen"><span class="da">DA {{.TotalAttend}}</span><span class="weg">WEG {{.TotalAway}}</span></div>
+      </div>
+      <div class="kasten">
+        <div class="klein">🐐 Wahlsieger</div>
+        <div class="wer sieger">{{.GoatName}}</div>
+        <div class="unter">{{.GoatQuote}} % · {{if gt .GoatQuote 50}}absolute{{else}}relative{{end}} Mehrheit</div>
+      </div>
+      {{if .MaxStreak}}
+      <div class="kasten">
+        <div class="klein">🔥 Größter Zugewinn</div>
+        <div class="wer">{{.MaxStreakNames}} <span class="plus">+{{.MaxStreak}}</span></div>
+      </div>
+      {{end}}
+      {{if .MinStreak}}
+      <div class="kasten">
+        <div class="klein">🧊 Größter Verlust</div>
+        <div class="wer">{{.MinStreakNames}} <span class="minus">−{{.MinStreak}}</span></div>
+      </div>
+      {{end}}
+    </div>
+  </div>
+  {{else}}
+  <div class="leer">Noch keine Stimmen ausgezählt · Keine Daten</div>
+  {{end}}
+
+  <div class="befragung">
+    <div class="kopf">Nachwahlbefragung · Strafen</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="strafe{{if .Beglichen}} beglichen{{end}}">
+        <span class="nm">{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+        <span class="betrag anton">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="sauber">Keine offenen Strafen</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>🤖🍺 Quelle: Zumba-Bot · Stand {{.Datum}}</span>
+    <span>Fehlertoleranz ± eine Halbe</span>
+  </footer>
+</div>
+</body>
+</html>

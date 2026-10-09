@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  {{range .Fonts.Barlow}}
+  @font-face {
+    font-family: "Barlow Condensed";
+    src: url("{{.URL}}") format("woff2");
+    font-weight: {{.Weight}};
+  }
+  {{end}}
+  {{range .Fonts.SpaceMono}}
+  @font-face {
+    font-family: "Space Mono";
+    src: url("{{.URL}}") format("woff2");
+    font-weight: {{.Weight}};
+  }
+  {{end}}
+  :root {
+    --tafel: #0b0c10;
+    --amber: #F3B21B;
+    --grau: #8b8f99;
+    --feld: #15161c;
+    --feld-unten: #101117;
+    --linie: #2a2c33;
+    --gruen: #7ee081;
+    --rot: #ff6b57;
+    --eis: #9fd0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--tafel);
+    color: var(--amber);
+    font-family: "Barlow Condensed", "Noto Sans", "DejaVu Sans", sans-serif, "Noto Color Emoji";
+  }
+  .mono { font-family: "Space Mono", "DejaVu Sans Mono", monospace, "Noto Color Emoji"; }
+  /* Schwarze Anzeigetafel mit leichtem Glanz oben. */
+  .tafel {
+    padding: 34px 36px 26px;
+    background: linear-gradient(180deg, rgba(255,255,255,.05), transparent 30%), var(--tafel);
+  }
+  .klein {
+    font-size: 13px;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--grau);
+  }
+
+  header {
+    display: flex; align-items: center; gap: 18px;
+    border-bottom: 2px solid var(--linie);
+    padding-bottom: 16px;
+  }
+  /* Emblem im Bernstein der Anzeige. */
+  .emblem {
+    flex-shrink: 0;
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    filter: sepia(1) saturate(2) brightness(.95);
+    box-shadow: 0 0 0 2px var(--linie);
+  }
+  .titel { flex: 1; min-width: 0; }
+  h1 {
+    font-family: "Anton", sans-serif;
+    font-size: 44px; font-weight: 400; line-height: 1;
+    letter-spacing: .04em;
+    text-shadow: 0 0 18px rgba(243,178,27,.35);
+  }
+  .fahrplan { text-align: right; }
+  .halte { font-size: 34px; font-weight: 700; line-height: 1; color: #fff; }
+  .halte span { font-size: 14px; color: var(--grau); }
+
+  .weekly {
+    margin-top: 12px;
+    font-size: 13px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--grau);
+  }
+
+  /* Spalten: Gleis / Ziel / Quote / Hinweis */
+  .spalten, .zeile {
+    display: grid;
+    grid-template-columns: 72px 1fr 110px 170px;
+    gap: 12px;
+    align-items: center;
+  }
+  .spalten {
+    padding: 16px 10px 8px;
+    font-size: 12px; letter-spacing: .25em; text-transform: uppercase;
+    color: var(--grau);
+  }
+  .r { text-align: right; }
+  .zeilen { display: flex; flex-direction: column; gap: 5px; }
+  /* Zweigeteiltes Feld wie beim Fallblatt. */
+  .zeile {
+    padding: 8px 10px;
+    background: linear-gradient(180deg, var(--feld) 0 49%, var(--feld-unten) 51% 100%);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .gleis { font-size: 20px; font-weight: 700; }
+  .zeile.top .gleis { color: #fff; }
+  .ziel {
+    font-size: 24px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ziel span { font-size: 13px; letter-spacing: .1em; color: var(--grau); font-weight: 600; }
+  .quote { font-size: 22px; font-weight: 700; text-align: right; color: #fff; }
+  .hinweis {
+    font-size: 15px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+    text-align: right; white-space: nowrap;
+    color: var(--grau);
+  }
+  .hinweis.puenktlich { color: var(--gruen); }
+  .hinweis.verspaetet { color: var(--eis); }
+  .hinweis.ausfall { color: var(--rot); }
+
+  .infos { margin-top: 22px; display: flex; gap: 10px; }
+  .info { flex: 1; min-width: 0; padding: 10px 12px; background: var(--feld); border-radius: 4px; }
+  .info .was { font-size: 11px; letter-spacing: .25em; text-transform: uppercase; color: var(--grau); }
+  .info .wer { font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .info .wer span { color: #fff; font-size: 16px; }
+
+  .stoerungen { margin-top: 22px; border-top: 2px solid var(--linie); padding-top: 12px; }
+  .stoerungen .kopf {
+    font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--rot);
+    margin-bottom: 8px;
+  }
+  .strafe {
+    display: flex; gap: 12px; align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid #1c1d24;
+  }
+  .strafe.beglichen { opacity: .5; }
+  .strafe .nm { font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .strafe .grund { flex: 1; font-size: 14px; color: var(--grau); letter-spacing: .06em; }
+  .strafe .betrag { font-size: 20px; font-weight: 700; color: var(--rot); }
+  .strafe.beglichen .betrag { color: var(--grau); }
+  .frei { font-size: 15px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gruen); }
+
+  .leer {
+    padding: 36px 10px;
+    font-size: 20px; font-weight: 700;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--grau);
+  }
+
+  footer {
+    margin-top: 18px;
+    display: flex; justify-content: space-between;
+    font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+    color: #555a66;
+  }
+</style>
+</head>
+<body>
+<div class="tafel">
+  <header>
+    <img class="emblem" src="{{.Logo}}" alt="Stammtisch Zumba">
+    <div class="titel">
+      <div class="klein">Abfahrt · Donnerstag 20:00</div>
+      <h1>ZUMBA HBF</h1>
+    </div>
+    <div class="fahrplan">
+      <div class="klein">Fahrplan</div>
+      <div class="halte mono">{{.Total}} <span>Halte</span></div>
+    </div>
+  </header>
+  {{if .WeeklyNote}}<div class="weekly">▸ Automatischer Wochenreport · Do 21:00</div>{{end}}
+
+  {{if .Users}}
+  <div class="spalten">
+    <span>Gleis</span><span>Ziel</span><span class="r">Quote</span><span class="r">Hinweis</span>
+  </div>
+  <div class="zeilen">
+    {{range .Users}}
+    <div class="zeile{{if .Top3}} top{{end}}">
+      <span class="gleis mono">{{.Rank}}</span>
+      <span class="ziel">{{.Name}} <span>{{.Attendance}} da · {{.Away}} weg</span></span>
+      <span class="quote mono">{{.Quote}}%</span>
+      {{if gt .Streak 7}}<span class="hinweis puenktlich">❤️‍🔥 pünktlich +{{.StreakAbs}}</span>
+      {{else if gt .Streak 0}}<span class="hinweis puenktlich">🔥 pünktlich +{{.StreakAbs}}</span>
+      {{else if lt .Streak -3}}<span class="hinweis ausfall">🧊 fällt aus −{{.StreakAbs}}</span>
+      {{else if lt .Streak 0}}<span class="hinweis verspaetet">❄️ verspätet −{{.StreakAbs}}</span>
+      {{else}}<span class="hinweis">planmäßig</span>{{end}}
+    </div>
+    {{end}}
+  </div>
+
+  <div class="infos">
+    <div class="info">
+      <div class="was">🐐 Stammgast</div>
+      <div class="wer">{{.GoatName}} <span class="mono">{{.GoatQuote}}%</span></div>
+    </div>
+    {{if .MaxStreak}}
+    <div class="info">
+      <div class="was">🔥 Pünktlichste Linie</div>
+      <div class="wer">{{.MaxStreakNames}} <span class="mono">{{.MaxStreak}}×</span></div>
+    </div>
+    {{end}}
+    {{if .MinStreak}}
+    <div class="info">
+      <div class="was">🧊 Längster Ausfall</div>
+      <div class="wer">{{.MinStreakNames}} <span class="mono">{{.MinStreak}}×</span></div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="leer">Keine Abfahrten · Keine Daten</div>
+  {{end}}
+
+  <div class="stoerungen">
+    <div class="kopf">⚠ Störungsmeldungen · Strafen</div>
+    {{if .Strafen}}
+      {{range .Strafen}}
+      <div class="strafe{{if .Beglichen}} beglichen{{end}}">
+        <span class="nm">{{.Name}}</span>
+        <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+        <span class="betrag mono">{{.Betrag}} €</span>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="frei">Freie Fahrt — Keine offenen Strafen</div>
+    {{end}}
+  </div>
+
+  <footer>
+    <span>🤖🍺 Zumba-Bot · Alle Angaben ohne Gewähr</span>
+    <span>{{.Datum}}</span>
+  </footer>
+</div>
+</body>
+</html>

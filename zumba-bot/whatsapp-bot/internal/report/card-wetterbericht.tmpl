@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Anton";
+    src: url("{{.Fonts.Anton}}") format("woff2");
+    font-weight: 400;
+  }
+  {{range .Fonts.Barlow}}
+  @font-face {
+    font-family: "Barlow Condensed";
+    src: url("{{.URL}}") format("woff2");
+    font-weight: {{.Weight}};
+  }
+  {{end}}
+  {{range .Fonts.SpaceMono}}
+  @font-face {
+    font-family: "Space Mono";
+    src: url("{{.URL}}") format("woff2");
+    font-weight: {{.Weight}};
+  }
+  {{end}}
+  :root {
+    --nacht: #0b2a4a;
+    --himmelblau: #9fd0ff;
+    --hell: #cfe6ff;
+    --sonne: #ffd23f;
+    --glas: rgba(255,255,255,.1);
+    --glas-rand: rgba(255,255,255,.2);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px;
+    background: var(--nacht);
+    color: #fff;
+    font-family: "Barlow Condensed", "Noto Sans", "DejaVu Sans", sans-serif, "Noto Color Emoji";
+  }
+  .anton { font-family: "Anton", sans-serif; font-weight: 400; }
+  /* Himmel von Nacht oben bis Tageslicht unten. */
+  .himmel {
+    padding: 34px 36px 26px;
+    background: linear-gradient(180deg, var(--nacht) 0%, #1b4f7f 55%, #4b8fc4 100%);
+  }
+  .klein { letter-spacing: .2em; text-transform: uppercase; color: var(--himmelblau); }
+
+  header { display: flex; align-items: flex-end; gap: 16px; }
+  .emblem {
+    flex-shrink: 0;
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.35);
+  }
+  .titel { flex: 1; min-width: 0; }
+  .titel .klein { font-size: 14px; letter-spacing: .25em; }
+  h1 { font-size: 46px; line-height: 1; letter-spacing: .02em; }
+  .messtage {
+    flex-shrink: 0;
+    background: var(--sonne);
+    color: var(--nacht);
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-align: center;
+    transform: rotate(3deg);
+  }
+  .messtage .was { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; font-weight: 700; }
+  .messtage .zahl { font-size: 30px; line-height: 1; }
+  .weekly { margin-top: 10px; font-size: 14px; letter-spacing: .14em; }
+
+  .lage { margin-top: 22px; display: flex; gap: 12px; }
+  .glas {
+    flex: 1; min-width: 0;
+    background: var(--glas);
+    border: 1px solid var(--glas-rand);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .glas.gross { flex: 1.2; }
+  .glas .klein { font-size: 12px; }
+  .glas .text { font-size: 20px; font-weight: 700; line-height: 1.2; margin-top: 4px; }
+  .glas .wer { font-size: 26px; font-weight: 800; line-height: 1.1; margin-top: 4px; }
+  .glas .unter { font-size: 14px; color: var(--hell); }
+
+  /* Eine Wetterkachel je Mitglied: Symbol nach Serie, Quote als Temperatur. */
+  .kacheln { margin-top: 18px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .kachel {
+    position: relative;
+    min-width: 0;
+    background: var(--glas);
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 12px;
+    padding: 10px 8px 8px;
+    text-align: center;
+  }
+  .kachel.top { background: rgba(255,210,63,.18); }
+  .kachel .platz {
+    position: absolute; top: 6px; left: 8px;
+    font-family: "Space Mono", "DejaVu Sans Mono", monospace;
+    font-size: 11px;
+    color: var(--hell);
+  }
+  .kachel .symbol { font-size: 40px; line-height: 1.1; margin-top: 8px; }
+  .kachel .nm {
+    font-size: 20px; font-weight: 700; letter-spacing: .02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kachel .grad { font-size: 28px; line-height: 1; color: var(--himmelblau); }
+  .kachel .grad.mild { color: #fff; }
+  .kachel .grad.heiss { color: var(--sonne); }
+  .kachel .wetter {
+    margin-top: 4px;
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--hell);
+    white-space: nowrap;
+  }
+
+  .warnung {
+    margin-top: 18px;
+    background: rgba(180,30,30,.35);
+    border: 1px solid rgba(255,120,120,.5);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .warnung .kopf { font-size: 12px; letter-spacing: .25em; text-transform: uppercase; color: #ffb3b3; }
+  /* Ohne Strafen gibt es keine Warnung – dann nur ein ruhiger Glaskasten. */
+  .warnung.ruhig { background: var(--glas); border-color: var(--glas-rand); }
+  .warnung.ruhig .kopf { color: var(--himmelblau); }
+  .strafe {
+    display: flex; gap: 10px; align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+  }
+  .strafe.beglichen { opacity: .5; }
+  .strafe .nm { font-size: 20px; font-weight: 700; }
+  .strafe .grund { flex: 1; font-size: 14px; color: #ffd9d9; }
+  .strafe .betrag { font-size: 20px; }
+  .sauber { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+  .leer { margin-top: 26px; font-size: 24px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--hell); }
+
+  footer {
+    margin-top: 16px;
+    display: flex; justify-content: space-between;
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--himmelblau);
+  }
+</style>
+</head>
+<body>
+<div class="himmel">
+  <header>
+    <img class="emblem" src="{{.Logo}}" alt="Stammtisch Zumba">
+    <div class="titel">
+      <div class="klein">Das Stammtisch-Wetter · {{.Datum}}</div>
+      <h1 class="anton">ZUMBA WETTERBERICHT</h1>
+    </div>
+    <div class="messtage">
+      <div class="was">Messtage</div>
+      <div class="zahl anton">{{.Total}}</div>
+    </div>
+  </header>
+  {{if .WeeklyNote}}<div class="weekly klein">● Live aus dem Wetterstudio · Donnerstag 21:00</div>{{end}}
+
+  {{if .Users}}
+  <div class="lage">
+    <div class="glas gross">
+      <div class="klein">Großwetterlage</div>
+      <div class="text">Stabiles Hoch „{{.GoatName}}“ über dem Stammtisch, {{.GoatQuote}} % Sonnenanteil. Ø {{.AvgPercent}} % im Saisonmittel.</div>
+    </div>
+    {{if .MaxStreak}}
+    <div class="glas">
+      <div class="klein">🔥 Hitzewelle</div>
+      <div class="wer">{{.MaxStreakNames}}</div>
+      <div class="unter">{{.MaxStreak}} {{if eq .MaxStreak 1}}Donnerstag{{else}}Donnerstage{{end}} am Stück</div>
+    </div>
+    {{end}}
+    {{if .MinStreak}}
+    <div class="glas">
+      <div class="klein">🧊 Kältefront</div>
+      <div class="wer">{{.MinStreakNames}}</div>
+      <div class="unter">seit {{.MinStreak}} {{if eq .MinStreak 1}}Woche{{else}}Wochen{{end}} nicht gesehen</div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="kacheln">
+    {{range .Users}}
+    <div class="kachel{{if .Top3}} top{{end}}">
+      <span class="platz">{{.Rank}}</span>
+      {{if gt .Streak 7}}<div class="symbol">🌋</div>
+      {{else if gt .Streak 3}}<div class="symbol">☀️</div>
+      {{else if gt .Streak 0}}<div class="symbol">🌤️</div>
+      {{else if eq .Streak 0}}<div class="symbol">⛅</div>
+      {{else if gt .Streak -4}}<div class="symbol">🌧️</div>
+      {{else}}<div class="symbol">🌨️</div>{{end}}
+      <div class="nm">{{.Name}}</div>
+      <div class="grad anton{{if ge .Quote 85}} heiss{{else if ge .Quote 60}} mild{{end}}">{{.Quote}}°</div>
+      {{if gt .Streak 7}}<div class="wetter">Tropennacht</div>
+      {{else if gt .Streak 3}}<div class="wetter">sonnig · Serie {{.StreakAbs}}</div>
+      {{else if gt .Streak 0}}<div class="wetter">heiter · Serie {{.StreakAbs}}</div>
+      {{else if eq .Streak 0}}<div class="wetter">wechselhaft</div>
+      {{else if gt .Streak -4}}<div class="wetter">Schauer · Pause {{.StreakAbs}}</div>
+      {{else}}<div class="wetter">Dauerfrost · Pause {{.StreakAbs}}</div>{{end}}
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="leer">Keine Messwerte · Keine Daten</div>
+  {{end}}
+
+  {{if .Strafen}}
+  <div class="warnung">
+    <div class="kopf">⚠ Amtliche Unwetterwarnung · Strafen</div>
+    {{range .Strafen}}
+    <div class="strafe{{if .Beglichen}} beglichen{{end}}">
+      <span class="nm">{{.Name}}</span>
+      <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
+      <span class="betrag anton">{{.Betrag}} €</span>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="warnung ruhig">
+    <div class="kopf">Keine Unwetterwarnungen</div>
+    <div class="sauber">Keine offenen Strafen ☀️</div>
+  </div>
+  {{end}}
+
+  <footer>
+    <span>🤖🍺 Ihr Wetterfrosch: Zumba-Bot</span>
+    <span>Vorhersage für Donnerstag: 🍻 100 %</span>
+  </footer>
+</div>
+</body>
+</html>

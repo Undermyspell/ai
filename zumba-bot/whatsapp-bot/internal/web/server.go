@@ -404,7 +404,13 @@ func (s *Server) renderCardStyled(ctx context.Context, style string, stats []sto
 	if s.Renderer == nil {
 		return nil, fmt.Errorf("kein Renderer konfiguriert (RENDERER_URL)")
 	}
-	html, err := report.BuildCardHTMLByStyle(style, stats, entries, asOf, weekly)
+	// Das Jahres-Label zeigen nur einzelne Designs ("Saison 2026"); fehlt es,
+	// nimmt die Karte das Kalenderjahr – kein Grund, den Report abzubrechen.
+	var label string
+	if season, err := s.store.SeasonAt(ctx, asOf); err == nil {
+		label = season.Label
+	}
+	html, err := report.BuildCardHTMLByStyle(style, stats, entries, asOf, label, weekly)
 	if err != nil {
 		return nil, err
 	}
