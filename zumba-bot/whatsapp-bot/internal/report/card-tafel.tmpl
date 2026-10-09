@@ -199,6 +199,14 @@
     font-family: "Noto Sans", sans-serif;
     font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
     color: var(--kreide-schwach);
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 39px; height: 29px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    box-shadow: 0 0 0 1.5px currentColor; filter: grayscale(1) brightness(1.15) contrast(0.9); opacity: 0.9;
   }
 </style>
 </head>
@@ -261,7 +269,7 @@
     </div>
 
     <footer>
-      <span>Zumba-Bot</span>
+      <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Zumba-Bot</span>
       <span>{{.DatumLang}}</span>
     </footer>
   </div>

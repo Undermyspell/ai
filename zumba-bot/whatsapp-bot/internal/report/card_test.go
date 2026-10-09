@@ -122,10 +122,10 @@ func TestHandoffCardStyles(t *testing.T) {
 		"abfahrtstafel": {"ZUMBA HBF", "❤️‍🔥 pünktlich +9", "🧊 fällt aus −4", "84%"},
 		// OFFEN zählt nur die offene Strafe; Strichcode = Jahr Total Offen Ø.
 		"kassenbon":     {"Bon-Nr. 31", "<span>OFFEN</span><span>30 EUR</span>", "2027 031 0030 058", "[−4]"},
-		"gipfelbuch":    {"Saison 2027", "26/31", "clip-path: polygon(0% 100%, 0% 22.1%, 0.0% 16.1%, 100.0% 67.7%, 100% 75.7%, 100% 100%)"},
-		"wetterbericht": {"Ø 58 % im Saisonmittel", "🌋", "Dauerfrost · Pause 4", "84°"},
+		"gipfelbuch":    {"Saison 2027", "26 da · 5 weg", "❤️‍🔥 9 Etappen", "🧊 4 Wo. im Tal", "clip-path: polygon(0% 100%, 0% 22.1%, 0.0% 16.1%, 100.0% 67.7%, 100% 75.7%, 100% 100%)"},
+		"wetterbericht": {"Ø 58 % im Saisonmittel", "🔥", "Rekordhitze", "🌨️", "Schnee", "26 da · 5 weg", "Serie +9", "Pause −4", "84°", "warnung stufe-2", "Stufe 2 · Markantes Wetter"},
 		// 36 da / 26 weg → 105° des Halbkreises gelb.
-		"hochrechnung": {"Stammtischwahl 2027", "#ffd23f 105deg", "DA 36", "WEG 26", "−4,0", "+9,0", "absolute Mehrheit"},
+		"hochrechnung": {"Stammtischwahl 2027", "#ffd23f 105deg", "DA 36", "WEG 26", "10 da · 21 weg", "−4,0", "+9,0", "absolute Mehrheit"},
 	} {
 		html, err := BuildCardHTMLByStyle(style, rows, entries, asOf, "2027", true)
 		if err != nil {
@@ -157,5 +157,21 @@ func TestCardOhneSaisonNimmtKalenderjahr(t *testing.T) {
 	}
 	if !strings.Contains(html, "Saison 2026") {
 		t.Error("ohne Saison-Label muss das Kalenderjahr von asOf erscheinen")
+	}
+}
+
+func TestWetterSkala(t *testing.T) {
+	for streak, want := range map[int]string{
+		13: "Vulkan", 8: "Rekordhitze", 5: "Hitzewelle", 3: "sonnig", 2: "heiter", 1: "Regenbogen", 0: "wechselhaft",
+		-1: "Schauer", -2: "Regen", -3: "Gewitter", -4: "Schnee", -5: "Dauerfrost", -9: "Dauerfrost", -10: "Eiszeit",
+	} {
+		if got := wetterFuer(streak).Text; got != want {
+			t.Errorf("wetterFuer(%d) = %q, will %q", streak, got, want)
+		}
+	}
+	for betrag, want := range map[int]int{25: 1, 30: 2, 45: 2, 50: 3, 95: 3, 100: 4} {
+		if got := warnstufe(betrag); got != want {
+			t.Errorf("warnstufe(%d) = %d, will %d", betrag, got, want)
+		}
 	}
 }

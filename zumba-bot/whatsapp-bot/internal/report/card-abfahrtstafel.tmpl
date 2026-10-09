@@ -107,11 +107,11 @@
   .gleis { font-size: 20px; font-weight: 700; }
   .zeile.top .gleis { color: #fff; }
   .ziel {
-    font-size: 24px; font-weight: 700;
+    font-size: 24px; font-weight: 700; line-height: 1.15;
     letter-spacing: .06em; text-transform: uppercase;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
-  .ziel span { font-size: 13px; letter-spacing: .1em; color: var(--grau); font-weight: 600; }
+  .ziel span { font-size: 13px; letter-spacing: .1em; color: var(--grau); font-weight: 600; white-space: nowrap; }
   .quote { font-size: 22px; font-weight: 700; text-align: right; color: #fff; }
   .hinweis {
     font-size: 15px; font-weight: 600;
@@ -159,6 +159,14 @@
     display: flex; justify-content: space-between;
     font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
     color: #555a66;
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 42px; height: 32px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    filter: sepia(1) saturate(2) brightness(.95); box-shadow: 0 0 0 2px var(--linie);
   }
 </style>
 </head>
@@ -234,7 +242,7 @@
   </div>
 
   <footer>
-    <span>🤖🍺 Zumba-Bot · Alle Angaben ohne Gewähr</span>
+    <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Zumba-Bot · Alle Angaben ohne Gewähr</span>
     <span>{{.Datum}}</span>
   </footer>
 </div>

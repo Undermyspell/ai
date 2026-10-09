@@ -61,11 +61,10 @@
   .stempel .zahl { font-size: 30px; line-height: 1; }
   .weekly { margin-top: 10px; font-size: 20px; color: var(--grau); }
 
-  /* Bergprofil: Höhe = Anwesenheitsquote, ein Gipfel je Mitglied. Der
-     Abstand nach oben ist der Himmel für die Fahnen der Spitzenreiter. */
+  /* Bergprofil: Höhe = Anwesenheitsquote, ein Gipfel je Mitglied. Den
+     Abstand nach oben (Himmel für die Fahnen) setzt der Code je Karte. */
   .profil {
     position: relative;
-    margin-top: 80px;
     height: 250px;
     border-bottom: 2px solid var(--tinte);
   }
@@ -102,13 +101,10 @@
     border-radius: 4px;
   }
   .fahne.name .schild { font-size: 20px; }
-  /* Am Rand hängt das Schild nach innen statt über die Karte hinaus. */
-  .fahne.links .schild { transform: translateX(calc(50% - 6px)); }
-  .fahne.rechts .schild { transform: translateX(calc(-50% + 6px)); }
-  .fahne .stange { width: 2px; height: 14px; background: var(--tinte); }
-  .fahne.hoch .stange { height: 34px; }
-  .fahne.top .stange { height: 30px; }
-  .fahne.top.hoch .stange { height: 56px; }
+  /* Wo mittig kein Platz ist, weht das Schild zu einer Seite der Stange. */
+  .fahne.nach-rechts .schild { transform: translateX(calc(50% - 6px)); }
+  .fahne.nach-links .schild { transform: translateX(calc(-50% + 6px)); }
+  .fahne .stange { width: 2px; background: var(--tinte); }
   .fahne .punkt {
     width: 8px; height: 8px;
     margin-top: -2px;
@@ -135,12 +131,9 @@
     border-bottom: 1px solid rgba(31,42,34,.15);
   }
   .eintrag .platz { font-size: 15px; color: var(--gruen); }
-  .eintrag .nm {
-    font-size: 23px; font-weight: 500; line-height: 1;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
+  .eintrag .nm { font-size: 23px; font-weight: 500; line-height: 1.05; }
   .eintrag.top .nm { font-weight: 700; }
-  .eintrag .tag { font-size: 17px; color: var(--grau); }
+  .eintrag .tag { font-size: 17px; color: var(--grau); white-space: nowrap; }
   .eintrag .quote { font-size: 17px; }
   .eintrag .quote small { font-size: 11px; }
   .eintrag .quote .von { font-family: "Noto Sans", sans-serif; font-size: 11px; color: var(--grau); }
@@ -182,6 +175,14 @@
     display: flex; justify-content: space-between;
     font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
     color: var(--grau);
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 42px; height: 32px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    box-shadow: 0 0 0 2px var(--papier), 0 0 0 3.5px var(--gruen);
   }
 </style>
 </head>
@@ -201,17 +202,17 @@
   {{if .WeeklyNote}}<div class="weekly hand">Eingetragen vom Hüttenwirt am Donnerstagabend, 21 Uhr</div>{{end}}
 
   {{if .Users}}
-  <div class="profil">
+  <div class="profil" style="margin-top: {{.RidgeKopf}}px">
     <div class="hoehenlinie" style="top: 0%"><span>100 %</span></div>
     <div class="hoehenlinie" style="top: 25%"><span>75 %</span></div>
     <div class="hoehenlinie" style="top: 50%"><span>50 %</span></div>
     <div class="hoehenlinie" style="top: 75%"><span>25 %</span></div>
     <div class="berg" style="clip-path: {{.Ridge}}"></div>
-    {{range $i, $u := .Users}}
-    <div class="fahne{{if .Top3}} top{{end}}{{if .FahneHoch}} hoch{{end}}{{if or .Top3 .Letzter}} name{{end}}{{if lt .Streak 0}} pause{{end}}{{if and (eq $i 0) (not .Letzter)}} links{{else if and .Letzter (ne $i 0)}} rechts{{end}}"
+    {{range .Users}}
+    <div class="fahne{{if or .Top3 .Letzter}} name{{end}}{{if lt .Streak 0}} pause{{end}}{{if .FahneSeite}} nach-{{.FahneSeite}}{{end}}"
          style="left: {{printf "%.1f" .RidgeX}}%; bottom: {{printf "%.1f" .PercentVal}}%">
       <span class="schild hand">{{if or .Top3 .Letzter}}{{.Name}}{{else}}{{.Rank}}{{end}}</span>
-      <span class="stange"></span>
+      <span class="stange" style="height: {{.FahnePole}}px"></span>
       <span class="punkt"></span>
     </div>
     {{end}}
@@ -224,13 +225,13 @@
     <div class="eintrag{{if .Top3}} top{{end}}">
       <span class="platz anton">{{.Rank}}</span>
       <span class="nm hand">{{.Name}}
-        {{if gt .Streak 7}}<span class="tag">❤️‍🔥 Dauergast</span>
+        {{if gt .Streak 7}}<span class="tag">❤️‍🔥 {{.StreakAbs}} Etappen</span>
         {{else if eq .Streak 1}}<span class="tag">🔥 1 Etappe</span>
         {{else if gt .Streak 0}}<span class="tag">🔥 {{.StreakAbs}} Etappen</span>
-        {{else if lt .Streak -3}}<span class="tag">🧊 im Tal</span>
+        {{else if lt .Streak -3}}<span class="tag">🧊 {{.StreakAbs}} Wo. im Tal</span>
         {{else if lt .Streak 0}}<span class="tag">❄️ {{.StreakAbs}} Wo. Pause</span>{{end}}
       </span>
-      <span class="quote anton">{{.Quote}}<small> %</small> <span class="von">{{.Attendance}}/{{.Termine}}</span></span>
+      <span class="quote anton">{{.Quote}}<small> %</small> <span class="von">{{.Attendance}} da · {{.Away}} weg</span></span>
     </div>
     {{end}}
   </div>
@@ -273,7 +274,7 @@
   </div>
 
   <footer>
-    <span>🤖🍺 Hüttenwirt: Zumba-Bot</span>
+    <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Hüttenwirt: Zumba-Bot</span>
     <span>{{.DatumLang}}</span>
   </footer>
 </div>

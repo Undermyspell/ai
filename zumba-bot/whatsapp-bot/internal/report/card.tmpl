@@ -254,6 +254,14 @@
     color: rgba(254, 243, 199, 0.4);
     display: flex;
     justify-content: space-between;
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 45px; height: 34px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    box-shadow: 0 0 0 1.5px rgba(245, 197, 66, 0.55);
   }
 </style>
 </head>
@@ -337,7 +345,7 @@
   </div>
 
   <footer>
-    <span>🤖🍺 Automatisch erstellt vom Zumba-Bot</span>
+    <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Automatisch erstellt vom Zumba-Bot</span>
     <span>{{.Datum}}</span>
   </footer>
 </div>

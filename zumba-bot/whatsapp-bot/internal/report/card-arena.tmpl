@@ -211,6 +211,14 @@
     font-size: 9px; font-weight: 700;
     letter-spacing: 0.24em; text-transform: uppercase;
     color: #5a6069;
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 39px; height: 29px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    box-shadow: 0 0 0 1.5px rgba(255, 179, 26, 0.45), 0 0 10px rgba(255, 179, 26, 0.25);
   }
 </style>
 </head>
@@ -295,7 +303,7 @@
   </div>
 
   <footer>
-    <span>Zumba-Bot · Live-Tabelle</span>
+    <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Zumba-Bot · Live-Tabelle</span>
     <span>{{.Datum}}</span>
   </footer>
 </div>

@@ -93,7 +93,21 @@
     padding: 10px 8px 8px;
     text-align: center;
   }
-  .kachel.top { background: rgba(255,210,63,.18); }
+  /* Kachelfarbe nach Wetterlage (wetterFuer). */
+  .kachel.vulkan { background: rgba(214,48,32,.42); border-color: rgba(255,120,90,.6); }
+  .kachel.hitze { background: rgba(255,128,32,.34); border-color: rgba(255,180,110,.55); }
+  .kachel.sonne { background: rgba(255,210,63,.24); border-color: rgba(255,225,130,.5); }
+  .kachel.regenbogen {
+    background: linear-gradient(160deg,
+      rgba(255,96,96,.28), rgba(255,210,63,.24) 30%, rgba(110,210,120,.24) 60%, rgba(90,150,255,.3));
+  }
+  .kachel.regen { background: rgba(22,40,66,.42); border-color: rgba(160,190,225,.3); }
+  .kachel.gewitter { background: rgba(38,30,70,.55); border-color: rgba(190,160,255,.35); }
+  .kachel.schnee { background: rgba(215,232,255,.22); border-color: rgba(230,242,255,.55); }
+  .kachel.frost { background: rgba(130,205,255,.3); border-color: rgba(205,238,255,.75); }
+  /* Die Top 3 tragen einen Goldrahmen – die Farbe gehört dem Wetter. */
+  .kachel.top { box-shadow: inset 0 0 0 2px var(--sonne); border-color: var(--sonne); }
+  .kachel.top .platz { color: var(--nacht); background: var(--sonne); border-radius: 4px; padding: 0 4px; font-weight: 700; }
   .kachel .platz {
     position: absolute; top: 6px; left: 8px;
     font-family: "Space Mono", "DejaVu Sans Mono", monospace;
@@ -103,26 +117,66 @@
   .kachel .symbol { font-size: 40px; line-height: 1.1; margin-top: 8px; }
   .kachel .nm {
     font-size: 20px; font-weight: 700; letter-spacing: .02em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
   }
+  .kachel .nm.lang { font-size: 16px; letter-spacing: 0; }
   .kachel .grad { font-size: 28px; line-height: 1; color: var(--himmelblau); }
   .kachel .grad.mild { color: #fff; }
   .kachel .grad.heiss { color: var(--sonne); }
+  .kachel .messung { margin-top: 3px; font-size: 14px; font-weight: 600; color: #fff; }
   .kachel .wetter {
-    margin-top: 4px;
+    margin-top: 3px;
     font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
     color: var(--hell);
-    white-space: nowrap;
   }
+  .kachel .serie { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: #fff; }
 
+  /* Unwetterwarnung in den Warnstufen-Farben des DWD: der Kasten nimmt die
+     höchste Stufe der offenen Strafen an, jede Zeile trägt ihr Warndreieck. */
+  :root {
+    --stufe-1: #ffeb3b;
+    --stufe-2: #ff9800;
+    --stufe-3: #e53935;
+    --stufe-4: #b03cc8;
+  }
   .warnung {
     margin-top: 18px;
-    background: rgba(180,30,30,.35);
-    border: 1px solid rgba(255,120,120,.5);
+    background: var(--glas);
+    border: 1px solid var(--glas-rand);
+    border-left-width: 8px;
     border-radius: 10px;
     padding: 12px 14px;
   }
-  .warnung .kopf { font-size: 12px; letter-spacing: .25em; text-transform: uppercase; color: #ffb3b3; }
+  .warnung.stufe-1 { background: rgba(255,235,59,.16); border-color: var(--stufe-1); }
+  .warnung.stufe-2 { background: rgba(255,152,0,.24); border-color: var(--stufe-2); }
+  .warnung.stufe-3 { background: rgba(229,57,53,.32); border-color: var(--stufe-3); }
+  .warnung.stufe-4 { background: rgba(176,60,200,.36); border-color: var(--stufe-4); }
+  .warnung .kopf {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    font-size: 12px; letter-spacing: .25em; text-transform: uppercase; color: #fff;
+  }
+  .warnung .stufe { font-size: 13px; font-weight: 800; letter-spacing: .12em; white-space: nowrap; }
+  .warnung.stufe-1 .stufe { color: var(--stufe-1); }
+  .warnung.stufe-2 .stufe { color: var(--stufe-2); }
+  .warnung.stufe-3 .stufe { color: #ff8a80; }
+  .warnung.stufe-4 .stufe { color: #e7a6f5; }
+  /* Warndreieck mit Ausrufezeichen, gefüllt in der Farbe der Stufe. */
+  .dreieck {
+    flex-shrink: 0;
+    align-self: center;
+    display: inline-flex; align-items: flex-end; justify-content: center;
+    width: 24px; height: 21px;
+    padding-bottom: 1px;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    font-size: 13px; font-weight: 800; line-height: 1;
+    color: #1a1a1a;
+    background: var(--stufe-1);
+  }
+  .dreieck.stufe-2 { background: var(--stufe-2); }
+  .dreieck.stufe-3 { background: var(--stufe-3); color: #fff; }
+  .dreieck.stufe-4 { background: var(--stufe-4); color: #fff; }
+  .strafe.beglichen .dreieck { background: rgba(255,255,255,.5); color: #1a1a1a; }
   /* Ohne Strafen gibt es keine Warnung – dann nur ein ruhiger Glaskasten. */
   .warnung.ruhig { background: var(--glas); border-color: var(--glas-rand); }
   .warnung.ruhig .kopf { color: var(--himmelblau); }
@@ -133,7 +187,7 @@
   }
   .strafe.beglichen { opacity: .5; }
   .strafe .nm { font-size: 20px; font-weight: 700; }
-  .strafe .grund { flex: 1; font-size: 14px; color: #ffd9d9; }
+  .strafe .grund { flex: 1; font-size: 14px; color: #ffe3e3; }
   .strafe .betrag { font-size: 20px; }
   .sauber { font-size: 20px; font-weight: 700; margin-top: 4px; }
 
@@ -144,6 +198,14 @@
     display: flex; justify-content: space-between;
     font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
     color: var(--himmelblau);
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 42px; height: 32px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    box-shadow: 0 0 0 2px rgba(255,255,255,.35);
   }
 </style>
 </head>
@@ -186,22 +248,14 @@
 
   <div class="kacheln">
     {{range .Users}}
-    <div class="kachel{{if .Top3}} top{{end}}">
+    <div class="kachel {{.Wetter.Art}}{{if .Top3}} top{{end}}">
       <span class="platz">{{.Rank}}</span>
-      {{if gt .Streak 7}}<div class="symbol">🌋</div>
-      {{else if gt .Streak 3}}<div class="symbol">☀️</div>
-      {{else if gt .Streak 0}}<div class="symbol">🌤️</div>
-      {{else if eq .Streak 0}}<div class="symbol">⛅</div>
-      {{else if gt .Streak -4}}<div class="symbol">🌧️</div>
-      {{else}}<div class="symbol">🌨️</div>{{end}}
-      <div class="nm">{{.Name}}</div>
+      <div class="symbol">{{.Wetter.Symbol}}</div>
+      <div class="nm{{if .NameLang}} lang{{end}}">{{.Name}}</div>
       <div class="grad anton{{if ge .Quote 85}} heiss{{else if ge .Quote 60}} mild{{end}}">{{.Quote}}°</div>
-      {{if gt .Streak 7}}<div class="wetter">Tropennacht</div>
-      {{else if gt .Streak 3}}<div class="wetter">sonnig · Serie {{.StreakAbs}}</div>
-      {{else if gt .Streak 0}}<div class="wetter">heiter · Serie {{.StreakAbs}}</div>
-      {{else if eq .Streak 0}}<div class="wetter">wechselhaft</div>
-      {{else if gt .Streak -4}}<div class="wetter">Schauer · Pause {{.StreakAbs}}</div>
-      {{else}}<div class="wetter">Dauerfrost · Pause {{.StreakAbs}}</div>{{end}}
+      <div class="messung">{{.Attendance}} da · {{.Away}} weg</div>
+      <div class="wetter">{{.Wetter.Text}}</div>
+      <div class="serie">{{if gt .Streak 0}}Serie +{{.StreakAbs}}{{else if lt .Streak 0}}Pause −{{.StreakAbs}}{{else}}keine Serie{{end}}</div>
     </div>
     {{end}}
   </div>
@@ -210,10 +264,14 @@
   {{end}}
 
   {{if .Strafen}}
-  <div class="warnung">
-    <div class="kopf">⚠ Amtliche Unwetterwarnung · Strafen</div>
+  <div class="warnung{{if .Warnstufe}} stufe-{{.Warnstufe}}{{end}}">
+    <div class="kopf">
+      <span>⚠ Amtliche Unwetterwarnung · Strafen</span>
+      <span class="stufe">{{if eq .Warnstufe 4}}Stufe 4 · Extremes Unwetter{{else if eq .Warnstufe 3}}Stufe 3 · Unwetter{{else if eq .Warnstufe 2}}Stufe 2 · Markantes Wetter{{else if eq .Warnstufe 1}}Stufe 1 · Wetterwarnung{{else}}Warnungen aufgehoben{{end}}</span>
+    </div>
     {{range .Strafen}}
     <div class="strafe{{if .Beglichen}} beglichen{{end}}">
+      <span class="dreieck stufe-{{.Warnstufe}}">!</span>
       <span class="nm">{{.Name}}</span>
       <span class="grund">{{.Grund}}{{if .Beglichen}} · beglichen{{end}}</span>
       <span class="betrag anton">{{.Betrag}} €</span>
@@ -228,7 +286,7 @@
   {{end}}
 
   <footer>
-    <span>🤖🍺 Ihr Wetterfrosch: Zumba-Bot</span>
+    <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Ihr Wetterfrosch: Zumba-Bot</span>
     <span>Vorhersage für Donnerstag: 🍻 100 %</span>
   </footer>
 </div>

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
@@ -104,6 +105,13 @@ var spaceMono700Woff2 []byte
 //go:embed assets/logo.png
 var logoPNG []byte
 
+// Der Zumba-Bot selbst (der Raspberry Pi, auf dem alles läuft), als
+// 4:3-Ausschnitt (320×240 JPEG). Jedes Design zeigt ihn mit leicht
+// gerundeten Ecken neben der Bot-Zeile im Fuß – als "Absender" der Karte.
+//
+//go:embed assets/zumba-bot.jpg
+var botJPG []byte
+
 // CardWidth ist die Viewport-Breite, mit der die Karte gerendert werden muss.
 const CardWidth = 720
 
@@ -178,6 +186,11 @@ func logoURL() template.URL {
 	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(logoPNG))
 }
 
+// botURL ist das eingebettete Bot-Bild als Data-URL (Signet im Kartenfuß).
+func botURL() template.URL {
+	return template.URL("data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(botJPG))
+}
+
 // monatDE liefert deutsche Monatsnamen für das ausgeschriebene Datum
 // (time.Month.String() ist englisch).
 var monatDE = map[time.Month]string{
@@ -217,7 +230,6 @@ type cardUser struct {
 	Name       string
 	Attendance int
 	Away       int
-	Termine    int     // Attendance+Away: die für das Mitglied zählenden Stammtische
 	Percent    string  // formatiert, ohne %-Zeichen
 	PercentVal float64 // für die Balkenbreite
 	Quote      int     // Percent gerundet (Designs mit ganzzahliger Quote)
@@ -225,6 +237,8 @@ type cardUser struct {
 	StreakAbs  int    // Betrag der Serie (Designs setzen das Vorzeichen selbst)
 	StreakTag  string // "🔥+4" / "❄️-2" / leer
 	Top3       bool
+	NameLang   bool       // mehr als 10 Zeichen: schmale Kacheln setzen ihn kleiner
+	Wetter     wetterLage // Serie als Wetter ("wetterbericht")
 
 	// Go-Templates können nicht n-mal zählen, deshalb kommen die
 	// Wiederholungen fertig aus dem Code:
@@ -240,12 +254,14 @@ type cardUser struct {
 	Dark    []int
 
 	// Bergprofil ("gipfelbuch"): RidgeX ist die Fahnenposition in Prozent
-	// der Breite (Rang gleichmäßig verteilt), FahneHoch die längere Stange
-	// (jeder zweite, damit sich die Beschriftungen nicht überlappen), Letzter
-	// bekommt wie die Top 3 den Namen statt der Platzziffer.
-	RidgeX    float64
-	FahneHoch bool
-	Letzter   bool
+	// der Breite (Rang gleichmäßig verteilt), Letzter bekommt wie die Top 3
+	// den Namen statt der Platzziffer. FahnePole (Stangenlänge in px) und
+	// FahneSeite (Schild mittig/"rechts"/"links") legt gipfelFahnen so fest,
+	// dass sich die Schilder nicht überdecken.
+	RidgeX     float64
+	Letzter    bool
+	FahnePole  int
+	FahneSeite string
 }
 
 // cardStroke ist ein einzelner Strich der Strichliste.
@@ -288,6 +304,7 @@ type cardStrafe struct {
 	Grund     string
 	Betrag    int
 	Beglichen bool
+	Warnstufe int // 1–4 nach Betrag (DWD-Farben im "wetterbericht")
 }
 
 type cardData struct {
@@ -302,10 +319,13 @@ type cardData struct {
 	TotalAway   int // Summe aller Absagen
 	SitzGrad    int // Anteil der Anwesenheiten als Winkel eines Halbkreises (0–180)
 	OffenSum    int // Summe der offenen Strafen in €
+	Warnstufe   int // höchste Warnstufe der offenen Strafen (0 = keine offen)
 
 	// Ridge ist das clip-path-Polygon des Bergprofils ("gipfelbuch"): ein
-	// Punkt je Mitglied, Höhe = Quote.
-	Ridge template.CSS
+	// Punkt je Mitglied, Höhe = Quote. RidgeKopf ist der Abstand des Profils
+	// zum Kopf in px – genug Himmel für die höchste Fahne.
+	Ridge     template.CSS
+	RidgeKopf int
 
 	GoatName    string
 	GoatPercent string
@@ -324,6 +344,7 @@ type cardData struct {
 	Skin  string // Farbwelt-Variante des gewählten Designs
 	Fonts cardFonts
 	Logo  template.URL // Stammtisch-Emblem als Data-URL
+	Bot   template.URL // Bild des Zumba-Bots als Data-URL
 }
 
 // BuildCardHTML baut die Karte im Live-Design (siehe DefaultCardStyle).
@@ -353,6 +374,7 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 		Year:       season,
 		Skin:       sel.skin,
 		Logo:       logoURL(),
+		Bot:        botURL(),
 	}
 	if data.Year == "" {
 		data.Year = fmt.Sprint(asOf.Year())
@@ -402,17 +424,18 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 			}
 			data.Users = append(data.Users, cardUser{
 				Medal: medal, Rank: u.rank, Name: u.Name,
-				Attendance: u.Attendance, Away: u.Away, Termine: u.Attendance + u.Away,
+				Attendance: u.Attendance, Away: u.Away,
 				Percent: fmtNum(u.Percent), PercentVal: u.Percent, Quote: int(math.Round(u.Percent)),
 				Streak: u.Streak, StreakAbs: abs(u.Streak), StreakTag: tag, Top3: u.rank <= 3,
-				Bundles:   bundles,
-				Rest:      rest,
-				Pausen:    make([]int, pausen),
-				Lit:       make([]int, u.Attendance),
-				Dark:      make([]int, u.Away),
-				RidgeX:    ridgeX(i, n),
-				FahneHoch: i%2 == 1,
-				Letzter:   i == n-1,
+				NameLang: utf8.RuneCountInString(u.Name) > 10,
+				Wetter:   wetterFuer(u.Streak),
+				Bundles:  bundles,
+				Rest:     rest,
+				Pausen:   make([]int, pausen),
+				Lit:      make([]int, u.Attendance),
+				Dark:     make([]int, u.Away),
+				RidgeX:   ridgeX(i, n),
+				Letzter:  i == n-1,
 			})
 			data.TotalAttend += u.Attendance
 			data.TotalAway += u.Away
@@ -421,6 +444,7 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 			data.SitzGrad = int(math.Round(float64(data.TotalAttend) / float64(sum) * 180))
 		}
 		data.Ridge = ridgePolygon(data.Users)
+		data.RidgeKopf = gipfelFahnen(data.Users)
 	}
 
 	// Sichtbarkeit + Sortierung wie StrafenBlock (offene zuerst).
@@ -442,12 +466,13 @@ func BuildCardHTMLByStyle(style string, rows []store.Stat, entries []penalty.Ent
 		default:
 			grund = fmt.Sprintf("%dx in Folge gefehlt", e.Tage)
 		}
-		s := cardStrafe{Name: e.Name, Grund: grund, Betrag: e.Betrag}
+		s := cardStrafe{Name: e.Name, Grund: grund, Betrag: e.Betrag, Warnstufe: warnstufe(e.Betrag)}
 		if e.Status == penalty.StatusBeglichen {
 			s.Icon, s.Beglichen = "✅", true
 		} else {
 			s.Icon = "⚠️"
 			data.OffenSum += e.Betrag
+			data.Warnstufe = max(data.Warnstufe, s.Warnstufe)
 		}
 		data.Strafen = append(data.Strafen, s)
 	}

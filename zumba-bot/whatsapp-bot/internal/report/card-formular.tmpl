@@ -173,6 +173,14 @@
     display: flex; justify-content: space-between;
     font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
     color: var(--schwach);
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 36px; height: 27px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    box-shadow: 0 0 0 1.5px currentColor; filter: grayscale(1) contrast(1.1);
   }
 </style>
 </head>
@@ -264,7 +272,7 @@
   </div>
 
   <footer>
-    <span>Maschinell erstellt vom Zumba-Bot · ohne Unterschrift gültig</span>
+    <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Maschinell erstellt vom Zumba-Bot · ohne Unterschrift gültig</span>
     <span>{{.DatumLang}}</span>
   </footer>
 </div>

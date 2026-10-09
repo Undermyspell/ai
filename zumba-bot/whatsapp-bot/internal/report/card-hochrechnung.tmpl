@@ -80,15 +80,23 @@
   /* Balken je Mitglied: Länge = Quote, gestrichelt = Durchschnitt. */
   .partei {
     display: grid;
-    grid-template-columns: 118px 1fr 54px 64px;
+    grid-template-columns: 128px 1fr 44px 58px;
     gap: 10px;
     align-items: center;
     padding: 3px 0;
   }
   .partei .nm {
-    font-size: 19px; font-weight: 700;
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 19px; font-weight: 700; line-height: 1.05;
     text-transform: uppercase; letter-spacing: .03em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+  }
+  .partei .lang { font-size: 15px; letter-spacing: 0; }
+  .partei .platz { flex-shrink: 0; width: 16px; font-size: 12px; color: var(--hellblau); text-align: right; }
+  .partei .stimmen {
+    display: block;
+    font-size: 12px; font-weight: 600; letter-spacing: .06em;
+    color: var(--hellblau);
   }
   .balken { position: relative; height: 22px; background: rgba(255,255,255,.08); }
   .balken .wert, .balken .schnitt { position: absolute; top: 0; bottom: 0; left: 0; }
@@ -157,6 +165,14 @@
     display: flex; justify-content: space-between;
     font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
     color: var(--hellblau);
+    align-items: center;
+  }
+  /* Der Zumba-Bot als Signet neben der Bot-Zeile. */
+  .absender { display: inline-flex; align-items: center; gap: 8px; }
+  .bot {
+    width: 42px; height: 32px; flex-shrink: 0;
+    border-radius: 6px; object-fit: cover;
+    box-shadow: 0 0 0 2px #fff;
   }
 </style>
 </head>
@@ -181,7 +197,7 @@
       {{$avg := .AvgPercent}}
       {{range .Users}}
       <div class="partei">
-        <span class="nm">{{.Name}}</span>
+        <span class="nm"><span class="platz mono">{{.Rank}}</span><span{{if .NameLang}} class="lang"{{end}}>{{.Name}}<span class="stimmen">{{.Attendance}} da · {{.Away}} weg</span></span></span>
         <span class="balken">
           <span class="wert{{if .Top3}} top{{else if ge .Quote $avg}} ueber{{end}}" style="width: {{printf "%.1f" .PercentVal}}%"></span>
           <span class="schnitt" style="width: {{$avg}}%"></span>
@@ -242,7 +258,7 @@
   </div>
 
   <footer>
-    <span>🤖🍺 Quelle: Zumba-Bot · Stand {{.Datum}}</span>
+    <span class="absender"><img class="bot" src="{{.Bot}}" alt="Zumba-Bot">Quelle: Zumba-Bot · Stand {{.Datum}}</span>
     <span>Fehlertoleranz ± eine Halbe</span>
   </footer>
 </div>
