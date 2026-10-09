@@ -45,6 +45,22 @@ bzw. gibt frei. Feiertage, die auf einen Donnerstag fallen, schlägt die Seite
 vor. Nur Donnerstage sind zulässig — die Eingabe validiert das. Gesperrte Tage
 verschwinden aus sämtlichen Auswertungen (Statistik, Strafen, Wrapped).
 
+### Stammtischjahre pflegen (`/stammtischjahre`)
+Zeigt alle Stammtischjahre mit Zeitraum, Zahl der Donnerstage und Status
+(läuft / kommt / abgeschlossen) und ersetzt das Pflegen von `seasons` per SQL:
+
+- **Beginn verschieben** — nur für ein Jahr, das noch nicht begonnen hat, und
+  nur auf ein Datum in der Zukunft. Das Vorjahr endet automatisch am Tag
+  davor, es entsteht weder Lücke noch Überlappung. Vergangene Grenzen sind
+  fest, sonst änderten sich abgeschlossene Auswertungen und Strafen-Serien.
+- **Nächstes Jahr anlegen** — schließt lückenlos an das letzte an und dauert
+  ein Jahr. Erst möglich, wenn das letzte gepflegte Jahr läuft: so steht
+  höchstens ein Jahr im Voraus fest. Ist das laufende Jahr das letzte, warnt
+  die Seite, dass danach Bot und Admin-UI ohne Jahr dastehen.
+
+Die Admin-UI zeigt Änderungen sofort, der Bot nach spätestens 10 Minuten
+(Jahres-Cache). Löschen gibt es bewusst nicht.
+
 ### Strafen verwalten (`/strafen`)
 Vollständige Strafenverwaltung, Regeln siehe [strafen.md](strafen.md):
 

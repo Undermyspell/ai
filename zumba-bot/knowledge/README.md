@@ -50,7 +50,8 @@ Fehltage-Serien enden an der Jahresgrenze und beginnen im neuen Jahr neu.
   Überlappungen, damit "das Jahr zum Zeitpunkt t" eindeutig ist. Bot und
   Admin-UI legen die Tabelle idempotent an und seeden sie einmalig
   (`shared/store.EnsureSeasonsSchema`, Seed: 2025/2026/2027, je 1.12.–30.11.);
-  danach wird sie von Hand gepflegt. Ist für einen Zeitpunkt kein Jahr
+  danach pflegt man sie in der Admin-UI unter `/stammtischjahre` (Beginn
+  verschieben, nächstes Jahr anlegen – siehe admin-ui.md). Ist für einen Zeitpunkt kein Jahr
   gepflegt, gibt es `domain.ErrNoSeason` — bewusst ein Fehler statt einer
   stillen Null-Auswertung.
 

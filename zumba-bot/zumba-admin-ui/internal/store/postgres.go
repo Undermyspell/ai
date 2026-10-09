@@ -45,6 +45,19 @@ func (s *Postgres) SeasonByLabel(ctx context.Context, label string) (Season, err
 	return s.seasons.ByLabel(ctx, label)
 }
 
+// MoveSeasonStart und AddSeason leeren den Jahres-Cache, damit die eigene
+// Oberfläche die Änderung sofort zeigt; der Bot holt sie nach spätestens
+// seasonCacheTTL.
+func (s *Postgres) MoveSeasonStart(ctx context.Context, label string, start time.Time) error {
+	defer s.seasons.Invalidate()
+	return sharedstore.MoveSeasonStart(ctx, s.db, label, start)
+}
+
+func (s *Postgres) AddSeason(ctx context.Context, label string, start, end time.Time) error {
+	defer s.seasons.Invalidate()
+	return sharedstore.AddSeason(ctx, s.db, label, start, end)
+}
+
 func (s *Postgres) ListUsers(ctx context.Context) ([]User, error) {
 	const q = `
 		SELECT "userId", "userName", "startDate"

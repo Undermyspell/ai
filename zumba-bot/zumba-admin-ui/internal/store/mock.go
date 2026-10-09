@@ -124,6 +124,30 @@ func (m *Mock) SeasonByLabel(_ context.Context, label string) (Season, error) {
 	return Season{}, fmt.Errorf("%w: %q", domain.ErrNoSeason, label)
 }
 
+// MoveSeasonStart spiegelt sharedstore.MoveSeasonStart: m.seasons ist
+// neuestes zuerst, das Vorjahr steht also direkt dahinter.
+func (m *Mock) MoveSeasonStart(_ context.Context, label string, start time.Time) error {
+	start = domain.DateOnly(start)
+	for i := range m.seasons {
+		if m.seasons[i].Label != label {
+			continue
+		}
+		m.seasons[i].Start = start
+		if i+1 < len(m.seasons) {
+			m.seasons[i+1].End = start.AddDate(0, 0, -1)
+		}
+		return nil
+	}
+	return fmt.Errorf("%w: %q", domain.ErrNoSeason, label)
+}
+
+func (m *Mock) AddSeason(_ context.Context, label string, start, end time.Time) error {
+	s := Season{ID: int64(len(m.seasons) + 1), Label: label}
+	s.Start, s.End = domain.DateOnly(start), domain.DateOnly(end)
+	m.seasons = append([]Season{s}, m.seasons...)
+	return nil
+}
+
 func generateThursdays(start, end time.Time) []time.Time {
 	var out []time.Time
 	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {

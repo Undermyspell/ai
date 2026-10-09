@@ -22,6 +22,8 @@ type spyStore struct {
 	absences         []store.Absence
 
 	seasons          []store.Season
+	movedSeason      string // "label=YYYY-MM-DD" des letzten MoveSeasonStart
+	addedSeason      string // "label=start..end" des letzten AddSeason
 	strafen          []penalty.Row
 	nextStrafeID     int64
 	beglichenStrafe  int64
@@ -60,6 +62,16 @@ var archivedSeason = store.Season{
 }
 
 func (s *spyStore) ListSeasons(context.Context) ([]store.Season, error) { return s.seasons, nil }
+
+func (s *spyStore) MoveSeasonStart(_ context.Context, label string, start time.Time) error {
+	s.movedSeason = label + "=" + timeutil.FormatISO(start)
+	return nil
+}
+
+func (s *spyStore) AddSeason(_ context.Context, label string, start, end time.Time) error {
+	s.addedSeason = label + "=" + timeutil.FormatISO(start) + ".." + timeutil.FormatISO(end)
+	return nil
+}
 
 func (s *spyStore) SeasonAt(_ context.Context, t time.Time) (store.Season, error) {
 	for _, sn := range s.seasons {

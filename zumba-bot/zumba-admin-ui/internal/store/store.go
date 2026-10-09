@@ -53,6 +53,11 @@ type Store interface {
 	SeasonAt(ctx context.Context, t time.Time) (Season, error)
 	// SeasonByLabel liefert das Jahr zum Slug aus ?jahr=.
 	SeasonByLabel(ctx context.Context, label string) (Season, error)
+	// MoveSeasonStart verschiebt den Beginn eines Jahres; das Vorjahr endet
+	// am Tag davor. Die Regeln (nur künftige Grenzen) prüft der Handler.
+	MoveSeasonStart(ctx context.Context, label string, start time.Time) error
+	// AddSeason legt ein Stammtischjahr an.
+	AddSeason(ctx context.Context, label string, start, end time.Time) error
 
 	ListUsers(ctx context.Context) ([]User, error)
 	// GetUser liefert einen einzelnen User (nil, wenn unbekannt).

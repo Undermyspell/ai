@@ -1,0 +1,141 @@
+package jahre
+
+import "strconv"
+
+// VM ist die fertige Anzeige der Stammtischjahre, neuestes zuerst.
+type VM struct {
+	Years []Year
+	// Next: das nächste Jahr lässt sich anlegen; sonst steht in NextBlocked,
+	// warum nicht.
+	Next        *Next
+	NextBlocked string
+	// Gap warnt, wenn das laufende Jahr das letzte gepflegte ist.
+	Gap string
+}
+
+type Year struct {
+	Label     string
+	Range     string // "01.12.2026 – 30.11.2027"
+	Status    string // läuft | kommt | abgeschlossen
+	Class     string // Pill-Farbe
+	Note      string // "noch 52 Tage" / "beginnt in 53 Tagen"
+	Thursdays int
+	First     string // erster Donnerstag, "Do., 3. Dezember 2026"
+	Progress  int    // laufendes Jahr: Anteil vergangener Tage in %
+	// Editable: der Beginn liegt noch vor uns und darf wandern.
+	Editable bool
+	StartISO string
+	MinISO   string
+	MaxISO   string
+	Prev     string // Label des Vorjahres, das am Tag davor endet
+}
+
+type Next struct {
+	Label string
+	Range string
+}
+
+templ Page(vm VM) {
+	@Region(vm)
+}
+
+// Region ist das HTMX-Swap-Ziel: nach jeder Änderung kommt die ganze Ansicht
+// neu, damit Grenzen, Status und Anlegen-Knopf zusammenpassen.
+templ Region(vm VM) {
+	<section id="jahre-region" class="grid-side">
+		<div class="card">
+			<div class="card-head">
+				<div>
+					<div class="card-title">Stammtischjahre</div>
+					<div class="card-sub">Jedes Jahr läuft vom ersten bis zum letzten Tag, das nächste schließt lückenlos an.</div>
+				</div>
+			</div>
+			<div class="rows">
+				for _, y := range vm.Years {
+					@yearRow(y)
+				}
+			</div>
+		</div>
+		<div class="stack side-col">
+			<div class="card">
+				<div class="card-title-sm">Nächstes Jahr</div>
+				if vm.Next != nil {
+					<p class="card-sub" style="margin:4px 0 12px">
+						Schließt an das letzte Jahr an. Den Beginn kannst du danach noch verschieben, solange er vor uns liegt.
+					</p>
+					if vm.Gap != "" {
+						<p class="year-gap">{ vm.Gap }</p>
+					}
+					<button
+						type="button"
+						class="btn btn-primary"
+						hx-post="/stammtischjahre"
+						hx-target="#jahre-region"
+						hx-swap="outerHTML"
+						hx-confirm={ "Stammtischjahr " + vm.Next.Label + " (" + vm.Next.Range + ") anlegen?" }
+					>{ vm.Next.Label } anlegen</button>
+					<p class="hint" style="margin-top:8px">{ vm.Next.Range }</p>
+				} else {
+					<p class="card-sub" style="margin-top:4px">{ vm.NextBlocked }</p>
+				}
+			</div>
+			<div class="card">
+				<div class="card-title-sm">Was die Grenze bewirkt</div>
+				<ul class="year-facts">
+					<li>Rangliste, Quoten und Wrapped beginnen bei null.</li>
+					<li>Fehltage-Serien enden, Strafen zählen neu.</li>
+					<li>Das alte Jahr wird zum Archiv und ist nur noch lesbar.</li>
+				</ul>
+				<p class="hint">
+					Nur ein Beginn, der noch vor uns liegt, lässt sich verschieben – sonst
+					änderten sich abgeschlossene Auswertungen. Der Bot übernimmt Änderungen
+					nach spätestens 10 Minuten.
+				</p>
+			</div>
+		</div>
+	</section>
+}
+
+templ yearRow(y Year) {
+	<div class={ "year-row", templ.KV("is-past", y.Status == "abgeschlossen") }>
+		<div class="year-label">{ y.Label }</div>
+		<div class="year-body">
+			<div class="year-head">
+				<span class="year-range">{ y.Range }</span>
+				<span class={ "pill", "pill-caps", y.Class }>{ y.Status }</span>
+			</div>
+			<div class="year-meta">
+				{ strconv.Itoa(y.Thursdays) } Donnerstage
+				if y.First != "" {
+					· erster Stammtisch { y.First }
+				}
+				if y.Note != "" {
+					· { y.Note }
+				}
+			</div>
+			if y.Status == "läuft" {
+				<span class="meter meter-5 year-meter"><span style={ "width:" + strconv.Itoa(y.Progress) + "%" }></span></span>
+			}
+			if y.Editable {
+				<form
+					class="year-form"
+					hx-post={ "/stammtischjahre/" + y.Label + "/beginn" }
+					hx-target="#jahre-region"
+					hx-swap="outerHTML"
+					if y.Prev != "" {
+						hx-confirm={ "Beginn von " + y.Label + " verschieben? " + y.Prev + " endet dann am Tag davor." }
+					}
+				>
+					<label class="field">
+						<span class="field-label">Beginn</span>
+						<input class="input" type="date" name="start" value={ y.StartISO } min={ y.MinISO } max={ y.MaxISO } required/>
+					</label>
+					<button type="submit" class="btn btn-ghost">Verschieben</button>
+				</form>
+				if y.Prev != "" {
+					<p class="hint" style="margin-top:6px">{ y.Prev } endet automatisch am Tag davor.</p>
+				}
+			}
+		</div>
+	</div>
+}

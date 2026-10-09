@@ -189,3 +189,81 @@ func (c *SeasonCache) ByLabel(ctx context.Context, label string) (domain.Season,
 	}
 	return domain.Season{}, fmt.Errorf("%w: %q", domain.ErrNoSeason, label)
 }
+
+// TxBeginner wird von *sql.DB erfüllt – für Änderungen, die mehrere Zeilen
+// gemeinsam umstellen.
+type TxBeginner interface {
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
+
+// MoveSeasonStart verschiebt den Beginn des Jahres label auf start; das
+// Vorjahr endet am Tag davor. So entsteht weder eine Lücke (dort fänden Bot
+// und Admin-UI kein Jahr) noch eine Überlappung. Ob die Grenze noch
+// verschoben werden darf, prüft der Aufrufer.
+//
+// Der EXCLUDE-Constraint prüft jede Zeile sofort, deshalb hängt die
+// Reihenfolge der beiden UPDATEs an der Richtung: zuerst weicht das Jahr, in
+// dessen Richtung die Grenze wandert.
+func MoveSeasonStart(ctx context.Context, db TxBeginner, label string, start time.Time) error {
+	start = domain.DateOnly(start)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("MoveSeasonStart: %w", err)
+	}
+	defer tx.Rollback()
+
+	var cur time.Time
+	err = tx.QueryRowContext(ctx,
+		`SELECT start_date FROM public.seasons WHERE label = $1 FOR UPDATE`, label).Scan(&cur)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("%w: %q", domain.ErrNoSeason, label)
+	}
+	if err != nil {
+		return fmt.Errorf("MoveSeasonStart: %w", err)
+	}
+	var prev sql.NullString
+	err = tx.QueryRowContext(ctx, `
+		SELECT label FROM public.seasons
+		WHERE end_date < $1::date
+		ORDER BY end_date DESC LIMIT 1
+		FOR UPDATE`, domain.DateOnly(cur)).Scan(&prev)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("MoveSeasonStart: %w", err)
+	}
+
+	setStart := func() error {
+		_, err := tx.ExecContext(ctx,
+			`UPDATE public.seasons SET start_date = $2::date WHERE label = $1`, label, start)
+		return err
+	}
+	setPrevEnd := func() error {
+		if !prev.Valid {
+			return nil
+		}
+		_, err := tx.ExecContext(ctx,
+			`UPDATE public.seasons SET end_date = $2::date WHERE label = $1`, prev.String, start.AddDate(0, 0, -1))
+		return err
+	}
+	steps := []func() error{setStart, setPrevEnd} // Grenze wandert nach hinten
+	if start.Before(domain.DateOnly(cur)) {
+		steps = []func() error{setPrevEnd, setStart} // Grenze wandert nach vorn
+	}
+	for _, step := range steps {
+		if err := step(); err != nil {
+			return fmt.Errorf("MoveSeasonStart: %w", err)
+		}
+	}
+	return tx.Commit()
+}
+
+// AddSeason legt ein Stammtischjahr an. Überlappungen weist der
+// EXCLUDE-Constraint ab, doppelte Labels der UNIQUE-Index.
+func AddSeason(ctx context.Context, e Execer, label string, start, end time.Time) error {
+	_, err := e.ExecContext(ctx,
+		`INSERT INTO public.seasons (label, start_date, end_date) VALUES ($1, $2::date, $3::date)`,
+		label, domain.DateOnly(start), domain.DateOnly(end))
+	if err != nil {
+		return fmt.Errorf("AddSeason: %w", err)
+	}
+	return nil
+}

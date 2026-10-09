@@ -26,7 +26,7 @@ The "Stammtisch" data model is **attendance-by-default**: a user is present on a
 
 Postgres tables (schema `public`):
 - `users` — `userId`, `userName`, `startDate` (when the user joined; nullable). All evaluations clamp the start date to the start of the Stammtisch year being evaluated (`domain.Season.ClampStart`).
-- `seasons` — the Stammtisch years: `label` ("2026"), `start_date`, `end_date` (inclusive, non-overlapping via an EXCLUDE constraint on `daterange`). This table is the single source of the evaluation period for bot, admin UI and wrapped; both services create and seed it idempotently on startup (`shared/store.EnsureSeasonsSchema`).
+- `seasons` — the Stammtisch years: `label` ("2026"), `start_date`, `end_date` (inclusive, non-overlapping via an EXCLUDE constraint on `daterange`). This table is the single source of the evaluation period for bot, admin UI and wrapped; both services create and seed it idempotently on startup (`shared/store.EnsureSeasonsSchema`). Maintained in the admin UI at `/stammtischjahre` (`shared/store.MoveSeasonStart` moves a not-yet-started year's start and ends the previous year the day before — UPDATE order depends on the direction because the EXCLUDE constraint is checked per row; `AddSeason` appends the next year once the last one is running). Past boundaries are frozen.
 - `stammtisch_abwesenheit` — one row per cancellation: `userId`, `date`, `message` (nullable). Only rows with `EXTRACT(DOW FROM date) = 4` (Thursday) are valid.
 - `excluded_days` — Thursdays that don't count (holidays etc.). Always filter via `NOT IN (SELECT date FROM excluded_days)`.
 
