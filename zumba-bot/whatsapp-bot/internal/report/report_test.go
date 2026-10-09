@@ -138,3 +138,33 @@ func TestStrafenBlockBeglichenNurImFenster(t *testing.T) {
 		t.Errorf("beglichene Strafe nach dem Folgedonnerstag noch sichtbar: %q", after)
 	}
 }
+
+// Plätze wie im Sport: nach zwei Zweiten gibt es keinen Dritten, es geht mit
+// Platz 4 weiter – und damit auch keine Bronze-Medaille.
+func TestBuildPlaetzeNachGleichstand(t *testing.T) {
+	rows := []store.Stat{
+		{Name: "A", Attendance: 10, Away: 0, Percent: 100},
+		{Name: "B", Attendance: 8, Away: 2, Percent: 80},
+		{Name: "C", Attendance: 8, Away: 2, Percent: 80},
+		{Name: "D", Attendance: 7, Away: 3, Percent: 70},
+		{Name: "E", Attendance: 6, Away: 4, Percent: 60},
+	}
+	got := Build(rows)
+	for _, want := range []string{"🥇 *A*", "🥈 *B*", "🥈 *C*", "4  *D*", "5  *E*"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("Rangliste enthält %q nicht:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "🥉") {
+		t.Error("nach zwei Zweiten darf es keine Bronze geben")
+	}
+
+	// Bild-Karten rechnen dieselben Plätze.
+	html, err := BuildCardHTMLByStyle("abfahrtstafel", rows, nil, time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC), "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(html, `<span class="gleis mono">4</span>`) || strings.Contains(html, `<span class="gleis mono">3</span>`) {
+		t.Error("Karte: Platz 4 nach zwei Zweiten erwartet, kein Platz 3")
+	}
+}

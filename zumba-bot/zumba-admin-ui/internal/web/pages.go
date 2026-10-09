@@ -162,12 +162,13 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	vm.Attention = attention(data.Board, q)
 	vm.Months, vm.Range = seasonBars(data, vm.Day.ISO)
+	plaetze := boardRanks(data.Board)
 	for i, row := range data.Board {
 		if i == 7 {
 			break
 		}
 		vm.Top = append(vm.Top, dashboard.RankRow{
-			Rank: i + 1, UserID: row.UserID, Name: row.UserName, Emoji: emoji.For(row.UserName),
+			Rank: plaetze[i], UserID: row.UserID, Name: row.UserName, Emoji: emoji.For(row.UserName),
 			Pct: partials.Percent(row.AttendPercent), Streak: row.Streak,
 		})
 	}
@@ -633,9 +634,10 @@ func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
 		U: len(data.Board), ReadOnly: archived(season), Query: seasonQuery(r),
 	}
 	start := time.Time{}
+	plaetze := boardRanks(data.Board)
 	for i, row := range data.Board {
 		if row.UserID == userID {
-			vm.Rank = i + 1
+			vm.Rank = plaetze[i]
 			vm.Pct = partials.Percent(row.AttendPercent)
 			vm.Attend, vm.Away, vm.Streak = row.AttendanceCount, row.AwayCount, row.Streak
 			start = row.EffectiveStart
@@ -672,4 +674,13 @@ func (s *Server) handleMemberDetail(w http.ResponseWriter, r *http.Request) {
 	meta.Heading = user.Name
 	meta.RefreshURL = r.URL.RequestURI()
 	s.render(w, r, meta, members.Detail(vm))
+}
+
+// boardRanks vergibt die Plätze der Rangliste wie im Sport ("1-2-2-4") –
+// gleichauf ist, wer gleich oft da war und dieselbe Quote hat. Dieselbe Regel
+// wie in der Bot-Statistik.
+func boardRanks(board []store.LeaderboardRow) []int {
+	return domain.CompetitionRanks(len(board), func(i int) bool {
+		return board[i].AttendanceCount == board[i-1].AttendanceCount && board[i].AttendPercent == board[i-1].AttendPercent
+	})
 }

@@ -67,6 +67,11 @@ STRAFEN-Block. Der Bot baut dafür HTML und lässt es vom eigenen
 **renderer-service** (headless Chromium) zu einem Bild schießen; verschickt
 wird es als WhatsApp-Bild mit kurzer Caption.
 
+**Plätze wie im Sport:** Gleichauf ist, wer gleich oft da war und dieselbe
+Quote hat; Gleichplatzierte teilen sich den Platz, die folgenden entfallen
+(1, 2, 2, **4** – nach zwei Zweiten gibt es keine Bronze). Dieselbe Regel gilt
+in Text, Bild-Karten und im Admin-UI (Dashboard, Mitglied-Detail).
+
 **Jedes** Design trägt das offizielle Stammtisch-Emblem (kreisrund
 freigestellt, `internal/report/assets/logo.png`, als Data-URL eingebettet —
 der Renderer hat keinen Netzzugriff): als Wappen neben dem Titel, als

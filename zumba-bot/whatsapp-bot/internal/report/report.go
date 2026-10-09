@@ -56,31 +56,14 @@ func BuildWithStrafen(rows []store.Stat, strafenBlock string) string {
 	// (ORDER BY attendance_count DESC, attend_percentage DESC).
 	users := rows
 
-	// Medaillen mit Gleichstand-Logik.
-	medals := []string{"🥇", "🥈", "🥉"}
+	// Medaillen mit Gleichstand-Logik: Plätze wie im Sport (1-2-2-4).
 	type ranked struct {
 		store.Stat
 		medal string
 	}
-	var (
-		rankedUsers []ranked
-		lastAttend  = math.MinInt
-		lastPercent = math.NaN()
-		rank        int
-	)
-	for _, u := range users {
-		if u.Attendance != lastAttend || u.Percent != lastPercent {
-			rank++
-		}
-		var medal string
-		if rank <= len(medals) {
-			medal = medals[rank-1]
-		} else {
-			medal = fmt.Sprintf("%d ", rank)
-		}
-		lastAttend = u.Attendance
-		lastPercent = u.Percent
-		rankedUsers = append(rankedUsers, ranked{Stat: u, medal: medal})
+	var rankedUsers []ranked
+	for i, rank := range ranks(users) {
+		rankedUsers = append(rankedUsers, ranked{Stat: users[i], medal: medalFor(rank)})
 	}
 
 	// Highlights.

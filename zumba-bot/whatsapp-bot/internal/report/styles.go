@@ -8,6 +8,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/michael/zumba-shared/domain"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 )
 
@@ -65,25 +66,14 @@ func analyze(rows []store.Stat) analysis {
 	// (ORDER BY attendance_count DESC, attend_percentage DESC).
 	users := rows
 
-	medals := []string{"🥇", "🥈", "🥉"}
 	var (
-		ranked      []rankedUser
-		lastAttend  = math.MinInt
-		lastPercent = math.NaN()
-		rank        int
-		sumPercent  float64
+		ranked     []rankedUser
+		sumPercent float64
 	)
-	for _, u := range users {
-		if u.Attendance != lastAttend || u.Percent != lastPercent {
-			rank++
-		}
-		medal := fmt.Sprintf("%d ", rank)
-		if rank <= len(medals) {
-			medal = medals[rank-1]
-		}
-		lastAttend, lastPercent = u.Attendance, u.Percent
+	for i, rank := range ranks(users) {
+		u := users[i]
 		sumPercent += u.Percent
-		ranked = append(ranked, rankedUser{Stat: u, medal: medal, rank: rank})
+		ranked = append(ranked, rankedUser{Stat: u, medal: medalFor(rank), rank: rank})
 	}
 
 	a := analysis{
@@ -103,6 +93,25 @@ func analyze(rows []store.Stat) analysis {
 		}
 	}
 	return a
+}
+
+// ranks vergibt die Plätze wie im Sport ("1-2-2-4"): gleichauf ist, wer
+// gleich oft da war und dieselbe Quote hat; nach Gleichplatzierten entfallen
+// die folgenden Plätze. rows kommen sortiert aus der Rangliste-Query.
+func ranks(rows []store.Stat) []int {
+	return domain.CompetitionRanks(len(rows), func(i int) bool {
+		return rows[i].Attendance == rows[i-1].Attendance && rows[i].Percent == rows[i-1].Percent
+	})
+}
+
+// medalFor liefert 🥇/🥈/🥉 für die Plätze 1–3, sonst die Platzziffer.
+// Nach zwei Zweiten gibt es keine Bronze – Platz 4 bekommt seine Ziffer.
+func medalFor(rank int) string {
+	medals := []string{"🥇", "🥈", "🥉"}
+	if rank <= len(medals) {
+		return medals[rank-1]
+	}
+	return fmt.Sprintf("%d ", rank)
 }
 
 // --- neue Icon-Logik: lila Flamme ab Streak > 7, Eis ab Pause > 3 ---
