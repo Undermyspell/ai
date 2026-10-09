@@ -6,54 +6,51 @@ import (
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
-// AttendanceStreakCard renders a single attendance streak card
+// streakItem – eine Serie: wer, wie lange, wann.
+templ streakItem(user viewmodels.StreakUser, tone string, weeks int, label string) {
+	<div class={ "item is-tinted animate-on-enter in-left", user.DelayClass } data-tone={ tone }>
+		<span class="emo" aria-hidden="true">{ user.Emoji }</span>
+		<div class="item-body">
+			<b>{ user.Name }</b>
+			<span>{ label }</span>
+			if user.DateRange != "" {
+				<span class="meta">{ user.DateRange }</span>
+			}
+		</div>
+		<span class="item-num">{ fmt.Sprintf("%d", weeks) }<small>Wo.</small></span>
+	</div>
+}
+
+// AttendanceStreakCard – längste Anwesenheits-Serie.
 templ AttendanceStreakCard(user viewmodels.StreakUser) {
-	<div class={ "animate-on-enter animate-scale-in " + user.DelayClass + " bg-gradient-to-r from-orange-500/30 to-red-500/20 rounded-xl p-4 flex items-center gap-4" }>
-		<div class="text-3xl animate-fire">🔥</div>
-		<div class="flex-1 min-w-0">
-			<div class="font-bold text-schaum">{ user.Emoji } { user.Name }</div>
-			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d", user.MaxAttendanceStreak) } Wochen am Stück da!</div>
-			if user.DateRange != "" {
-				<div class="text-xs text-schaum/40 mt-1">📅 { user.DateRange }</div>
-			}
-		</div>
-		<div class="text-3xl font-bold text-orange-400">{ fmt.Sprintf("%d", user.MaxAttendanceStreak) }</div>
-	</div>
+	@streakItem(user, "amber", user.MaxAttendanceStreak, "am Stück da")
 }
 
-// CancellationStreakCard renders a single cancellation streak card
+// CancellationStreakCard – längste Absage-Serie.
 templ CancellationStreakCard(user viewmodels.StreakUser) {
-	<div class={ "animate-on-enter animate-scale-in " + user.DelayClass + " bg-gradient-to-r from-blue-500/30 to-cyan-500/20 rounded-xl p-4 flex items-center gap-4" }>
-		<div class="text-3xl">🧊</div>
-		<div class="flex-1 min-w-0">
-			<div class="font-bold text-schaum">{ user.Emoji } { user.Name }</div>
-			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d", user.MaxCancellationStreak) } Wochen gefehlt</div>
-			if user.DateRange != "" {
-				<div class="text-xs text-schaum/40 mt-1">📅 { user.DateRange }</div>
-			}
-		</div>
-		<div class="text-3xl font-bold text-blue-400">{ fmt.Sprintf("%d", user.MaxCancellationStreak) }</div>
-	</div>
+	@streakItem(user, "cyan", user.MaxCancellationStreak, "am Stück gefehlt")
 }
 
-// Streaks slide - Beste Streaks
+// Streaks – heiß gegen kalt.
 templ Streaks(attendanceStreaks []viewmodels.StreakUser, cancellationStreaks []viewmodels.StreakUser) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto" data-duration="7000">
-		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
-			🔥 Längste Anwesenheits-Streaks
-		</h2>
-		<div class="w-full max-w-md space-y-4">
-			for _, user := range attendanceStreaks {
-				@AttendanceStreakCard(user)
-			}
+	<section class="slide" data-tone="amber" data-duration="7000">
+		<div class="scene">
+			<p class="eyebrow animate-on-enter in-fade">Serien</p>
+			<h2 class="title animate-on-enter in-up delay-100 gap-xs">Durchgezogen – in beide Richtungen</h2>
+			<div class="gap-m">
+				<p class="section-label animate-on-enter in-fade delay-150" data-tone="amber">🔥 Am längsten da</p>
+				<div class="list">
+					for _, user := range attendanceStreaks {
+						@AttendanceStreakCard(user)
+					}
+				</div>
+				<p class="section-label animate-on-enter in-fade delay-500" data-tone="cyan">🧊 Am längsten weg</p>
+				<div class="list">
+					for _, user := range cancellationStreaks {
+						@CancellationStreakCard(user)
+					}
+				</div>
+			</div>
 		</div>
-		<h2 class="animate-on-enter animate-fade-in delay-500 text-xl font-bold text-schaum mb-6 mt-8">
-			🧊 Längste Absage-Streaks
-		</h2>
-		<div class="w-full max-w-md space-y-4">
-			for _, user := range cancellationStreaks {
-				@CancellationStreakCard(user)
-			}
-		</div>
-	</div>
+	</section>
 }

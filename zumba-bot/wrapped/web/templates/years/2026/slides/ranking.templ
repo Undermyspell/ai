@@ -6,175 +6,108 @@ import (
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
-// Intro slide - the first welcome slide
+// Intro – der Auftakt: die Jahreszahl als Bühne.
 templ Intro() {
-	<div class="slide active flex-col items-center justify-center h-screen px-6 text-center" data-duration="5000">
-		<div class="animate-on-enter animate-scale-in">
-			<span class="text-8xl mb-4 block animate-float">🍺</span>
+	<section class="slide active" data-tone="blue" data-duration="5000">
+		<img class="opener-art animate-on-enter delay-300" src="/static/img/emoji/1f37b.svg" alt="" aria-hidden="true"/>
+		<div class="scene is-low">
+			<p class="eyebrow animate-on-enter in-fade">Weihnachtsfeier → Weihnachtsfeier</p>
+			<h1 class="display animate-on-enter in-big delay-150 gap-s">2026</h1>
+			<p class="headline animate-on-enter in-up delay-450 gap-m">Euer Stammtisch-<em>Jahr</em></p>
+			<p class="lede animate-on-enter in-fade delay-700 gap-s">Tippen für weiter, halten zum Pausieren.</p>
 		</div>
-		<h1 class="animate-on-enter animate-fade-in-up delay-300 text-5xl md:text-7xl font-bold text-biergold text-glow mb-4">
-			STAMMTISCH
-		</h1>
-		<h2 class="animate-on-enter animate-fade-in-up delay-500 text-3xl md:text-5xl font-bold text-schaum mb-8">
-			WRAPPED
-		</h2>
-		<p class="animate-on-enter animate-fade-in delay-700 text-2xl text-biergold-dark">
-			2026
-		</p>
-		<div class="animate-on-enter animate-fade-in delay-1000 mt-12">
-			<p class="text-schaum/70 text-lg">Dein Jahr in Zahlen</p>
-			<div class="mt-4 animate-bounce">
-				<span class="text-biergold text-2xl">↓</span>
-			</div>
-		</div>
-	</div>
+	</section>
 }
 
-// YearStats slide - Das große Jahr in Zahlen
+// YearStats – das Jahr in Zahlen: eine große Quote, darunter die Eckdaten.
 templ YearStats(stats viewmodels.YearStatsView) {
-	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="7000">
-		<h2 class="animate-on-enter animate-fade-in-up text-2xl md:text-3xl font-bold text-schaum mb-8">
-			Das große Stammtisch-Jahr
-		</h2>
-		<div class="grid grid-cols-2 gap-4 md:gap-6 max-w-md w-full">
-			<!-- Donnerstage -->
-			<div class="animate-on-enter animate-scale-in delay-200 bg-holz-light/50 rounded-2xl p-4 md:p-6">
-				<span class="text-3xl mb-2 block">📅</span>
-				<span
-					class="text-4xl md:text-5xl font-bold text-biergold block"
-					data-count-to={ fmt.Sprintf("%d", stats.TotalThursdays) }
-					data-count-duration="2000"
-				>0</span>
-				<span class="text-schaum/70 text-sm">Donnerstage</span>
-			</div>
-			<!-- Stammtischler -->
-			<div class="animate-on-enter animate-scale-in delay-300 bg-holz-light/50 rounded-2xl p-4 md:p-6">
-				<span class="text-3xl mb-2 block">👥</span>
-				<span
-					class="text-4xl md:text-5xl font-bold text-biergold block"
-					data-count-to={ fmt.Sprintf("%d", stats.TotalUsers) }
-					data-count-duration="1500"
-				>0</span>
-				<span class="text-schaum/70 text-sm">Stammtischler</span>
-			</div>
-			<!-- Zusagen -->
-			<div class="animate-on-enter animate-scale-in delay-400 bg-holz-light/50 rounded-2xl p-4 md:p-6">
-				<span class="text-3xl mb-2 block">✅</span>
-				<span
-					class="text-4xl md:text-5xl font-bold text-green-500 block"
-					data-count-to={ fmt.Sprintf("%d", stats.TotalAttendances) }
-					data-count-duration="2500"
-				>0</span>
-				<span class="text-schaum/70 text-sm">Zusagen</span>
-			</div>
-			<!-- Absagen -->
-			<div class="animate-on-enter animate-scale-in delay-500 bg-holz-light/50 rounded-2xl p-4 md:p-6">
-				<span class="text-3xl mb-2 block">❌</span>
-				<span
-					class="text-4xl md:text-5xl font-bold text-red-400 block"
-					data-count-to={ fmt.Sprintf("%d", stats.TotalCancellations) }
-					data-count-duration="2500"
-				>0</span>
-				<span class="text-schaum/70 text-sm">Absagen</span>
+	<section class="slide" data-tone="blue" data-duration="7000">
+		<div class="scene is-center">
+			<p class="eyebrow animate-on-enter in-fade">Das Jahr in Zahlen</p>
+			<p class="display animate-on-enter in-big delay-100 gap-s">
+				<span data-count-to={ fmt.Sprintf("%d", stats.AverageAttendanceRate) }>0</span><small>%</small>
+			</p>
+			<p class="lede animate-on-enter in-up delay-250 gap-s">Ø Teilnahme über alle Donnerstage</p>
+			<div class="gap-l">
+				@figure(stats.TotalThursdays, "Donnerstage", "", "delay-400")
+				@figure(stats.TotalUsers, "Stammtischler", "", "delay-500")
+				@figure(stats.TotalAttendances, "Zusagen", "is-green", "delay-600")
+				@figure(stats.TotalCancellations, "Absagen", "is-red", "delay-700")
 			</div>
 		</div>
-		<!-- Durchschnittliche Teilnahmequote -->
-		<div class="animate-on-enter animate-fade-in-up delay-700 mt-8 bg-biergold/20 rounded-2xl p-6 max-w-md w-full">
-			<span class="text-xl text-schaum/70 block mb-2">📈 Durchschnittliche Teilnahme</span>
-			<span
-				class="text-5xl md:text-6xl font-bold text-biergold text-glow"
-				data-count-to={ fmt.Sprintf("%d", stats.AverageAttendanceRate) }
-				data-count-suffix="%"
-				data-count-duration="2000"
-			>0%</span>
-		</div>
+	</section>
+}
+
+// figure ist eine Zeile „Zahl – Bedeutung“ ohne Kachel.
+templ figure(n int, label string, tone string, delay string) {
+	<div class={ "figure animate-on-enter in-left", delay }>
+		<span class={ "figure-num", tone } data-count-to={ fmt.Sprintf("%d", n) }>0</span>
+		<span class="figure-label">{ label }</span>
 	</div>
 }
 
-// RankingIntro slide
+// RankingIntro – Kapitel Rangliste.
 templ RankingIntro() {
-	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
-		<div class="animate-on-enter animate-scale-in">
-			<span class="text-8xl mb-6 block">🏆</span>
+	<section class="slide" data-tone="amber" data-duration="4000">
+		<img class="opener-art animate-on-enter delay-200" src="/static/img/emoji/1f3c6.svg" alt="" aria-hidden="true"/>
+		<div class="scene is-low">
+			<p class="chapter-no animate-on-enter in-fade">01 — Rangliste</p>
+			<h2 class="headline animate-on-enter in-up delay-150 gap-s">Wer war wirklich <em>da</em>?</h2>
+			<p class="lede animate-on-enter in-fade delay-400 gap-s">Der Zuverlässigkeits-Score. Gleich gut heißt gleicher Platz – wie im Sport.</p>
 		</div>
-		<h2 class="animate-on-enter animate-fade-in-up delay-300 text-3xl md:text-4xl font-bold text-biergold text-glow mb-4">
-			Der Zuverlässigkeits-Score
-		</h2>
-		<p class="animate-on-enter animate-fade-in delay-500 text-xl text-schaum/70">
-			Wer war wirklich da?
-		</p>
-	</div>
+	</section>
 }
 
-// RankingCard renders a single ranking card
+// RankingCard – eine Zeile der Rangliste.
 templ RankingCard(user viewmodels.RankedUser) {
-	<div class={ "animate-on-enter animate-slide-left " + user.DelayClass + " " + user.TierBgColor + " rounded-xl p-4 flex items-center gap-4" }>
-		<div class="text-2xl w-10 text-center">
-			if user.Rank <= 3 {
-				{ user.RankDisplay }
-			} else {
-				<span class="text-schaum/50">{ user.RankDisplay }</span>
-			}
+	<div class={ "rank-row animate-on-enter in-left", user.DelayClass, user.Tier }>
+		if user.Rank <= 3 {
+			<span class="rank-place is-medal">{ user.RankDisplay }</span>
+		} else {
+			<span class="rank-place">{ fmt.Sprintf("%d", user.Rank) }</span>
+		}
+		<span class="emo" aria-hidden="true">{ user.Emoji }</span>
+		<div class="rank-name">
+			<b>{ user.Name }</b>
+			<span>{ user.TitleEmoji } { user.Title }</span>
 		</div>
-		<div class="flex-1 min-w-0">
-			<div class="flex items-center gap-2 mb-1">
-				<span class="text-xl">{ user.Emoji }</span>
-				<span class="font-bold text-schaum">{ user.Name }</span>
-			</div>
-			<div class="text-xs text-schaum/60 mb-2">{ user.TitleEmoji } { user.Title }</div>
-			<div class="w-full bg-holz rounded-full h-2">
-				<div
-					class={ user.BarColor + " h-2 rounded-full animate-bar" }
-					style={ fmt.Sprintf("width: %d%%", user.AttendanceRate) }
-				></div>
-			</div>
-			<div class="text-xs text-schaum/50 mt-2 truncate">{ user.FunFact }</div>
+		<div class="rank-pct">
+			{ fmt.Sprintf("%d%%", user.AttendanceRate) }
+			<small>{ user.PersonalMessage }</small>
 		</div>
-		<div class="text-right">
-			<span class="text-2xl font-bold text-biergold">{ fmt.Sprintf("%d", user.AttendanceRate) }%</span>
-			<p class="text-xs text-schaum/50">{ user.PersonalMessage }</p>
-		</div>
+		<div class={ "meter", user.BarTone }><i class="animate-bar" style={ fmt.Sprintf("--w: %d", user.AttendanceRate) }></i></div>
+		if user.FunFact != "" {
+			<div class="rank-fact">{ user.FunFact }</div>
+		}
 	</div>
 }
 
-// Top5 slide - Top 5 Ranking
+// rankingSlide – gemeinsamer Rahmen der drei Ranglisten-Slides.
+templ rankingSlide(tone string, duration string, eyebrow string, title string, users []viewmodels.RankedUser) {
+	<section class="slide" data-tone={ tone } data-duration={ duration }>
+		<div class="scene">
+			<p class="eyebrow animate-on-enter in-fade">{ eyebrow }</p>
+			<h2 class="title animate-on-enter in-up delay-100 gap-xs">{ title }</h2>
+			<div class="list gap-m">
+				for _, user := range users {
+					@RankingCard(user)
+				}
+			</div>
+		</div>
+	</section>
+}
+
+// Top5 – die Spitze.
 templ Top5(users []viewmodels.RankedUser) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="8000">
-		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
-			🥇 Top 5 – Die Zuverlässigsten
-		</h2>
-		<div class="w-full max-w-md space-y-3">
-			for _, user := range users {
-				@RankingCard(user)
-			}
-		</div>
-	</div>
+	@rankingSlide("amber", "8000", "Rangliste · Spitze", "Die Zuverlässigsten", users)
 }
 
-// MidRanking slide - Plätze 6-10
+// MidRanking – das Mittelfeld.
 templ MidRanking(users []viewmodels.RankedUser) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="6000">
-		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
-			📊 Plätze 6-10
-		</h2>
-		<div class="w-full max-w-md space-y-3">
-			for _, user := range users {
-				@RankingCard(user)
-			}
-		</div>
-	</div>
+	@rankingSlide("blue", "6000", "Rangliste · Mittelfeld", "Solide dabei", users)
 }
 
-// BottomRanking slide - Plätze 11-15
+// BottomRanking – Luft nach oben.
 templ BottomRanking(users []viewmodels.RankedUser) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-6 overflow-y-auto" data-duration="6000">
-		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
-			📉 Plätze 11-15 – Raum nach oben
-		</h2>
-		<div class="w-full max-w-md space-y-3">
-			for _, user := range users {
-				@RankingCard(user)
-			}
-		</div>
-	</div>
+	@rankingSlide("neutral", "6000", "Rangliste · Verfolger", "Da geht noch was", users)
 }

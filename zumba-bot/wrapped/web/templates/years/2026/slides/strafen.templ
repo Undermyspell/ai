@@ -6,85 +6,75 @@ import (
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
-// StrafenIntro slide
+// StrafenIntro – Kapitel Strafenkasse.
 templ StrafenIntro() {
-	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="4000">
-		<div class="animate-on-enter animate-scale-in">
-			<span class="text-7xl mb-4 block">💸</span>
+	<section class="slide" data-tone="red" data-duration="4000">
+		<img class="opener-art animate-on-enter delay-200" src="/static/img/emoji/1f4b8.svg" alt="" aria-hidden="true"/>
+		<div class="scene is-low">
+			<p class="chapter-no animate-on-enter in-fade">04 — Strafenkasse</p>
+			<h2 class="headline animate-on-enter in-up delay-150 gap-s">Fehlen hat seinen <em>Preis</em>.</h2>
+			<p class="lede animate-on-enter in-fade delay-400 gap-s">Ab fünf Donnerstagen am Stück wird es teuer.</p>
 		</div>
-		<h2 class="animate-on-enter animate-fade-in-up delay-300 text-3xl md:text-4xl font-bold text-biergold text-glow mb-4">
-			Die Strafenkasse
-		</h2>
-		<p class="animate-on-enter animate-fade-in delay-500 text-xl text-schaum/70">
-			Fehlen hat seinen Preis…
-		</p>
-	</div>
+	</section>
 }
 
-// StrafenPayerCard renders one top payer with their penalties
+// StrafenPayerCard – ein Zahler mit seinen Posten.
 templ StrafenPayerCard(payer viewmodels.StrafenUserView) {
-	<div class={ "animate-on-enter animate-scale-in " + payer.DelayClass + " bg-gradient-to-r from-red-500/25 to-rose-600/15 rounded-xl p-4" }>
-		<div class="flex items-center gap-4">
-			<div class="text-3xl">{ payer.RankDisplay }</div>
-			<div class="flex-1 min-w-0">
-				<div class="font-bold text-schaum">{ payer.Emoji } { payer.Name }</div>
+	<div class={ "panel payer animate-on-enter in-up", payer.DelayClass }>
+		<div class="payer-head">
+			<span class="emo" aria-hidden="true">{ payer.RankDisplay }</span>
+			<div class="item-body">
+				<b>{ payer.Emoji } { payer.Name }</b>
 			</div>
-			<div class="text-2xl font-bold text-red-400">{ payer.Total }</div>
+			<span class="item-num">{ payer.Total }</span>
 		</div>
-		<div class="mt-3 space-y-2">
+		<div class="payer-entries">
 			for _, entry := range payer.Entries {
-				<div class="flex items-center gap-2 text-sm text-schaum/70">
-					<span>{ entry.ArtEmoji }</span>
-					<span class="flex-1 min-w-0 truncate">
+				<div class="payer-entry">
+					<span aria-hidden="true">{ entry.ArtEmoji }</span>
+					<span class="label">
 						{ entry.Label }
 						if entry.DateRange != "" {
-							<span class="text-schaum/40"> · { entry.DateRange }</span>
+							<span class="meta"> · { entry.DateRange }</span>
 						}
 					</span>
-					<span class="font-bold text-schaum/90">{ entry.Betrag }</span>
-					<span>{ entry.StatusEmoji }</span>
+					<b>{ entry.Betrag }</b>
+					<span aria-hidden="true">{ entry.StatusEmoji }</span>
 				</div>
 			}
 		</div>
 	</div>
 }
 
-// Strafen slide - penalty box: total + top payers
+// Strafen – Kassenstand und Top-Zahler.
 templ Strafen(strafen viewmodels.StrafenView) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto" data-duration="8000">
+	<section class="slide" data-tone="red" data-duration="8000">
 		if strafen.HasStrafen {
-			<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-4">
-				💰 Kassenstand
-			</h2>
-			<div class="animate-on-enter animate-scale-in delay-200 text-center mb-6">
-				<div class="text-5xl font-bold text-biergold text-glow">
-					<span data-count-to={ fmt.Sprintf("%d", strafen.TotalSum) } data-count-suffix=" €">0 €</span>
+			<div class="scene">
+				<p class="eyebrow animate-on-enter in-fade">Kassenstand</p>
+				<p class="display animate-on-enter in-big delay-100 gap-s">
+					<span data-count-to={ fmt.Sprintf("%d", strafen.TotalSum) }>0</span><small>€</small>
+				</p>
+				<p class="lede animate-on-enter in-up delay-300 gap-s">
+					{ fmt.Sprintf("aus %d Strafen", strafen.TotalCount) }
+					if strafen.MassBier > 0 {
+						· das sind <span class="hl">{ fmt.Sprintf("%d Maß", strafen.MassBier) }</span> 🍺
+					}
+				</p>
+				<p class="section-label animate-on-enter in-fade delay-400 gap-m">Top-Zahler</p>
+				<div class="list">
+					for _, payer := range strafen.TopPayers {
+						@StrafenPayerCard(payer)
+					}
 				</div>
-				<div class="text-sm text-schaum/60 mt-1">{ fmt.Sprintf("aus %d Strafen", strafen.TotalCount) }</div>
-				if strafen.MassBier > 0 {
-					<div class="animate-on-enter animate-fade-in delay-500 text-schaum/80 mt-2">
-						= <span class="text-biergold font-bold">{ fmt.Sprintf("%d Maß", strafen.MassBier) }</span> 🍺
-					</div>
-				}
-			</div>
-			<h2 class="animate-on-enter animate-fade-in delay-300 text-xl font-bold text-schaum mb-4">
-				🏆 Top-Zahler
-			</h2>
-			<div class="w-full max-w-md space-y-4">
-				for _, payer := range strafen.TopPayers {
-					@StrafenPayerCard(payer)
-				}
 			</div>
 		} else {
-			<div class="flex-1 flex flex-col items-center justify-center text-center">
-				<span class="animate-on-enter animate-scale-in text-7xl mb-4 block">😇</span>
-				<h2 class="animate-on-enter animate-fade-in-up delay-300 text-2xl font-bold text-biergold mb-2">
-					Kasse leer!
-				</h2>
-				<p class="animate-on-enter animate-fade-in delay-500 text-lg text-schaum/70">
-					Keine einzige Strafe dieses Jahr. Respekt.
-				</p>
+			<img class="opener-art animate-on-enter delay-200" src="/static/img/emoji/1f607.svg" alt="" aria-hidden="true"/>
+			<div class="scene is-low">
+				<p class="eyebrow animate-on-enter in-fade">Kassenstand</p>
+				<h2 class="headline animate-on-enter in-up delay-150 gap-s">Kasse <em>leer</em>!</h2>
+				<p class="lede animate-on-enter in-fade delay-400 gap-s">Keine einzige Strafe dieses Jahr. Respekt.</p>
 			</div>
 		}
-	</div>
+	</section>
 }

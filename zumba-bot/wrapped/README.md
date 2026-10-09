@@ -16,7 +16,7 @@ Eine Wrapped-Style Web-Applikation für Stammtisch-Statistiken, gebaut mit Go.
 ## Tech Stack
 
 - **Backend**: Go (Golang)
-- **Frontend**: HTML5, JavaScript, TailwindCSS
+- **Frontend**: templ, eigenes Stylesheet im Look des Admin-Portals (`assets/static/css/styles.css`), Plus Jakarta Sans + JetBrains Mono, wenig Vanilla-JS (Story-Navigation im Layout)
 - **Hot Reload**: Air (Development)
 - **Server**: Standard Go `net/http`
 
@@ -123,7 +123,7 @@ wrapped/
 14-16. **Persönliche Statistiken** - Pro User
 17. **Persönlichkeitstypen** - Stammtisch-Archetypen
 18. **Awards Intro**
-19. **Awards** - Spezielle Auszeichnungen
+19. **Awards** - Schmähpreise, dann Ehrenpreise (Gewinner + Wert, Gleichstand teilt)
 20. **Outro** - Abschluss & Danke
 
 ### Animationen
@@ -157,14 +157,20 @@ Jede Slide hat ein `data-duration` Attribut (in Millisekunden):
 </div>
 ```
 
-### Farben (Tailwind Config)
+### Gestaltung
 
-Custom Farben sind in `index.html` definiert:
+Farben, Schriften und Glas-Flächen kommen 1:1 aus dem Admin-Portal (dieselben
+CSS-Variablen), hell und dunkel mit Umschalter (folgt sonst der
+Systemeinstellung, Wahl wird gemerkt). Jede Slide trägt einen Ton
+(`data-tone="blue|cyan|green|amber|red|neutral"`), der Glow, Akzente und
+Zahlenfarbe der Szene bestimmt. Der Go-Code liefert nur semantische Werte
+(`Tone`, `BarTone` = `is-good|is-ok|is-warn|is-bad`, Heatmap-`Level`
+`lv-0…lv-4`, Rangliste-`Tier`), keine CSS-Framework-Klassen. Gestaffelte
+Auftritte über `delay-0 … delay-3000` (50-ms-Schritte). Design-Kontext:
+`.impeccable.md` im Repo-Root.
 
-- `holz` - Hintergrund
-- `biergold` - Akzentfarbe
-- `schaum` - Textfarbe
-- `tafel` - Dunkel
+Bedienung wie bei Stories: Tippen rechts = weiter, links = zurück, Wischen,
+Halten = Pause, Esc = Pause an/aus.
 
 ## Mock-Daten
 
@@ -242,3 +248,12 @@ MIT
 ## Credits
 
 Entwickelt mit ❤️ und 🍺
+
+## Credits
+
+Die großen Emoji-Grafiken der Kapitel-Öffner (`assets/static/img/emoji/*.svg`)
+sind [Noto Emoji](https://github.com/googlefonts/noto-emoji) von Google,
+lizenziert unter [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+(bezogen über `fonts.gstatic.com/s/e/notoemoji/latest/<codepoint>/emoji.svg`).
+Als SVG bleiben sie auf hochauflösenden Displays scharf – die Emoji-Schrift
+selbst ist ein Pixelformat und wird beim Hochskalieren unscharf.

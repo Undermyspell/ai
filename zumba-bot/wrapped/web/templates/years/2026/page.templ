@@ -43,7 +43,10 @@ templ Page(vm viewmodels.PageViewModel) {
 		@slides.StrafenIntro()
 		@slides.Strafen(vm.Strafen)
 		@slides.AwardsIntro()
-		@slides.Awards(vm.Awards)
+		if len(vm.ShameAwards) > 0 {
+			@slides.Awards("red", "Erst die Schande …", "Die Schmähpreise", vm.ShameAwards)
+		}
+		@slides.Awards("amber", "… dann die Ehre", "Die Ehrenpreise", vm.HonorAwards)
 		@slides.Finale(vm.Confetti)
 	}
 }

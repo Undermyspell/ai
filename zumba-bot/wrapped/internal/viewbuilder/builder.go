@@ -11,6 +11,8 @@ import (
 
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
+
+	"github.com/michael/zumba-shared/domain"
 )
 
 // EvalData contains the raw evaluation data to transform
@@ -83,7 +85,7 @@ func Build(data *EvalData, year string) viewmodels.PageViewModel {
 	vm.PersonalityTypes = buildPersonalityTypes(data.UserStats)
 
 	// Build Awards
-	vm.Awards = buildAwards(data.Awards)
+	vm.ShameAwards, vm.HonorAwards = buildAwards(data.Awards)
 
 	// Build Confetti (pre-generated particles for SSR)
 	vm.Confetti = buildConfetti()
@@ -124,8 +126,8 @@ func buildRankings(users []models.UserStats, start, end int, tier string) []view
 			Title:           user.Title,
 			TitleEmoji:      user.TitleEmoji,
 			AttendanceRate:  user.AttendanceRate,
-			BarColor:        getBarColor(user.AttendanceRate),
-			TierBgColor:     getTierBgColor(tier),
+			BarTone:         getBarTone(user.AttendanceRate),
+			Tier:            getTier(user.Rank),
 			FunFact:         getFunFact(user),
 			PersonalMessage: getPersonalMessage(user.AttendanceRate),
 			DelayClass:      fmt.Sprintf("delay-%d", idx*100+200),
@@ -289,7 +291,7 @@ func buildAttendanceHeatmap(mas models.MonthlyAttendanceStats, ms models.MonthSt
 			Label:      d.label,
 			Rate:       d.rate,
 			Count:      ms[d.key],
-			BgColor:    getAttendanceHeatmapColor(d.rate),
+			Level:      getHeatLevel(d.rate),
 			DelayClass: fmt.Sprintf("delay-%d", i*50+200),
 		}
 	}
@@ -361,15 +363,17 @@ func buildThursdayTopFlop(stats []models.ThursdayStat) ([]viewmodels.ThursdayCar
 			n = len(src)
 		}
 		cards := make([]viewmodels.ThursdayCard, 0, n)
+		// Gleich viele am Tisch = gleiche Medaille (Plätze wie im Sport).
+		ranks := domain.CompetitionRanks(n, func(i int) bool { return src[i].Attendees == src[i-1].Attendees })
 		for i := 0; i < n; i++ {
 			s := src[i]
 			cards = append(cards, viewmodels.ThursdayCard{
-				RankDisplay: medals[i],
+				RankDisplay: medals[ranks[i]-1],
 				DateDisplay: formatDateWithYear(s.Date),
 				Attendees:   s.Attendees,
 				Total:       s.Total,
 				Rate:        s.Rate,
-				BarColor:    getBarColor(s.Rate),
+				BarTone:     getBarTone(s.Rate),
 				DelayClass:  fmt.Sprintf("delay-%d", i*150+delayOffset),
 			})
 		}
@@ -379,13 +383,16 @@ func buildThursdayTopFlop(stats []models.ThursdayStat) ([]viewmodels.ThursdayCar
 	return buildCards(best, topMedals, 200), buildCards(worst, flopMedals, 700)
 }
 
+// euroPerMass rechnet Strafen-Euro in Maß um (Kassenstand, Strafen-Champ).
+const euroPerMass = 5
+
 // buildStrafen aggregates penalty stats into the strafen slide view
 func buildStrafen(stats models.StrafenStats, users []models.UserStats) viewmodels.StrafenView {
 	view := viewmodels.StrafenView{
 		HasStrafen: stats.TotalCount > 0,
 		TotalSum:   stats.TotalSum,
 		TotalCount: stats.TotalCount,
-		MassBier:   stats.TotalSum / 5,
+		MassBier:   stats.TotalSum / euroPerMass,
 	}
 	if !view.HasStrafen {
 		return view
@@ -402,6 +409,8 @@ func buildStrafen(stats models.StrafenStats, users []models.UserStats) viewmodel
 		n = len(stats.UserTotals)
 	}
 
+	// Gleich viel gezahlt = gleiche Medaille (Plätze wie im Sport).
+	ranks := domain.CompetitionRanks(n, func(i int) bool { return stats.UserTotals[i].Total == stats.UserTotals[i-1].Total })
 	for i := 0; i < n; i++ {
 		ut := stats.UserTotals[i]
 
@@ -428,7 +437,7 @@ func buildStrafen(stats models.StrafenStats, users []models.UserStats) viewmodel
 		}
 
 		view.TopPayers = append(view.TopPayers, viewmodels.StrafenUserView{
-			RankDisplay: medals[i],
+			RankDisplay: medals[ranks[i]-1],
 			Name:        ut.UserName,
 			Emoji:       emojiByName[ut.UserName],
 			Total:       fmt.Sprintf("%d €", ut.Total),
@@ -481,11 +490,11 @@ func buildAIStats(users []models.UserStats, gs models.GlobalStats, ms models.Mon
 
 	// Pre-select one of the 3 summary variants server-side
 	summaries := []string{
-		fmt.Sprintf(`2026 war ein Jahr der Hingabe – mit einer durchschnittlichen Teilnahme von <span class="text-biergold font-bold">%d%%</span>. %s führte das Feld an, während %s noch Potenzial nach oben hat. Im %s war die Motivation am niedrigsten, aber im %s zeigte sich wahre Stammtisch-Treue!`,
+		fmt.Sprintf(`2026 war ein Jahr der Hingabe – mit einer durchschnittlichen Teilnahme von <span class="hl">%d%%</span>. %s führte das Feld an, während %s noch Potenzial nach oben hat. Im %s war die Motivation am niedrigsten, aber im %s zeigte sich wahre Stammtisch-Treue!`,
 			avgRate, topUser, bottomUser, worstMonth, bestMonth),
-		fmt.Sprintf(`Der Stammtisch 2026: Eine Geschichte von Bier, Freundschaft und... kreativen Ausreden. <span class="text-biergold font-bold">%s</span> war der unerschütterliche Fels, während <span class="text-biergold font-bold">%s</span> eher spirituell dabei war. Der %s forderte uns heraus – aber wir haben durchgehalten!`,
+		fmt.Sprintf(`Der Stammtisch 2026: Eine Geschichte von Bier, Freundschaft und... kreativen Ausreden. <span class="hl">%s</span> war der unerschütterliche Fels, während <span class="hl">%s</span> eher spirituell dabei war. Der %s forderte uns heraus – aber wir haben durchgehalten!`,
 			topUser, bottomUser, worstMonth),
-		fmt.Sprintf(`Was für ein Jahr! <span class="text-biergold font-bold">%d</span> mal wurde am Stammtisch angestoßen. %s verpasste kaum einen Donnerstag, während %s den Begriff "Stammtisch" eher flexibel interpretierte. Der Sommer war stark, der %s war eine Herausforderung.`,
+		fmt.Sprintf(`Was für ein Jahr! <span class="hl">%d</span> mal wurde am Stammtisch angestoßen. %s verpasste kaum einen Donnerstag, während %s den Begriff "Stammtisch" eher flexibel interpretierte. Der Sommer war stark, der %s war eine Herausforderung.`,
 			totalAttendances, topUser, bottomUser, worstMonth),
 	}
 
@@ -676,26 +685,75 @@ func buildPersonalityTypes(users []models.UserStats) []viewmodels.PersonalityTyp
 	return result
 }
 
-// buildAwards creates award views
-func buildAwards(awards []models.Award) []viewmodels.AwardView {
-	result := make([]viewmodels.AwardView, len(awards))
-	for i, a := range awards {
-		result[i] = viewmodels.AwardView{
-			Emoji:       a.Emoji,
-			Title:       a.Title,
-			Subtitle:    a.Subtitle,
-			WinnerName:  a.Winner.Name,
-			WinnerEmoji: a.Winner.Emoji,
-			Color:       a.Color,
-			DelayClass:  fmt.Sprintf("delay-%d", i*200+200),
+// buildAwards teilt die Awards in Schmäh- und Ehrenpreise auf. Die
+// Verzögerung zählt je Slide neu, weil jede Slide für sich einblendet.
+func buildAwards(awards []models.Award) (shame, honor []viewmodels.AwardView) {
+	for _, a := range awards {
+		list := &honor
+		if a.Shame {
+			list = &shame
 		}
+		view := viewmodels.AwardView{
+			Emoji:      a.Emoji,
+			Title:      a.Title,
+			Subtitle:   a.Subtitle,
+			Detail:     awardDetail(a),
+			Tone:       a.Tone,
+			DelayClass: fmt.Sprintf("delay-%d", len(*list)*200+200),
+		}
+		for _, w := range a.Winners {
+			view.Winners = append(view.Winners, viewmodels.AwardWinner{Name: w.Name, Emoji: w.Emoji})
+		}
+		*list = append(*list, view)
 	}
-	return result
+	return shame, honor
+}
+
+// awardDetail formuliert den Wert eines Awards, damit sichtbar ist, womit
+// er gewonnen wurde.
+func awardDetail(a models.Award) string {
+	n := a.Value
+	switch a.ID {
+	case "koenig":
+		return fmt.Sprintf("%d %% Quote", n)
+	case "streak":
+		return plural(n, "Donnerstag", "Donnerstage") + " am Stück da"
+	case "kreativ":
+		return plural(n, "kreative Ausrede", "kreative Ausreden")
+	case "absagen":
+		return plural(n, "Absage", "Absagen")
+	case "comeback":
+		return "nach " + plural(n, "Donnerstag", "Donnerstagen") + " Pause"
+	case "rising":
+		return fmt.Sprintf("+%d Prozentpunkte im zweiten Halbjahr", n)
+	case "phantom":
+		return plural(n, "Donnerstag", "Donnerstage") + " am Stück weg"
+	case "strafen":
+		if mass := n / euroPerMass; mass > 0 {
+			return fmt.Sprintf("%d € · %d Maß 🍺", n, mass)
+		}
+		return fmt.Sprintf("%d €", n)
+	case "absturz":
+		return fmt.Sprintf("−%d Prozentpunkte im zweiten Halbjahr", n)
+	case "wackel":
+		return fmt.Sprintf("%d Mal abgetaucht", n)
+	}
+	return ""
+}
+
+// plural setzt die Zahl vor die passende Form ("1 Absage", "3 Absagen").
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return "1 " + one
+	}
+	return fmt.Sprintf("%d %s", n, many)
 }
 
 // buildConfetti creates pre-generated confetti particles for SSR
 func buildConfetti() viewmodels.ConfettiView {
-	colors := []string{"#F59E0B", "#FEF3C7", "#D97706", "#92400E", "#ffffff"}
+	// Admin-Palette; als CSS-Variablen, damit das Konfetti im Hell- und
+	// Dunkelmodus dieselben Töne hat wie der Rest der Seite.
+	colors := []string{"var(--amber)", "var(--blue)", "var(--cyan)", "var(--green)", "var(--amber)", "var(--red)"}
 	confettiCount := 50
 
 	particles := make([]viewmodels.ConfettiParticle, confettiCount)
@@ -736,50 +794,44 @@ func getRankDisplay(rank int) string {
 	return fmt.Sprintf("#%d", rank)
 }
 
-// getBarColor returns the appropriate color class based on attendance rate
-func getBarColor(rate int) string {
+// getBarTone liefert die Balkenfarbe nach Quote (CSS-Klassen im Stylesheet):
+// grün ab 80 %, blau ab 60 %, amber ab 40 %, sonst rot.
+func getBarTone(rate int) string {
 	switch {
 	case rate >= 80:
-		return "bg-green-500"
+		return "is-good"
 	case rate >= 60:
-		return "bg-biergold"
+		return "is-ok"
 	case rate >= 40:
-		return "bg-orange-500"
+		return "is-warn"
 	default:
-		return "bg-red-400"
+		return "is-bad"
 	}
 }
 
-// getTierBgColor returns the background gradient class for a tier
-func getTierBgColor(tier string) string {
-	switch tier {
-	case "top":
-		return "bg-gradient-to-r from-biergold/30 to-holz-light/50"
-	case "mid":
-		return "bg-holz-light/40"
-	default:
-		return "bg-holz-light/20"
+// getTier hebt die Zeilen der Rangliste hervor: Gold für die Plätze 1–3
+// (bei Gleichstand auch mehr als drei), sonst neutral.
+func getTier(rank int) string {
+	if rank <= 3 {
+		return "is-gold"
 	}
+	return ""
 }
 
-// getAttendanceHeatmapColor returns the background color class based on attendance rate
-// Higher attendance = greener (good), lower attendance = redder (bad)
-func getAttendanceHeatmapColor(rate int) string {
-	if rate == 0 {
-		return "bg-holz-light/30"
-	}
-
+// getHeatLevel ordnet einer Monatsquote eine Blau-Stufe zu (wie die Tage im
+// Admin-Portal): je voller der Tisch, desto kräftiger.
+func getHeatLevel(rate int) string {
 	switch {
+	case rate == 0:
+		return "lv-0"
 	case rate >= 80:
-		return "bg-green-500"
+		return "lv-4"
 	case rate >= 65:
-		return "bg-green-500/50"
+		return "lv-3"
 	case rate >= 50:
-		return "bg-yellow-500"
-	case rate >= 35:
-		return "bg-orange-500"
+		return "lv-2"
 	default:
-		return "bg-red-500"
+		return "lv-1"
 	}
 }
 

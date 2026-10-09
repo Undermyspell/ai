@@ -12,9 +12,15 @@ type User struct {
 // UserStats contains calculated statistics for a user
 type UserStats struct {
 	User
-	CancellationCount          int            `json:"cancellationCount"`
-	AttendanceCount            int            `json:"attendanceCount"`
-	AttendanceRate             int            `json:"attendanceRate"`
+	CancellationCount int `json:"cancellationCount"`
+	AttendanceCount   int `json:"attendanceCount"`
+	AttendanceRate    int `json:"attendanceRate"`
+	// AttendancePercent ist die exakte Quote – AttendanceRate ist gerundet und
+	// taugt nicht, um Gleichstand zu erkennen (77,5 % ≠ 77,9 %).
+	AttendancePercent float64 `json:"attendancePercent"`
+	// Since ist der Tag, ab dem der User zählt (Eintritt, auf den
+	// Jahresbeginn geklemmt).
+	Since                      time.Time      `json:"since"`
 	MaxAttendanceStreak        int            `json:"maxAttendanceStreak"`
 	MaxAttendanceStreakStart   time.Time      `json:"maxAttendanceStreakStart"`
 	MaxAttendanceStreakEnd     time.Time      `json:"maxAttendanceStreakEnd"`

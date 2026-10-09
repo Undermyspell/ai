@@ -1,11 +1,11 @@
 package templates
 
-// SlideNavigation provides the core slide navigation functionality
-// This is rendered once per page and handles all slide transitions
+// SlideNavigation steuert die Story: eine Slide zur Zeit, Fortschritt oben in
+// Segmenten, Tippen rechts = weiter, links = zurück, Halten = Pause.
 templ SlideNavigation() {
 	<script>
-		// Stammtisch Wrapped - Core Slide Navigation
-		// ============================================
+		// Stammtisch Wrapped – Story-Navigation
+		// =====================================
 		class StammtischWrapped {
 			constructor() {
 				this.currentSlide = 0;
@@ -23,52 +23,57 @@ templ SlideNavigation() {
 			init() {
 				this.slides = document.querySelectorAll(".slide");
 				this.totalSlides = this.slides.length;
-				this.generateNavDots();
+				this.buildSegments();
 				this.setupEventListeners();
 				this.showSlide(0);
 				this.startAutoNavigation();
-				console.log(`🍺 Stammtisch Wrapped gestartet mit ${this.totalSlides} Slides`);
 			}
 
-			generateNavDots() {
-				const container = document.getElementById("nav-dots");
-				container.innerHTML = "";
+			buildSegments() {
+				const bar = document.getElementById("story-bar");
+				bar.innerHTML = "";
 				for (let i = 0; i < this.totalSlides; i++) {
-					const dot = document.createElement("button");
-					dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${i === 0 ? "bg-biergold w-6" : "bg-schaum/30"}`;
-					dot.setAttribute("data-slide", i);
-					dot.addEventListener("click", () => this.goToSlide(i));
-					container.appendChild(dot);
+					const seg = document.createElement("span");
+					seg.appendChild(document.createElement("i"));
+					bar.appendChild(seg);
 				}
+				this.segments = bar.querySelectorAll("span");
 			}
 
-			updateNavDots() {
-				const dots = document.querySelectorAll("#nav-dots button");
-				dots.forEach((dot, index) => {
-					if (index === this.currentSlide) {
-						dot.className = "w-6 h-2 rounded-full bg-biergold transition-all duration-300";
-					} else if (index < this.currentSlide) {
-						dot.className = "w-2 h-2 rounded-full bg-biergold/50 transition-all duration-300";
-					} else {
-						dot.className = "w-2 h-2 rounded-full bg-schaum/30 transition-all duration-300";
-					}
+			updateSegments() {
+				this.segments.forEach((seg, i) => {
+					seg.classList.toggle("done", i < this.currentSlide);
+					if (i >= this.currentSlide) seg.firstChild.style.width = "0%";
 				});
 			}
 
+			setProgress(pct) {
+				const seg = this.segments[this.currentSlide];
+				if (seg) seg.firstChild.style.width = `${Math.min(pct, 100)}%`;
+			}
+
+			isControl(target) {
+				return target.closest("button, a, .top-actions");
+			}
+
 			setupEventListeners() {
+				// Tippen: linkes Drittel zurück, sonst weiter (wie Instagram)
 				document.addEventListener("click", (e) => {
 					if (this.suppressClick) {
 						this.suppressClick = false;
 						return;
 					}
-					if (e.target.closest("#nav-dots")) return;
-					this.nextSlide();
+					if (this.isControl(e.target)) return;
+					if (e.clientX < window.innerWidth * 0.3) {
+						this.prevSlide();
+					} else {
+						this.nextSlide();
+					}
 				});
 
-				// Hold-to-pause (Instagram-style): press and hold freezes the
-				// progress, release resumes. A hold suppresses the tap-advance.
+				// Halten pausiert, Loslassen setzt fort; ein Halten ist kein Tippen.
 				document.addEventListener("pointerdown", (e) => {
-					if (e.target.closest("#nav-dots") || e.target.closest("button")) return;
+					if (this.isControl(e.target)) return;
 					this.holdTimer = setTimeout(() => {
 						this.isHolding = true;
 						this.pauseProgress();
@@ -86,7 +91,6 @@ templ SlideNavigation() {
 				};
 				document.addEventListener("pointerup", endHold);
 				document.addEventListener("pointercancel", endHold);
-				// No long-press context menu / text selection while holding
 				document.addEventListener("contextmenu", (e) => {
 					if (this.isHolding) e.preventDefault();
 				});
@@ -95,6 +99,7 @@ templ SlideNavigation() {
 					switch (e.key) {
 						case "ArrowRight":
 						case " ":
+							e.preventDefault();
 							this.nextSlide();
 							break;
 						case "ArrowLeft":
@@ -107,94 +112,62 @@ templ SlideNavigation() {
 				});
 
 				let touchStartX = 0;
-				let touchEndX = 0;
-
 				document.addEventListener("touchstart", (e) => {
 					touchStartX = e.changedTouches[0].screenX;
 				}, { passive: true });
-
 				document.addEventListener("touchend", (e) => {
-					touchEndX = e.changedTouches[0].screenX;
-					this.handleSwipe(touchStartX, touchEndX);
-				}, { passive: true });
-			}
-
-			handleSwipe(startX, endX) {
-				const threshold = 50;
-				const diff = startX - endX;
-				if (Math.abs(diff) > threshold) {
-					if (diff > 0) {
-						this.nextSlide();
-					} else {
-						this.prevSlide();
+					const diff = touchStartX - e.changedTouches[0].screenX;
+					if (Math.abs(diff) > 50) {
+						this.suppressClick = true;
+						setTimeout(() => { this.suppressClick = false; }, 350);
+						diff > 0 ? this.nextSlide() : this.prevSlide();
 					}
-				}
+				}, { passive: true });
 			}
 
 			showSlide(index) {
 				if (index < 0 || index >= this.totalSlides) return;
-
-				this.slides.forEach((slide) => {
-					slide.classList.remove("active");
-				});
-
+				this.slides.forEach((slide) => slide.classList.remove("active"));
 				this.currentSlide = index;
-				const currentSlideEl = this.slides[index];
-				currentSlideEl.classList.add("active");
-
-				this.triggerAnimations(currentSlideEl);
-				this.updateNavDots();
-				this.slideDuration = parseInt(currentSlideEl.dataset.duration, 10) || 5000;
+				const el = this.slides[index];
+				el.classList.add("active");
+				this.triggerAnimations(el);
+				this.updateSegments();
+				this.slideDuration = parseInt(el.dataset.duration, 10) || 5000;
 			}
 
 			triggerAnimations(slideEl) {
-				const animatedElements = slideEl.querySelectorAll(".animate-on-enter, .animate-bar");
-				animatedElements.forEach((el) => {
+				slideEl.querySelectorAll(".animate-on-enter, .animate-bar").forEach((el) => {
 					el.style.animation = "none";
 					el.offsetHeight;
 					el.style.animation = "";
 				});
 				slideEl.querySelectorAll(".animate-on-enter").forEach((el) => {
-					// Fallback: reveal even if the CSS animation never ran
-					setTimeout(() => {
-						el.style.opacity = "1";
-					}, 3000);
+					// Rückfall: sichtbar machen, falls die Animation nie lief
+					setTimeout(() => { el.style.opacity = "1"; }, 3500);
 				});
-
-				const counters = slideEl.querySelectorAll("[data-count-to]");
-				counters.forEach((counter) => {
-					this.animateCounter(counter);
-				});
+				slideEl.querySelectorAll("[data-count-to]").forEach((c) => this.animateCounter(c));
 			}
 
 			animateCounter(element) {
 				const target = parseInt(element.dataset.countTo, 10);
-				const duration = parseInt(element.dataset.countDuration, 10) || 2000;
+				const duration = parseInt(element.dataset.countDuration, 10) || 1800;
 				const suffix = element.dataset.countSuffix || "";
-				const start = 0;
-				const startTime = performance.now();
-
-				const updateCounter = (currentTime) => {
-					const elapsed = currentTime - startTime;
-					const progress = Math.min(elapsed / duration, 1);
-					const easeOutQuart = 1 - (1 - progress) ** 4;
-					const current = Math.floor(start + (target - start) * easeOutQuart);
-					element.textContent = current + suffix;
-					if (progress < 1) {
-						requestAnimationFrame(updateCounter);
-					} else {
-						element.textContent = target + suffix;
-					}
+				const delay = parseInt(element.dataset.countDelay, 10) || 250;
+				element.textContent = "0" + suffix;
+				const start = performance.now() + delay;
+				const tick = (now) => {
+					const p = Math.max(0, Math.min((now - start) / duration, 1));
+					const eased = 1 - (1 - p) ** 4;
+					element.textContent = Math.round(target * eased) + suffix;
+					if (p < 1) requestAnimationFrame(tick);
 				};
-
-				requestAnimationFrame(updateCounter);
+				requestAnimationFrame(tick);
 			}
 
 			hideTapHint() {
 				const hint = document.getElementById("tap-hint");
-				if (hint) {
-					hint.style.opacity = "0";
-				}
+				if (hint) hint.style.opacity = "0";
 			}
 
 			nextSlide() {
@@ -204,8 +177,7 @@ templ SlideNavigation() {
 					this.showSlide(this.currentSlide + 1);
 					this.startAutoNavigation();
 				} else {
-					console.log("🎉 Wrapped fertig!");
-					this.stopAutoNavigation();
+					this.setProgress(100);
 				}
 			}
 
@@ -213,34 +185,21 @@ templ SlideNavigation() {
 				this.resetTimer();
 				if (this.currentSlide > 0) {
 					this.showSlide(this.currentSlide - 1);
-					this.startAutoNavigation();
 				}
-			}
-
-			goToSlide(index) {
-				this.resetTimer();
-				this.showSlide(index);
 				this.startAutoNavigation();
 			}
 
 			startAutoNavigation() {
 				if (this.isPaused) return;
-
 				this.resetTimer();
 				this.runProgress();
 			}
 
-			// runProgress ticks the progress bar from the current elapsed time.
-			// pauseProgress/resumeProgress freeze and continue it mid-slide.
 			runProgress() {
-				const progressBar = document.getElementById("progress-bar");
 				this.progressInterval = setInterval(() => {
 					this.elapsed += 100;
-					const progress = (this.elapsed / this.slideDuration) * 100;
-					progressBar.style.width = `${Math.min(progress, 100)}%`;
-					if (this.elapsed >= this.slideDuration) {
-						this.nextSlide();
-					}
+					this.setProgress((this.elapsed / this.slideDuration) * 100);
+					if (this.elapsed >= this.slideDuration) this.nextSlide();
 				}, 100);
 			}
 
@@ -252,57 +211,46 @@ templ SlideNavigation() {
 			}
 
 			resumeProgress() {
-				if (!this.progressInterval && !this.isPaused) {
-					this.runProgress();
-				}
-			}
-
-			stopAutoNavigation() {
-				this.resetTimer();
-				const progressBar = document.getElementById("progress-bar");
-				progressBar.style.width = "100%";
+				if (!this.progressInterval && !this.isPaused) this.runProgress();
 			}
 
 			resetTimer() {
-				if (this.progressInterval) {
-					clearInterval(this.progressInterval);
-					this.progressInterval = null;
-				}
+				this.pauseProgress();
 				this.elapsed = 0;
-				const progressBar = document.getElementById("progress-bar");
-				progressBar.style.width = "0%";
+				this.setProgress(0);
 			}
 
 			togglePause() {
 				this.isPaused = !this.isPaused;
+				document.body.classList.toggle("is-paused", this.isPaused);
 				if (this.isPaused) {
-					this.resetTimer();
-					console.log("⏸️ Pausiert");
+					this.pauseProgress();
 				} else {
-					this.startAutoNavigation();
-					console.log("▶️ Fortgesetzt");
+					this.resumeProgress();
 				}
 			}
 		}
 
-		// Quiz: reveal the hidden answer, pause auto-advance for reading time
+		// Quiz: Antwort zeigen und dem Lesen Zeit geben
 		function revealQuizAnswer(btn) {
 			const answer = btn.parentElement.querySelector(".quiz-answer");
 			if (!answer) return;
 			btn.classList.add("hidden");
 			answer.classList.remove("hidden");
-			answer.classList.add("animate-scale-in");
-			if (window.app) {
-				window.app.resetTimer();
-				window.app.startAutoNavigation();
-			}
+			answer.classList.add("animate-on-enter", "in-pop");
+			if (window.app) window.app.startAutoNavigation();
 		}
 
-		// Share card: render key stats onto a canvas, then Web Share / download
+		// Share-Bild: Eckdaten im aktuellen Theme auf ein Canvas, dann
+		// Web Share oder Download.
 		async function shareWrapped() {
 			const dataEl = document.getElementById("share-data");
 			if (!dataEl) return;
 			const stats = JSON.parse(dataEl.dataset.share);
+			const css = getComputedStyle(document.documentElement);
+			const v = (name) => css.getPropertyValue(name).trim();
+			const font = '"Plus Jakarta Sans", sans-serif';
+			try { await document.fonts.load(`800 120px ${font}`); } catch (e) { /* Systemschrift */ }
 
 			const w = 1080, h = 1350;
 			const canvas = document.createElement("canvas");
@@ -310,42 +258,59 @@ templ SlideNavigation() {
 			canvas.height = h;
 			const ctx = canvas.getContext("2d");
 
-			// Background: wood gradient like the page
-			const bg = ctx.createLinearGradient(0, 0, w, h);
-			bg.addColorStop(0, "#1C1917");
-			bg.addColorStop(0.5, "#3D2314");
-			bg.addColorStop(1, "#5D3A2A");
-			ctx.fillStyle = bg;
+			ctx.fillStyle = v("--bg");
 			ctx.fillRect(0, 0, w, h);
+			const glow = (x, y, r, color) => {
+				const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+				g.addColorStop(0, color);
+				g.addColorStop(1, "transparent");
+				ctx.fillStyle = g;
+				ctx.fillRect(0, 0, w, h);
+			};
+			glow(120, 80, 820, v("--glow-1"));
+			glow(w, h, 760, "rgba(255, 181, 71, .28)");
 
-			ctx.textAlign = "center";
-			ctx.fillStyle = "#F59E0B";
-			ctx.font = "bold 90px Georgia, serif";
-			ctx.fillText("🍺 STAMMTISCH", w / 2, 180);
-			ctx.fillText("WRAPPED " + stats.year, w / 2, 290);
+			const pad = 96;
+			const logo = new Image();
+			logo.src = "/static/img/logo.png";
+			try { await logo.decode(); ctx.drawImage(logo, pad, pad, 104, 104); } catch (e) { /* ohne Logo */ }
 
-			ctx.font = "48px Georgia, serif";
-			ctx.fillStyle = "#FEF3C7";
-			const lines = [
-				["📅", stats.thursdays + " Donnerstage"],
-				["👥", stats.users + " Stammtischler"],
-				["📈", stats.avgRate + "% Ø Teilnahme"],
-				["👑", stats.topUser],
-				["💸", stats.strafenSum + " € Strafenkasse"],
+			ctx.textBaseline = "alphabetic";
+			ctx.fillStyle = v("--ink-amber");
+			ctx.font = `800 30px ${font}`;
+			ctx.fillText("STAMMTISCH WRAPPED", pad, 300);
+			ctx.fillStyle = v("--text");
+			ctx.font = `800 220px ${font}`;
+			ctx.fillText(String(stats.year), pad - 10, 500);
+
+			const rows = [
+				[String(stats.thursdays), "Donnerstage"],
+				[String(stats.users), "Stammtischler"],
+				[stats.avgRate + "%", "Ø Teilnahme"],
+				[stats.strafenSum + " €", "Strafenkasse"],
 			];
-			let y = 480;
-			for (const [emoji, text] of lines) {
-				ctx.fillText(emoji + "  " + text, w / 2, y);
-				y += 130;
+			let y = 640;
+			for (const [num, label] of rows) {
+				ctx.strokeStyle = v("--line-strong");
+				ctx.lineWidth = 2;
+				ctx.beginPath(); ctx.moveTo(pad, y - 70); ctx.lineTo(w - pad, y - 70); ctx.stroke();
+				ctx.fillStyle = v("--text");
+				ctx.font = `800 72px ${font}`;
+				ctx.fillText(num, pad, y);
+				ctx.fillStyle = v("--muted");
+				ctx.font = `600 36px ${font}`;
+				ctx.fillText(label, pad + 330, y - 8);
+				y += 120;
 			}
-
-			ctx.fillStyle = "rgba(254, 243, 199, 0.5)";
-			ctx.font = "36px Georgia, serif";
-			ctx.fillText("Prost auf euch alle! 🍻", w / 2, h - 100);
+			ctx.fillStyle = v("--ink-amber");
+			ctx.font = `800 40px ${font}`;
+			ctx.fillText("👑 " + stats.topUser, pad, y + 20);
+			ctx.fillStyle = v("--faint");
+			ctx.font = `600 30px ${font}`;
+			ctx.fillText("Prost auf euch alle! 🍻", pad, h - pad);
 
 			const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 			const file = new File([blob], `stammtisch-wrapped-${stats.year}.png`, { type: "image/png" });
-
 			if (navigator.canShare && navigator.canShare({ files: [file] })) {
 				try {
 					await navigator.share({ files: [file], title: "Stammtisch Wrapped " + stats.year });
@@ -354,7 +319,6 @@ templ SlideNavigation() {
 					if (e.name === "AbortError") return;
 				}
 			}
-			// Fallback: download
 			const a = document.createElement("a");
 			a.href = URL.createObjectURL(blob);
 			a.download = file.name;
@@ -362,64 +326,79 @@ templ SlideNavigation() {
 			URL.revokeObjectURL(a.href);
 		}
 
-		// Start app when DOM is ready
 		document.addEventListener("DOMContentLoaded", () => {
 			window.app = new StammtischWrapped();
 		});
 	</script>
 }
 
-// Layout is the base HTML template for all pages
+// themeScript setzt Hell/Dunkel vor dem ersten Zeichnen (kein Aufblitzen):
+// gemerkte Wahl, sonst Systemeinstellung – wie im Admin-Portal.
+templ themeScript() {
+	<script>
+		(function () {
+			var KEY = "zumba-wrapped-theme";
+			var root = document.documentElement;
+			function stored() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+			function effective(s) {
+				if (s === "light" || s === "dark") return s;
+				return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+			}
+			function apply(theme) {
+				root.setAttribute("data-theme", theme);
+				document.querySelectorAll(".theme-toggle").forEach(function (el) {
+					el.textContent = theme === "dark" ? "☾" : "☀";
+				});
+			}
+			apply(effective(stored()));
+			document.addEventListener("DOMContentLoaded", function () {
+				apply(effective(stored()));
+				document.addEventListener("click", function (e) {
+					if (!e.target.closest(".theme-toggle")) return;
+					var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+					try { localStorage.setItem(KEY, next); } catch (err) { /* privates Fenster */ }
+					apply(next);
+				});
+				window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", function (e) {
+					if (!stored()) apply(e.matches ? "light" : "dark");
+				});
+			});
+		})();
+	</script>
+}
+
+// Layout ist das Grundgerüst aller Jahrgänge.
 templ Layout(title string, year string) {
 	<!DOCTYPE html>
-	<html lang="de">
+	<html lang="de" data-theme="dark">
 		<head>
 			<meta charset="UTF-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 			<title>{ title }</title>
-			<script src="https://cdn.tailwindcss.com"></script>
-			<script>
-				tailwind.config = {
-					theme: {
-						extend: {
-							colors: {
-								'holz': '#3D2314',
-								'holz-light': '#5D3A2A',
-								'biergold': '#F59E0B',
-								'biergold-dark': '#D97706',
-								'bernstein': '#B45309',
-								'schaum': '#FEF3C7',
-								'kupfer': '#92400E',
-								'tafel': '#1C1917',
-							},
-							fontFamily: {
-								'display': ['Georgia', 'serif'],
-							}
-						}
-					}
-				}
-			</script>
+			@themeScript()
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+			<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
 			<link rel="stylesheet" href="/static/css/styles.css"/>
+			<link rel="icon" href="/static/img/logo.png"/>
 		</head>
-		<body class="bg-stammtisch min-h-screen overflow-hidden font-display">
-			<!-- Progress Bar -->
-			<div class="fixed top-0 left-0 right-0 z-50 h-1 bg-holz-light">
-				<div id="progress-bar" class="progress-bar h-full bg-biergold" style="width: 0%"></div>
+		<body>
+			<div id="story-bar" class="story-bar" aria-hidden="true"></div>
+			<div class="story-top">
+				<div class="brand">
+					<img src="/static/img/logo.png" alt=""/>
+					<span>Stammtisch <b>Wrapped { year }</b></span>
+				</div>
+				<div class="top-actions">
+					<span class="pause-flag">PAUSE</span>
+					<button class="icon-btn theme-toggle" type="button" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten">☾</button>
+				</div>
 			</div>
-			<!-- Navigation Dots -->
-			<div id="nav-dots" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex flex-wrap justify-center gap-1.5 max-w-[92vw]">
-				<!-- Dots werden dynamisch generiert -->
-			</div>
-			<!-- Skip/Tap Hint (hidden after first interaction) -->
-			<div id="tap-hint" class="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 text-schaum/50 text-xs transition-opacity duration-500">
-				Tippen zum Weiter
-			</div>
-			<!-- Slides Container -->
-			<div id="slides-container" class="w-full h-screen">
+			<div id="tap-hint">Tippen zum Weiter · links zurück</div>
+			<div id="slides-container">
 				{ children... }
 			</div>
-		<!-- Core Slide Navigation -->
-		@SlideNavigation()
-	</body>
-</html>
+			@SlideNavigation()
+		</body>
+	</html>
 }

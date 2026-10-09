@@ -6,39 +6,39 @@ import (
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
-// ThursdayCardView renders a single best/worst Thursday card
-templ ThursdayCardView(card viewmodels.ThursdayCard, gradient string, accent string) {
-	<div class={ "animate-on-enter animate-scale-in " + card.DelayClass + " " + gradient + " rounded-xl p-4 flex items-center gap-4" }>
-		<div class="text-3xl">{ card.RankDisplay }</div>
-		<div class="flex-1 min-w-0">
-			<div class="font-bold text-schaum">{ card.DateDisplay }</div>
-			<div class="text-sm text-schaum/60">{ fmt.Sprintf("%d von %d", card.Attendees, card.Total) } am Tisch</div>
-			<div class="mt-2 h-2 rounded-full bg-holz-light/40 overflow-hidden">
-				<div class={ "h-full rounded-full animate-bar " + card.BarColor } style={ fmt.Sprintf("width: %d%%", card.Rate) }></div>
-			</div>
+// ThursdayCardView – ein Donnerstag mit Belegung.
+templ ThursdayCardView(card viewmodels.ThursdayCard, tone string) {
+	<div class={ "item is-tinted animate-on-enter in-left", card.DelayClass } data-tone={ tone }>
+		<span class="emo" aria-hidden="true">{ card.RankDisplay }</span>
+		<div class="item-body">
+			<b>{ card.DateDisplay }</b>
+			<span>{ fmt.Sprintf("%d von %d am Tisch", card.Attendees, card.Total) }</span>
+			<div class={ "meter", card.BarTone }><i class="animate-bar" style={ fmt.Sprintf("--w: %d", card.Rate) }></i></div>
 		</div>
-		<div class={ "text-3xl font-bold " + accent }>{ fmt.Sprintf("%d", card.Attendees) }</div>
+		<span class="item-num">{ fmt.Sprintf("%d", card.Attendees) }</span>
 	</div>
 }
 
-// Thursdays slide - best and worst attended Thursdays
+// Thursdays – die vollsten und die leersten Abende.
 templ Thursdays(best []viewmodels.ThursdayCard, worst []viewmodels.ThursdayCard) {
-	<div class="slide flex-col items-center justify-start h-screen px-4 pt-12 pb-24 overflow-y-auto" data-duration="8000">
-		<h2 class="animate-on-enter animate-fade-in text-xl font-bold text-schaum mb-6">
-			🍻 Die legendärsten Donnerstage
-		</h2>
-		<div class="w-full max-w-md space-y-4">
-			for _, card := range best {
-				@ThursdayCardView(card, "bg-gradient-to-r from-biergold/30 to-amber-600/20", "text-biergold")
-			}
+	<section class="slide" data-tone="green" data-duration="8000">
+		<div class="scene">
+			<p class="eyebrow animate-on-enter in-fade">03 — Donnerstage</p>
+			<h2 class="title animate-on-enter in-up delay-100 gap-xs">Legendär und einsam</h2>
+			<div class="gap-m">
+				<p class="section-label animate-on-enter in-fade delay-150" data-tone="green">🍻 Die vollsten Abende</p>
+				<div class="list">
+					for _, card := range best {
+						@ThursdayCardView(card, "green")
+					}
+				</div>
+				<p class="section-label animate-on-enter in-fade delay-600" data-tone="neutral">🪦 Die einsamsten Abende</p>
+				<div class="list">
+					for _, card := range worst {
+						@ThursdayCardView(card, "neutral")
+					}
+				</div>
+			</div>
 		</div>
-		<h2 class="animate-on-enter animate-fade-in delay-500 text-xl font-bold text-schaum mb-6 mt-8">
-			🪦 Die einsamsten Donnerstage
-		</h2>
-		<div class="w-full max-w-md space-y-4">
-			for _, card := range worst {
-				@ThursdayCardView(card, "bg-gradient-to-r from-slate-500/30 to-slate-700/20", "text-slate-300")
-			}
-		</div>
-	</div>
+	</section>
 }

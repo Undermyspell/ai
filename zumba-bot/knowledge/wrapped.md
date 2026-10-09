@@ -21,11 +21,27 @@ ersetzt es nicht) — nur der Zeitraum ist geteilt.
 ## Bedienung (Story-Mechanik)
 
 - Slides laufen automatisch weiter (pro Slide eigene Anzeigedauer),
-  Fortschrittsbalken oben, Punkte-Navigation unten.
-- Tippen/Klick = weiter, Swipe = vor/zurück, Pfeiltasten am Desktop.
+  Fortschritt oben als ein Segment je Slide (wie Instagram-Stories).
+- Tippen rechts = weiter, **links = zurück**, Swipe = vor/zurück,
+  Pfeiltasten am Desktop, Esc = Pause an/aus.
 - **Gedrückt halten = Pause** (wie Instagram-Stories), Loslassen läuft
   weiter; ein Hold zählt nicht als Weiter-Tipp.
 - Reduzierte Bewegung des Betriebssystems wird respektiert (Animationen aus).
+- **Hell/Dunkel** wie im Admin-Portal: folgt der Systemeinstellung, Umschalter
+  oben rechts, die Wahl wird gemerkt.
+
+## Gestaltung
+
+Seit 10/2026 im Look des Admin-Portals (gleiche Farben, Schriften,
+Glas-Flächen), aber als Show inszeniert: große Zahlen, gestaffelte Auftritte,
+Konfetti im Finale. Jedes Kapitel hat einen Farbton – Rangliste und Awards
+Gold, Serien heiß/kalt, Ausreden Blau, Donnerstage Grün, Strafen Rot.
+
+**Plätze wie im Sport:** Gleichplatzierte teilen sich den Platz, danach
+entfallen Plätze (1, 2, 2, **4**) – in der Rangliste (gleiche Quote und gleich
+viele Anwesenheiten), bei den Donnerstagen (gleich viele am Tisch) und bei den
+Top-Zahlern der Strafenkasse (gleicher Betrag). Dieselbe Regel wie in Bot und
+Admin-UI.
 
 ## Die Slides (Stand 08/2026, 25 Stück)
 
@@ -33,7 +49,7 @@ ersetzt es nicht) — nur der Zeitraum ist geteilt.
 2. **Jahreszahlen** — Donnerstage, Mitglieder, Zusagen, Absagen, Ø-Quote
    (animierte Zähler)
 3. **Ranking** (Intro + 3 Slides) — alle 15 nach Anwesenheitsquote in
-   Fünfergruppen, mit Titel (z. B. „Stammtisch-König", „Der Spontane"),
+   Fünfergruppen (Plätze wie im Sport), mit Titel (z. B. „Stammtisch-König", „Der Spontane"),
    FunFact und Spruch pro Person
 4. **Streaks** — Top 3 längste Anwesenheits- und Absage-Serien, mit Zeitraum
 5. **Ausreden nach Kategorie** — Balkenstatistik (Arbeit, Familie,
@@ -67,10 +83,24 @@ ersetzt es nicht) — nur der Zeitraum ist geteilt.
     abgesagt?")
 18. **Strafenkasse** (Intro + Slide) — Kassenstand mit Zähler,
     Maß-Umrechnung (5 €/Maß), Top-3-Zahler mit Einzelstrafen und Zeiträumen
-19. **Awards** (Intro + Slide) — 👑 Stammtisch-König, 🔥 Streak-Meister,
-    🎨 Kreativster Absager, 🦅 Comeback des Jahres (längste beendete
-    Absage-Serie), 🌟 Rising Star (größte Quoten-Steigerung 2. vs.
-    1. Halbjahr, mindestens +10 Punkte)
+19. **Awards** (Intro + zwei Slides) — erst die **Schmähpreise**, dann die
+    **Ehrenpreise**. Jede Karte zeigt Gewinner *und* Wert („14 Donnerstage
+    am Stück da", „50 € · 10 Maß"); bei Gleichstand teilen sich alle den
+    Award, wie bei den Plätzen. Unter der Schwelle bleibt ein Preis leer
+    statt an einen Zufallssieger zu gehen.
+    - Ehrenpreise: 👑 Stammtisch-König (alle auf Platz 1), 🔥 Streak-Meister
+      (längste Anwesenheitsserie), 🎨 Kreativster Absager (meiste
+      „kreativ"-Ausreden), 🦅 Comeback des Jahres (längste beendete
+      Absage-Serie ab 3 – nicht an das Phantom), 🌟 Rising Star (Quote
+      2. vs. 1. Halbjahr, mindestens +10 Punkte)
+    - Schmähpreise: 👻 Phantom des Jahres (längste Absage-Serie ab 3),
+      💸 Strafen-Champ (höchste Strafensumme), 📉 Absturz des Jahres
+      (Quote 2. vs. 1. Halbjahr, mindestens −10 Punkte), 🎢 Wackelkandidat
+      (meiste getrennte Absage-Phasen, ab 3). Gibt es keine kreative
+      Ausrede, kommt 📵 Absage-Weltmeister (meiste Absagen) dazu.
+    - Halbjahresvergleich zählt nur Donnerstage ab Eintritt und braucht je
+      Halbjahr mindestens 4 – ein Späteinsteiger stürzt nicht ab, weil er
+      im ersten Halbjahr noch gar nicht dabei war.
 20. **Finale** — Konfetti + **„Als Bild teilen"**: rendert die Kernzahlen
     als Bild für die WhatsApp-Gruppe (am Handy direkt über den
     System-Share-Dialog, am Desktop als Download)

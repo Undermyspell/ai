@@ -57,8 +57,9 @@ type PageViewModel struct {
 	// Personality types
 	PersonalityTypes []PersonalityType
 
-	// Awards
-	Awards []AwardView
+	// Awards: erst die Schmähpreise, dann die Ehrenpreise
+	ShameAwards []AwardView
+	HonorAwards []AwardView
 
 	// Confetti for finale (pre-generated particles)
 	Confetti ConfettiView
@@ -82,8 +83,8 @@ type RankedUser struct {
 	Title           string
 	TitleEmoji      string
 	AttendanceRate  int
-	BarColor        string // "bg-green-500", "bg-biergold", "bg-orange-500", "bg-red-400"
-	TierBgColor     string // gradient class for tier
+	BarTone         string // Balkenfarbe: "is-good", "is-ok", "is-warn", "is-bad"
+	Tier            string // Hervorhebung der Zeile: "is-gold" (Top 3), "is-top" (bis Platz 5), ""
 	FunFact         string // e.g. "👑 Nie abgesagt!"
 	PersonalMessage string // e.g. "Legende! 🏆"
 	DelayClass      string // "delay-200", "delay-300", etc.
@@ -129,7 +130,7 @@ type AttendanceHeatmapMonth struct {
 	Label      string // "Jan", "Feb", etc.
 	Rate       int    // Average attendance rate 0-100
 	Count      int    // Cancellations in that month
-	BgColor    string // color class based on rate
+	Level      string // Heatmap-Stufe nach Quote: "lv-0" … "lv-4"
 	DelayClass string
 }
 
@@ -148,7 +149,7 @@ type ThursdayCard struct {
 	Attendees   int
 	Total       int
 	Rate        int    // 0-100, used as bar width
-	BarColor    string // color class based on rate
+	BarTone     string // Balkenfarbe nach Quote (siehe RankedUser.BarTone)
 	DelayClass  string
 }
 
@@ -203,7 +204,7 @@ type FunCard struct {
 	Headline   string // e.g. "🎵 Martin & 💻 Sebastian"
 	Detail     string // e.g. "8× am selben Donnerstag gefehlt"
 	Quote      string // optional: verbatim message, rendered italic
-	Gradient   string // background gradient classes
+	Tone       string // Farbton der Karte: blue, cyan, green, amber, red, neutral
 	DelayClass string
 }
 
@@ -234,18 +235,24 @@ type PersonalityUser struct {
 
 // AwardView contains display-ready award data
 type AwardView struct {
-	Emoji       string
-	Title       string
-	Subtitle    string
-	WinnerName  string
-	WinnerEmoji string
-	Color       string // gradient class
-	DelayClass  string
+	Emoji      string
+	Title      string
+	Subtitle   string
+	Detail     string // der Wert der Gewinner, z. B. "14 Donnerstage am Stück"
+	Winners    []AwardWinner
+	Tone       string // Farbton: blue, cyan, green, amber, red, neutral
+	DelayClass string
+}
+
+// AwardWinner ist ein Gewinner; bei Gleichstand gibt es mehrere.
+type AwardWinner struct {
+	Name  string
+	Emoji string
 }
 
 // ConfettiParticle contains pre-computed confetti particle data for SSR
 type ConfettiParticle struct {
-	Color        string // hex color
+	Color        string // CSS-Farbe, z. B. "var(--amber)"
 	Left         string // percentage
 	Size         string // pixels
 	BorderRadius string // "50%" or "0"

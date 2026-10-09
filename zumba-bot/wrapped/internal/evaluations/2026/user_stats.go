@@ -3,6 +3,8 @@ package eval2026
 import (
 	"sort"
 
+	"github.com/michael/zumba-shared/domain"
+
 	"github.com/michael/stammtisch-wrapped/pkg/models"
 )
 
@@ -77,6 +79,8 @@ func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations 
 			CancellationCount:          row.AwayCount,
 			AttendanceCount:            row.AttendanceCount,
 			AttendanceRate:             rate,
+			AttendancePercent:          row.AttendPercent,
+			Since:                      row.EffectiveStart,
 			MaxAttendanceStreak:        att.Len,
 			MaxAttendanceStreakStart:   att.Start,
 			MaxAttendanceStreakEnd:     att.End,
@@ -91,21 +95,34 @@ func (e *Evaluator) calculateUserStats(userLookup map[string]int, cancellations 
 		})
 	}
 
-	// Wrapped sortiert nach Rate (nicht nach absoluter Anwesenheit wie die
-	// Rangliste des Bots), dann Name — Präsentationsentscheidung, bleibt Go.
-	sort.Slice(userStats, func(i, j int) bool {
-		if userStats[i].AttendanceRate != userStats[j].AttendanceRate {
-			return userStats[i].AttendanceRate > userStats[j].AttendanceRate
-		}
-		return userStats[i].Name < userStats[j].Name
-	})
-
-	// Assign ranks
-	for i := range userStats {
-		userStats[i].Rank = i + 1
-	}
-
+	sortAndRank(userStats)
 	return userStats
+}
+
+// sortAndRank ordnet die Rangliste und vergibt die Plätze. Wrapped sortiert
+// nach Quote (nicht nach absoluter Anwesenheit wie die Rangliste des Bots –
+// fairer für Späteinsteiger im Jahresrückblick), dann nach Anwesenheiten und
+// Name. Plätze wie im Sport ("1-2-2-4", shared/domain.CompetitionRanks):
+// gleichauf ist, wer dieselbe exakte Quote und gleich viele Anwesenheiten
+// hat – dieselbe Regel wie in Bot und Admin-UI.
+func sortAndRank(userStats []models.UserStats) {
+	sort.SliceStable(userStats, func(i, j int) bool {
+		a, b := userStats[i], userStats[j]
+		if a.AttendancePercent != b.AttendancePercent {
+			return a.AttendancePercent > b.AttendancePercent
+		}
+		if a.AttendanceCount != b.AttendanceCount {
+			return a.AttendanceCount > b.AttendanceCount
+		}
+		return a.Name < b.Name
+	})
+	ranks := domain.CompetitionRanks(len(userStats), func(i int) bool {
+		return userStats[i].AttendancePercent == userStats[i-1].AttendancePercent &&
+			userStats[i].AttendanceCount == userStats[i-1].AttendanceCount
+	})
+	for i := range userStats {
+		userStats[i].Rank = ranks[i]
+	}
 }
 
 // findFavoriteCategory returns the most common category for a user's cancellations

@@ -7,8 +7,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/michael/zumba-shared/penalty"
 	"github.com/michael/stammtisch-wrapped/pkg/models"
+	"github.com/michael/zumba-shared/penalty"
+
+	"github.com/michael/zumba-shared/domain"
 )
 
 // GetUsers returns all 15 Stammtisch users
@@ -140,6 +142,8 @@ func CalculateUserStats() []models.UserStats {
 			CancellationCount:          cancellationCount,
 			AttendanceCount:            attendanceCount,
 			AttendanceRate:             attendanceRate,
+			AttendancePercent:          float64(attendanceCount) / float64(totalThursdays) * 100,
+			Since:                      time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC),
 			MaxAttendanceStreak:        attendanceStreak.count,
 			MaxAttendanceStreakStart:   attendanceStreak.start,
 			MaxAttendanceStreakEnd:     attendanceStreak.end,
@@ -152,13 +156,25 @@ func CalculateUserStats() []models.UserStats {
 		}
 	}
 
-	// Sort by attendance rate and assign ranks and titles
-	sort.Slice(userStats, func(i, j int) bool {
-		return userStats[i].AttendanceRate > userStats[j].AttendanceRate
+	// Sortieren wie die echte Auswertung (Quote, Anwesenheiten, Name) und
+	// Plätze wie im Sport vergeben ("1-2-2-4").
+	sort.SliceStable(userStats, func(i, j int) bool {
+		a, b := userStats[i], userStats[j]
+		if a.AttendancePercent != b.AttendancePercent {
+			return a.AttendancePercent > b.AttendancePercent
+		}
+		if a.AttendanceCount != b.AttendanceCount {
+			return a.AttendanceCount > b.AttendanceCount
+		}
+		return a.Name < b.Name
+	})
+	ranks := domain.CompetitionRanks(len(userStats), func(i int) bool {
+		return userStats[i].AttendancePercent == userStats[i-1].AttendancePercent &&
+			userStats[i].AttendanceCount == userStats[i-1].AttendanceCount
 	})
 
 	for i := range userStats {
-		userStats[i].Rank = i + 1
+		userStats[i].Rank = ranks[i]
 		title, emoji := getTitle(&userStats[i])
 		userStats[i].Title = title
 		userStats[i].TitleEmoji = emoji
@@ -489,123 +505,4 @@ func getTitle(stats *models.UserStats) (string, string) {
 		return "Der Ehrliche", "😬"
 	}
 	return "Der Unsichtbare", "🫥"
-}
-
-// GetAwards returns special awards (same categories as the real evaluator)
-func GetAwards() []models.Award {
-	userStats := CalculateUserStats()
-	thursdays := GetThursdays2026()
-
-	// Find streak master
-	streakMaster := userStats[0]
-	for _, stat := range userStats {
-		if stat.MaxAttendanceStreak > streakMaster.MaxAttendanceStreak {
-			streakMaster = stat
-		}
-	}
-
-	// Find excuse artist
-	excuseArtist := userStats[0]
-	maxCreative := 0
-	for _, stat := range userStats {
-		creativeCount := 0
-		for _, c := range stat.Cancellations {
-			if c.Category == "kreativ" {
-				creativeCount++
-			}
-		}
-		if creativeCount > maxCreative {
-			maxCreative = creativeCount
-			excuseArtist = stat
-		}
-	}
-
-	awards := []models.Award{
-		{
-			Emoji:    "👑",
-			Title:    "Stammtisch-König",
-			Subtitle: "Höchste Anwesenheitsquote",
-			Winner:   userStats[0],
-			Color:    "from-yellow-500/30 to-amber-600/20",
-		},
-		{
-			Emoji:    "🔥",
-			Title:    "Streak-Meister",
-			Subtitle: "Längste Anwesenheitsserie",
-			Winner:   streakMaster,
-			Color:    "from-orange-500/30 to-red-500/20",
-		},
-		{
-			Emoji:    "🎨",
-			Title:    "Kreativster Absager",
-			Subtitle: "Die besten Ausreden",
-			Winner:   excuseArtist,
-			Color:    "from-purple-500/30 to-pink-500/20",
-		},
-	}
-
-	// Comeback: longest finished cancellation streak (user returned)
-	if len(thursdays) > 0 {
-		lastThursday := thursdays[len(thursdays)-1]
-		var comeback *models.UserStats
-		maxStreak := 0
-		for i := range userStats {
-			u := &userStats[i]
-			if u.MaxCancellationStreak >= 3 && u.MaxCancellationStreak > maxStreak &&
-				!u.MaxCancellationStreakEnd.IsZero() && u.MaxCancellationStreakEnd.Before(lastThursday) {
-				maxStreak = u.MaxCancellationStreak
-				comeback = u
-			}
-		}
-		if comeback != nil {
-			awards = append(awards, models.Award{
-				Emoji:    "🦅",
-				Title:    "Comeback des Jahres",
-				Subtitle: "Lange weg – und wieder da",
-				Winner:   *comeback,
-				Color:    "from-green-500/30 to-emerald-600/20",
-			})
-		}
-	}
-
-	// Rising star: biggest improvement second half vs. first half
-	if len(thursdays) >= 8 {
-		half := len(thursdays) / 2
-		firstHalf := make(map[string]bool, half)
-		for i, t := range thursdays {
-			if i < half {
-				firstHalf[t.Format("2006-01-02")] = true
-			}
-		}
-		var rising *models.UserStats
-		bestDelta := 0
-		for i := range userStats {
-			u := &userStats[i]
-			miss1, miss2 := 0, 0
-			for _, c := range u.Cancellations {
-				if firstHalf[c.Date.Format("2006-01-02")] {
-					miss1++
-				} else {
-					miss2++
-				}
-			}
-			rate1 := ((half - miss1) * 100) / half
-			rate2 := (((len(thursdays) - half) - miss2) * 100) / (len(thursdays) - half)
-			if rate2-rate1 > bestDelta {
-				bestDelta = rate2 - rate1
-				rising = u
-			}
-		}
-		if rising != nil && bestDelta >= 10 {
-			awards = append(awards, models.Award{
-				Emoji:    "🌟",
-				Title:    "Rising Star",
-				Subtitle: "Beste Entwicklung im Jahresverlauf",
-				Winner:   *rising,
-				Color:    "from-blue-500/30 to-cyan-500/20",
-			})
-		}
-	}
-
-	return awards
 }

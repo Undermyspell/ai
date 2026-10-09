@@ -19,7 +19,7 @@ import (
 type presenceData struct {
 	names       []string // sorted user names
 	emoji       map[string]string
-	thursdays   []string          // ISO dates ascending
+	thursdays   []string // ISO dates ascending
 	absent      map[string]map[string]bool
 	presentDays map[string][]string // per user: ISO dates present
 }
@@ -110,7 +110,7 @@ func buildDuoCards(p presenceData, cancellations []models.Cancellation, thursday
 			Emoji: "🤜🤛", Title: "Die Unzertrennlichen",
 			Headline: pairHeadline(p, ua, ub),
 			Detail:   fmt.Sprintf("%d× gemeinsam am Tisch – öfter als alle anderen", bestTogether),
-			Gradient: "bg-gradient-to-r from-amber-500/25 to-yellow-500/15",
+			Tone:     "amber",
 		})
 	}
 	if bestShared > 0 {
@@ -118,7 +118,7 @@ func buildDuoCards(p presenceData, cancellations []models.Cancellation, thursday
 			Emoji: "👯", Title: "Die Absage-Zwillinge",
 			Headline: pairHeadline(p, na, nb),
 			Detail:   fmt.Sprintf("%d× am selben Donnerstag gefehlt", bestShared),
-			Gradient: "bg-gradient-to-r from-purple-500/25 to-pink-500/15",
+			Tone:     "blue",
 		})
 	}
 	if bestCombined > 0 {
@@ -126,7 +126,7 @@ func buildDuoCards(p presenceData, cancellations []models.Cancellation, thursday
 			Emoji: "🔄", Title: "Die Wachablösung",
 			Headline: pairHeadline(p, wa, wb),
 			Detail:   fmt.Sprintf("zusammen %d Absagen – aber nie am selben Tag", bestCombined),
-			Gradient: "bg-gradient-to-r from-blue-500/25 to-cyan-500/15",
+			Tone:     "cyan",
 		})
 	}
 
@@ -212,7 +212,7 @@ func pingPongCard(p presenceData) (viewmodels.FunCard, bool) {
 		Headline: pairHeadline(p, ba, bb),
 		Detail: fmt.Sprintf("%d Wochen striktes Wechselspiel (%s – %s): einer geht, einer kommt",
 			bestRun, formatISO(bestStart), formatISO(bestEnd)),
-		Gradient: "bg-gradient-to-r from-lime-500/25 to-green-500/15",
+		Tone: "green",
 	}, true
 }
 
@@ -281,7 +281,7 @@ func alibiCard(cancellations []models.Cancellation, p presenceData) (viewmodels.
 		Emoji: "🕵️", Title: "Das Alibi-Duo",
 		Headline: pairHeadline(p, best.a, best.b),
 		Detail:   detail,
-		Gradient: "bg-gradient-to-r from-violet-500/25 to-fuchsia-500/15",
+		Tone:     "blue",
 	}, true
 }
 
@@ -331,7 +331,7 @@ func todesduoCard(p presenceData, thursdayStats []models.ThursdayStat) (viewmode
 		Headline: pairHeadline(p, ba, bb),
 		Detail: fmt.Sprintf("fehlen beide, sitzen im Schnitt nur noch %.1f am Tisch (Jahresschnitt: %.1f) – %d× passiert",
 			bestAvg, overallAvg, bestShared),
-		Gradient: "bg-gradient-to-r from-zinc-600/30 to-red-900/20",
+		Tone: "red",
 	}, true
 }
 
@@ -388,7 +388,7 @@ func magnetCard(p presenceData) (viewmodels.FunCard, bool) {
 		Headline: pairHeadline(p, ma, mb),
 		Detail: fmt.Sprintf("Wenn %s da ist, fehlt %s in %d%% der Fälle (sonst %d%%) 👀",
 			ma, mb, mRate, mBase),
-		Gradient: "bg-gradient-to-r from-red-500/25 to-orange-500/15",
+		Tone: "red",
 	}, true
 }
 
@@ -431,7 +431,7 @@ func copyPasteCard(cancellations []models.Cancellation, p presenceData) (viewmod
 		Headline: pairHeadline(p, a, b),
 		Detail:   "wortgleiche Ausrede, unabhängig voneinander:",
 		Quote:    truncate(original[bestKey], 100),
-		Gradient: "bg-gradient-to-r from-teal-500/25 to-emerald-500/15",
+		Tone:     "green",
 	}, true
 }
 
@@ -466,7 +466,7 @@ func buildSquadCards(p presenceData, thursdayStats []models.ThursdayStat) []view
 			Emoji: "🏛️", Title: "Das Dreamteam",
 			Headline: fmt.Sprintf("%s %s, %s %s & %s %s", p.emoji[t1], t1, p.emoji[t2], t2, p.emoji[t3], t3),
 			Detail:   fmt.Sprintf("%d× zu dritt am Tisch – das Fundament des Stammtischs", bestTrio),
-			Gradient: "bg-gradient-to-r from-amber-500/25 to-orange-500/15",
+			Tone:     "amber",
 		})
 	}
 
@@ -508,13 +508,13 @@ func buildSquadCards(p presenceData, thursdayStats []models.ThursdayStat) []view
 				Emoji: "🦸", Title: "Retter in der Not",
 				Headline: fmt.Sprintf("%s %s", p.emoji[retter.name], retter.name),
 				Detail:   fmt.Sprintf("kommt auch, wenn sonst kaum einer da ist (Ø %.1f andere am Tisch)", retter.avg),
-				Gradient: "bg-gradient-to-r from-green-500/25 to-emerald-500/15",
+				Tone:     "green",
 			})
 			cards = append(cards, viewmodels.FunCard{
 				Emoji: "🐑", Title: "Der Mitläufer",
 				Headline: fmt.Sprintf("%s %s", p.emoji[mit.name], mit.name),
 				Detail:   fmt.Sprintf("taucht bevorzugt bei voller Hütte auf (Ø %.1f andere am Tisch)", mit.avg),
-				Gradient: "bg-gradient-to-r from-slate-500/25 to-gray-500/15",
+				Tone:     "neutral",
 			})
 		}
 	}
@@ -533,8 +533,8 @@ func buildForensikCards(cancellations []models.Cancellation, users []models.User
 	}
 
 	var longest, shortest *models.Cancellation
-	emojiCount := make(map[string]int)   // per user
-	emojiUsage := make(map[rune]int)     // per emoji rune
+	emojiCount := make(map[string]int) // per user
+	emojiUsage := make(map[rune]int)   // per emoji rune
 	for i := range cancellations {
 		c := &cancellations[i]
 		msg := strings.TrimSpace(c.Message)
@@ -564,7 +564,7 @@ func buildForensikCards(cancellations []models.Cancellation, users []models.User
 			Headline: fmt.Sprintf("%s %s", emojiByName[longest.UserName], longest.UserName),
 			Detail:   fmt.Sprintf("längste Absage des Jahres – %d Zeichen:", len([]rune(lmsg))),
 			Quote:    truncate(lmsg, 160),
-			Gradient: "bg-gradient-to-r from-indigo-500/25 to-purple-500/15",
+			Tone:     "blue",
 		})
 		smsg := strings.TrimSpace(shortest.Message)
 		cards = append(cards, viewmodels.FunCard{
@@ -572,7 +572,7 @@ func buildForensikCards(cancellations []models.Cancellation, users []models.User
 			Headline: fmt.Sprintf("%s %s", emojiByName[shortest.UserName], shortest.UserName),
 			Detail:   fmt.Sprintf("kürzeste Absage des Jahres – %d Zeichen:", len([]rune(smsg))),
 			Quote:    smsg,
-			Gradient: "bg-gradient-to-r from-stone-500/25 to-zinc-500/15",
+			Tone:     "neutral",
 		})
 	}
 
@@ -595,7 +595,7 @@ func buildForensikCards(cancellations []models.Cancellation, users []models.User
 			Headline: fmt.Sprintf("%s %s", emojiByName[bestUser], bestUser),
 			Detail: fmt.Sprintf("%d Emojis in Absagen verballert – Gruppenliebling: %s (%d×)",
 				bestCount, string(topEmoji), topEmojiCount),
-			Gradient: "bg-gradient-to-r from-yellow-500/25 to-amber-500/15",
+			Tone: "amber",
 		})
 	}
 
@@ -642,7 +642,7 @@ func buildMuffelCards(cancellations []models.Cancellation, users []models.UserSt
 			Emoji: "☀️", Title: "Der Sommermuffel",
 			Headline: fmt.Sprintf("%s %s", emojiByName[name], name),
 			Detail:   fmt.Sprintf("%d Absagen im Juni, Juli und August – bei Biergartenwetter!", n),
-			Gradient: "bg-gradient-to-r from-orange-500/25 to-yellow-500/15",
+			Tone:     "amber",
 		})
 	}
 	if name, n := pick(winterCount); n >= 3 {
@@ -650,7 +650,7 @@ func buildMuffelCards(cancellations []models.Cancellation, users []models.UserSt
 			Emoji: "❄️", Title: "Der Wintermuffel",
 			Headline: fmt.Sprintf("%s %s", emojiByName[name], name),
 			Detail:   fmt.Sprintf("%d Absagen im Dezember, Januar und Februar – zu kalt draußen?", n),
-			Gradient: "bg-gradient-to-r from-sky-500/25 to-blue-500/15",
+			Tone:     "cyan",
 		})
 	}
 

@@ -6,43 +6,38 @@ import (
 	"github.com/michael/stammtisch-wrapped/web/templates/years/2026/viewmodels"
 )
 
-// PersonalityTypeCard renders a personality type card
+// PersonalityTypeCard – ein Stammtisch-Typ und wer dazugehört.
 templ PersonalityTypeCard(pt viewmodels.PersonalityType) {
-	<div class={ "animate-on-enter animate-slide-left " + pt.DelayClass + " bg-holz-light/40 rounded-xl p-4" }>
-		<div class="flex items-center gap-3 mb-2">
-			<span class="text-3xl">{ pt.Emoji }</span>
+	<div class={ "panel animate-on-enter in-up", pt.DelayClass }>
+		<div class="type-head">
+			<span class="emo" aria-hidden="true">{ pt.Emoji }</span>
 			<div>
-				<h3 class="font-bold text-biergold">{ pt.Name }</h3>
-				<p class="text-xs text-schaum/50">{ pt.Description }</p>
+				<b class="type-name">{ pt.Name }</b>
+				<span class="type-desc">{ pt.Description }</span>
 			</div>
 		</div>
-		<div class="flex flex-wrap gap-2 mt-2">
+		<div class="chips gap-s">
 			for _, user := range pt.Users {
-				<span class="bg-holz/50 rounded-full px-2 py-1 text-xs text-schaum">{ user.Emoji } { user.Name }</span>
+				<span class="chip">{ user.Emoji } { user.Name }</span>
 			}
 			if pt.HasMore {
-				<span class="text-schaum/50 text-xs">+{ fmt.Sprintf("%d", pt.MoreCount) }</span>
+				<span class="chip">{ fmt.Sprintf("+%d", pt.MoreCount) }</span>
 			}
 		</div>
 	</div>
 }
 
-// PersonalityTypes slide - Stammtisch-Persönlichkeitstypen
+// PersonalityTypes – welcher Typ bist du?
 templ PersonalityTypes(types []viewmodels.PersonalityType) {
-	<div class="slide flex-col items-center justify-center h-screen px-6 text-center" data-duration="6000">
-		<div class="animate-on-enter animate-scale-in">
-			<span class="text-6xl mb-4 block">🎭</span>
+	<section class="slide" data-tone="blue" data-duration="6000">
+		<div class="scene">
+			<p class="eyebrow animate-on-enter in-fade">🎭 Typen</p>
+			<h2 class="title animate-on-enter in-up delay-100 gap-xs">Welcher Typ bist du?</h2>
+			<div class="list gap-m">
+				for _, pt := range types {
+					@PersonalityTypeCard(pt)
+				}
+			</div>
 		</div>
-		<h2 class="animate-on-enter animate-fade-in-up delay-200 text-2xl font-bold text-biergold mb-4">
-			Die Stammtisch-Typen
-		</h2>
-		<p class="animate-on-enter animate-fade-in delay-300 text-schaum/70 text-sm mb-6">
-			Welcher Typ bist du?
-		</p>
-		<div class="animate-on-enter animate-fade-in-up delay-500 w-full max-w-md space-y-3">
-			for _, pt := range types {
-				@PersonalityTypeCard(pt)
-			}
-		</div>
-	</div>
+	</section>
 }

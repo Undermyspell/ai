@@ -58,7 +58,7 @@ func (e *Evaluator) Evaluate() *EvaluationResult {
 	strafenStats := e.calculateStrafenStats()
 
 	// Step 10: Determine awards
-	awards := e.calculateAwards(userStats)
+	awards := e.calculateAwards(userStats, strafenStats)
 
 	return &EvaluationResult{
 		UserStats:              userStats,

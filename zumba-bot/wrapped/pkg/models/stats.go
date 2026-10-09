@@ -55,11 +55,15 @@ type StrafenStats struct {
 	UserTotals []StrafenUserTotal `json:"userTotals"` // sorted by Total descending
 }
 
-// Award represents a special recognition
+// Award ist eine Auszeichnung des Jahres. Ehrenpreise und Schmähpreise
+// (Shame) laufen auf getrennten Slides.
 type Award struct {
-	Emoji    string    `json:"emoji"`
-	Title    string    `json:"title"`
-	Subtitle string    `json:"subtitle"`
-	Winner   UserStats `json:"winner"`
-	Color    string    `json:"color"`
+	ID       string      `json:"id"` // stabiler Schlüssel; die Anzeige formatiert Value danach
+	Emoji    string      `json:"emoji"`
+	Title    string      `json:"title"`
+	Subtitle string      `json:"subtitle"`
+	Tone     string      `json:"tone"` // Farbton: blue, cyan, green, amber, red, neutral
+	Shame    bool        `json:"shame"`
+	Winners  []UserStats `json:"winners"` // bei Gleichstand teilen sich alle den Award
+	Value    int         `json:"value"`   // Kennzahl der Gewinner: Serie, Euro, Prozentpunkte …
 }
