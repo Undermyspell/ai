@@ -167,6 +167,46 @@ Each environment has its own encrypted SealedSecrets (safe to commit to git):
 
 **⚠️ Important:** Staging and production use **different** secrets!
 
+### Sealed-Secrets-Schlüssel (Disaster Recovery!)
+
+Die SealedSecrets in Git lassen sich **nur mit dem privaten Schlüssel des
+Controllers** entschlüsseln – und der liegt ausschließlich im Cluster
+(`kube-system`, Secret `sealed-secrets-key…`). Geht der Pi verloren, sind die
+Secrets in Git ohne diesen Schlüssel wertlos.
+
+- **Rotation ist aus** (seit 2026-10-09): Der Controller läuft mit
+  `--key-renew-period=0` und erzeugt keine neuen Schlüssel mehr. Er ist
+  **nicht** per GitOps verwaltet (einmalig per `kubectl apply` aus dem
+  Upstream-`controller.yaml` installiert, v0.34.0); das Argument wurde per
+  `kubectl patch` gesetzt – bei einer Neuinstallation wieder setzen.
+- **Alle SealedSecrets sind mit dem aktuellen Schlüssel versiegelt**
+  (`sealed-secrets-keymgkzw`, Zertifikat gültig bis 2036; per
+  `kubeseal --re-encrypt` umgestellt). Für die Wiederherstellung reicht
+  deshalb **dieser eine** Schlüssel. Die älteren Schlüssel bleiben im Cluster,
+  werden aber nicht mehr gebraucht.
+- **Sichern** (außerhalb von Git, z. B. Passwortmanager):
+
+```bash
+kubectl get secret -n kube-system sealed-secrets-keymgkzw -o yaml > sealed-secrets-key.yaml
+```
+
+- **Wiederherstellen** auf einem neuen Cluster – **vor** dem ersten Sync der
+  SealedSecrets:
+
+```bash
+kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.34.0/controller.yaml
+kubectl -n kube-system patch deploy sealed-secrets-controller --type json \
+  -p '[{"op":"add","path":"/spec/template/spec/containers/0/args","value":["--key-renew-period=0"]}]'
+kubectl apply -f sealed-secrets-key.yaml
+kubectl -n kube-system delete pod -l name=sealed-secrets-controller   # Schlüssel neu einlesen
+```
+
+- Neue Secrets mit `create-sealed-secret.sh` werden automatisch mit diesem
+  Schlüssel versiegelt. Wird je wieder ein neuer Schlüssel erzeugt
+  (`kubeseal --fetch-cert` liefert ein anderes Zertifikat), alle Dateien mit
+  `kubeseal --re-encrypt --format yaml < datei` umversiegeln und den neuen
+  Schlüssel sichern.
+
 ### Generate New Secrets
 
 ```bash
