@@ -354,7 +354,10 @@ ihrer Herkunft, nicht nach ihrer Rolle – die Rolle ändert sich mit der Zeit.
   einen anderen Tag voraussetzt („gestern abgesagt").
 - **Zukunfts-Ab- oder -Zusagen gibt es nicht** – „nächste Woch bin i raus" ist
   `invalid`. Eine heutige Absage darf die Zukunft nebenbei erwähnen.
-- **Zusagen sind fast immer Rücknahmen** (Anwesenheit ist Standard).
+- **Jede Zusage ist eine Rücknahme und klingt auch so** („doch", „wieder",
+  „Absage zruck", weggefallener Grund). Anwesenheit ist Standard – ein bloßes
+  „bin dabei" ohne Bezug schreibt niemand. In v1 wurden 46 solche Vorschläge
+  nachträglich durch Rücknahmen ersetzt.
 - **Grenzfälle bekommen kein Vorschlags-Label** (`generated_label` leer, `art`
   `grenzfall_<untertyp>`): später kommen, bedingt, mehrere Aussagen, andere
   Person, mehrdeutige Emojis, Ironie. Wie sie gelabelt werden, entscheidet der

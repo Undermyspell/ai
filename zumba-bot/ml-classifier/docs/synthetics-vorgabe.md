@@ -35,7 +35,13 @@ Ein Mensch prüft danach jede Nachricht von Hand. Das Label, das du vergibst, is
 5. **„Später kommen“ gehört nur in die Grenzfall-Zelle.** In allen anderen Zellen keine Nachrichten der Art
    „komm später / wird später bei mir / komm nach“. Erlaubt ist das Muster der vorsorglichen Absage
    („meld mi vorsichtshalber ab, evtl schaff i's später no“ = `false`).
-6. **Keine Beinahe-Duplikate.** Zwei Nachrichten, die sich nur in einem Emoji, einem Wort oder der
+6. **Jede Zusage ist eine Rücknahme – und klingt auch so.** Wer nichts schreibt, ist da; eine Zusage
+   kommt nur nach einer Absage. Der Satzbau muss das zeigen: „doch“, „wieder“, „Absage zruck“,
+   „etz geht's doch“, „hob mi umsonst abgmeldt“ – oder ein weggefallener Grund („Probe fällt aus,
+   also doch dabei“). Zusagen ohne Bezug („bin dabei“, „Zusage für heute ✅“, „+1, i bin do“,
+   „i bleib ned dahoam“) gibt es in der Gruppe nicht – nicht erzeugen. Antworten auf andere nur mit
+   eigener Rücknahme („i a, bin doch do“).
+7. **Keine Beinahe-Duplikate.** Zwei Nachrichten, die sich nur in einem Emoji, einem Wort oder der
    Schreibweise unterscheiden, zählen als Duplikat – eine davon weglassen. Ein Filter wirft Ähnlichkeit
    ≥ 0,9 (Zeichen-n-Gramme) sowieso raus; was dort landet, ist verschwendet.
 
