@@ -37,6 +37,24 @@ func TestMLDatenZeigtDreiQuellen(t *testing.T) {
 	}
 }
 
+// Jede Quelle hat ihren eigenen Menüpunkt; der der offenen Seite ist aktiv.
+func TestMLDatenMenuepunkte(t *testing.T) {
+	rec := serveML(t, newSpyStore(), http.MethodGet, "/ml-daten?quelle=manuell")
+	body := rec.Body.String()
+	for _, q := range []string{"synthetics", "whatsapp", "manuell"} {
+		if !strings.Contains(body, `href="/ml-daten?quelle=`+q+`"`) {
+			t.Errorf("Menüpunkt für %s fehlt", q)
+		}
+	}
+	active := `class="nav-link is-active" aria-current="page"><span class="nav-ico" aria-hidden="true">✎</span>`
+	if !strings.Contains(body, active) {
+		t.Error("Menüpunkt Manuell ist nicht aktiv")
+	}
+	if !strings.Contains(body, "Prüffälle labeln") {
+		t.Error("Überschrift des Menüpunkts fehlt")
+	}
+}
+
 func TestMLDatenFilterAusQuery(t *testing.T) {
 	cases := map[string]string{
 		"/ml-daten?quelle=synthetics&status=alle&label=true": "synthetics:alle:true",

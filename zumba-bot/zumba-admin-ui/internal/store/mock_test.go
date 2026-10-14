@@ -121,6 +121,9 @@ func TestMockMLLabelAendern(t *testing.T) {
 	if err != nil || len(offen) == 0 {
 		t.Fatalf("offene Whatsapp-Einträge: %v, %d", err, len(offen))
 	}
+	if offen[0].Quelle != MLWhatsapp {
+		t.Fatalf("Quelle = %q, want whatsapp", offen[0].Quelle)
+	}
 	id := offen[0].ID
 	before, _ := m.MLCounts(ctx, MLWhatsapp)
 

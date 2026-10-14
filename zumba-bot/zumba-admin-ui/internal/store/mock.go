@@ -487,7 +487,7 @@ func sampleMLItems() map[MLQuelle][]MLItem {
 	f := func(v float64) *float64 { return &v }
 	base := time.Date(2026, 7, 23, 18, 30, 0, 0, time.Local)
 	labeled := base.Add(24 * time.Hour)
-	return map[MLQuelle][]MLItem{
+	items := map[MLQuelle][]MLItem{
 		MLWhatsapp: {
 			{ID: 5, CreatedAt: base.Add(90 * time.Minute), UserName: "Sepp",
 				Message: "Muss mi heut abmelden ❌", GeminiLabel: s("false"),
@@ -524,6 +524,12 @@ func sampleMLItems() map[MLQuelle][]MLItem {
 				GeneratedLabel: s("true"), Art: "haertefall", Sprache: "bairisch_leicht", BatchID: "mock-1"},
 		},
 	}
+	for q := range items {
+		for i := range items[q] {
+			items[q][i].Quelle = q
+		}
+	}
+	return items
 }
 
 func (m *Mock) ListMLItems(_ context.Context, q MLQuelle, f MLFilter) ([]MLItem, error) {

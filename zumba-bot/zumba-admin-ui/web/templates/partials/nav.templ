@@ -26,7 +26,11 @@ var toolNav = []navItem{
 	{Key: "kimodell", Href: "/ki-modell", Icon: "◈", Label: "KI-Modell", Heading: "Welches Modell klassifiziert"},
 	{Key: "bilddesigns", Href: "/bild-designs", Icon: "▣", Label: "Bild-Designs", Heading: "Welche Karte kommt am Donnerstag"},
 	{Key: "public", Href: "/public", Icon: "⊕", Label: "Öffentlich", Heading: "Zugang von außen"},
-	{Key: "mldaten", Href: "/ml-daten", Icon: "◐", Label: "ML-Daten", Heading: "Nachrichten labeln"},
+	// Die drei Quellen der ML-Daten (/ml-daten) – je ein Menüpunkt, Schlüssel
+	// "ml-<quelle>" (siehe handleMLDaten).
+	{Key: "ml-synthetics", Href: "/ml-daten?quelle=synthetics", Icon: "✦", Label: "Synthetics", Heading: "Synthetics labeln"},
+	{Key: "ml-whatsapp", Href: "/ml-daten?quelle=whatsapp", Icon: "✉", Label: "Whatsapp", Heading: "Whatsapp-Nachrichten labeln"},
+	{Key: "ml-manuell", Href: "/ml-daten?quelle=manuell", Icon: "✎", Label: "Manuell", Heading: "Prüffälle labeln"},
 	{Key: "mltest", Href: "/ml-test", Icon: "⚗", Label: "ML-Test", Heading: "Manueller Test"},
 	{Key: "mldocs", Href: "/ml-doku", Icon: "¶", Label: "ML-Doku", Heading: "Dokumentation"},
 }

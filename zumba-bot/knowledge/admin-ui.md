@@ -128,7 +128,8 @@ Speichern verschickt nichts.
 
 ### ML-Daten (`/ml-daten`)
 
-Die Nachrichten fürs eigene Modell, je Quelle ein Reiter:
+Die Nachrichten fürs eigene Modell, je Quelle ein eigener Menüpunkt (oben
+auf der Seite zusätzlich als Reiter mit der Zahl offener Einträge):
 
 - **Synthetics** – generierte Nachrichten fürs Training
   (`ml_synthetic_messages`, befüllt vom Import-Skript; exakte Duplikate blockt

@@ -34,7 +34,7 @@ func (s *Server) handleMLDaten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vm := mldaten.VM{Head: s.mlHead(r, q), Filter: f, Items: items, Limit: mlListLimit}
-	s.render(w, r, s.meta("ML-Daten", "mldaten"), mldaten.Page(vm))
+	s.render(w, r, s.meta("ML-Daten", "ml-"+string(q)), mldaten.Page(vm))
 }
 
 // handleMLDatenKopf liefert nur Tabs und Zähler – nach jedem Label lädt sich
