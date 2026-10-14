@@ -117,19 +117,33 @@ templ list(vm VM) {
 			</div>
 		</section>
 	} else {
-		<p class="ml-keys">
-			Tastatur: Zeile anklicken, dann
-			<kbd>1</kbd> Zusage · <kbd>2</kbd> Absage · <kbd>3</kbd> invalid
-			if vm.Head.Active == store.MLSynthetics {
-				· <kbd>0</kbd> verwerfen
+		<div class="ml-listbar">
+			<p class="ml-keys">
+				Tastatur: Zeile anklicken, dann
+				<kbd>1</kbd> Zusage · <kbd>2</kbd> Absage · <kbd>3</kbd> invalid
+				if vm.Head.Active == store.MLSynthetics {
+					· <kbd>0</kbd> verwerfen
+				}
+				· <kbd>↑</kbd> <kbd>↓</kbd> blättern. Nach dem Label springt es zur nächsten Zeile.
+			</p>
+			if vm.Filter.Status != store.MLGeprueft {
+				<label class="ml-hide">
+					<input type="checkbox" id="ml-hide-done" checked/>
+					Gelabelte ausblenden
+				</label>
 			}
-			· <kbd>↑</kbd> <kbd>↓</kbd> blättern. Nach dem Label springt es zur nächsten Zeile.
-		</p>
-		<div class="ml-rows" data-ml-keys>
+		</div>
+		<div class={ "ml-rows", templ.KV("hide-done", vm.Filter.Status != store.MLGeprueft) } data-ml-keys>
 			for _, it := range vm.Items {
 				@Row(it)
 			}
 		</div>
+		<section class="card ml-all-done">
+			<div class="empty">
+				<span class="empty-ico" aria-hidden="true">🎉</span>
+				<p>Alles in dieser Liste gelabelt – ausgeblendet. Haken bei „Gelabelte ausblenden“ raus zeigt sie wieder.</p>
+			</div>
+		</section>
 		if len(vm.Items) >= vm.Limit {
 			<p class="card-sub">Die ersten { strconv.Itoa(vm.Limit) } – Filter oder Suche grenzen ein.</p>
 		}
@@ -147,7 +161,7 @@ templ Row(it store.MLItem) {
 				<span class="ml-meta">{ meta }</span>
 			}
 			<span class="ml-state">
-				switch {
+				switch  {
 					case it.Offen():
 						<span class="pill is-dashed-blue">offen</span>
 					case it.Verworfen:

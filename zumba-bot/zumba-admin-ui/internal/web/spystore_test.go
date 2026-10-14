@@ -35,8 +35,9 @@ type spyStore struct {
 
 	cards store.CardSettings
 
-	mlFilter  string // "quelle:status:label" des letzten ListMLItems
-	mlLabeled string // "quelle/id=label" des letzten Labels
+	mlItems   []store.MLItem // Antwort von ListMLItems
+	mlFilter  string         // "quelle:status:label" des letzten ListMLItems
+	mlLabeled string         // "quelle/id=label" des letzten Labels
 }
 
 func newSpyStore() *spyStore {
@@ -181,7 +182,7 @@ func (s *spyStore) MLShadowStats(_ context.Context) (store.MLShadowStats, error)
 }
 func (s *spyStore) ListMLItems(_ context.Context, q store.MLQuelle, f store.MLFilter) ([]store.MLItem, error) {
 	s.mlFilter = string(q) + ":" + f.Status + ":" + f.Label
-	return nil, nil
+	return s.mlItems, nil
 }
 func (s *spyStore) MLCounts(_ context.Context, _ store.MLQuelle) (store.MLCounts, error) {
 	return store.MLCounts{}, nil

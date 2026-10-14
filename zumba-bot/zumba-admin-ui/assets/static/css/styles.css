@@ -1440,6 +1440,19 @@ body.has-sheet { overflow: hidden; }
 .ml-toolbar > .seg-inline > a { flex: 0 0 auto; padding: 6px 12px; }
 .ml-search { flex: 1; min-width: 180px; }
 .ml-keys { margin: 0; font-size: 12px; color: var(--muted); }
+.ml-listbar { display: flex; gap: 12px 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.ml-hide {
+  display: inline-flex; gap: 8px; align-items: center;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  cursor: pointer; user-select: none;
+}
+.ml-hide input { width: 16px; height: 16px; accent-color: var(--blue); }
+/* „Gelabelte ausblenden": gelabelte und verworfene Zeilen verschwinden,
+   auch die gerade eben gelabelte. */
+.ml-rows.hide-done > .ml-row.is-ok,
+.ml-rows.hide-done > .ml-row.is-off { display: none; }
+.ml-all-done { display: none; }
+.ml-rows.hide-done:not(:has(> .ml-row:not(.is-ok):not(.is-off))) + .ml-all-done { display: block; }
 .ml-keys kbd {
   display: inline-block; min-width: 18px; padding: 0 5px;
   border: 1px solid var(--line-strong); border-radius: 5px;

@@ -144,7 +144,8 @@ Jede Zeile hat drei Label-Knöpfe (Zusage · Absage · invalid); ein Label läss
 sich jederzeit ändern. „Offen" heißt: in dieser Runde noch nicht von Hand
 gelabelt (`labeled_at` leer) – ein Label aus einer früheren Prüfung steht
 gestrichelt als Vorschlag dabei, geht also beim Neu-Labeln nicht verloren.
-Filter nach Status, Label und Freitext. Tastatur: Zeile anklicken, dann 1/2/3
+Filter nach Status, Label und Freitext. „Gelabelte ausblenden" (Haken, der
+Browser merkt ihn sich) lässt eine Zeile direkt nach dem Label verschwinden. Tastatur: Zeile anklicken, dann 1/2/3
 (0 = verwerfen), ↑/↓ blättert, nach dem Label springt es zur nächsten Zeile.
 Die frühere Seite `/ml-shadow` leitet auf den Whatsapp-Reiter um.
 

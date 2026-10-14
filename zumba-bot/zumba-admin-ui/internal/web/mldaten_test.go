@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/michael/zumba-admin-ui/internal/config"
+	"github.com/michael/zumba-admin-ui/internal/store"
 )
 
 func serveML(t *testing.T, spy *spyStore, method, target string) *httptest.ResponseRecorder {
@@ -52,6 +53,23 @@ func TestMLDatenMenuepunkte(t *testing.T) {
 	}
 	if !strings.Contains(body, "Prüffälle labeln") {
 		t.Error("Überschrift des Menüpunkts fehlt")
+	}
+}
+
+// „Gelabelte ausblenden" gibt es überall außer in der Ansicht „Gelabelt" –
+// dort würde der Schalter alles verstecken.
+func TestMLDatenSchalterGelabelteAusblenden(t *testing.T) {
+	for target, want := range map[string]bool{
+		"/ml-daten?quelle=synthetics":                 true,
+		"/ml-daten?quelle=synthetics&status=alle":     true,
+		"/ml-daten?quelle=synthetics&status=geprueft": false,
+	} {
+		spy := newSpyStore()
+		spy.mlItems = []store.MLItem{{Quelle: store.MLSynthetics, ID: 1, Message: "heid ned ❌"}}
+		body := serveML(t, spy, http.MethodGet, target).Body.String()
+		if got := strings.Contains(body, `id="ml-hide-done"`); got != want {
+			t.Errorf("%s: Schalter da = %v, want %v", target, got, want)
+		}
 	}
 }
 
