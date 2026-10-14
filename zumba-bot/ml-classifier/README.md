@@ -317,9 +317,107 @@ Datensatz-Format (JSONL, eine Nachricht pro Zeile):
 
 ## 8. Nächste Schritte
 
-1. `ml_messages`-Tabelle + persistentes Logging im `whatsapp-bot` (füllt die
-   `true`-Klasse, liefert Shadow-Modus-Daten)
-2. Shadow-Modus Modell vs. Gemini, Disagreement-Review
-3. Konfidenz-Schwelle kalibrieren, sobald genug echte Zusagen vorliegen
-4. Deployment: Gewichte des `tfidf_logreg` als JSON exportieren → pure-Go-Inferenz
-   (TF-IDF + Matrix-Vektor-Produkt, keine ML-Runtime nötig) in eigenem Service
+1. ~~`ml_messages`-Tabelle + persistentes Logging im `whatsapp-bot`~~ (läuft)
+2. ~~Probebetrieb Modell vs. Gemini~~ (läuft, Labeln im Admin-UI – Abschnitt 9)
+3. Synthetics v1 von Hand labeln, neu trainieren, auf Whatsapp messen (Abschnitt 9)
+4. Konfidenz-Schwelle kalibrieren, sobald genug echte Zusagen vorliegen
+5. ~~Deployment: pure-Go-Inferenz~~ (`classifier-service/`)
+
+---
+
+## 9. Synthetics v1 und Labeln (Oktober 2026)
+
+Ab der zweiten Modellgeneration gibt es drei Quellen. Benannt sind sie nach
+ihrer Herkunft, nicht nach ihrer Rolle – die Rolle ändert sich mit der Zeit.
+
+| Quelle | Tabelle | Herkunft | Rolle |
+|---|---|---|---|
+| **Synthetics** | `ml_synthetic_messages` | generiert, von Hand geprüft | Training |
+| **Whatsapp** | `ml_messages` | echte Gruppennachrichten, vom Bot mitgeschrieben | Test (Hauptmetrik) |
+| **Manuell** | `ml_test_messages` | selbst geschrieben auf `/ml-test` | Prüffälle, getrennt ausgewiesen |
+
+- **Training nur mit Synthetics, Test nur mit Whatsapp.** Keine Synthetics im
+  Test (das wäre Generator gegen Generator), kein 70/30 – das Verhältnis ergibt
+  sich aus den zwei Töpfen. Hyperparameter per Cross-Validation auf den
+  Synthetics.
+- **Echte Nachrichten ins Training** erst, wenn genug da sind (Richtwert ~300
+  echte, davon ≥ 30 Zusagen), dann rollierend: ältere ins Training, die
+  jüngsten Wochen als Test.
+- **Gelabelt wird alles im Admin-UI** (Menüpunkte Synthetics · Whatsapp ·
+  Manuell, Seite `/ml-daten`). „Offen" heißt: in dieser Runde noch nicht von
+  Hand gelabelt (`labeled_at` leer). Tasten 1/2/3, 0 verwirft eine Synthetic.
+
+### Fachliche Regeln beim Generieren
+
+- **Jede Nachricht ist eine Donnerstags-Nachricht über heute Abend.** Der Bot
+  wertet nur donnerstags aus, immer für den laufenden Donnerstag. Nichts, was
+  einen anderen Tag voraussetzt („gestern abgesagt").
+- **Zukunfts-Ab- oder -Zusagen gibt es nicht** – „nächste Woch bin i raus" ist
+  `invalid`. Eine heutige Absage darf die Zukunft nebenbei erwähnen.
+- **Zusagen sind fast immer Rücknahmen** (Anwesenheit ist Standard).
+- **Grenzfälle bekommen kein Vorschlags-Label** (`generated_label` leer, `art`
+  `grenzfall_<untertyp>`): später kommen, bedingt, mehrere Aussagen, andere
+  Person, mehrdeutige Emojis, Ironie. Wie sie gelabelt werden, entscheidet der
+  Mensch – danach lässt sich die Regel aus den Labels ablesen.
+- **Keine echten Namen**, und die echten Nachrichten dienen nur als
+  Stilvorlage – nie kopieren oder umformulieren, sie sind das Testset.
+
+### Menge und Verteilung
+
+Ziel: etwa 1.200 geprüfte Nachrichten. Generiert werden etwa 1.450, weil beim
+Durchgehen erfahrungsgemäß 15–20 % rausfliegen. Mehr Menge bringt bei
+TF-IDF + LogReg ab ~1.000 kaum etwas; Engpass sind echte Daten.
+
+| Label | Arten (generiert) | Summe |
+|---|---|---|
+| `false` | echt 185 · kurz 70 · emoji 47 · lang 47 · haertefall 117 | 466 |
+| `true` | echt 163 · kurz 60 · emoji 35 · lang 35 · haertefall 105 | 398 |
+| `invalid` | orga 105 · smalltalk 105 · unsicher 82 · bloedsinn 70 · emoji 47 · haertefall 87 · haertefall_zukunft 30 | 526 |
+| Grenzfall | spaeter 15 · bedingt 10 · mehrere 10 · andere_person 10 · emoji 8 · ironie 7 | 60 |
+
+- **`invalid` am meisten**: inhaltlich die breiteste Klasse. **`true` am
+  wenigsten**: wenige Arten, eine Zusage zu formulieren – mehr ergäbe nur
+  Beinahe-Duplikate. Rest-Schieflage gleicht `class_weight="balanced"` aus.
+- **Sprache je Zelle**: 35 % `bairisch_stark` (Oberpfälzer Einschlag), 40 %
+  `bairisch_leicht`, 25 % `hochdeutsch`; reine Emojis und Links ohne Sprache.
+- **Rauschen über alle Zellen**: etwa die Hälfte klein geschrieben, ein Drittel
+  mit Tippfehlern oder ohne Umlaute; ❌ bei ~60 % der Absagen, vereinzelt auch
+  in Zusagen und `invalid`, damit das Modell nicht „❌ = Absage" lernt.
+
+**Stand v1 (14.10.2026):** 1.450 generiert von sieben parallelen Generatoren,
+alle importiert (Dedup hat nichts verworfen: gegen echte Nachrichten höchstens
+0,68 Ähnlichkeit, die ähnlichsten Paare untereinander – 0,8 bis 0,88 – sind fast
+alle bewusst gesetzte Gegensatzpaare wie „Bin verhindert ❌" ↔ „Ich bin doch nicht
+verhindert"). Sprache: 33 % stark, 37 % leicht, 24 % Hochdeutsch, 6 % ohne.
+
+Was die Arten genau meinen, steht in der Generierungs-Vorgabe
+[`docs/synthetics-vorgabe.md`](docs/synthetics-vorgabe.md).
+
+### Ablauf
+
+1. **Stilanker holen**: ~30 echte Nachrichten aus `ml_messages` (nur lesend).
+   Sie kommen in die Vorgabe, aber nicht ins Repo.
+2. **Generieren je Zelle**, in Teil-Batches von 10–15 Nachrichten mit jeweils
+   eigener, konkreter Vorgabe (Grund × Sprache × Schreibweise). Mehrere
+   Generatoren in getrennten Kontexten parallel – ein einzelner langer Lauf
+   kollabiert auf dieselben 20 Schablonen. Ausgabe JSONL nach
+   `data/generated/` (gitignored):
+   `{"text", "generated_label", "art", "sprache", "batch_id"}`.
+3. **Importieren** – erst Vorschau, dann schreiben:
+   ```bash
+   scripts/import_synthetic.sh data/generated/*.jsonl          # Vorschau + Bericht
+   APPLY=1 scripts/import_synthetic.sh data/generated/*.jsonl  # in die Staging-DB
+   ```
+   Das Skript holt die echten Nachrichten und vorhandenen Synthetics lesend
+   aus der DB und verwirft
+   - exakte Duplikate (Schlüssel: normalisierter Text, **Emojis zählen mit** –
+     sonst wären „Ich auch ❌" und „Ich auch 👍" gleich),
+   - Fast-Duplikate echter Nachrichten (Kosinus über Zeichen-n-Gramme ≥ 0,9,
+     Leakage-Schutz),
+   - Fast-Duplikate untereinander (≥ 0,9).
+   Ein zweiter Import derselben Dateien übernimmt nichts (`text_hash` ist
+   eindeutig).
+4. **Von Hand labeln** im Admin-UI; Unrealistisches verwerfen.
+5. **Exportieren und trainieren**: nur gelabelte, nicht verworfene Synthetics.
+   Die Nachrichten-Dateien liegen bewusst nicht in git – Quelle der Wahrheit
+   ist die Tabelle nach dem Labeln.
