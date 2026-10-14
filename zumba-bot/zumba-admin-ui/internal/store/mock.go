@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/michael/zumba-shared/domain"
@@ -26,6 +28,9 @@ type Mock struct {
 	classifier   ClassifierModels
 	cards        CardSettings
 	seasons      []Season
+
+	mlMu sync.Mutex
+	ml   map[MLQuelle][]MLItem // ML-Daten je Quelle, neueste zuerst
 }
 
 // NewMock erzeugt Testdaten für das Stammtischjahr season. seasons ist die
@@ -95,7 +100,8 @@ func NewMock(season Season, seasons []Season) *Mock {
 		}
 	}
 
-	return &Mock{users: users, absences: absences, excludedDays: excluded, seasons: seasons}
+	return &Mock{users: users, absences: absences, excludedDays: excluded, seasons: seasons,
+		ml: sampleMLItems()}
 }
 
 // --- Stammtischjahre: Mock (feste Liste, siehe DefaultSeasons) ---
@@ -473,69 +479,183 @@ func computeStreakMock(thursdaysDesc []time.Time, absenceDates []time.Time) int 
 	return count
 }
 
-// --- ML-Shadow-Modus: Beispieldaten für den Mock-Betrieb ---
+// --- ML-Daten: Beispieldaten für den Mock-Betrieb (in-memory, Label-
+// Änderungen bleiben bis zum Neustart erhalten) ---
 
-func sampleMLMessages() []MLMessage {
+func sampleMLItems() map[MLQuelle][]MLItem {
 	s := func(v string) *string { return &v }
 	f := func(v float64) *float64 { return &v }
-	b := func(v bool) *bool { return &v }
 	base := time.Date(2026, 7, 23, 18, 30, 0, 0, time.Local)
-	return []MLMessage{
-		{ID: 5, CreatedAt: base.Add(90 * time.Minute), UserID: "u03", UserName: "Sepp",
-			Message: "Muss mi heut abmelden ❌", GeminiLabel: "false",
-			ModelLabel: s("false"), ModelConfidence: f(0.97), Agree: b(true)},
-		{ID: 4, CreatedAt: base.Add(60 * time.Minute), UserID: "u07", UserName: "Tobi",
-			Message: "Bei mir wirds bissi später ✌🏻", GeminiLabel: "true",
-			ModelLabel: s("invalid"), ModelConfidence: f(0.48), Agree: b(false)},
-		{ID: 3, CreatedAt: base.Add(40 * time.Minute), UserID: "u01", UserName: "Max",
-			Message: "Schau ma moi wie's Wetter wird", GeminiLabel: "invalid",
-			ModelLabel: s("invalid"), ModelConfidence: f(0.88), Agree: b(true),
-			Verified: true},
-		{ID: 2, CreatedAt: base.Add(20 * time.Minute), UserID: "u05", UserName: "Flo",
-			Message: "Gruzefix.... Nullinger", GeminiLabel: "false",
-			ModelLabel: s("invalid"), ModelConfidence: f(0.61), Agree: b(false),
-			Verified: true, CorrectedLabel: s("false")},
-		{ID: 1, CreatedAt: base, UserID: "u02", UserName: "Basti",
-			Message: "I bin dabei heit 🍻", GeminiLabel: "true",
-			ModelLabel: nil, ModelConfidence: nil, Agree: nil},
+	labeled := base.Add(24 * time.Hour)
+	return map[MLQuelle][]MLItem{
+		MLWhatsapp: {
+			{ID: 5, CreatedAt: base.Add(90 * time.Minute), UserName: "Sepp",
+				Message: "Muss mi heut abmelden ❌", GeminiLabel: s("false"),
+				ModelLabel: s("false"), ModelConfidence: f(0.97)},
+			{ID: 4, CreatedAt: base.Add(60 * time.Minute), UserName: "Tobi",
+				Message: "Bei mir wirds bissi später ✌🏻", GeminiLabel: s("true"),
+				ModelLabel: s("invalid"), ModelConfidence: f(0.48), Label: s("invalid")},
+			{ID: 3, CreatedAt: base.Add(40 * time.Minute), UserName: "Max",
+				Message: "Schau ma moi wie's Wetter wird", GeminiLabel: s("invalid"),
+				ModelLabel: s("invalid"), ModelConfidence: f(0.88), Label: s("invalid"),
+				LabeledAt: &labeled},
+			{ID: 2, CreatedAt: base.Add(20 * time.Minute), UserName: "Flo",
+				Message: "Gruzefix.... Nullinger", GeminiLabel: s("false"),
+				ModelLabel: s("invalid"), ModelConfidence: f(0.61), Label: s("false")},
+			{ID: 1, CreatedAt: base, UserName: "Basti",
+				Message: "I bin dabei heit 🍻", GeminiLabel: s("true")},
+		},
+		MLManuell: {
+			{ID: 3, CreatedAt: time.Date(2026, 7, 27, 10, 12, 0, 0, time.Local),
+				Message: "i kimm heid ned, sorry", ModelLabel: s("false"), ModelConfidence: f(0.93)},
+			{ID: 2, CreatedAt: time.Date(2026, 7, 27, 10, 10, 0, 0, time.Local),
+				Message: "mal schauen ob i's schaff", ModelLabel: s("invalid"), ModelConfidence: f(0.81),
+				Label: s("invalid")},
+			{ID: 1, CreatedAt: time.Date(2026, 7, 27, 10, 8, 0, 0, time.Local),
+				Message: "bin am start heit", ModelLabel: s("invalid"), ModelConfidence: f(0.52),
+				Label: s("true"), LabeledAt: &labeled},
+		},
+		MLSynthetics: {
+			{ID: 3, CreatedAt: base, Message: "kimm ned, mei Oide hod Geburtstog",
+				GeneratedLabel: s("false"), Art: "echt", Sprache: "bairisch_stark", BatchID: "mock-1"},
+			{ID: 2, CreatedAt: base, Message: "👍",
+				GeneratedLabel: s("invalid"), Art: "emoji", Sprache: "hochdeutsch", BatchID: "mock-1"},
+			{ID: 1, CreatedAt: base, Message: "Termin is ausgfoin ❌ also bin i dabei 🍻",
+				GeneratedLabel: s("true"), Art: "haertefall", Sprache: "bairisch_leicht", BatchID: "mock-1"},
+		},
 	}
 }
 
-func (m *Mock) ListMLMessages(_ context.Context, onlyDisagree bool, limit int) ([]MLMessage, error) {
-	var out []MLMessage
-	for _, msg := range sampleMLMessages() {
-		if onlyDisagree && msg.Agree != nil && *msg.Agree {
+func (m *Mock) ListMLItems(_ context.Context, q MLQuelle, f MLFilter) ([]MLItem, error) {
+	m.mlMu.Lock()
+	defer m.mlMu.Unlock()
+	if !q.Valid() {
+		return nil, fmt.Errorf("unbekannte Quelle %q", q)
+	}
+	var out []MLItem
+	for _, it := range m.ml[q] {
+		switch f.Status {
+		case MLOffen:
+			if !it.Offen() {
+				continue
+			}
+		case MLGeprueft:
+			if it.Offen() {
+				continue
+			}
+		case MLAbweichung:
+			if q == MLWhatsapp && ptrEq(it.GeminiLabel, it.ModelLabel) {
+				continue
+			}
+		}
+		if f.Label != "" && (it.Label == nil || *it.Label != f.Label) {
 			continue
 		}
-		out = append(out, msg)
+		if f.Query != "" && !strings.Contains(strings.ToLower(it.Message), strings.ToLower(f.Query)) {
+			continue
+		}
+		out = append(out, it)
 	}
-	if limit > 0 && limit < len(out) {
-		out = out[:limit]
+	if f.Limit > 0 && f.Limit < len(out) {
+		out = out[:f.Limit]
 	}
 	return out, nil
 }
 
+func (m *Mock) MLCounts(_ context.Context, q MLQuelle) (MLCounts, error) {
+	m.mlMu.Lock()
+	defer m.mlMu.Unlock()
+	var c MLCounts
+	for _, it := range m.ml[q] {
+		c.Total++
+		switch {
+		case it.Offen():
+			c.Offen++
+		case it.Verworfen:
+			c.Verworfen++
+		default:
+			c.Geprueft++
+			if it.Label != nil {
+				switch *it.Label {
+				case "true":
+					c.Zusage++
+				case "false":
+					c.Absage++
+				case "invalid":
+					c.Invalid++
+				}
+			}
+		}
+	}
+	return c, nil
+}
+
+func (m *Mock) LabelMLItem(_ context.Context, q MLQuelle, id int64, label string) (*MLItem, error) {
+	return m.updateMLItem(q, id, func(it *MLItem) {
+		it.Label = &label
+		it.Verworfen = false
+	})
+}
+
+func (m *Mock) DiscardMLSynthetic(_ context.Context, id int64) (*MLItem, error) {
+	return m.updateMLItem(MLSynthetics, id, func(it *MLItem) {
+		it.Label = nil
+		it.Verworfen = true
+	})
+}
+
+func (m *Mock) updateMLItem(q MLQuelle, id int64, change func(*MLItem)) (*MLItem, error) {
+	m.mlMu.Lock()
+	defer m.mlMu.Unlock()
+	items := m.ml[q]
+	for i := range items {
+		if items[i].ID == id {
+			change(&items[i])
+			now := time.Now()
+			items[i].LabeledAt = &now
+			it := items[i]
+			return &it, nil
+		}
+	}
+	return nil, fmt.Errorf("%s-Eintrag %d nicht gefunden", q, id)
+}
+
+func ptrEq(a, b *string) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
+// MLShadowStats zählt die Whatsapp-Beispiele wie die echte Query.
 func (m *Mock) MLShadowStats(_ context.Context) (MLShadowStats, error) {
+	m.mlMu.Lock()
+	defer m.mlMu.Unlock()
 	st := MLShadowStats{}
 	per := map[string]*MLLabelStat{}
-	for _, msg := range sampleMLMessages() {
+	for _, it := range m.ml[MLWhatsapp] {
+		gemini := ""
+		if it.GeminiLabel != nil {
+			gemini = *it.GeminiLabel
+		}
+		agree := it.ModelLabel != nil && *it.ModelLabel == gemini
 		st.Total++
-		if msg.ModelLabel != nil {
+		if it.ModelLabel != nil {
 			st.WithModel++
 		}
-		if msg.Agree != nil && *msg.Agree {
+		if agree {
 			st.Agree++
 		}
-		if msg.Verified {
+		if it.Label != nil {
 			st.Verified++
 		}
-		ls, ok := per[msg.GeminiLabel]
+		ls, ok := per[gemini]
 		if !ok {
-			ls = &MLLabelStat{Label: msg.GeminiLabel}
-			per[msg.GeminiLabel] = ls
+			ls = &MLLabelStat{Label: gemini}
+			per[gemini] = ls
 		}
 		ls.Total++
-		if msg.Agree != nil && *msg.Agree {
+		if agree {
 			ls.Agree++
 		}
 	}
@@ -545,17 +665,6 @@ func (m *Mock) MLShadowStats(_ context.Context) (MLShadowStats, error) {
 		}
 	}
 	return st, nil
-}
-
-func (m *Mock) VerifyMLMessage(_ context.Context, id int64, correctedLabel *string) (*MLMessage, error) {
-	for _, msg := range sampleMLMessages() {
-		if msg.ID == id {
-			msg.Verified = true
-			msg.CorrectedLabel = correctedLabel
-			return &msg, nil
-		}
-	}
-	return nil, fmt.Errorf("VerifyMLMessage: Eintrag %d nicht gefunden", id)
 }
 
 // --- Manueller ML-Test: Mock ---

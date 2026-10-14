@@ -1,0 +1,398 @@
+package mldaten
+
+import (
+	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
+)
+
+// Tab ist ein Reiter (eine Quelle) mit ihren Zählern.
+type Tab struct {
+	Quelle store.MLQuelle
+	Counts store.MLCounts
+}
+
+// HeadVM ist der Kopf der Seite: Reiter und Kacheln der aktiven Quelle. Er
+// lädt sich nach jedem Label selbst neu (Ereignis „mlLabeled").
+type HeadVM struct {
+	Active store.MLQuelle
+	Tabs   []Tab
+	Counts store.MLCounts
+}
+
+// VM bündelt alles, was die Seite rendert.
+type VM struct {
+	Head   HeadVM
+	Filter store.MLFilter
+	Items  []store.MLItem
+	Limit  int
+}
+
+var labels = []string{"true", "false", "invalid"}
+
+templ Page(vm VM) {
+	@Head(vm.Head)
+	@toolbar(vm)
+	@list(vm)
+}
+
+templ Head(h HeadVM) {
+	<div
+		id="ml-head"
+		class="stack"
+		style="gap:14px"
+		hx-get={ "/ml-daten/kopf?quelle=" + string(h.Active) }
+		hx-trigger="mlLabeled from:body"
+		hx-swap="outerHTML"
+	>
+		<nav class="seg ml-tabs" aria-label="Quelle">
+			for _, t := range h.Tabs {
+				<a href={ templ.SafeURL("/ml-daten?quelle=" + string(t.Quelle)) } class={ templ.KV("is-active", t.Quelle == h.Active) }>
+					{ quelleName(t.Quelle) }
+					<span class="ml-tab-count">{ tabCount(t.Counts) }</span>
+				</a>
+			}
+		</nav>
+		<p class="card-sub" style="margin:0">{ quelleText(h.Active) }</p>
+		<section class="grid-4">
+			<div class="tile">
+				<div class="tile-body">
+					<div class="tile-label">Nachrichten</div>
+					<div class="tile-value is-big">{ strconv.Itoa(h.Counts.Total) }</div>
+					if h.Counts.Verworfen > 0 {
+						<div class="tile-sub">{ strconv.Itoa(h.Counts.Verworfen) } verworfen</div>
+					}
+				</div>
+			</div>
+			<div class="tile"><div class="tile-body"><div class="tile-label">Offen</div><div class="tile-value is-big t-blue">{ strconv.Itoa(h.Counts.Offen) }</div></div></div>
+			<div class="tile"><div class="tile-body"><div class="tile-label">Gelabelt</div><div class="tile-value is-big t-green">{ strconv.Itoa(h.Counts.Geprueft) }</div></div></div>
+			<div class="tile">
+				<div class="tile-body">
+					<div class="tile-label">Je Label</div>
+					<div class="ml-labels" style="margin-top:8px">
+						<span class="lbl lbl-true">Zusage { strconv.Itoa(h.Counts.Zusage) }</span>
+						<span class="lbl lbl-false">Absage { strconv.Itoa(h.Counts.Absage) }</span>
+						<span class="lbl lbl-invalid">invalid { strconv.Itoa(h.Counts.Invalid) }</span>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
+}
+
+templ toolbar(vm VM) {
+	<div class="toolbar ml-toolbar">
+		<div class="seg seg-inline" role="group" aria-label="Status">
+			for _, o := range statusOptions(vm.Head.Active) {
+				<a href={ filterURL(vm, o.value, vm.Filter.Label) } class={ templ.KV("is-active", vm.Filter.Status == o.value) }>{ o.label }</a>
+			}
+		</div>
+		<div class="seg seg-inline" role="group" aria-label="Label">
+			<a href={ filterURL(vm, vm.Filter.Status, "") } class={ templ.KV("is-active", vm.Filter.Label == "") }>Alle Label</a>
+			for _, l := range labels {
+				<a href={ filterURL(vm, vm.Filter.Status, l) } class={ templ.KV("is-active", vm.Filter.Label == l) }>{ labelText(l) }</a>
+			}
+		</div>
+		<form class="search chrome ml-search" method="get" action="/ml-daten" role="search">
+			<input type="hidden" name="quelle" value={ string(vm.Head.Active) }/>
+			<input type="hidden" name="status" value={ vm.Filter.Status }/>
+			if vm.Filter.Label != "" {
+				<input type="hidden" name="label" value={ vm.Filter.Label }/>
+			}
+			<span aria-hidden="true">⌕</span>
+			<input type="search" name="q" value={ vm.Filter.Query } placeholder="Text suchen" aria-label="Text suchen"/>
+		</form>
+	</div>
+}
+
+templ list(vm VM) {
+	if len(vm.Items) == 0 {
+		<section class="card">
+			<div class="empty">
+				<span class="empty-ico" aria-hidden="true">{ emptyIcon(vm) }</span>
+				<p>{ emptyText(vm) }</p>
+			</div>
+		</section>
+	} else {
+		<p class="ml-keys">
+			Tastatur: Zeile anklicken, dann
+			<kbd>1</kbd> Zusage · <kbd>2</kbd> Absage · <kbd>3</kbd> invalid
+			if vm.Head.Active == store.MLSynthetics {
+				· <kbd>0</kbd> verwerfen
+			}
+			· <kbd>↑</kbd> <kbd>↓</kbd> blättern. Nach dem Label springt es zur nächsten Zeile.
+		</p>
+		<div class="ml-rows" data-ml-keys>
+			for _, it := range vm.Items {
+				@Row(it)
+			}
+		</div>
+		if len(vm.Items) >= vm.Limit {
+			<p class="card-sub">Die ersten { strconv.Itoa(vm.Limit) } – Filter oder Suche grenzen ein.</p>
+		}
+	}
+}
+
+templ Row(it store.MLItem) {
+	<div class={ "ml-row", rowClass(it) } id={ rowID(it) } tabindex="0">
+		<div class="ml-row-head">
+			<span class="ml-time">{ it.CreatedAt.Format("02.01.06 15:04") }</span>
+			if it.UserName != "" {
+				<span class="ml-user">{ it.UserName }</span>
+			}
+			if meta := synthMeta(it); meta != "" {
+				<span class="ml-meta">{ meta }</span>
+			}
+			<span class="ml-state">
+				switch {
+					case it.Offen():
+						<span class="pill is-dashed-blue">offen</span>
+					case it.Verworfen:
+						<span class="pill is-red">verworfen</span>
+					default:
+						<span class="pill is-green">✓ gelabelt { it.LabeledAt.Format("02.01.") }</span>
+				}
+			</span>
+		</div>
+		<div class="ml-msg">{ it.Message }</div>
+		if it.Quelle != store.MLSynthetics || it.GeneratedLabel != nil {
+			<div class="ml-labels">
+				if it.GeminiLabel != nil {
+					Gemini
+					<span class={ "lbl", "lbl-" + *it.GeminiLabel }>{ labelText(*it.GeminiLabel) }</span>
+				}
+				if it.Quelle != store.MLSynthetics {
+					Modell
+					if it.ModelLabel != nil {
+						<span class={ "lbl", "lbl-" + *it.ModelLabel }>{ labelText(*it.ModelLabel) }</span>
+						if it.ModelConfidence != nil {
+							<span class="ml-conf">{ fmt.Sprintf("%.0f %%", *it.ModelConfidence*100) }</span>
+						}
+					} else {
+						<span class="lbl lbl-missing">keine Antwort</span>
+					}
+				}
+				if it.GeneratedLabel != nil {
+					Prompt wollte
+					<span class={ "lbl", "lbl-" + *it.GeneratedLabel }>{ labelText(*it.GeneratedLabel) }</span>
+				}
+				if !it.Offen() && it.Label != nil {
+					if it.GeminiLabel != nil {
+						@verdict("Gemini", *it.GeminiLabel == *it.Label)
+					}
+					if it.ModelLabel != nil {
+						@verdict("Modell", *it.ModelLabel == *it.Label)
+					}
+				}
+			</div>
+		}
+		<div class="ml-verify">
+			<span class="cap">{ pickCaption(it) }</span>
+			for i, l := range labels {
+				<button
+					type="button"
+					class={ "ml-pick", pickClass(it, l) }
+					data-ml-label={ l }
+					title={ pickTitle(it, l) }
+					hx-post={ labelHref(it, l) }
+					hx-target={ "#" + rowID(it) }
+					hx-swap="outerHTML"
+				><kbd>{ strconv.Itoa(i + 1) }</kbd>{ labelText(l) }</button>
+			}
+			if it.Quelle == store.MLSynthetics {
+				<button
+					type="button"
+					class={ "ml-pick", "ml-pick-discard", templ.KV("is-active", it.Verworfen) }
+					data-ml-label="verworfen"
+					title="Unrealistisch – fliegt aus dem Training"
+					hx-post={ labelHref(it, "verworfen") }
+					hx-target={ "#" + rowID(it) }
+					hx-swap="outerHTML"
+				><kbd>0</kbd>Verwerfen</button>
+			}
+		</div>
+	</div>
+}
+
+templ verdict(who string, ok bool) {
+	if ok {
+		<span class="pill is-solid-green">{ who } ✓</span>
+	} else {
+		<span class="pill is-solid-red">{ who } ✗</span>
+	}
+}
+
+type option struct{ value, label string }
+
+func statusOptions(q store.MLQuelle) []option {
+	opts := []option{
+		{store.MLOffen, "Offen"},
+		{store.MLGeprueft, "Gelabelt"},
+		{store.MLAlle, "Alle"},
+	}
+	if q == store.MLWhatsapp {
+		opts = append(opts, option{store.MLAbweichung, "Gemini ≠ Modell"})
+	}
+	return opts
+}
+
+func filterURL(vm VM, status, label string) templ.SafeURL {
+	v := url.Values{}
+	v.Set("quelle", string(vm.Head.Active))
+	v.Set("status", status)
+	if label != "" {
+		v.Set("label", label)
+	}
+	if vm.Filter.Query != "" {
+		v.Set("q", vm.Filter.Query)
+	}
+	return templ.SafeURL("/ml-daten?" + v.Encode())
+}
+
+func rowID(it store.MLItem) string {
+	return "ml-" + string(it.Quelle) + "-" + strconv.FormatInt(it.ID, 10)
+}
+
+func labelHref(it store.MLItem, label string) string {
+	return "/ml-daten/" + string(it.Quelle) + "/" + strconv.FormatInt(it.ID, 10) + "/label?label=" + label
+}
+
+func rowClass(it store.MLItem) string {
+	switch {
+	case it.Verworfen:
+		return "is-off"
+	case !it.Offen():
+		return "is-ok"
+	case it.GeminiLabel != nil && (it.ModelLabel == nil || *it.ModelLabel != *it.GeminiLabel):
+		return "is-bad" // Gemini und Modell uneins – genauer hinschauen
+	default:
+		return ""
+	}
+}
+
+// suggestion ist das Label, das bei einem offenen Eintrag gestrichelt
+// vorgemerkt ist: das Label einer früheren Runde, sonst Gemini (Whatsapp),
+// das Modell (Manuell) bzw. der Generierungs-Prompt (Synthetics).
+func suggestion(it store.MLItem) (string, string) {
+	switch {
+	case it.Label != nil:
+		return *it.Label, "bisher"
+	case it.GeminiLabel != nil:
+		return *it.GeminiLabel, "wie Gemini"
+	case it.Quelle == store.MLManuell && it.ModelLabel != nil:
+		return *it.ModelLabel, "wie Modell"
+	case it.GeneratedLabel != nil:
+		return *it.GeneratedLabel, "wie Prompt"
+	}
+	return "", ""
+}
+
+func pickClass(it store.MLItem, l string) string {
+	if !it.Offen() {
+		if !it.Verworfen && it.Label != nil && *it.Label == l {
+			return "is-active"
+		}
+		return ""
+	}
+	if s, _ := suggestion(it); s == l {
+		return "is-prev"
+	}
+	return ""
+}
+
+func pickTitle(it store.MLItem, l string) string {
+	if it.Offen() {
+		if s, why := suggestion(it); s == l {
+			return why
+		}
+	}
+	return ""
+}
+
+func pickCaption(it store.MLItem) string {
+	if it.Offen() {
+		return "Richtig ist:"
+	}
+	return "Ändern:"
+}
+
+func synthMeta(it store.MLItem) string {
+	var parts []string
+	for _, p := range []string{it.Art, strings.ReplaceAll(it.Sprache, "_", " "), it.BatchID} {
+		if p != "" {
+			parts = append(parts, p)
+		}
+	}
+	return strings.Join(parts, " · ")
+}
+
+func quelleName(q store.MLQuelle) string {
+	switch q {
+	case store.MLSynthetics:
+		return "Synthetics"
+	case store.MLWhatsapp:
+		return "Whatsapp"
+	default:
+		return "Manuell"
+	}
+}
+
+func quelleText(q store.MLQuelle) string {
+	switch q {
+	case store.MLSynthetics:
+		return "Generierte Nachrichten fürs Training. Jede von Hand prüfen: Label setzen oder unrealistische verwerfen."
+	case store.MLWhatsapp:
+		return "Echte Nachrichten aus der Gruppe, vom Bot bei jeder Klassifizierung mitgeschrieben – das Testset. Gemini und das eigene Modell stehen als Kontext dabei."
+	default:
+		return "Selbst geschriebene Prüffälle von der Seite ML-Test. Laufen getrennt vom Testset."
+	}
+}
+
+func tabCount(c store.MLCounts) string {
+	switch {
+	case c.Total == 0:
+		return "leer"
+	case c.Offen == 0:
+		return "✓"
+	default:
+		return strconv.Itoa(c.Offen) + " offen"
+	}
+}
+
+func emptyIcon(vm VM) string {
+	if vm.Head.Counts.Total > 0 && vm.Filter.Status == store.MLOffen && vm.Filter.Label == "" && vm.Filter.Query == "" {
+		return "🎉"
+	}
+	return "🫙"
+}
+
+func emptyText(vm VM) string {
+	switch {
+	case vm.Head.Counts.Total == 0 && vm.Head.Active == store.MLSynthetics:
+		return "Noch keine Synthetics. Sie kommen mit der Generierung."
+	case vm.Head.Counts.Total == 0 && vm.Head.Active == store.MLWhatsapp:
+		return "Noch keine Nachrichten. Sobald der Bot donnerstags klassifiziert, erscheinen sie hier."
+	case vm.Head.Counts.Total == 0:
+		return "Noch keine Prüffälle. Auf der Seite ML-Test eine Nachricht eintippen."
+	case emptyIcon(vm) == "🎉":
+		return "Alles gelabelt."
+	default:
+		return "Nichts in diesem Filter."
+	}
+}
+
+func labelText(l string) string {
+	switch l {
+	case "true":
+		return "Zusage"
+	case "false":
+		return "Absage"
+	case "invalid":
+		return "invalid"
+	default:
+		return "—"
+	}
+}

@@ -99,8 +99,12 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /bot-test/run", sealed(s.handleBotTestRun))
 	mux.HandleFunc("GET /trace", s.handleTraceList)
 	mux.HandleFunc("GET /trace/{id}", s.handleTraceDetail)
-	mux.HandleFunc("GET /ml-shadow", s.handleMLShadow)
-	mux.HandleFunc("POST /ml-shadow/verify/{id}", s.handleMLVerify)
+	// ML-Daten: Synthetics, Whatsapp und Manuell sichten und labeln.
+	// /ml-shadow ist im Whatsapp-Tab aufgegangen.
+	mux.HandleFunc("GET /ml-daten", s.handleMLDaten)
+	mux.HandleFunc("GET /ml-daten/kopf", s.handleMLDatenKopf)
+	mux.HandleFunc("POST /ml-daten/{quelle}/{id}/label", s.handleMLLabel)
+	mux.HandleFunc("GET /ml-shadow", s.handleMLShadowRedirect)
 	mux.HandleFunc("GET /ml-test", sealed(s.handleMLTest))
 	mux.HandleFunc("POST /ml-test/run", sealed(s.handleMLTestRun))
 	mux.HandleFunc("POST /ml-test/judge/{id}", sealed(s.handleMLTestJudge))

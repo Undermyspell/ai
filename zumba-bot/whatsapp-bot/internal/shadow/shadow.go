@@ -45,7 +45,10 @@ CREATE TABLE IF NOT EXISTS ml_messages (
   verified         BOOLEAN NOT NULL DEFAULT false,
   corrected_label  TEXT
 );
-CREATE INDEX IF NOT EXISTS ml_messages_created_idx ON ml_messages (created_at DESC);`
+CREATE INDEX IF NOT EXISTS ml_messages_created_idx ON ml_messages (created_at DESC);
+-- labeled_at: wann die Nachricht im Admin-UI (/ml-daten) von Hand gelabelt
+-- wurde. Pflegt nur das Admin-UI; es legt die Spalte selbst auch an.
+ALTER TABLE ml_messages ADD COLUMN IF NOT EXISTS labeled_at TIMESTAMPTZ;`
 
 // EnsureSchema legt ml_messages idempotent an (beim Start aufgerufen).
 func (s *Shadow) EnsureSchema(ctx context.Context) error {

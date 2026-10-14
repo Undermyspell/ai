@@ -1368,7 +1368,7 @@ body.has-sheet { overflow: hidden; }
 }
 
 /* ============================================================
-   ML-Shadow / ML-Test
+   ML-Daten / ML-Test
    ============================================================ */
 .ml-rows { display: flex; flex-direction: column; gap: 12px; }
 .ml-row {
@@ -1414,6 +1414,37 @@ body.has-sheet { overflow: hidden; }
   white-space: nowrap;
 }
 .ml-pick:hover { border-color: var(--blue); color: var(--blue); }
+.ml-pick kbd {
+  margin-right: 6px;
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  opacity: .55;
+}
+/* Gestrichelt: Vorschlag (frühere Runde, Gemini, Modell oder Prompt). */
+.ml-pick.is-prev { border-style: dashed; border-color: var(--blue); color: var(--blue); }
+.ml-pick.is-active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.ml-pick.is-active kbd { opacity: .8; }
+.ml-pick-discard { margin-left: auto; }
+.ml-pick-discard:hover { border-color: var(--red); color: var(--red); }
+.ml-pick-discard.is-active { background: var(--red); border-color: var(--red); color: #fff; }
+.lbl-invalid { background: var(--soft-2); color: var(--muted); }
+.ml-row.is-off { --edge: var(--faint); opacity: .7; }
+.ml-row:focus { outline: none; }
+.ml-row:focus-visible, .ml-row:focus-within { border-color: var(--blue); }
+.ml-row.is-focus { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--edge, var(--line)), 0 0 0 3px var(--sel); }
+.ml-meta { font-family: var(--mono); color: var(--faint); }
+.ml-state { margin-left: auto; }
+.ml-tabs > a { gap: 8px; padding: 9px 12px; font-size: 13px; }
+.ml-tab-count { font-family: var(--mono); font-size: 11px; font-weight: 600; opacity: .75; }
+.ml-toolbar { gap: 12px; }
+.ml-toolbar > .seg-inline { padding: 3px; background: var(--soft-2); gap: 2px; }
+.ml-toolbar > .seg-inline > a { flex: 0 0 auto; padding: 6px 12px; }
+.ml-search { flex: 1; min-width: 180px; }
+.ml-keys { margin: 0; font-size: 12px; color: var(--muted); }
+.ml-keys kbd {
+  display: inline-block; min-width: 18px; padding: 0 5px;
+  border: 1px solid var(--line-strong); border-radius: 5px;
+  font-family: var(--mono); font-size: 11px; text-align: center;
+}
 .ml-verified { font-size: 12px; font-weight: 700; color: var(--green); }
 .ml-del { margin-left: auto; padding: 0 4px; border: 0; background: none; opacity: .5; }
 .ml-del:hover { opacity: 1; }

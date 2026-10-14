@@ -126,10 +126,31 @@ Gespeichert wird in `card_settings`; der Bot liest die Tabelle vor jeder
 Karte. Wie beim KI-Modell gesperrt ist die Seite bei offenem Tunnel nicht –
 Speichern verschickt nichts.
 
-### ML-Testdaten
-Tabelle `ml_test_messages`: gesammelte Beispielnachrichten für den
-Classifier-Vergleich (LLM vs. eigenes Modell); manueller Klassifikations-Test
-gegen den Classifier-Service.
+### ML-Daten (`/ml-daten`)
+
+Die Nachrichten fürs eigene Modell, je Quelle ein Reiter:
+
+- **Synthetics** – generierte Nachrichten fürs Training
+  (`ml_synthetic_messages`, befüllt vom Import-Skript; exakte Duplikate blockt
+  der eindeutige `text_hash`). Unrealistische lassen sich verwerfen.
+- **Whatsapp** – echte Gruppennachrichten, die der Bot bei jeder
+  Klassifizierung mitschreibt (`ml_messages`), mit Gemini- und Modell-Label
+  als Kontext. Das Testset.
+- **Manuell** – selbst geschriebene Prüffälle von `/ml-test`
+  (`ml_test_messages`).
+
+Jede Zeile hat drei Label-Knöpfe (Zusage · Absage · invalid); ein Label lässt
+sich jederzeit ändern. „Offen" heißt: in dieser Runde noch nicht von Hand
+gelabelt (`labeled_at` leer) – ein Label aus einer früheren Prüfung steht
+gestrichelt als Vorschlag dabei, geht also beim Neu-Labeln nicht verloren.
+Filter nach Status, Label und Freitext. Tastatur: Zeile anklicken, dann 1/2/3
+(0 = verwerfen), ↑/↓ blättert, nach dem Label springt es zur nächsten Zeile.
+Die frühere Seite `/ml-shadow` leitet auf den Whatsapp-Reiter um.
+
+### ML-Test (`/ml-test`)
+
+Nachricht eintippen → der classifier-service klassifiziert sie, sie landet als
+Prüffall in `ml_test_messages`. Die Bewertung lässt sich jederzeit ändern.
 
 ### Öffentlich (`/public`)
 

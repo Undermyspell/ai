@@ -109,3 +109,65 @@ func mustDate(s string) time.Time {
 	}
 	return d
 }
+
+// Im Mock bleibt ein Label bis zum Neustart erhalten: aus „offen" wird
+// „gelabelt", ein zweites Label ändert das erste.
+func TestMockMLLabelAendern(t *testing.T) {
+	season := testSeason()
+	m := NewMock(season, []Season{season})
+	ctx := context.Background()
+
+	offen, err := m.ListMLItems(ctx, MLWhatsapp, MLFilter{Status: MLOffen})
+	if err != nil || len(offen) == 0 {
+		t.Fatalf("offene Whatsapp-Einträge: %v, %d", err, len(offen))
+	}
+	id := offen[0].ID
+	before, _ := m.MLCounts(ctx, MLWhatsapp)
+
+	if _, err := m.LabelMLItem(ctx, MLWhatsapp, id, "true"); err != nil {
+		t.Fatal(err)
+	}
+	it, err := m.LabelMLItem(ctx, MLWhatsapp, id, "invalid")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if it.Offen() || it.Label == nil || *it.Label != "invalid" {
+		t.Fatalf("nach Ändern: offen=%v label=%v", it.Offen(), it.Label)
+	}
+	after, _ := m.MLCounts(ctx, MLWhatsapp)
+	if after.Offen != before.Offen-1 || after.Geprueft != before.Geprueft+1 {
+		t.Errorf("Zähler vorher %+v, nachher %+v", before, after)
+	}
+
+	got, _ := m.ListMLItems(ctx, MLWhatsapp, MLFilter{Status: MLGeprueft, Label: "invalid"})
+	found := false
+	for _, g := range got {
+		found = found || g.ID == id
+	}
+	if !found {
+		t.Error("geänderter Eintrag fehlt im Filter gelabelt/invalid")
+	}
+}
+
+func TestMockMLVerwerfen(t *testing.T) {
+	season := testSeason()
+	m := NewMock(season, []Season{season})
+	ctx := context.Background()
+
+	it, err := m.DiscardMLSynthetic(ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !it.Verworfen || it.Label != nil || it.Offen() {
+		t.Fatalf("verworfen=%v label=%v offen=%v", it.Verworfen, it.Label, it.Offen())
+	}
+	c, _ := m.MLCounts(ctx, MLSynthetics)
+	if c.Verworfen != 1 || c.Geprueft != 0 {
+		t.Errorf("Zähler %+v, want 1 verworfen, 0 gelabelt", c)
+	}
+	// Ein Label holt die Nachricht zurück ins Training.
+	it, _ = m.LabelMLItem(ctx, MLSynthetics, 1, "true")
+	if it.Verworfen {
+		t.Error("nach Label noch verworfen")
+	}
+}

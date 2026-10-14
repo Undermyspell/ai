@@ -1,5 +1,5 @@
 """Migriert bot_trace-Nachrichten nach ml_messages, damit sie im Admin-UI
-(/ml-shadow) bewertet werden koennen.
+(/ml-daten, Reiter Whatsapp) bewertet werden koennen.
 
 Hintergrund: bot_trace ist das Trace-Protokoll des Bots von vor dem Shadow-Modus
 und enthaelt dieselbe Population wie ml_messages -- nur ohne Verify-Pfad im UI.
@@ -173,7 +173,7 @@ def main() -> None:
         undo = DATA / "backfill_bot_trace_ids.json"
         undo.write_text(json.dumps(inserted), encoding="utf-8")
         print(f"\n{len(inserted)} Zeilen nach ml_messages geschrieben. "
-              f"Jetzt auf /ml-shadow bewerten.", file=sys.stderr)
+              f"Jetzt auf /ml-daten bewerten.", file=sys.stderr)
         print(f"Rollback-IDs: {undo}", file=sys.stderr)
         print(f"  DELETE FROM ml_messages WHERE id IN "
               f"({','.join(map(str, inserted))});", file=sys.stderr)

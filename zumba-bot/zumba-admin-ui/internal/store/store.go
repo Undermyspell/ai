@@ -89,13 +89,19 @@ type Store interface {
 	ListTraces(ctx context.Context, limit int) ([]Trace, error)
 	GetTrace(ctx context.Context, id int64) (*Trace, error)
 
-	// ML-Shadow-Modus (ml_messages): Gemini- vs. eigenes Modell-Label.
-	ListMLMessages(ctx context.Context, onlyDisagree bool, limit int) ([]MLMessage, error)
+	// Probebetrieb des eigenen Modells (ml_messages): Gemini- vs. Modell-Label
+	// als Kennzahl für die Seite /ki-modell.
 	MLShadowStats(ctx context.Context) (MLShadowStats, error)
-	// VerifyMLMessage markiert einen Eintrag als handgeprüft; correctedLabel
-	// ist das korrekte Label (nil = Gemini-Label war korrekt). Liefert die
-	// aktualisierte Zeile (UPDATE ... RETURNING).
-	VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) (*MLMessage, error)
+
+	// ML-Daten (Seite /ml-daten): die Nachrichten aller drei Quellen sichten
+	// und von Hand labeln. ListMLItems filtert eine Quelle, MLCounts zählt
+	// sie, LabelMLItem setzt (oder ändert) das Label und liefert die
+	// aktualisierte Zeile (UPDATE ... RETURNING). DiscardMLSynthetic nimmt
+	// eine unbrauchbare synthetische Nachricht aus dem Training.
+	ListMLItems(ctx context.Context, q MLQuelle, f MLFilter) ([]MLItem, error)
+	MLCounts(ctx context.Context, q MLQuelle) (MLCounts, error)
+	LabelMLItem(ctx context.Context, q MLQuelle, id int64, label string) (*MLItem, error)
+	DiscardMLSynthetic(ctx context.Context, id int64) (*MLItem, error)
 
 	// Manueller ML-Test (ml_test_messages): über das UI eingetippte Nachrichten,
 	// vom classifier-service klassifiziert und per Hand bewertet.
@@ -145,21 +151,6 @@ type MLTestMessage struct {
 	ExpectedLabel   *string // nil = noch nicht bewertet
 }
 
-// MLMessage ist ein Eintrag aus ml_messages (Shadow-Modus-Protokoll des Bots).
-type MLMessage struct {
-	ID              int64
-	CreatedAt       time.Time
-	UserID          string
-	UserName        string
-	Message         string
-	GeminiLabel     string
-	ModelLabel      *string // nil = classifier-service war nicht erreichbar
-	ModelConfidence *float64
-	Agree           *bool
-	Verified        bool
-	CorrectedLabel  *string
-}
-
 // MLLabelStat aggregiert Übereinstimmung je Gemini-Label.
 type MLLabelStat struct {
 	Label string
@@ -167,13 +158,89 @@ type MLLabelStat struct {
 	Agree int
 }
 
-// MLShadowStats fasst den Stand des Shadow-Modus zusammen.
+// MLShadowStats fasst den Stand des Probebetriebs zusammen.
 type MLShadowStats struct {
 	Total     int // alle protokollierten Nachrichten
 	WithModel int // davon mit Modell-Antwort
 	Agree     int // davon Übereinstimmung Gemini == Modell
 	Verified  int // davon per Hand geprüft
 	PerLabel  []MLLabelStat
+}
+
+// MLQuelle ist die Herkunft einer Nachricht im ML-Datenbestand.
+type MLQuelle string
+
+const (
+	// MLSynthetics: generierte Nachrichten (ml_synthetic_messages) – Training.
+	MLSynthetics MLQuelle = "synthetics"
+	// MLWhatsapp: echte Gruppennachrichten, vom Bot protokolliert
+	// (ml_messages) – Test.
+	MLWhatsapp MLQuelle = "whatsapp"
+	// MLManuell: selbst geschriebene Prüffälle von /ml-test (ml_test_messages).
+	MLManuell MLQuelle = "manuell"
+)
+
+// MLQuellen ist die Reihenfolge der Tabs auf /ml-daten.
+var MLQuellen = []MLQuelle{MLSynthetics, MLWhatsapp, MLManuell}
+
+// Valid meldet, ob q eine der drei Quellen ist.
+func (q MLQuelle) Valid() bool {
+	return q == MLSynthetics || q == MLWhatsapp || q == MLManuell
+}
+
+// Status-Filter der Seite /ml-daten. „Offen" heißt: in dieser Runde noch
+// nicht von Hand gelabelt (labeled_at leer) – auch wenn ein altes Label
+// existiert. So erscheinen beim Neu-Labeln alle Einträge wieder, ohne dass
+// ihre bisherigen Label verloren gehen.
+const (
+	MLOffen      = "offen"
+	MLGeprueft   = "geprueft"
+	MLAlle       = "alle"
+	MLAbweichung = "abweichung" // nur Whatsapp: Gemini ≠ Modell
+)
+
+// MLFilter schränkt ListMLItems ein.
+type MLFilter struct {
+	Status string // MLOffen | MLGeprueft | MLAlle | MLAbweichung
+	Label  string // "" = alle, sonst das aktuelle Label true|false|invalid
+	Query  string // Freitext, Groß-/Kleinschreibung egal
+	Limit  int
+}
+
+// MLItem ist eine Nachricht aus einer der drei Quellen. Die Kontextfelder
+// sind nur dort gefüllt, wo die Quelle sie kennt.
+type MLItem struct {
+	Quelle    MLQuelle
+	ID        int64
+	CreatedAt time.Time
+	Message   string
+	// Label ist das aktuell gültige Label (nil = keins). Bei offenen
+	// Einträgen ist es das Label einer früheren Runde.
+	Label     *string
+	LabeledAt *time.Time // nil = offen
+	Verworfen bool       // nur Synthetics: fliegt aus dem Training
+
+	UserName        string   // Whatsapp
+	GeminiLabel     *string  // Whatsapp
+	ModelLabel      *string  // Whatsapp, Manuell (nil = Modell ohne Antwort)
+	ModelConfidence *float64 // Whatsapp, Manuell
+	GeneratedLabel  *string  // Synthetics: was der Generierungs-Prompt vorgab
+	Art             string   // Synthetics: Art der Nachricht (kurz, emoji, …)
+	Sprache         string   // Synthetics: bairisch_stark | bairisch_leicht | hochdeutsch
+	BatchID         string   // Synthetics: Generierungs-Batch
+}
+
+// Offen meldet, ob der Eintrag in dieser Runde noch gelabelt werden muss.
+func (it MLItem) Offen() bool { return it.LabeledAt == nil }
+
+// MLCounts zählt eine Quelle für die Kacheln und Tabs.
+type MLCounts struct {
+	Total     int
+	Offen     int
+	Geprueft  int // von Hand gelabelt (ohne verworfene)
+	Verworfen int // nur Synthetics
+	// Je Label, nur über geprüfte Einträge.
+	Zusage, Absage, Invalid int
 }
 
 // Knoten-IDs des festen Bot-Flow-Graphen (Vertrag mit dem whatsapp-bot).

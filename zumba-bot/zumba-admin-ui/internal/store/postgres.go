@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	sharedstore "github.com/michael/zumba-shared/store"
@@ -384,37 +385,7 @@ func (s *Postgres) GetTrace(ctx context.Context, id int64) (*Trace, error) {
 	return &t, nil
 }
 
-// --- ML-Shadow-Modus (ml_messages) ---
-
-func (s *Postgres) ListMLMessages(ctx context.Context, onlyDisagree bool, limit int) ([]MLMessage, error) {
-	q := `
-		SELECT id, created_at, COALESCE(user_id,''), COALESCE(user_name,''), message,
-		       COALESCE(gemini_label,''), model_label, model_confidence, agree,
-		       verified, corrected_label
-		FROM ml_messages`
-	if onlyDisagree {
-		// Disagreement = Modell widerspricht ODER Modell hat nicht geantwortet.
-		q += ` WHERE agree IS DISTINCT FROM true`
-	}
-	q += ` ORDER BY created_at DESC LIMIT $1`
-	rows, err := s.db.QueryContext(ctx, q, limit)
-	if err != nil {
-		return nil, fmt.Errorf("ListMLMessages: %w", err)
-	}
-	defer rows.Close()
-
-	var out []MLMessage
-	for rows.Next() {
-		var m MLMessage
-		if err := rows.Scan(&m.ID, &m.CreatedAt, &m.UserID, &m.UserName, &m.Message,
-			&m.GeminiLabel, &m.ModelLabel, &m.ModelConfidence, &m.Agree,
-			&m.Verified, &m.CorrectedLabel); err != nil {
-			return nil, fmt.Errorf("ListMLMessages scan: %w", err)
-		}
-		out = append(out, m)
-	}
-	return out, rows.Err()
-}
+// --- Probebetrieb (ml_messages) ---
 
 func (s *Postgres) MLShadowStats(ctx context.Context) (MLShadowStats, error) {
 	var st MLShadowStats
@@ -446,32 +417,15 @@ func (s *Postgres) MLShadowStats(ctx context.Context) (MLShadowStats, error) {
 	return st, rows.Err()
 }
 
-func (s *Postgres) VerifyMLMessage(ctx context.Context, id int64, correctedLabel *string) (*MLMessage, error) {
-	const q = `
-		UPDATE ml_messages SET verified = true, corrected_label = $2
-		WHERE id = $1
-		RETURNING id, created_at, COALESCE(user_id,''), COALESCE(user_name,''), message,
-		          COALESCE(gemini_label,''), model_label, model_confidence, agree,
-		          verified, corrected_label`
-	var m MLMessage
-	err := s.db.QueryRowContext(ctx, q, id, correctedLabel).Scan(
-		&m.ID, &m.CreatedAt, &m.UserID, &m.UserName, &m.Message,
-		&m.GeminiLabel, &m.ModelLabel, &m.ModelConfidence, &m.Agree,
-		&m.Verified, &m.CorrectedLabel)
-	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("VerifyMLMessage: Eintrag %d nicht gefunden", id)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("VerifyMLMessage: %w", err)
-	}
-	return &m, nil
-}
-
 // --- Manueller ML-Test (ml_test_messages) ---
 
-// EnsureMLTestSchema legt die Tabelle für manuelle Testfälle idempotent an
-// (Schreiber ist das Admin-UI, daher liegt das Schema hier und nicht im Bot).
-func (s *Postgres) EnsureMLTestSchema(ctx context.Context) error {
+// EnsureMLSchema legt die ML-Tabellen des Admin-UI idempotent an: die
+// manuellen Testfälle und die synthetischen Trainingsnachrichten (Schreiber
+// ist jeweils das Admin-UI bzw. das Import-Skript, daher liegt das Schema
+// hier und nicht im Bot). ml_messages gehört dem Bot; hier kommt nur die
+// Spalte labeled_at dazu – die legt auch der Bot an, falls er die Tabelle
+// erst nach dem Admin-UI erzeugt.
+func (s *Postgres) EnsureMLSchema(ctx context.Context) error {
 	const q = `
 		CREATE TABLE IF NOT EXISTS ml_test_messages (
 		  id               BIGSERIAL PRIMARY KEY,
@@ -482,7 +436,28 @@ func (s *Postgres) EnsureMLTestSchema(ctx context.Context) error {
 		  expected_label   TEXT
 		);
 		CREATE INDEX IF NOT EXISTS ml_test_messages_created_idx
-		  ON ml_test_messages (created_at DESC);`
+		  ON ml_test_messages (created_at DESC);
+		ALTER TABLE ml_test_messages ADD COLUMN IF NOT EXISTS labeled_at TIMESTAMPTZ;
+
+		ALTER TABLE IF EXISTS ml_messages ADD COLUMN IF NOT EXISTS labeled_at TIMESTAMPTZ;
+
+		-- text_hash: Hash des normalisierten Texts (Import-Skript), blockt
+		-- exakte Duplikate schon beim Insert.
+		CREATE TABLE IF NOT EXISTS ml_synthetic_messages (
+		  id              BIGSERIAL PRIMARY KEY,
+		  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+		  message         TEXT NOT NULL,
+		  text_hash       TEXT NOT NULL UNIQUE,
+		  generated_label TEXT CHECK (generated_label IN ('true', 'false', 'invalid')),
+		  label           TEXT CHECK (label IN ('true', 'false', 'invalid')),
+		  art             TEXT,
+		  sprache         TEXT,
+		  batch_id        TEXT,
+		  verworfen       BOOLEAN NOT NULL DEFAULT false,
+		  labeled_at      TIMESTAMPTZ
+		);
+		CREATE INDEX IF NOT EXISTS ml_synthetic_messages_created_idx
+		  ON ml_synthetic_messages (created_at DESC);`
 	_, err := s.db.ExecContext(ctx, q)
 	return err
 }
@@ -524,7 +499,7 @@ func (s *Postgres) ListMLTests(ctx context.Context, limit int) ([]MLTestMessage,
 
 func (s *Postgres) JudgeMLTest(ctx context.Context, id int64, expectedLabel string) (*MLTestMessage, error) {
 	const q = `
-		UPDATE ml_test_messages SET expected_label = $2
+		UPDATE ml_test_messages SET expected_label = $2, labeled_at = now()
 		WHERE id = $1
 		RETURNING id, created_at, message, model_label, model_confidence, expected_label`
 	var m MLTestMessage
@@ -548,4 +523,177 @@ func (s *Postgres) DeleteMLTest(ctx context.Context, id int64) error {
 		return fmt.Errorf("DeleteMLTest: Eintrag %d nicht gefunden", id)
 	}
 	return nil
+}
+
+// --- ML-Daten (/ml-daten): alle drei Quellen ---
+
+// mlSource beschreibt, wie eine Quelle auf MLItem abgebildet wird. Alle drei
+// liefern dieselbe Spaltenliste (fehlende Felder als NULL bzw. leer), damit ein
+// einziger Scan reicht.
+type mlSource struct {
+	table string
+	cols  string // SELECT-/RETURNING-Liste in scanMLItem-Reihenfolge
+	label string // SQL-Ausdruck des aktuell gültigen Labels
+}
+
+var mlSources = map[MLQuelle]mlSource{
+	// Whatsapp: ein Label gilt erst, wenn der Eintrag geprüft ist; ohne
+	// corrected_label war Gemini richtig (Semantik der alten Prüfung).
+	MLWhatsapp: {
+		table: "ml_messages",
+		cols: `id, created_at, message, COALESCE(user_name, ''), gemini_label,
+		       model_label, model_confidence,
+		       CASE WHEN verified THEN COALESCE(corrected_label, gemini_label) END,
+		       labeled_at, NULL::text, '', '', '', false`,
+		label: "CASE WHEN verified THEN COALESCE(corrected_label, gemini_label) END",
+	},
+	MLManuell: {
+		table: "ml_test_messages",
+		cols: `id, created_at, message, '', NULL::text,
+		       model_label, model_confidence, expected_label,
+		       labeled_at, NULL::text, '', '', '', false`,
+		label: "expected_label",
+	},
+	MLSynthetics: {
+		table: "ml_synthetic_messages",
+		cols: `id, created_at, message, '', NULL::text,
+		       NULL::text, NULL::float8, label,
+		       labeled_at, generated_label, COALESCE(art, ''), COALESCE(sprache, ''),
+		       COALESCE(batch_id, ''), verworfen`,
+		label: "label",
+	},
+}
+
+func mlSourceFor(q MLQuelle) (mlSource, error) {
+	src, ok := mlSources[q]
+	if !ok {
+		return mlSource{}, fmt.Errorf("unbekannte Quelle %q", q)
+	}
+	return src, nil
+}
+
+func scanMLItem(q MLQuelle, sc interface{ Scan(...any) error }) (MLItem, error) {
+	it := MLItem{Quelle: q}
+	err := sc.Scan(&it.ID, &it.CreatedAt, &it.Message, &it.UserName, &it.GeminiLabel,
+		&it.ModelLabel, &it.ModelConfidence, &it.Label,
+		&it.LabeledAt, &it.GeneratedLabel, &it.Art, &it.Sprache, &it.BatchID, &it.Verworfen)
+	return it, err
+}
+
+func (s *Postgres) ListMLItems(ctx context.Context, q MLQuelle, f MLFilter) ([]MLItem, error) {
+	src, err := mlSourceFor(q)
+	if err != nil {
+		return nil, err
+	}
+	var where []string
+	var args []any
+	switch f.Status {
+	case MLOffen:
+		where = append(where, "labeled_at IS NULL")
+	case MLGeprueft:
+		where = append(where, "labeled_at IS NOT NULL")
+	case MLAbweichung:
+		if q == MLWhatsapp {
+			where = append(where, "gemini_label IS DISTINCT FROM model_label")
+		}
+	}
+	if f.Label != "" {
+		args = append(args, f.Label)
+		where = append(where, fmt.Sprintf("%s = $%d", src.label, len(args)))
+	}
+	if f.Query != "" {
+		args = append(args, f.Query)
+		where = append(where, fmt.Sprintf("strpos(lower(message), lower($%d)) > 0", len(args)))
+	}
+	query := "SELECT " + src.cols + " FROM " + src.table
+	if len(where) > 0 {
+		query += " WHERE " + strings.Join(where, " AND ")
+	}
+	limit := f.Limit
+	if limit <= 0 {
+		limit = 500
+	}
+	args = append(args, limit)
+	query += fmt.Sprintf(" ORDER BY created_at DESC, id DESC LIMIT $%d", len(args))
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("ListMLItems %s: %w", q, err)
+	}
+	defer rows.Close()
+	var out []MLItem
+	for rows.Next() {
+		it, err := scanMLItem(q, rows)
+		if err != nil {
+			return nil, fmt.Errorf("ListMLItems %s scan: %w", q, err)
+		}
+		out = append(out, it)
+	}
+	return out, rows.Err()
+}
+
+func (s *Postgres) MLCounts(ctx context.Context, q MLQuelle) (MLCounts, error) {
+	src, err := mlSourceFor(q)
+	if err != nil {
+		return MLCounts{}, err
+	}
+	verworfen := "false"
+	if q == MLSynthetics {
+		verworfen = "verworfen"
+	}
+	done := "labeled_at IS NOT NULL AND NOT " + verworfen
+	query := fmt.Sprintf(`
+		SELECT count(*),
+		       count(*) FILTER (WHERE labeled_at IS NULL),
+		       count(*) FILTER (WHERE %[1]s),
+		       count(*) FILTER (WHERE %[2]s),
+		       count(*) FILTER (WHERE %[1]s AND %[3]s = 'true'),
+		       count(*) FILTER (WHERE %[1]s AND %[3]s = 'false'),
+		       count(*) FILTER (WHERE %[1]s AND %[3]s = 'invalid')
+		FROM %[4]s`, done, verworfen, src.label, src.table)
+	var c MLCounts
+	if err := s.db.QueryRowContext(ctx, query).Scan(&c.Total, &c.Offen, &c.Geprueft,
+		&c.Verworfen, &c.Zusage, &c.Absage, &c.Invalid); err != nil {
+		return c, fmt.Errorf("MLCounts %s: %w", q, err)
+	}
+	return c, nil
+}
+
+func (s *Postgres) LabelMLItem(ctx context.Context, q MLQuelle, id int64, label string) (*MLItem, error) {
+	src, err := mlSourceFor(q)
+	if err != nil {
+		return nil, err
+	}
+	var set string
+	switch q {
+	case MLWhatsapp:
+		// Immer explizit setzen – auch wenn es Geminis Label ist.
+		set = "verified = true, corrected_label = $2"
+	case MLManuell:
+		set = "expected_label = $2"
+	case MLSynthetics:
+		set = "label = $2, verworfen = false"
+	}
+	query := "UPDATE " + src.table + " SET " + set + ", labeled_at = now() WHERE id = $1 RETURNING " + src.cols
+	it, err := scanMLItem(q, s.db.QueryRowContext(ctx, query, id, label))
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("LabelMLItem: %s-Eintrag %d nicht gefunden", q, id)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("LabelMLItem %s: %w", q, err)
+	}
+	return &it, nil
+}
+
+func (s *Postgres) DiscardMLSynthetic(ctx context.Context, id int64) (*MLItem, error) {
+	query := `UPDATE ml_synthetic_messages SET label = NULL, verworfen = true, labeled_at = now()
+		WHERE id = $1 RETURNING ` + mlSources[MLSynthetics].cols
+	it, err := scanMLItem(MLSynthetics, s.db.QueryRowContext(ctx, query, id))
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("DiscardMLSynthetic: Eintrag %d nicht gefunden", id)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("DiscardMLSynthetic: %w", err)
+	}
+	return &it, nil
 }

@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/michael/zumba-shared/domain"
@@ -33,6 +34,9 @@ type spyStore struct {
 	setModel   string // "rolle=model" des letzten SetClassifierModel
 
 	cards store.CardSettings
+
+	mlFilter  string // "quelle:status:label" des letzten ListMLItems
+	mlLabeled string // "quelle/id=label" des letzten Labels
 }
 
 func newSpyStore() *spyStore {
@@ -172,14 +176,25 @@ func mustDate(s string) time.Time {
 	return d
 }
 
-func (s *spyStore) ListMLMessages(_ context.Context, _ bool, _ int) ([]store.MLMessage, error) {
-	return nil, nil
-}
 func (s *spyStore) MLShadowStats(_ context.Context) (store.MLShadowStats, error) {
 	return store.MLShadowStats{}, nil
 }
-func (s *spyStore) VerifyMLMessage(_ context.Context, id int64, correctedLabel *string) (*store.MLMessage, error) {
-	return &store.MLMessage{ID: id, Verified: true, CorrectedLabel: correctedLabel}, nil
+func (s *spyStore) ListMLItems(_ context.Context, q store.MLQuelle, f store.MLFilter) ([]store.MLItem, error) {
+	s.mlFilter = string(q) + ":" + f.Status + ":" + f.Label
+	return nil, nil
+}
+func (s *spyStore) MLCounts(_ context.Context, _ store.MLQuelle) (store.MLCounts, error) {
+	return store.MLCounts{}, nil
+}
+func (s *spyStore) LabelMLItem(_ context.Context, q store.MLQuelle, id int64, label string) (*store.MLItem, error) {
+	s.mlLabeled = fmt.Sprintf("%s/%d=%s", q, id, label)
+	now := time.Now()
+	return &store.MLItem{Quelle: q, ID: id, Label: &label, LabeledAt: &now}, nil
+}
+func (s *spyStore) DiscardMLSynthetic(_ context.Context, id int64) (*store.MLItem, error) {
+	s.mlLabeled = fmt.Sprintf("%s/%d=verworfen", store.MLSynthetics, id)
+	now := time.Now()
+	return &store.MLItem{Quelle: store.MLSynthetics, ID: id, Verworfen: true, LabeledAt: &now}, nil
 }
 
 func (s *spyStore) InsertMLTest(_ context.Context, _, _ string, _ float64) (int64, error) {

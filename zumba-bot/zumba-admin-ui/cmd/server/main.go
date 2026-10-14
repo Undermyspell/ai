@@ -44,9 +44,10 @@ func main() {
 		if err := pgStore.EnsureSeasonsSchema(context.Background()); err != nil {
 			log.Printf("⚠️  seasons Schema: %v", err)
 		}
-		// Tabelle für den manuellen ML-Test (Schreiber ist das Admin-UI).
-		if err := pgStore.EnsureMLTestSchema(context.Background()); err != nil {
-			log.Printf("⚠️  ml_test_messages Schema: %v", err)
+		// ML-Tabellen: manuelle Testfälle, synthetische Trainingsnachrichten
+		// und die Label-Spalte der Bot-Tabelle ml_messages (Seite /ml-daten).
+		if err := pgStore.EnsureMLSchema(context.Background()); err != nil {
+			log.Printf("⚠️  ML-Schema: %v", err)
 		}
 		// Strafen-Tabelle (auch der Bot legt sie idempotent an).
 		if err := pgStore.EnsureStrafenSchema(context.Background()); err != nil {
