@@ -20,7 +20,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from evaluate_v2 import apply_threshold, metrics
 from import_synthetic import text_key
-from models_v2 import DATA, LABELS, MODELS, candidates
+from models_v2 import DATA, FINAL_START, LABELS, MODELS, candidates
 
 SEED = 42
 MODELS_TO_TRY = ["tfidf_logreg", "tfidf_charword", "nb_logreg", "minilm_ft"]
@@ -33,7 +33,8 @@ def load(name):
 def main() -> None:
     cv = json.loads((MODELS / "cv.json").read_text())
     report = json.loads((MODELS / "report.json").read_text())
-    syn, wa = load("synthetics"), load("whatsapp")
+    syn = load("synthetics")
+    wa = [r for r in load("whatsapp") if r["created_at"] < FINAL_START]
     Xs, ys = [r["text"] for r in syn], [r["label"] for r in syn]
 
     groups = {}

@@ -26,7 +26,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 
 from import_synthetic import text_key
-from models_v2 import DATA, LABELS, MODELS
+from models_v2 import DATA, FINAL_START, LABELS, MODELS
 
 AFTER = "2026-07-31"
 THRESHOLDS = [0.0] + [round(x, 2) for x in np.arange(0.35, 0.91, 0.05)]
@@ -93,7 +93,9 @@ def pick_threshold(name, classes):
 
 def main() -> None:
     cv = json.loads((MODELS / "cv.json").read_text())
-    wa, ma = load("whatsapp"), load("manuell")
+    wa_all, ma = load("whatsapp"), load("manuell")
+    wa = [r for r in wa_all if r["created_at"] < FINAL_START]
+    final = [r for r in wa_all if r["created_at"] >= FINAL_START]
 
     # eindeutige Whatsapp-Nachrichten: erster Eintrag je Schlüssel
     seen, uniq, conflicts = {}, [], []
@@ -113,6 +115,8 @@ def main() -> None:
     if old_export.exists():
         old_keys = {text_key(json.loads(line)["text"]) for line in old_export.open(encoding="utf-8")}
         sets["whatsapp_ungesehen_012"] = [r for r in uniq if text_key(r["text"]) not in old_keys]
+    if final:
+        sets["final"] = final
     print(f"Whatsapp: {len(wa)} Nachrichten, {len(uniq)} eindeutig, {len(after)} ab August; "
           f"Label-Konflikte unter Duplikaten: {len(conflicts)}", file=sys.stderr)
 

@@ -32,6 +32,9 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "v2"
 MODELS = ROOT / "models" / "v2"
 LABELS = ["true", "false", "invalid"]
+# Ab diesem Tag gehören Whatsapp-Nachrichten zum Final-Set: nie im Training,
+# erst bei der Umstiegsentscheidung angeschaut.
+FINAL_START = "2026-10-15"
 
 # Wort-Token: Buchstaben/Ziffern-Folgen ab einem Zeichen („i", „a" sind im
 # Dialekt Wörter: „i a ned"), plus ❌/✅ als eigene Token.

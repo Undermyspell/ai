@@ -452,6 +452,7 @@ uv run --group embeddings scripts/train_v2.py    # sklearn-Kandidaten: Rastersuc
 uv run --group embeddings scripts/finetune_v2.py # MiniLM und gbert feintunen (GPU empfohlen), ebenfalls 5-fach
 uv run --group embeddings scripts/evaluate_v2.py # Test auf Whatsapp/Manuell → models/v2/report.json
 uv run --group embeddings scripts/crossval_real_v2.py  # Versuch: echte Nachrichten im Training
+uv run --group embeddings scripts/train_final_v2.py    # Endmodelle: Synthetics + Whatsapp vor FINAL_START → models/v2/final/
 ```
 
 Alle Artefakte liegen in `models/v2/` (gitignored): `<name>.joblib`, die
@@ -516,15 +517,44 @@ Was daraus folgt:
 - **Report-Nachrichten des Bots** (Statistik über das Bot-Konto) landen im
   Test – der Bot sollte sie gar nicht erst klassifizieren.
 
+### Runde 2: gezielte Synthetics und echte Nachrichten
+
+150 zusätzliche Synthetics gegen die Fehler aus Runde 1 (60 invalid mit
+„doch“/„wieder“, 30 invalid mit „ab“ als Zeitangabe, 40 lange invalid, 20
+vorsorgliche Absagen mit „evtl. später“), danach 1.596 Synthetics. Die
+Kandidaten stehen jetzt auf einem Plateau knapp unter Gemini:
+
+| Modell | nur Synthetics R1 → R2 | + echte Nachrichten (R2, 5-fach) | Wirkung R2 (fälschl. ab / Absage verp. / Zusage verp. / vertauscht) | Prüffälle Endmodell |
+|---|---|---|---|---|
+| Gemini | 0,94 | – | 2 / 0 / 2 / 0 | – |
+| **NB-LogReg** | 0,92 → **0,92** | 0,92 | 2 / 0 / 1 / 1 | **10/10** |
+| MiniLM feingetunt | 0,91 → **0,93** | 0,92 | **0 / 2 / 1 / 0** | **10/10** |
+| Zeichen + Wort | 0,90 → 0,79 | 0,92 | 6 / 0 / 6 / 5 | 8/10 |
+| Zeichen + LogReg | 0,82 → 0,73 | 0,92 | 6 / 0 / 8 / 5 | 9/10 |
+
+- Die vorsorglichen Absagen koppeln bei den TF-IDF-Modellen „später“ an
+  „abmelden“ – Zeichen+Wort liest dann sogar „Meld mich wieder an“ als
+  Absage. NB-LogReg und MiniLM bleiben robust.
+- Die „doch“-Fehler bleiben, die Gegenbeispiele senken nur die Sicherheit.
+- Mit echten Nachrichten im Training enden alle linearen Modelle bei 0,92 mit
+  denselben fünf Fehlern – mehr lässt sich aus 87 Testnachrichten nicht lesen.
+- **Entscheidung: NB-LogReg** – über beide Runden und mit wie ohne echte
+  Nachrichten am stabilsten. Das Endmodell (`scripts/train_final_v2.py`,
+  1.596 Synthetics + 130 Whatsapp vor dem 15.10.) geht in den Probebetrieb;
+  gemessen wird auf dem Final-Set (`FINAL_START` in `models_v2.py`).
+
+Ergebnisse der Runde 1 bleiben in `models/v2/*_runde1.json`.
+
 ### Nächste Schritte
 
-1. ~60 invalid-Synthetics mit „doch“ ohne Anwesenheitsbezug und ~20 „meld mi
-   ab … evtl. später“ erzeugen, labeln, neu trainieren.
-2. Echte Whatsapp-Nachrichten ins Training; Test ist dann das Final-Set ab
-   15.10.2026 (~10 Nachrichten pro Woche).
-3. Sieger (Zeichen+Wort oder NB-LogReg) in den `classifier-service` portieren:
-   Wort-Tokenizer (`(?u)\b\w+\b|[❌✅]`) bzw. die NB-Gewichte ergänzen,
-   Parität wie bisher über `golden.json`.
+1. ~~Gezielte Synthetics~~ (Runde 2, siehe oben).
+2. ~~Echte Whatsapp-Nachrichten ins Training~~ (Endmodell); Test ist das
+   Final-Set ab 15.10.2026 (~10 Nachrichten pro Woche).
+3. NB-LogReg in den `classifier-service` portieren: binäre Zeichen-n-Gramme
+   (2–4) + Wort-n-Gramme (1–2, Tokenizer `(?u)\b\w+\b|[❌✅]`), je Klasse
+   Merkmal × NB-Gewicht × Koeffizient, Sigmoid, auf Summe 1 normiert; Parität
+   wie bisher über `golden.json`. Dann classifier-service 0.2.0 in den
+   Probebetrieb (ersetzt 0.1.2).
 4. Report-Nachrichten des Bots vom Klassifizieren ausnehmen.
 5. MiniLM nur, wenn eine ONNX-Laufzeit auf dem Pi (~470 MB) den kleinen
    Vorsprung rechtfertigt.
