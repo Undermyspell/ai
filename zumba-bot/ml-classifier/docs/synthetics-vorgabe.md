@@ -41,7 +41,13 @@ Ein Mensch prüft danach jede Nachricht von Hand. Das Label, das du vergibst, is
    also doch dabei“). Zusagen ohne Bezug („bin dabei“, „Zusage für heute ✅“, „+1, i bin do“,
    „i bleib ned dahoam“) gibt es in der Gruppe nicht – nicht erzeugen. Antworten auf andere nur mit
    eigener Rücknahme („i a, bin doch do“).
-7. **Keine Beinahe-Duplikate.** Zwei Nachrichten, die sich nur in einem Emoji, einem Wort oder der
+7. **Eine Absage braucht einen ausdrücklichen Stammtisch-Bezug.** In der Gruppe wird nicht nur über den
+   Stammtisch geredet – „naa heid ned“ kann die Antwort auf irgendetwas sein. Absage nur mit
+   abmelden/obmeldn, absagen/„sog ab“, austragen, streichen, entschuldigen, „bin raus“, „ned dabei“,
+   „ohne mi“, „i fehl“, „kumm heid ned“, „bin ned do“, „ned mit mir rechnen“, „Stammtisch“/„Zumba“,
+   „trinkt's oans für mi“. Ohne so einen Bezug („heut ned“, „wird nix“, „geht ned“, „kann ned“,
+   „koa Zeit“, nur ein Grund mit ❌, „ich a ned“) ist es `invalid`.
+8. **Keine Beinahe-Duplikate.** Zwei Nachrichten, die sich nur in einem Emoji, einem Wort oder der
    Schreibweise unterscheiden, zählen als Duplikat – eine davon weglassen. Ein Filter wirft Ähnlichkeit
    ≥ 0,9 (Zeichen-n-Gramme) sowieso raus; was dort landet, ist verschwendet.
 
