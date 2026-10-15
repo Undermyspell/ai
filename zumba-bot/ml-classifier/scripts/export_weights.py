@@ -1,4 +1,9 @@
-"""Exportiert das Sieger-Modell (tfidf_logreg) für die pure-Go-Inferenz.
+"""v1 (Juli 2026): exportiert tfidf_logreg im Modellformat 1.
+
+Der classifier-service liest ab 0.2.0 nur noch Format 2 – für neue Modelle
+export_weights_v2.py nehmen. Bleibt nur, damit v1 nachvollziehbar ist.
+
+Exportiert das Sieger-Modell (tfidf_logreg) für die pure-Go-Inferenz.
 
 Erzeugt zwei Dateien im Zielverzeichnis (Default: ../classifier-service/model/):
 

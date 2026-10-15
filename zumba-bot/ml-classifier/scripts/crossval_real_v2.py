@@ -20,7 +20,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from evaluate_v2 import apply_threshold, metrics
 from import_synthetic import text_key
-from models_v2 import DATA, FINAL_START, LABELS, MODELS, candidates
+from models_v2 import DATA, FINAL_START, LABELS, MODELS, candidates, fit_vocab_from
 
 SEED = 42
 MODELS_TO_TRY = ["tfidf_logreg", "tfidf_charword", "nb_logreg", "minilm_ft"]
@@ -65,7 +65,8 @@ def main() -> None:
             else:
                 pipe, _ = cands[name]
                 params = {k: (tuple(v) if isinstance(v, list) else v) for k, v in cv[name]["params"].items()}
-                model = clone(pipe).set_params(**params).fit(X, y)
+                # Vokabular nur aus den Synthetics – wie beim Endmodell
+                model = fit_vocab_from(clone(pipe).set_params(**params), Xs, X, y)
                 P = model.predict_proba([r["text"] for r in test])
                 classes = [str(c) for c in model.classes_]
             for r, p_ in zip(test, apply_threshold(P, classes, tau)):

@@ -1,6 +1,7 @@
 // Klassifikator-Service: stellt das in ml-classifier trainierte Modell als
-// HTTP-Endpunkt bereit. Läuft im Shadow-Modus neben Gemini — der whatsapp-bot
-// ruft POST /classify und protokolliert beide Ergebnisse in ml_messages.
+// HTTP-Endpunkt bereit (POST /classify, GET /info). Wer entscheidet – Gemini
+// oder dieses Modell –, stellt das Admin-UI ein; der whatsapp-bot protokolliert
+// beide Ergebnisse in ml_messages.
 package main
 
 import (
@@ -22,12 +23,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("Modell laden fehlgeschlagen: %v", err)
 	}
-	log.Printf("Modell geladen: %d n-Gramme, Klassen %v", len(m.Vocabulary), m.Classes)
+	log.Printf("Modell geladen: %s, %d Merkmale, Klassen %v, Schwelle %.2f",
+		m.Name(), m.NumFeatures(), m.Classes, m.Threshold)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
+	})
+	// /info beschreibt das geladene Modell (Admin-UI /ki-modell).
+	mux.HandleFunc("/info", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"model":     m.Name(),
+			"classes":   m.Classes,
+			"threshold": m.Threshold,
+			"meta":      m.Meta,
+		})
 	})
 	mux.HandleFunc("/classify", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

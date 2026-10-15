@@ -550,11 +550,12 @@ Ergebnisse der Runde 1 bleiben in `models/v2/*_runde1.json`.
 1. ~~Gezielte Synthetics~~ (Runde 2, siehe oben).
 2. ~~Echte Whatsapp-Nachrichten ins Training~~ (Endmodell); Test ist das
    Final-Set ab 15.10.2026 (~10 Nachrichten pro Woche).
-3. NB-LogReg in den `classifier-service` portieren: binäre Zeichen-n-Gramme
-   (2–4) + Wort-n-Gramme (1–2, Tokenizer `(?u)\b\w+\b|[❌✅]`), je Klasse
-   Merkmal × NB-Gewicht × Koeffizient, Sigmoid, auf Summe 1 normiert; Parität
-   wie bisher über `golden.json`. Dann classifier-service 0.2.0 in den
-   Probebetrieb (ersetzt 0.1.2).
+3. ~~NB-LogReg in den `classifier-service` portieren~~ (0.2.0,
+   `scripts/export_weights_v2.py`, Golden-Parität 1e-9 über 273 Fälle). Das
+   Vokabular des Endmodells kommt nur aus den Synthetics (`fit_vocab_from`) –
+   das Repo ist öffentlich, so landen keine Namen oder Wortpaare aus echten
+   Nachrichten in `model.json.gz`; gemessen kostet das nichts (0,92 wie vorher).
+   Wer entscheidet (Gemini oder das eigene Modell), stellt das Admin-UI ein.
 4. Report-Nachrichten des Bots vom Klassifizieren ausnehmen.
 5. MiniLM nur, wenn eine ONNX-Laufzeit auf dem Pi (~470 MB) den kleinen
    Vorsprung rechtfertigt.

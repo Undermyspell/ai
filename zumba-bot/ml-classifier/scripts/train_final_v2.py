@@ -17,7 +17,7 @@ import joblib
 from sklearn.base import clone
 
 from evaluate_v2 import apply_threshold, metrics
-from models_v2 import DATA, FINAL_START, LABELS, MODELS, FinetunedModel, candidates
+from models_v2 import DATA, FINAL_START, LABELS, MODELS, FinetunedModel, candidates, fit_vocab_from
 
 NAMES = ["tfidf_logreg", "tfidf_charword", "nb_logreg", "minilm_ft"]
 OUT = MODELS / "final"
@@ -53,7 +53,8 @@ def main() -> None:
         else:
             pipe, _ = cands[name]
             params = {k: (tuple(v) if isinstance(v, list) else v) for k, v in cv[name]["params"].items()}
-            est = clone(pipe).set_params(**params).fit(X, y)
+            # Vokabular nur aus den Synthetics: keine echten Texte in der Modelldatei
+            est = fit_vocab_from(clone(pipe).set_params(**params), [r["text"] for r in syn], X, y)
         joblib.dump(est, OUT / f"{name}.joblib")
         classes = [str(c) for c in est.classes_]
         res = {"schwelle": tau, "params": cv[name]["params"]}

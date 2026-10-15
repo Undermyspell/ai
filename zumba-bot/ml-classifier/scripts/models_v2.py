@@ -131,6 +131,24 @@ def candidates():
     return cands
 
 
+def fit_vocab_from(pipe, X_vocab, X, y):
+    """Fittet das Vokabular (welche n-Gramme das Modell kennt) nur auf X_vocab,
+    den Klassifikator auf allen X.
+
+    Für Modelle mit echten Nachrichten im Training: Das Vokabular kommt nur aus
+    den Synthetics, die echten Nachrichten fließen nur über Merkmale ein, die
+    auch dort vorkommen. So steht in der exportierten Modelldatei (öffentliches
+    Repo) kein n-Gramm, das es nur in echten Gruppennachrichten gibt – keine
+    Namen, keine Wortpaare aus echten Nachrichten.
+    """
+    from sklearn.base import clone
+
+    pipe = clone(pipe)
+    vec = pipe.named_steps["vec"].fit(X_vocab)
+    clf = pipe.named_steps["clf"].fit(vec.transform(X), y)
+    return Pipeline([("vec", vec), ("clf", clf)])
+
+
 class FinetunedModel:
     """Feingetunter Transformer (Verzeichnis unter models/v2/) hinter der
     sklearn-API. Das joblib-Artefakt speichert nur den Pfad, beim Laden werden
