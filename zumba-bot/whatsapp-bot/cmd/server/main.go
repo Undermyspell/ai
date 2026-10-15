@@ -122,16 +122,26 @@ func main() {
 		log.Printf("🧭 Trace-Aufzeichnung aktiv (bot_trace, 21 Tage Retention)")
 	}
 
-	// ML-Shadow-Modus: eigenes Modell klassifiziert parallel zu Gemini,
-	// beide Ergebnisse landen dauerhaft in ml_messages.
+	// Eigenes Modell: entscheidet oder läuft mit – das stellt das Admin-UI
+	// ein (classifier_entscheider, vor jeder Nachricht gelesen). Beide Label
+	// landen dauerhaft in ml_messages.
+	srv.Entscheider = st
 	if cfg.ClassifierURL != "" {
 		sh := shadow.New(pg.DB, cfg.ClassifierURL)
-		if err := sh.EnsureSchema(context.Background()); err != nil {
-			log.Printf("⚠️  ml_messages Schema: %v (Shadow-Modus deaktiviert)", err)
-		} else {
-			srv.Shadow = sh
-			log.Printf("🤖 ML-Shadow-Modus aktiv → %s", cfg.ClassifierURL)
+		// Entscheidet das eigene Modell, holt das Protokoll Geminis Label nach.
+		sh.Gemini = func(ctx context.Context, msg string) (string, error) {
+			c, err := cl.Classify(ctx, msg)
+			return string(c.Result), err
 		}
+		if err := sh.EnsureSchema(context.Background()); err != nil {
+			log.Printf("⚠️  ml_messages Schema: %v (eigenes Modell deaktiviert)", err)
+		} else {
+			srv.ML = sh
+			log.Printf("🤖 Eigenes Modell aktiv → %s", cfg.ClassifierURL)
+		}
+	}
+	if wer, err := st.ClassifierEntscheider(context.Background()); err == nil {
+		log.Printf("⚖️  Es entscheidet: %s", wer)
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

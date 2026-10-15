@@ -100,8 +100,15 @@ Gruppe.
 
 ### KI-Modell (`/ki-modell`)
 
-Welches Modell die Gruppen-Nachrichten klassifiziert: oben der Weg einer
-Nachricht (Hauptmodell → bei Fehler Fallback → Label), darunter je eine Karte
+Welches Modell die Gruppen-Nachrichten klassifiziert. Oben der Schalter
+**„Wer entscheidet?"**: Gemini (LLM) oder das eigene Modell – Tabelle
+`classifier_entscheider`, Standard Gemini, gilt ab der nächsten Nachricht.
+Darunter der Weg einer Nachricht: bei Gemini Hauptmodell → bei Fehler
+Fallback → Label, beim eigenen Modell Modell (mit Schwelle) → bei Ausfall
+Gemini → Label; der jeweils andere läuft ohne Wirkung mit. Die Seitenspalte
+„Eigenes Modell" zeigt, was der classifier-service gerade geladen hat (GET
+`/info`): Name und Version, Merkmale, Gewichtung, Kopf, Schwelle, Trainingsdaten
+und Testwerte, dazu die Übereinstimmung mit Gemini. Darunter je eine Karte
 für Gemma 4 31B, Gemini 3.8 Flash und Gemini 3.5 Flash Lite mit den Knöpfen
 „Als Hauptmodell" / „Als Fallback". Ein Klick schaltet sofort um (Tabelle
 `classifier_models`), der Bot nimmt die Wahl ab der nächsten Nachricht. Das
@@ -144,7 +151,8 @@ Jede Zeile hat drei Label-Knöpfe (Zusage · Absage · invalid); ein Label läss
 sich jederzeit ändern. „Offen" heißt: in dieser Runde noch nicht von Hand
 gelabelt (`labeled_at` leer) – ein Label aus einer früheren Prüfung steht
 gestrichelt als Vorschlag dabei, geht also beim Neu-Labeln nicht verloren.
-Filter nach Status, Label und Freitext. „Gelabelte ausblenden" (Haken, der
+Filter nach Status, Label und Freitext. Whatsapp-Zeilen zeigen die
+Modellversion und, wenn das eigene Modell entschieden hat, einen Hinweis darauf. „Gelabelte ausblenden" (Haken, der
 Browser merkt ihn sich) lässt eine Zeile direkt nach dem Label verschwinden. Tastatur: Zeile anklicken, dann 1/2/3
 (0 = verwerfen), ↑/↓ blättert, nach dem Label springt es zur nächsten Zeile.
 Die frühere Seite `/ml-shadow` leitet auf den Whatsapp-Reiter um.

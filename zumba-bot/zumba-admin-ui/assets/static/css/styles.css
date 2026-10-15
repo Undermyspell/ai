@@ -1152,6 +1152,11 @@ body.has-sheet { overflow: hidden; }
 .model-id { font-family: var(--mono); font-size: 10px; color: var(--faint); }
 .model-limits { display: flex; flex-direction: column; gap: 6px; }
 .model-kv { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.entscheider-seg { margin-top: 14px; max-width: 420px; }
+.entscheider-seg > button { padding: 9px 12px; font-size: 13px; }
+.ml-facts { display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px; }
+.ml-facts dt { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.ml-facts dd { margin: 1px 0 0; font-size: 12px; line-height: 1.4; }
 .model-kv span:last-child { font-family: var(--mono); }
 .meter.is-green > span { background: var(--green); }
 .meter.is-amber > span { background: var(--amber); }

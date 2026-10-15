@@ -26,3 +26,10 @@ func (s *Postgres) ClassifierModels(ctx context.Context) (primary, fallback stri
 	}
 	return m.Primary.Model, m.Fallback.Model, nil
 }
+
+// ClassifierEntscheider liefert, wer die Zu-/Absage entscheidet (gemini |
+// modell; Seite /ki-modell im Admin-UI). Ohne Eintrag gilt gemini.
+func (s *Postgres) ClassifierEntscheider(ctx context.Context) (string, error) {
+	e, err := sharedstore.GetEntscheider(ctx, s.db)
+	return e.Wer, err
+}

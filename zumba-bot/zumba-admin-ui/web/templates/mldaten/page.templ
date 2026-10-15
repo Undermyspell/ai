@@ -157,6 +157,9 @@ templ Row(it store.MLItem) {
 			if it.UserName != "" {
 				<span class="ml-user">{ it.UserName }</span>
 			}
+			if it.DecidedBy == "modell" {
+				<span class="pill is-blue">eigenes Modell entschied</span>
+			}
 			if meta := synthMeta(it); meta != "" {
 				<span class="ml-meta">{ meta }</span>
 			}
@@ -184,6 +187,9 @@ templ Row(it store.MLItem) {
 						<span class={ "lbl", "lbl-" + *it.ModelLabel }>{ labelText(*it.ModelLabel) }</span>
 						if it.ModelConfidence != nil {
 							<span class="ml-conf">{ fmt.Sprintf("%.0f %%", *it.ModelConfidence*100) }</span>
+						}
+						if it.ModelVersion != "" {
+							<span class="ml-conf">{ it.ModelVersion }</span>
 						}
 					} else {
 						<span class="lbl lbl-missing">keine Antwort</span>

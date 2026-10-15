@@ -26,6 +26,7 @@ type Mock struct {
 	strafen      []penalty.Row
 	nextStrafeID int64
 	classifier   ClassifierModels
+	entscheider  Entscheider
 	cards        CardSettings
 	seasons      []Season
 
@@ -491,7 +492,8 @@ func sampleMLItems() map[MLQuelle][]MLItem {
 		MLWhatsapp: {
 			{ID: 5, CreatedAt: base.Add(90 * time.Minute), UserName: "Sepp",
 				Message: "Muss mi heut abmelden ❌", GeminiLabel: s("false"),
-				ModelLabel: s("false"), ModelConfidence: f(0.97)},
+				ModelLabel: s("false"), ModelConfidence: f(0.97),
+				DecidedBy: "modell", ModelVersion: "NB-LogReg 0.2.0"},
 			{ID: 4, CreatedAt: base.Add(60 * time.Minute), UserName: "Tobi",
 				Message: "Bei mir wirds bissi später ✌🏻", GeminiLabel: s("true"),
 				ModelLabel: s("invalid"), ModelConfidence: f(0.48), Label: s("invalid")},
@@ -820,5 +822,20 @@ func (m *Mock) SetClassifierModel(_ context.Context, rolle, model string) error 
 	default:
 		return fmt.Errorf("SetClassifierModel: unbekannte Rolle %q", rolle)
 	}
+	return nil
+}
+
+func (m *Mock) ClassifierEntscheider(context.Context) (Entscheider, error) {
+	if m.entscheider.Wer == "" {
+		return Entscheider{Wer: sharedstore.EntscheiderGemini}, nil
+	}
+	return m.entscheider, nil
+}
+
+func (m *Mock) SetClassifierEntscheider(_ context.Context, wer string) error {
+	if wer != sharedstore.EntscheiderGemini && wer != sharedstore.EntscheiderModell {
+		return fmt.Errorf("unbekannt: %q", wer)
+	}
+	m.entscheider = Entscheider{Wer: wer, UpdatedAt: time.Now()}
 	return nil
 }

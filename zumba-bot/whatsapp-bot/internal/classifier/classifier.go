@@ -108,6 +108,10 @@ func (g *Gemini) Classify(ctx context.Context, message string) (Classification, 
 	return Classification{Result: normalize(raw), Raw: raw, Model: model}, nil
 }
 
+// Parse liest ein Label des eigenen Modells ("true"/"false"/"invalid"); alles
+// andere ist Invalid.
+func Parse(label string) Result { return normalize(label) }
+
 func normalize(raw string) Result {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "true":

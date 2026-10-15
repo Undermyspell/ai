@@ -117,6 +117,10 @@ type Store interface {
 	// Klassifizierung.
 	ClassifierModels(ctx context.Context) (ClassifierModels, error)
 	SetClassifierModel(ctx context.Context, rolle, model string) error
+	// Wer entscheidet (classifier_entscheider): Gemini oder das eigene Modell.
+	// Der Bot liest die Wahl vor jeder Nachricht; ohne Eintrag gilt Gemini.
+	ClassifierEntscheider(ctx context.Context) (Entscheider, error)
+	SetClassifierEntscheider(ctx context.Context, wer string) error
 
 	// Bild-Designs des Bots (card_settings): Rotation und Einmal-Auswahl für
 	// den nächsten Wochenreport, gepflegt auf der Seite /bild-designs. Der
@@ -221,6 +225,8 @@ type MLItem struct {
 	Verworfen bool       // nur Synthetics: fliegt aus dem Training
 
 	UserName        string   // Whatsapp
+	DecidedBy       string   // Whatsapp: gemini | modell ("" = vor dem Schalter, also Gemini)
+	ModelVersion    string   // Whatsapp: welches eigene Modell model_label lieferte
 	GeminiLabel     *string  // Whatsapp
 	ModelLabel      *string  // Whatsapp, Manuell (nil = Modell ohne Antwort)
 	ModelConfidence *float64 // Whatsapp, Manuell

@@ -35,6 +35,9 @@ type spyStore struct {
 
 	cards store.CardSettings
 
+	entscheider    store.Entscheider
+	setEntscheider string // Wert des letzten SetClassifierEntscheider
+
 	mlItems   []store.MLItem // Antwort von ListMLItems
 	mlFilter  string         // "quelle:status:label" des letzten ListMLItems
 	mlLabeled string         // "quelle/id=label" des letzten Labels
@@ -286,5 +289,18 @@ func (s *spyStore) SetNextCard(_ context.Context, tag time.Time, style string) e
 	if style != "" {
 		s.cards.Naechster = &sharedstore.NextCard{Tag: tag, Style: style}
 	}
+	return nil
+}
+
+func (s *spyStore) ClassifierEntscheider(context.Context) (store.Entscheider, error) {
+	if s.entscheider.Wer == "" {
+		return store.Entscheider{Wer: "gemini"}, nil
+	}
+	return s.entscheider, nil
+}
+
+func (s *spyStore) SetClassifierEntscheider(_ context.Context, wer string) error {
+	s.setEntscheider = wer
+	s.entscheider = store.Entscheider{Wer: wer, UpdatedAt: time.Now()}
 	return nil
 }

@@ -13,7 +13,23 @@ type VM struct {
 	// ist noch leer) – sonst wäre etwas unsichtbar aktiv.
 	Unknown []string
 	Shadow  Shadow
+	// Entscheider: gemini | modell – wer die Zu-/Absage trifft.
+	Entscheider      string
+	EntscheiderSince string
+	ML               MLInfo
 }
+
+// MLInfo beschreibt das eigene Modell (GET /info am classifier-service).
+type MLInfo struct {
+	Configured bool   // CLASSIFIER_URL gesetzt
+	OK         bool   // Service antwortet
+	Name       string // „NB-LogReg 0.2.0"
+	Trained    string // „15.10.2026"
+	Threshold  string // „0,45"
+	Facts      []Fact
+}
+
+type Fact struct{ Label, Value string }
 
 // Ref ist das Modell einer Rolle im Routing-Bild.
 type Ref struct {
@@ -64,9 +80,15 @@ templ Region(vm VM) {
 						<div class="card-title">Wer entscheidet?</div>
 						<div class="card-sub">Jede Gruppen-Nachricht am Donnerstag läuft diesen Weg. Eine Umstellung gilt ab der nächsten Nachricht.</div>
 					</div>
-					if vm.Since != "" {
+					if vm.EntscheiderSince != "" {
+						<span class="card-sub">umgestellt { vm.EntscheiderSince }</span>
+					} else if vm.Since != "" {
 						<span class="card-sub">zuletzt geändert { vm.Since }</span>
 					}
+				</div>
+				<div class="seg entscheider-seg" role="group" aria-label="Wer entscheidet">
+					@entscheiderButton(vm, "gemini", "Gemini (LLM)")
+					@entscheiderButton(vm, "modell", "Eigenes Modell")
 				</div>
 				<div class="flow">
 					<div class="flow-box is-msg">
@@ -77,17 +99,31 @@ templ Region(vm VM) {
 						</div>
 					</div>
 					<span class="flow-arrow" aria-hidden="true">──▶</span>
-					<div class="flow-box is-primary">
-						<div class="flow-cap">Hauptmodell</div>
-						<div class="flow-name">{ orUnset(vm.Primary.Label) }</div>
-						<div class="flow-sub">{ vm.Primary.Limits }</div>
-					</div>
-					<span class="flow-arrow" aria-hidden="true"><span class="when">bei Fehler</span><span>──▶</span></span>
-					<div class="flow-box is-fallback">
-						<div class="flow-cap">Fallback</div>
-						<div class="flow-name">{ orUnset(vm.Fallback.Label) }</div>
-						<div class="flow-sub">{ vm.Fallback.Limits }</div>
-					</div>
+					if vm.Entscheider == "modell" {
+						<div class="flow-box is-primary">
+							<div class="flow-cap">Eigenes Modell</div>
+							<div class="flow-name">{ orUnset(vm.ML.Name) }</div>
+							<div class="flow-sub">Schwelle { vm.ML.Threshold } · darunter invalid</div>
+						</div>
+						<span class="flow-arrow" aria-hidden="true"><span class="when">bei Ausfall</span><span>──▶</span></span>
+						<div class="flow-box is-fallback">
+							<div class="flow-cap">Gemini</div>
+							<div class="flow-name">{ orUnset(vm.Primary.Label) }</div>
+							<div class="flow-sub">bei Fehler { orUnset(vm.Fallback.Label) }</div>
+						</div>
+					} else {
+						<div class="flow-box is-primary">
+							<div class="flow-cap">Hauptmodell</div>
+							<div class="flow-name">{ orUnset(vm.Primary.Label) }</div>
+							<div class="flow-sub">{ vm.Primary.Limits }</div>
+						</div>
+						<span class="flow-arrow" aria-hidden="true"><span class="when">bei Fehler</span><span>──▶</span></span>
+						<div class="flow-box is-fallback">
+							<div class="flow-cap">Fallback</div>
+							<div class="flow-name">{ orUnset(vm.Fallback.Label) }</div>
+							<div class="flow-sub">{ vm.Fallback.Limits }</div>
+						</div>
+					}
 					<span class="flow-arrow" aria-hidden="true">──▶</span>
 					<div class="flow-box">
 						<div class="flow-name" style="font-size:12px">Label</div>
@@ -98,6 +134,10 @@ templ Region(vm VM) {
 						</div>
 					</div>
 				</div>
+				<p class="hint" style="margin-top:12px">{ mitlaeuferText(vm) }</p>
+				if vm.Entscheider == "modell" && !vm.ML.OK {
+					<p class="hint" style="color:var(--red-text)">classifier-service antwortet gerade nicht – bis er wieder da ist, entscheidet Gemini.</p>
+				}
 				for _, u := range vm.Unknown {
 					<p class="hint" style="margin-top:12px">{ u }</p>
 				}
@@ -135,9 +175,28 @@ templ Region(vm VM) {
 			<div class="card" style="padding:20px">
 				<div class="card-head">
 					<div class="card-title-sm">Eigenes Modell</div>
-					<span class="pill pill-caps is-amber">Shadow</span>
+					if vm.Entscheider == "modell" {
+						<span class="pill pill-caps is-green">entscheidet</span>
+					} else {
+						<span class="pill pill-caps is-amber">läuft mit</span>
+					}
 				</div>
-				<div class="card-meta" style="margin:2px 0 10px">classifier-service · läuft parallel mit</div>
+				switch {
+					case !vm.ML.Configured:
+						<div class="card-meta" style="margin:2px 0 10px">kein classifier-service konfiguriert</div>
+					case !vm.ML.OK:
+						<div class="card-meta" style="margin:2px 0 10px;color:var(--red-text)">classifier-service nicht erreichbar</div>
+					default:
+						<div class="card-meta" style="margin:2px 0 12px">{ vm.ML.Name } · trainiert { vm.ML.Trained }</div>
+						<dl class="ml-facts">
+							for _, f := range vm.ML.Facts {
+								<div>
+									<dt>{ f.Label }</dt>
+									<dd>{ f.Value }</dd>
+								</div>
+							}
+						</dl>
+				}
 				<div class="grid-2">
 					<div class="mini-stat">
 						<div class="mini-stat-label">Übereinstimmung</div>
@@ -148,7 +207,7 @@ templ Region(vm VM) {
 						<div class="mini-stat-value">{ strconv.Itoa(vm.Shadow.Verified) }<span class="muted" style="font-size:13px;font-weight:600">/ { strconv.Itoa(vm.Shadow.Total) }</span></div>
 					</div>
 				</div>
-				<p class="card-sub" style="margin:10px 0">Entscheidet noch nicht – läuft im Probebetrieb neben Gemini mit.</p>
+				<p class="card-sub" style="margin:10px 0">Übereinstimmung mit Gemini über alle mitgeschriebenen Nachrichten.</p>
 				<a class="card-link" href="/ml-daten?quelle=whatsapp">Nachrichten labeln →</a>
 			</div>
 		</div>
@@ -247,4 +306,34 @@ func quotaText(class string) string {
 	default:
 		return "t-green"
 	}
+}
+
+templ entscheiderButton(vm VM, wer, label string) {
+	<button
+		type="button"
+		class={ templ.KV("is-active", vm.Entscheider == wer) }
+		aria-pressed={ boolAttr(vm.Entscheider == wer) }
+		hx-post="/ki-modell/entscheider"
+		hx-vals={ `{"wer":"` + wer + `"}` }
+		hx-target="#model-region"
+		hx-swap="outerHTML"
+	>{ label }</button>
+}
+
+func boolAttr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+// mitlaeuferText sagt, wer ohne Wirkung mitklassifiziert.
+func mitlaeuferText(vm VM) string {
+	if vm.Entscheider == "modell" {
+		return "Gemini klassifiziert jede Nachricht mit – ohne Wirkung, zum Vergleich in den ML-Daten."
+	}
+	if vm.ML.Name != "" {
+		return "Das eigene Modell (" + vm.ML.Name + ") klassifiziert jede Nachricht mit – ohne Wirkung, zum Vergleich in den ML-Daten."
+	}
+	return "Das eigene Modell klassifiziert jede Nachricht mit – ohne Wirkung, zum Vergleich in den ML-Daten."
 }

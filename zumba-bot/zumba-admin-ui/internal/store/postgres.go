@@ -440,6 +440,8 @@ func (s *Postgres) EnsureMLSchema(ctx context.Context) error {
 		ALTER TABLE ml_test_messages ADD COLUMN IF NOT EXISTS labeled_at TIMESTAMPTZ;
 
 		ALTER TABLE IF EXISTS ml_messages ADD COLUMN IF NOT EXISTS labeled_at TIMESTAMPTZ;
+		ALTER TABLE IF EXISTS ml_messages ADD COLUMN IF NOT EXISTS entschieden_von TEXT;
+		ALTER TABLE IF EXISTS ml_messages ADD COLUMN IF NOT EXISTS modell_version TEXT;
 
 		-- text_hash: Hash des normalisierten Texts (Import-Skript), blockt
 		-- exakte Duplikate schon beim Insert.
@@ -544,14 +546,15 @@ var mlSources = map[MLQuelle]mlSource{
 		cols: `id, created_at, message, COALESCE(user_name, ''), gemini_label,
 		       model_label, model_confidence,
 		       CASE WHEN verified THEN COALESCE(corrected_label, gemini_label) END,
-		       labeled_at, NULL::text, '', '', '', false`,
+		       labeled_at, NULL::text, '', '', '', false,
+		       COALESCE(entschieden_von, ''), COALESCE(modell_version, '')`,
 		label: "CASE WHEN verified THEN COALESCE(corrected_label, gemini_label) END",
 	},
 	MLManuell: {
 		table: "ml_test_messages",
 		cols: `id, created_at, message, '', NULL::text,
 		       model_label, model_confidence, expected_label,
-		       labeled_at, NULL::text, '', '', '', false`,
+		       labeled_at, NULL::text, '', '', '', false, '', ''`,
 		label: "expected_label",
 	},
 	MLSynthetics: {
@@ -559,7 +562,7 @@ var mlSources = map[MLQuelle]mlSource{
 		cols: `id, created_at, message, '', NULL::text,
 		       NULL::text, NULL::float8, label,
 		       labeled_at, generated_label, COALESCE(art, ''), COALESCE(sprache, ''),
-		       COALESCE(batch_id, ''), verworfen`,
+		       COALESCE(batch_id, ''), verworfen, '', ''`,
 		label: "label",
 	},
 }
@@ -576,7 +579,8 @@ func scanMLItem(q MLQuelle, sc interface{ Scan(...any) error }) (MLItem, error) 
 	it := MLItem{Quelle: q}
 	err := sc.Scan(&it.ID, &it.CreatedAt, &it.Message, &it.UserName, &it.GeminiLabel,
 		&it.ModelLabel, &it.ModelConfidence, &it.Label,
-		&it.LabeledAt, &it.GeneratedLabel, &it.Art, &it.Sprache, &it.BatchID, &it.Verworfen)
+		&it.LabeledAt, &it.GeneratedLabel, &it.Art, &it.Sprache, &it.BatchID, &it.Verworfen,
+		&it.DecidedBy, &it.ModelVersion)
 	return it, err
 }
 

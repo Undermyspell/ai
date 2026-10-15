@@ -20,6 +20,7 @@ import (
 	"github.com/michael/zumba-whatsapp-bot/internal/classifier"
 	"github.com/michael/zumba-whatsapp-bot/internal/evolution"
 	"github.com/michael/zumba-whatsapp-bot/internal/report"
+	"github.com/michael/zumba-whatsapp-bot/internal/shadow"
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 	"github.com/michael/zumba-whatsapp-bot/internal/tracestore"
 )
@@ -45,10 +46,19 @@ type Tracer interface {
 	Save(ctx context.Context, t tracestore.Trace) error
 }
 
-// ShadowRecorder loggt Gemini- vs. ML-Modell-Klassifikation (Shadow-Modus,
-// optional, nil = aus). Muss selbst asynchron/best-effort arbeiten.
-type ShadowRecorder interface {
-	RecordAsync(userID, userName, message, geminiLabel string)
+// MLClassifier ist das eigene Modell (classifier-service): entscheidet, wenn
+// das Admin-UI es so einstellt, und protokolliert jede Klassifizierung samt
+// dem Label des anderen (RecordAsync arbeitet selbst asynchron/best-effort).
+type MLClassifier interface {
+	Classify(ctx context.Context, message string) (shadow.Prediction, error)
+	RecordAsync(r shadow.Record)
+}
+
+// EntscheiderSource liefert, wer entscheidet (gemini | modell; Admin-UI
+// /ki-modell) – vor jeder Nachricht gelesen, damit eine Umstellung ohne
+// Neustart greift.
+type EntscheiderSource interface {
+	ClassifierEntscheider(ctx context.Context) (string, error)
 }
 
 type Server struct {
@@ -68,8 +78,12 @@ type Server struct {
 	// gesetzt; leer = Vorschau aus).
 	PreviewJID string
 
-	// Shadow protokolliert den ML-Shadow-Modus (von main gesetzt; nil = aus).
-	Shadow ShadowRecorder
+	// ML ist das eigene Modell (von main gesetzt; nil = aus, dann entscheidet
+	// immer Gemini und nichts wird protokolliert).
+	ML MLClassifier
+
+	// Entscheider liefert, wer entscheidet (von main gesetzt; nil = Gemini).
+	Entscheider EntscheiderSource
 
 	// Renderer rendert die Statistik-Bild-Karte (von main gesetzt; nil = aus).
 	Renderer Renderer
@@ -184,6 +198,7 @@ type Outcome struct {
 	Date           string `json:"date"`
 	UserID         string `json:"userId"`
 	Reason         string `json:"reason"`
+	DecidedBy      string `json:"decidedBy,omitempty"` // gemini | modell – wer klassifiziert hat
 	DryRun         bool   `json:"dryRun"`              // true: nichts gesendet/geschrieben, nur berechnet
 	PreviewTo      string `json:"previewTo,omitempty"` // gesetzt: Nachricht wurde als Vorschau an diese Nummer geschickt
 
@@ -245,20 +260,19 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 		rec.Step(tracestore.NodeGuardType, tracestore.OutcomeInfo, "Guards", "übersprungen (Test-Pfad)")
 	}
 
-	// Classifier (Gemini)
-	c, err := s.classifier.Classify(ctx, msg)
-	if err != nil {
-		rec.Step(tracestore.NodeClassify, tracestore.OutcomeError, "Classifier (Gemini)", err.Error())
-		log.Printf("⚠️  classifier: %v (→ %s)", err, c.Result)
-	} else {
-		rec.Step(tracestore.NodeClassify, tracestore.OutcomeInfo, "Classifier (Gemini)",
-			fmt.Sprintf("→ %s  (roh: %q · %s)", c.Result, c.Raw, c.Model))
-	}
+	// Classifier: wer entscheidet, stellt das Admin-UI ein. Das eigene Modell
+	// entscheidet nur, wenn es eingestellt ist UND antwortet – sonst Gemini.
+	c, ml, decidedBy := s.classify(ctx, msg, rec)
 
-	// Shadow-Modus: eigenes Modell parallel klassifizieren lassen und beide
-	// Ergebnisse festhalten. Nur für echte Durchläufe, nie für Test/Dry-Run.
-	if s.Shadow != nil && !dryRun {
-		s.Shadow.RecordAsync(ev.UserID(), ev.UserName(), msg, string(c.Result))
+	// Protokoll: beide Label festhalten (das fehlende holt RecordAsync im
+	// Hintergrund nach). Nur für echte Durchläufe, nie für Test/Dry-Run.
+	if s.ML != nil && !dryRun {
+		r := shadow.Record{UserID: ev.UserID(), UserName: ev.UserName(), Message: msg,
+			DecidedBy: decidedBy, Model: ml}
+		if decidedBy == sharedstore.EntscheiderGemini {
+			r.GeminiLabel = string(c.Result)
+		}
+		s.ML.RecordAsync(r)
 	}
 
 	userID := ev.UserID()
@@ -271,6 +285,7 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 		Recipient:      ev.RemoteJid(),
 		UserID:         userID,
 		Date:           today.Format("2006-01-02"),
+		DecidedBy:      decidedBy,
 		DryRun:         dryRun,
 	}
 	switch c.Result {
@@ -302,6 +317,50 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 		rec.Step(tracestore.NodeNoAction, tracestore.OutcomeInfo, "keine Aktion", "classification invalid")
 	}
 	return out
+}
+
+// entscheider liest, wer entscheidet; ohne Quelle oder bei Fehler Gemini.
+func (s *Server) entscheider(ctx context.Context) string {
+	if s.Entscheider == nil {
+		return sharedstore.EntscheiderGemini
+	}
+	wer, err := s.Entscheider.ClassifierEntscheider(ctx)
+	if err != nil {
+		log.Printf("⚠️  classifier_entscheider: %v – Gemini entscheidet", err)
+		return sharedstore.EntscheiderGemini
+	}
+	return wer
+}
+
+// classify klassifiziert die Nachricht mit dem eingestellten Entscheider.
+// ml ist die Antwort des eigenen Modells, falls es gefragt wurde (sonst nil);
+// decidedBy sagt, wessen Label gilt.
+func (s *Server) classify(ctx context.Context, msg string, rec *tracestore.Recorder) (c classifier.Classification, ml *shadow.Prediction, decidedBy string) {
+	if s.entscheider(ctx) == sharedstore.EntscheiderModell {
+		if s.ML == nil {
+			rec.Step(tracestore.NodeClassify, tracestore.OutcomeError, "Classifier (eigenes Modell)",
+				"kein classifier-service konfiguriert → Gemini entscheidet")
+		} else if p, err := s.ML.Classify(ctx, msg); err != nil {
+			rec.Step(tracestore.NodeClassify, tracestore.OutcomeError, "Classifier (eigenes Modell)",
+				err.Error()+" → Gemini entscheidet")
+			log.Printf("⚠️  eigenes Modell: %v (→ Gemini)", err)
+		} else {
+			c = classifier.Classification{Result: classifier.Parse(p.Label), Raw: p.Label, Model: p.Model}
+			rec.Step(tracestore.NodeClassify, tracestore.OutcomeInfo, "Classifier (eigenes Modell)",
+				fmt.Sprintf("→ %s  (%.0f %% · %s)", c.Result, p.Confidence*100, p.Model))
+			return c, &p, sharedstore.EntscheiderModell
+		}
+	}
+
+	c, err := s.classifier.Classify(ctx, msg)
+	if err != nil {
+		rec.Step(tracestore.NodeClassify, tracestore.OutcomeError, "Classifier (Gemini)", err.Error())
+		log.Printf("⚠️  classifier: %v (→ %s)", err, c.Result)
+	} else {
+		rec.Step(tracestore.NodeClassify, tracestore.OutcomeInfo, "Classifier (Gemini)",
+			fmt.Sprintf("→ %s  (roh: %q · %s)", c.Result, c.Raw, c.Model))
+	}
+	return c, nil, sharedstore.EntscheiderGemini
 }
 
 // runStats baut den Ranglisten-Text zum Stichtag asOf und protokolliert

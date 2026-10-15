@@ -31,8 +31,11 @@ Fachliche Regeln:
   Donnerstags-Daten.
 - Seit 08/2026 wird der **Absage-Zeitpunkt** (`created_at`) mitgeschrieben.
   Bei mehrfacher Absage fürs selbe Datum bleibt der Zeitpunkt der ersten.
-- Ein ML-Schattenmodell (eigener Classifier-Service) klassifiziert parallel
-  mit, ohne Wirkung — dient dem Vergleich LLM vs. eigenes Modell.
+- **Wer entscheidet**, stellt das Admin-UI ein (`/ki-modell`): Gemini oder
+  das eigene Modell (classifier-service). Standard ist Gemini. Der jeweils
+  andere klassifiziert mit, ohne Wirkung; beide Label landen mit
+  „entschieden von" und Modellversion in `ml_messages`. Entscheidet das eigene
+  Modell und antwortet es nicht, springt für die Nachricht Gemini ein.
 
 ## Statistik auf Zuruf
 
