@@ -13,6 +13,11 @@ derselbe Kontrakt, den heute der LLM-Prompt (`system-prompt.txt`) erfüllt:
 Diese Doku erklärt das Vorgehen so, dass man es auch ohne ML-Vorwissen nachvollziehen
 kann. ML-Fachbegriffe werden beim ersten Auftreten erklärt.
 
+> **Stand:** Abschnitte 1–7 beschreiben die erste Modellgeneration (v1, Juli 2026;
+> deployt als classifier-service 0.1.2). Die Grundlagen gelten weiter. Daten,
+> Aufteilung und Ergebnisse der zweiten Generation stehen in **Abschnitt 9**
+> (Synthetics und Labeln) und **Abschnitt 10** (Modellvergleich v2).
+
 ---
 
 ## 1. Die Grundidee: Supervised Learning
@@ -197,6 +202,7 @@ uv sync --group embeddings     # einmalig; ohne die Gruppe wird minilm überspru
 uv run scripts/export_real.py      # DB → data/real.jsonl (DB_HOST etc. per Env)
 uv run scripts/merge_synthetic.py  # synthetic_*.jsonl → data/synthetic.jsonl
 uv run scripts/train.py            # Training + CV, Modelle → models/*.joblib
+uv run scripts/finetune_minilm.py  # MiniLM end-to-end finetunen → models/minilm_ft{,.joblib}
 uv run scripts/evaluate.py         # Bewertung auf dem goldenen Testset
 ```
 
@@ -316,9 +322,209 @@ Datensatz-Format (JSONL, eine Nachricht pro Zeile):
 
 ## 8. Nächste Schritte
 
-1. `ml_messages`-Tabelle + persistentes Logging im `whatsapp-bot` (füllt die
-   `true`-Klasse, liefert Shadow-Modus-Daten)
-2. Shadow-Modus Modell vs. Gemini, Disagreement-Review
-3. Konfidenz-Schwelle kalibrieren, sobald genug echte Zusagen vorliegen
-4. Deployment: Gewichte des `tfidf_logreg` als JSON exportieren → pure-Go-Inferenz
-   (TF-IDF + Matrix-Vektor-Produkt, keine ML-Runtime nötig) in eigenem Service
+1. ~~`ml_messages`-Tabelle + persistentes Logging im `whatsapp-bot`~~ (läuft)
+2. ~~Probebetrieb Modell vs. Gemini~~ (läuft, Labeln im Admin-UI – Abschnitt 9)
+3. ~~Synthetics v1 von Hand labeln, neu trainieren, auf Whatsapp messen~~ (Abschnitt 10)
+4. ~~Konfidenz-Schwelle kalibrieren~~ (je Modell auf den Synthetics, Abschnitt 10)
+5. ~~Deployment: pure-Go-Inferenz~~ (`classifier-service/`)
+6. Offene Schritte der Generation v2: Abschnitt 10, „Nächste Schritte"
+
+---
+
+## 9. Synthetics v1 und Labeln (Oktober 2026)
+
+Ab der zweiten Modellgeneration gibt es drei Quellen. Benannt sind sie nach
+ihrer Herkunft, nicht nach ihrer Rolle – die Rolle ändert sich mit der Zeit.
+
+| Quelle | Tabelle | Herkunft | Rolle |
+|---|---|---|---|
+| **Synthetics** | `ml_synthetic_messages` | generiert, von Hand geprüft | Training |
+| **Whatsapp** | `ml_messages` | echte Gruppennachrichten, vom Bot mitgeschrieben | Test (Hauptmetrik) |
+| **Manuell** | `ml_test_messages` | selbst geschrieben auf `/ml-test` | Prüffälle, getrennt ausgewiesen |
+
+- **Training nur mit Synthetics, Test nur mit Whatsapp.** Keine Synthetics im
+  Test (das wäre Generator gegen Generator), kein 70/30 – das Verhältnis ergibt
+  sich aus den zwei Töpfen. Hyperparameter per Cross-Validation auf den
+  Synthetics.
+- **Echte Nachrichten ins Training** erst, wenn genug da sind (Richtwert ~300
+  echte, davon ≥ 30 Zusagen), dann rollierend: ältere ins Training, die
+  jüngsten Wochen als Test.
+- **Gelabelt wird alles im Admin-UI** (Menüpunkte Synthetics · Whatsapp ·
+  Manuell, Seite `/ml-daten`). „Offen" heißt: in dieser Runde noch nicht von
+  Hand gelabelt (`labeled_at` leer). Tasten 1/2/3, 0 verwirft eine Synthetic.
+
+### Fachliche Regeln beim Generieren
+
+- **Jede Nachricht ist eine Donnerstags-Nachricht über heute Abend.** Der Bot
+  wertet nur donnerstags aus, immer für den laufenden Donnerstag. Nichts, was
+  einen anderen Tag voraussetzt („gestern abgesagt").
+- **Zukunfts-Ab- oder -Zusagen gibt es nicht** – „nächste Woch bin i raus" ist
+  `invalid`. Eine heutige Absage darf die Zukunft nebenbei erwähnen.
+- **Jede Zusage ist eine Rücknahme und klingt auch so** („doch", „wieder",
+  „Absage zruck", weggefallener Grund). Anwesenheit ist Standard – ein bloßes
+  „bin dabei" ohne Bezug schreibt niemand. In v1 wurden 46 solche Vorschläge
+  nachträglich durch Rücknahmen ersetzt.
+- **Grenzfälle bekommen kein Vorschlags-Label** (`generated_label` leer, `art`
+  `grenzfall_<untertyp>`): später kommen, bedingt, mehrere Aussagen, andere
+  Person, mehrdeutige Emojis, Ironie. Wie sie gelabelt werden, entscheidet der
+  Mensch – danach lässt sich die Regel aus den Labels ablesen.
+- **Keine echten Namen**, und die echten Nachrichten dienen nur als
+  Stilvorlage – nie kopieren oder umformulieren, sie sind das Testset.
+
+### Menge und Verteilung
+
+Ziel: etwa 1.200 geprüfte Nachrichten. Generiert werden etwa 1.450, weil beim
+Durchgehen erfahrungsgemäß 15–20 % rausfliegen. Mehr Menge bringt bei
+TF-IDF + LogReg ab ~1.000 kaum etwas; Engpass sind echte Daten.
+
+| Label | Arten (generiert) | Summe |
+|---|---|---|
+| `false` | echt 185 · kurz 70 · emoji 47 · lang 47 · haertefall 117 | 466 |
+| `true` | echt 163 · kurz 60 · emoji 35 · lang 35 · haertefall 105 | 398 |
+| `invalid` | orga 105 · smalltalk 105 · unsicher 82 · bloedsinn 70 · emoji 47 · haertefall 87 · haertefall_zukunft 30 | 526 |
+| Grenzfall | spaeter 15 · bedingt 10 · mehrere 10 · andere_person 10 · emoji 8 · ironie 7 | 60 |
+
+- **`invalid` am meisten**: inhaltlich die breiteste Klasse. **`true` am
+  wenigsten**: wenige Arten, eine Zusage zu formulieren – mehr ergäbe nur
+  Beinahe-Duplikate. Rest-Schieflage gleicht `class_weight="balanced"` aus.
+- **Sprache je Zelle**: 35 % `bairisch_stark` (Oberpfälzer Einschlag), 40 %
+  `bairisch_leicht`, 25 % `hochdeutsch`; reine Emojis und Links ohne Sprache.
+- **Rauschen über alle Zellen**: etwa die Hälfte klein geschrieben, ein Drittel
+  mit Tippfehlern oder ohne Umlaute; ❌ bei ~60 % der Absagen, vereinzelt auch
+  in Zusagen und `invalid`, damit das Modell nicht „❌ = Absage" lernt.
+
+**Stand v1 (14.10.2026):** 1.450 generiert von sieben parallelen Generatoren,
+alle importiert (Dedup hat nichts verworfen: gegen echte Nachrichten höchstens
+0,68 Ähnlichkeit, die ähnlichsten Paare untereinander – 0,8 bis 0,88 – sind fast
+alle bewusst gesetzte Gegensatzpaare wie „Bin verhindert ❌" ↔ „Ich bin doch nicht
+verhindert"). Sprache: 33 % stark, 37 % leicht, 24 % Hochdeutsch, 6 % ohne.
+
+Was die Arten genau meinen, steht in der Generierungs-Vorgabe
+[`docs/synthetics-vorgabe.md`](docs/synthetics-vorgabe.md).
+
+### Ablauf
+
+1. **Stilanker holen**: ~30 echte Nachrichten aus `ml_messages` (nur lesend).
+   Sie kommen in die Vorgabe, aber nicht ins Repo.
+2. **Generieren je Zelle**, in Teil-Batches von 10–15 Nachrichten mit jeweils
+   eigener, konkreter Vorgabe (Grund × Sprache × Schreibweise). Mehrere
+   Generatoren in getrennten Kontexten parallel – ein einzelner langer Lauf
+   kollabiert auf dieselben 20 Schablonen. Ausgabe JSONL nach
+   `data/generated/` (gitignored):
+   `{"text", "generated_label", "art", "sprache", "batch_id"}`.
+3. **Importieren** – erst Vorschau, dann schreiben:
+   ```bash
+   scripts/import_synthetic.sh data/generated/*.jsonl          # Vorschau + Bericht
+   APPLY=1 scripts/import_synthetic.sh data/generated/*.jsonl  # in die Staging-DB
+   ```
+   Das Skript holt die echten Nachrichten und vorhandenen Synthetics lesend
+   aus der DB und verwirft
+   - exakte Duplikate (Schlüssel: normalisierter Text, **Emojis zählen mit** –
+     sonst wären „Ich auch ❌" und „Ich auch 👍" gleich),
+   - Fast-Duplikate echter Nachrichten (Kosinus über Zeichen-n-Gramme ≥ 0,9,
+     Leakage-Schutz),
+   - Fast-Duplikate untereinander (≥ 0,9).
+   Ein zweiter Import derselben Dateien übernimmt nichts (`text_hash` ist
+   eindeutig).
+4. **Von Hand labeln** im Admin-UI; Unrealistisches verwerfen.
+5. **Exportieren und trainieren**: nur gelabelte, nicht verworfene Synthetics.
+   Die Nachrichten-Dateien liegen bewusst nicht in git – Quelle der Wahrheit
+   ist die Tabelle nach dem Labeln.
+
+---
+
+## 10. Modellvergleich v2 (Oktober 2026)
+
+Sieben Kandidaten, alle nur auf den 1.446 von Hand gelabelten Synthetics
+trainiert und auf den echten Whatsapp-Nachrichten gemessen. **Ergebnis: Kein
+neues Modell schlägt Gemini klar** – bester Kandidat NB-LogReg mit Macro-F1
+0,92 auf den 87 eindeutigen Nachrichten (Gemini 0,94); die 95-%-Bereiche
+überlappen vollständig, bei 11 Zusagen im Test entscheiden ein, zwei Fehler.
+Größter Hebel sind die Daten (siehe unten), nicht das Modell.
+
+### Pipeline
+
+```bash
+cd ml-classifier
+uv sync --group embeddings                       # einmalig (Torch, Transformers)
+scripts/export_data.sh                           # DB → data/v2/{synthetics,whatsapp,manuell}.jsonl (nur lesend, gitignored)
+uv run --group embeddings scripts/train_v2.py    # sklearn-Kandidaten: Rastersuche per 5-fach-CV, OOF-Wahrscheinlichkeiten
+uv run --group embeddings scripts/finetune_v2.py # MiniLM und gbert feintunen (GPU empfohlen), ebenfalls 5-fach
+uv run --group embeddings scripts/evaluate_v2.py # Test auf Whatsapp/Manuell → models/v2/report.json
+uv run --group embeddings scripts/crossval_real_v2.py  # Versuch: echte Nachrichten im Training
+```
+
+Alle Artefakte liegen in `models/v2/` (gitignored): `<name>.joblib`, die
+Out-of-fold-Wahrscheinlichkeiten `<name>.oof.npy`, `cv.json`, `report.json`,
+`crossval_real.json`. Die Kandidaten selbst definiert `scripts/models_v2.py`.
+
+### Aufteilung
+
+| Topf | Quelle | Nachrichten (Zusage/Absage/invalid) | Rolle |
+|---|---|---|---|
+| Training | Synthetics, gelabelt, ohne verworfene | 1.446 (406/341/699) | Lernen; Hyperparameter per 5-facher CV |
+| Test | Whatsapp, eindeutige Texte | 87 (11/32/44) | Hauptmetrik (Macro-F1 + Bootstrap-Bereich) |
+| Test | Whatsapp, alle | 130 (12/74/44) | Fehler mit Wirkung wie im Betrieb |
+| Test | Whatsapp, von 0.1.2 nie gesehen | 64 (10/25/29) | fairer Vergleich mit dem alten Modell |
+| Prüffälle | Manuell | 10 (5/2/3) | Fall für Fall |
+| Final-Set | Whatsapp ab 15.10.2026 | – | unangetastet bis zur Umstiegsentscheidung |
+
+*Eindeutig* = gleicher Text bis auf Satzzeichen/Groß-Klein zählt einmal (sonst
+dominiert 23-mal „Muss mich für heute abmelden ❌“). Die invalid-Schwelle (zu
+unsicher → invalid) wird je Modell auf den Out-of-fold-Vorhersagen der
+Synthetics gewählt, nie am Test.
+
+Label-Regeln dieser Runde: Absage nur mit **ausdrücklichem Stammtisch-Bezug**
+(abmelden, absagen, raus, ned dabei, ohne mi …; „heut ned“, „kann ned“ oder nur
+ein Grund mit ❌ sind invalid – in der Gruppe wird nicht nur über den
+Stammtisch geredet). Zusage = Rücknahme; „komm später“ = Zusage; Zukunft = invalid.
+
+### Kandidaten und Ergebnisse
+
+Macro-F1 auf den 87 eindeutigen Whatsapp-Nachrichten (mit Schwelle), dazu der
+faire Vergleich auf den 64 von 0.1.2 nie gesehenen, Fehler mit Wirkung (auf den
+87) und die Prüffälle:
+
+| Modell | Macro-F1 (87) [95 %] | ungesehen (64) | fälschlich ab / Absage verp. / Zusage verp. / vertauscht | Prüffälle | CV | Go |
+|---|---|---|---|---|---|---|
+| Gemini (heute) | 0,94 [0,87–0,99] | 0,93 | 2 / 0 / 2 / 0 | – | – | API |
+| 0.1.2 (heute, teils im Training gesehen) | 0,96 [0,88–1,00] | 0,95 | 2 / 0 / 2 / 2 | 8/10 | – | ja |
+| **NB-LogReg** (Zeichen 2–4 + Wort 1–2, binär, NB-gewichtet) | **0,92** [0,83–0,98] | 0,92 | **1 / 0 / 1 / 0** | 9/10 | 0,88 | mit Erweiterung |
+| MiniLM feingetunt | 0,91 [0,82–0,97] | **0,97** | 1 / 1 / 0 / 1 | **10/10** | 0,90 | nein (ONNX) |
+| Zeichen 2–4 + Wort 1–2, TF-IDF + LogReg | 0,90 [0,80–0,97] | 0,90 | 2 / 0 / 2 / 1 | 7/10 | 0,87 | mit Erweiterung |
+| SVM kalibriert (Zeichen 1–5) | 0,87 [0,77–0,95] | 0,87 | 4 / 0 / 3 / 3 | 7/10 | 0,85 | ja |
+| gbert feingetunt | 0,87 [0,76–0,95] | 0,89 | 0 / 1 / 4 / 0 | 9/10 | 0,89 | nein (ONNX) |
+| MiniLM eingefroren + LogReg | 0,83 [0,73–0,92] | 0,89 | 3 / 5 / 0 / 5 | 7/10 | 0,70 | nein |
+| Zeichen 1–5 + LogReg (Bauart 0.1.2) | 0,82 [0,71–0,92] | 0,81 | 4 / 0 / 5 / 3 | 7/10 | 0,85 | ja |
+
+Was daraus folgt:
+
+- **„doch ⇒ Zusage“ ist eine gelernte Abkürzung.** Weil fast jede synthetische
+  Zusage „doch“ enthält, lesen die Modelle „Sogi doch!“, „Hat er doch 😅“ oder
+  „Eisprung is doch erst morgen“ als Zusage – 3 der 5 Fehler von NB-LogReg.
+  Abhilfe: invalid-Synthetics, in denen „doch“ keine Anwesenheit meint.
+- **Echte Nachrichten im Training helfen deutlich** (5-fach über Whatsapp,
+  Duplikate je auf einer Seite): Zeichen+Wort 0,90 → **0,94** mit nur einem
+  Fehler mit Wirkung, Zeichen+LogReg 0,82 → 0,92, MiniLM-ft 0,91 → 0,93,
+  NB-LogReg bleibt bei 0,92. Das erklärt auch, warum 0.1.2 (mit echten Absagen
+  trainiert) so stark ist.
+- **Wort-n-Gramme lohnen sich**: die Zeichen-LogReg mit Wörtern dazu steigt von
+  0,82 auf 0,90 – „doch“, „wieder“, „ned“ als ganze Wörter und Paare.
+- **Feintuning schlägt eingefrorene Embeddings klar** (MiniLM 0,91 statt 0,83).
+  gbert verpasst vier „komm später“-Zusagen und kennt keine Emojis (❌ wird
+  zu `[UNK]`).
+- **Report-Nachrichten des Bots** (Statistik über das Bot-Konto) landen im
+  Test – der Bot sollte sie gar nicht erst klassifizieren.
+
+### Nächste Schritte
+
+1. ~60 invalid-Synthetics mit „doch“ ohne Anwesenheitsbezug und ~20 „meld mi
+   ab … evtl. später“ erzeugen, labeln, neu trainieren.
+2. Echte Whatsapp-Nachrichten ins Training; Test ist dann das Final-Set ab
+   15.10.2026 (~10 Nachrichten pro Woche).
+3. Sieger (Zeichen+Wort oder NB-LogReg) in den `classifier-service` portieren:
+   Wort-Tokenizer (`(?u)\b\w+\b|[❌✅]`) bzw. die NB-Gewichte ergänzen,
+   Parität wie bisher über `golden.json`.
+4. Report-Nachrichten des Bots vom Klassifizieren ausnehmen.
+5. MiniLM nur, wenn eine ONNX-Laufzeit auf dem Pi (~470 MB) den kleinen
+   Vorsprung rechtfertigt.

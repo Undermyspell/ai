@@ -3,3 +3,4 @@ models/
 __pycache__/
 data/real.jsonl
 data/generated/
+data/v2/
