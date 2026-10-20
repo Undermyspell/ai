@@ -2,7 +2,7 @@
 #   docker build -t zumba-classifier .
 # Für den Pi (arm64) auch auf amd64 ohne Emulator, Go kompiliert quer:
 #   docker buildx build --platform linux/arm64 -t zumba-classifier:<tag> --load .
-FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine AS builder
 ARG TARGETOS TARGETARCH
 
 WORKDIR /app
