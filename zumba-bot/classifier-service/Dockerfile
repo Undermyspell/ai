@@ -14,7 +14,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -installsuffix cgo -o server ./cmd/server
 
-FROM alpine:3.24.2
+FROM alpine:3.24.3
 
 # Kein RUN in der Endstufe: so braucht das Quer-Bauen keinen arm64-Emulator.
 # Der Service spricht nur HTTP im Cluster, Zertifikate/Zeitzonen braucht er nicht.

@@ -19,7 +19,7 @@ COPY whatsapp-bot/ .
 
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -a -installsuffix cgo -o server ./cmd/server
 
-FROM alpine:3.24.2
+FROM alpine:3.24.3
 
 # Zertifikate und Zeitzonen aus der Build-Stufe: die Endstufe braucht so kein
 # RUN und damit beim Quer-Bauen keinen arm64-Emulator.
