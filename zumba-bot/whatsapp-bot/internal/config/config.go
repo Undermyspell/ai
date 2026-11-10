@@ -28,6 +28,10 @@ type Config struct {
 	// kein Mitglied der Runde, wird aber in der wöchentlichen Bitte, den
 	// Tisch freizuhalten, in der Gruppe markiert (leer = keine Markierung).
 	WirtJID string
+	// PreviewGroupJID ist eine Testgruppe: ist sie gesetzt, geht die Vorschau
+	// der Tisch-Erinnerung dorthin statt in den 1:1-Chat – WhatsApp zeigt
+	// Markierungen nur in Gruppen als Namen an.
+	PreviewGroupJID string
 
 	// ClassifierURL ist die Basis-URL des classifier-service für den
 	// ML-Shadow-Modus (z.B. http://zumba-classifier:8080). Leer = Shadow aus.
@@ -127,14 +131,15 @@ func Load() (Config, error) {
 			Mode: OutputMode(getenv("OUTPUT_MODE", string(OutputEvolution))),
 			File: getenv("OUTPUT_FILE", "output.txt"),
 		},
-		GroupJID:      getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
-		PreviewJID:    os.Getenv("PREVIEW_JID"),
-		WirtJID:       os.Getenv("WIRT_JID"),
-		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
-		RendererURL:   os.Getenv("RENDERER_URL"),
-		CardStyles:    os.Getenv("CARD_STYLES"),
-		StatsFormat:   getenv("STATS_FORMAT", "text"),
-		Location:      loc,
+		GroupJID:        getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
+		PreviewJID:      os.Getenv("PREVIEW_JID"),
+		WirtJID:         os.Getenv("WIRT_JID"),
+		PreviewGroupJID: os.Getenv("PREVIEW_GROUP_JID"),
+		ClassifierURL:   os.Getenv("CLASSIFIER_URL"),
+		RendererURL:     os.Getenv("RENDERER_URL"),
+		CardStyles:      os.Getenv("CARD_STYLES"),
+		StatsFormat:     getenv("STATS_FORMAT", "text"),
+		Location:        loc,
 	}
 
 	switch cfg.Output.Mode {

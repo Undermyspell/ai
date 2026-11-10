@@ -108,6 +108,11 @@ type Server struct {
 	// freizuhalten, markiert wird (von main gesetzt, aus WIRT_JID; leer =
 	// niemand wird markiert).
 	WirtJID string
+
+	// PreviewGroupJID ist eine Testgruppe für die Vorschau der
+	// Tisch-Erinnerung (von main gesetzt, aus PREVIEW_GROUP_JID; leer = die
+	// Vorschau geht an PreviewJID). Markiert wird in beiden Fällen PreviewJID.
+	PreviewGroupJID string
 }
 
 // CardSettingsSource liefert die Bild-Design-Einstellungen und hält den

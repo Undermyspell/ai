@@ -74,7 +74,9 @@ Ohne `WIRT_JID` bleibt die Anrede neutral.
 
 Stand 11/2026 gibt es nur den Testweg: `POST /wirt-reminder?dryRun=true`
 berechnet den Text, `?preview=true` schickt ihn an die Vorschau-Nummer und
-markiert diese statt des Wirts. **Einen echten Versand in die Gruppe und einen
+markiert diese statt des Wirts; mit `PREVIEW_GROUP_JID` (optional, selbes
+Secret) geht die Vorschau in eine Testgruppe, weil WhatsApp Markierungen nur
+in Gruppen als Namen anzeigt. **Einen echten Versand in die Gruppe und einen
 CronJob gibt es noch nicht** – ein Aufruf ohne Parameter ist ein Dry-Run.
 An Sperrtagen soll keine Erinnerung rausgehen (beim Bau des
 Versands noch einmal bestätigen lassen).

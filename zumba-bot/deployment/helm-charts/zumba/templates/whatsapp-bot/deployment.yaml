@@ -78,6 +78,14 @@ spec:
               name: whatsapp-bot-secrets
               key: WIRT_JID
               optional: true
+        # Testgruppe für die Vorschau der Tisch-Erinnerung (Markierungen
+        # zeigt WhatsApp nur in Gruppen als Namen)
+        - name: PREVIEW_GROUP_JID
+          valueFrom:
+            secretKeyRef:
+              name: whatsapp-bot-secrets
+              key: PREVIEW_GROUP_JID
+              optional: true
         livenessProbe:
           httpGet:
             path: /healthz

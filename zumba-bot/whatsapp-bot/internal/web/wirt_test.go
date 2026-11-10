@@ -115,3 +115,18 @@ func TestWirtOhneWirtJIDBleibtNeutral(t *testing.T) {
 		t.Errorf("Outcome = %+v", out)
 	}
 }
+
+// Mit Testgruppe geht die Vorschau dorthin – markiert bleibt die eigene
+// Nummer, die Stammtisch-Gruppe bekommt nichts.
+func TestWirtVorschauGehtInDieTestgruppe(t *testing.T) {
+	const testgruppe = "120363000000000000@g.us"
+	s, snd := wirtServer(testPreview)
+	s.PreviewGroupJID = testgruppe
+	_, out := postWirt(t, s, "?preview=true")
+	if snd.number != testgruppe || out.PreviewTo != testgruppe {
+		t.Fatalf("Empfänger = %q, PreviewTo = %q", snd.number, out.PreviewTo)
+	}
+	if len(snd.mentioned) != 1 || snd.mentioned[0] != "4917012345678" {
+		t.Errorf("mentioned = %v", snd.mentioned)
+	}
+}

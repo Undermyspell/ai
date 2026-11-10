@@ -54,6 +54,7 @@ Siehe `.env.example`. Wichtig:
 | `ZUMBA_GROUP_JID` | remoteJid der Zumba-Gruppe |
 | `PREVIEW_JID` | Ziel des „Vorschau“-Modus der Bot-Test-Seite (leer = Vorschau aus) |
 | `WIRT_JID` | Nummer des Wirts, der in der Tisch-Erinnerung (`POST /wirt-reminder`) markiert wird (leer = keine Markierung) |
+| `PREVIEW_GROUP_JID` | Testgruppe für die Vorschau der Tisch-Erinnerung – Markierungen zeigt WhatsApp nur in Gruppen als Namen (leer = Vorschau an `PREVIEW_JID`) |
 | `RENDERER_URL` | Basis-URL des renderer-service für die Statistik-Bild-Karte (leer = Bild aus) |
 | `STATS_FORMAT` | Antwort auf „statistik“ in der Gruppe: `text` (default) / `image` (PNG-Karte, Fallback Text) |
 | `CARD_STYLES` | Startwert der Bild-Design-Rotation (Komma-Liste); danach pflegt sie das Admin-UI („Bild-Designs“, Tabelle `card_settings`). „statistik“ zieht zufällig, der Wochenreport rotiert der Reihe nach |

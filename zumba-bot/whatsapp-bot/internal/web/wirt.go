@@ -39,7 +39,8 @@ func jidNumber(jid string) string {
 // nur markiert – einen Direktchat mit ihm gibt es nicht. Bisher gibt es nur
 // zwei Wege: ?dryRun=true berechnet den Text, ?preview=true schickt ihn
 // zusätzlich an PREVIEW_JID und markiert dort die Vorschau-Nummer anstelle
-// des Wirts. Einen echten Versand in die Gruppe gibt es noch NICHT – ein
+// des Wirts. Ist PREVIEW_GROUP_JID gesetzt, geht die Vorschau in diese
+// Testgruppe – nur in Gruppen zeigt WhatsApp eine Markierung als Namen. Einen echten Versand in die Gruppe gibt es noch NICHT – ein
 // Aufruf ohne Parameter ist deshalb ebenfalls ein Dry-Run. Geplant ist der
 // Versand donnerstags um 16 Uhr.
 func (s *Server) handleWirtReminder(w http.ResponseWriter, r *http.Request) {
@@ -67,20 +68,24 @@ func (s *Server) handleWirtReminder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if preview {
+		target := s.PreviewJID
+		if s.PreviewGroupJID != "" {
+			target = s.PreviewGroupJID
+		}
 		var err error
 		if ms, ok := s.sender.(MentionSender); ok {
-			err = ms.SendTextMention(ctx, s.PreviewJID, out.Message, []string{mention})
+			err = ms.SendTextMention(ctx, target, out.Message, []string{mention})
 		} else {
-			err = s.sender.SendText(ctx, s.PreviewJID, out.Message)
+			err = s.sender.SendText(ctx, target, out.Message)
 		}
 		if err != nil {
-			log.Printf("⚠️  Wirt-Vorschau(%s): %v", s.PreviewJID, err)
+			log.Printf("⚠️  Wirt-Vorschau(%s): %v", target, err)
 			http.Error(w, "Versand fehlgeschlagen: "+err.Error(), http.StatusBadGateway)
 			return
 		}
-		out.PreviewTo = s.PreviewJID
+		out.PreviewTo = target
 		out.DryRun = false
-		log.Printf("📱 Wirt-Erinnerung als Vorschau gesendet an %s", s.PreviewJID)
+		log.Printf("📱 Wirt-Erinnerung als Vorschau gesendet an %s", target)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

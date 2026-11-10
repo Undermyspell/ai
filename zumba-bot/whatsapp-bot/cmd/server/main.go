@@ -111,6 +111,10 @@ func main() {
 	}
 	// Wirt des Lokals: wird in der Tisch-Erinnerung markiert (WIRT_JID).
 	srv.WirtJID = cfg.WirtJID
+	srv.PreviewGroupJID = cfg.PreviewGroupJID
+	if cfg.PreviewGroupJID != "" {
+		log.Printf("📱 Vorschau der Tisch-Erinnerung geht in die Testgruppe")
+	}
 	if cfg.WirtJID == "" {
 		log.Printf("ℹ️  WIRT_JID nicht gesetzt – Tisch-Erinnerung ohne Markierung")
 	}
