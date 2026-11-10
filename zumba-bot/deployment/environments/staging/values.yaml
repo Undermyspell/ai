@@ -64,7 +64,7 @@ whatsappBot:
   enabled: true
   image:
     repository: zumba-whatsapp-bot
-    tag: "0.7.2"
+    tag: "0.7.3"
     pullPolicy: IfNotPresent
   env:
     # Gruppen-"statistik" antwortet als Bild-Karte (Fallback Text)
@@ -76,6 +76,10 @@ whatsappBot:
     enabled: true
     # Wochenreport ebenfalls als Bild-Karte
     format: image
+  # Tisch-Erinnerung an den Wirt (Do 16:00 in die Zumba-Gruppe). Noch aus:
+  # erst einschalten, wenn der echte Versand gewünscht ist.
+  wirtReminder:
+    enabled: false
 
 # Statistik-Bild-Karte (HTML → PNG via headless Chromium). Auf true setzen,
 # sobald das zumba-renderer-Image auf dem Pi gebaut/importiert ist — der Bot
@@ -100,7 +104,7 @@ adminUi:
   enabled: true
   image:
     repository: zumba-admin-ui
-    tag: "0.12.2"
+    tag: "0.12.3"
     pullPolicy: IfNotPresent
   ingress:
     host: zumba-admin-stage.192.168.178.46.nip.io

@@ -110,6 +110,10 @@ type Server struct {
 	// niemand wird markiert).
 	WirtJID string
 
+	// Sperrtage sagt, ob heute kein Stammtisch ist – dann entfällt die
+	// Tisch-Erinnerung (von main gesetzt; nil = keine Prüfung).
+	Sperrtage SperrtagSource
+
 	// PreviewGroupJID ist eine Testgruppe als zweites Vorschau-Ziel (von main
 	// gesetzt, aus PREVIEW_GROUP_JID). Sie ist das Ziel bei
 	// ?previewTarget=group, sonst geht die Vorschau an PreviewJID. Die
@@ -193,7 +197,8 @@ func (s *Server) Routes() http.Handler {
 	// Nachricht an die eigene Vorschau-Nummer (Admin-UI schickt sich die
 	// öffentlichen Tunnel-Adressen aufs Handy). Empfänger ist fest PREVIEW_JID.
 	mux.HandleFunc("POST /notify", s.handleNotify)
-	// Bitte an den Wirt, den Tisch freizuhalten – bisher nur Dry-Run/Vorschau.
+	// Bitte an den Wirt, den Tisch freizuhalten (CronJob donnerstags 16 Uhr
+	// mit ?send=true; sonst Dry-Run/Vorschau).
 	mux.HandleFunc("POST /wirt-reminder", s.handleWirtReminder)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

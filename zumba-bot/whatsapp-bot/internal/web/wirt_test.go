@@ -90,7 +90,8 @@ func TestWirtVorschauGehtAnDieEigeneNummerUndMarkiertSie(t *testing.T) {
 	}
 }
 
-// Es gibt noch keinen echten Versand: ohne Parameter bleibt es beim Dry-Run.
+// In die Gruppe geht nur etwas mit ausdrücklichem send=true: ohne Parameter
+// bleibt es beim Dry-Run.
 func TestWirtOhneParameterSendetNicht(t *testing.T) {
 	s, snd := wirtServer(testPreview)
 	_, out := postWirt(t, s, "")
@@ -165,5 +166,70 @@ func TestWochenreportVorschauGehtInDieTestgruppe(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), `"previewTo":"`+testgruppe+`"`) {
 		t.Errorf("Antwort = %s", rec.Body.String())
+	}
+}
+
+type fakeSperrtage struct{ excluded bool }
+
+func (f fakeSperrtage) IsExcludedDay(context.Context, time.Time) (bool, error) {
+	return f.excluded, nil
+}
+
+// wirtServerAm ist wirtServer an einem bestimmten Tag.
+func wirtServerAm(now time.Time) (*Server, *mentionSender) {
+	s, snd := wirtServer(testPreview)
+	s.Now = func() time.Time { return now }
+	return s, snd
+}
+
+// Der echte Versand: donnerstags in die Stammtisch-Gruppe, markiert ist der
+// Wirt – nicht die Vorschau-Nummer.
+func TestWirtEchterVersandGehtInDieGruppeUndMarkiertDenWirt(t *testing.T) {
+	s, snd := wirtServerAm(thursday)
+	s.Sperrtage = fakeSperrtage{}
+	rec, out := postWirt(t, s, "?send=true")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Status = %d: %s", rec.Code, rec.Body.String())
+	}
+	if !snd.called || snd.number != testGroup {
+		t.Fatalf("Empfänger = %q, erwartet die Stammtisch-Gruppe", snd.number)
+	}
+	if len(snd.mentioned) != 1 || snd.mentioned[0] != testWirtNr || !strings.Contains(snd.text, "@"+testWirtNr) {
+		t.Errorf("mentioned = %v, Text:\n%s", snd.mentioned, snd.text)
+	}
+	if !out.Sent || out.DryRun || out.Reason != "" {
+		t.Errorf("Outcome = %+v", out)
+	}
+}
+
+func TestWirtEchterVersandEntfaellt(t *testing.T) {
+	cases := []struct {
+		name   string
+		setup  func(*Server)
+		now    time.Time
+		reason string
+	}{
+		{"kein Donnerstag", func(*Server) {}, friday, "kein Donnerstag"},
+		{"Sperrtag", func(s *Server) { s.Sperrtage = fakeSperrtage{excluded: true} }, thursday, "Sperrtag"},
+		{"ohne WIRT_JID", func(s *Server) { s.WirtJID = "" }, thursday, "WIRT_JID"},
+	}
+	for _, c := range cases {
+		s, snd := wirtServerAm(c.now)
+		c.setup(s)
+		rec, out := postWirt(t, s, "?send=true")
+		if rec.Code != http.StatusOK || snd.called || out.Sent || !strings.Contains(out.Reason, c.reason) {
+			t.Errorf("%s: Status = %d, called = %v, Outcome = %+v", c.name, rec.Code, snd.called, out)
+		}
+	}
+}
+
+// dryRun und preview schlagen send: ein Test kann nie in die Gruppe senden.
+func TestWirtSendMitDryRunOderPreviewGehtNichtInDieGruppe(t *testing.T) {
+	for _, q := range []string{"?send=true&dryRun=true", "?send=true&preview=true"} {
+		s, snd := wirtServerAm(thursday)
+		_, out := postWirt(t, s, q)
+		if snd.number == testGroup || out.Sent {
+			t.Errorf("%s: Empfänger = %q, Outcome = %+v", q, snd.number, out)
+		}
 	}
 }

@@ -1,8 +1,8 @@
 # WhatsApp-Bot — fachliche Beschreibung
 
 Der Bot ist das Ohr und der Mund des Systems in der WhatsApp-Gruppe. Er läuft
-rund um die Uhr und macht drei Dinge: Absagen/Zusagen erkennen, Statistik
-beantworten, Wochenreport verschicken.
+rund um die Uhr und macht vier Dinge: Absagen/Zusagen erkennen, Statistik
+beantworten, Wochenreport verschicken, den Wirt an den Tisch erinnern.
 
 ## Absage-Erkennung
 
@@ -61,25 +61,40 @@ Fehltage-Strafen als Marker. Der Report ist über das Admin-UI als Dry-Run
 testbar („Wochenreport testen"), inklusive simuliertem Stichtag — simulierte
 Läufe schreiben nie.
 
-## Tisch-Erinnerung an den Wirt (im Aufbau)
+## Tisch-Erinnerung an den Wirt
 
-Jeden Donnerstag um 16 Uhr soll der Wirt gebeten werden, den Stammtisch-Tisch
-für den Abend freizuhalten. Die Nachricht geht in die Stammtisch-Gruppe, der
-Wirt wird darin nur markiert – einen Direktchat mit ihm gibt es nicht. Der Wirt ist kein Mitglied; seine Nummer liegt wie die der Gruppe im
-SealedSecret `whatsapp-bot-secrets` (`WIRT_JID`, optional). Die Nachricht (`report.BuildWirtReminder`)
-spricht deshalb von „heute Abend" – eine Ankündigung, dass wir kommen, braucht
-es nicht – und markiert den Wirt: im Text steht `@<nummer>`, dieselbe Nummer geht als
-`mentioned` an die Evolution API, WhatsApp zeigt daraus den Kontaktnamen.
-Ohne `WIRT_JID` bleibt die Anrede neutral.
+Jeden **Donnerstag um 16:00** (Europe/Berlin) bittet der Bot den Wirt, den
+Stammtisch-Tisch für den Abend freizuhalten. Die Nachricht geht in die
+Stammtisch-Gruppe, der Wirt wird darin nur markiert – einen Direktchat mit ihm
+gibt es nicht. Der Wirt ist kein Mitglied der Runde (steht nicht in `users`),
+aber in der WhatsApp-Gruppe; seine Nummer liegt wie die der Gruppe im
+SealedSecret `whatsapp-bot-secrets` (`WIRT_JID`, optional).
 
-Stand 11/2026 gibt es nur den Testweg: `POST /wirt-reminder?dryRun=true`
-berechnet den Text, `?preview=true` schickt ihn an die Vorschau-Nummer und
-markiert diese statt des Wirts; mit `&previewTarget=group` geht die Vorschau
-stattdessen in eine Testgruppe (`PREVIEW_GROUP_JID`, optional, selbes Secret),
-weil WhatsApp Markierungen nur in Gruppen als Namen anzeigt. **Einen echten Versand in die Gruppe und einen
-CronJob gibt es noch nicht** – ein Aufruf ohne Parameter ist ein Dry-Run.
-An Sperrtagen soll keine Erinnerung rausgehen (beim Bau des
-Versands noch einmal bestätigen lassen).
+Die Nachricht (`report.BuildWirtReminder`) spricht von „heute Abend" – eine
+Ankündigung, dass wir kommen, braucht es nicht – und markiert den Wirt: im
+Text steht `@<nummer>`, dieselbe Nummer geht als `mentioned` an die Evolution
+API, WhatsApp zeigt daraus in Gruppen den Kontaktnamen (im 1:1-Chat bleibt es
+bei `@<nummer>`).
+
+Ausgelöst wird sie von einem Helm-`CronJob`
+(`templates/whatsapp-bot/wirt-reminder-cronjob.yaml`, `0 16 * * 4`, Schalter
+`whatsappBot.wirtReminder.enabled`), der `POST /wirt-reminder?send=true`
+aufruft. Der Bot sendet nur, wenn
+
+- heute Donnerstag ist,
+- der Tag **kein Sperrtag** ist (`excluded_days`) – antwortet die DB dabei
+  nicht, geht die Bitte trotzdem raus,
+- `WIRT_JID` gesetzt ist.
+
+Sonst entfällt der Versand, der Grund steht in der Antwort und im Log. Der
+CronJob wiederholt einen fehlgeschlagenen Aufruf nicht, damit die Bitte nie
+doppelt in der Gruppe steht.
+
+Zum Testen (Admin-UI, Bot-Test → „Tisch-Erinnerung"): `?dryRun=true` berechnet
+nur den Text, `?preview=true` schickt ihn an die Vorschau-Nummer bzw. mit
+`&previewTarget=group` in die Testgruppe (`PREVIEW_GROUP_JID`) und markiert
+dort die Vorschau-Nummer statt des Wirts. Ein Aufruf ohne Parameter ist ein
+Dry-Run.
 
 ## Statistik als Bild-Karte
 

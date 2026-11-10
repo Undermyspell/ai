@@ -1,0 +1,47 @@
+{{- if and .Values.whatsappBot.enabled .Values.whatsappBot.wirtReminder.enabled -}}
+# Tisch-Erinnerung: ruft donnerstags 16:00 (Europe/Berlin) den
+# /wirt-reminder-Endpoint des Bots auf, der den Wirt in der Zumba-Gruppe
+# bittet, den Stammtisch-Tisch freizuhalten (Wirt wird markiert, WIRT_JID).
+# An Sperrtagen sendet der Bot nichts.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "zumba.fullname" . }}-whatsapp-bot-wirt
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.whatsappBot.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.whatsappBot.wirtReminder.schedule | quote }}
+  timeZone: {{ .Values.whatsappBot.wirtReminder.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  # 1h Nachhol-Fenster: übersteht NTP-Zeitsprünge nach Boot ohne RTC-Zeit,
+  # danach verfällt der Run statt spät am Abend zu feuern.
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # Kein Wiederholen: bricht der Aufruf nach dem Versand ab, stünde die
+      # Bitte sonst doppelt in der Gruppe.
+      backoffLimit: 0
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            {{- include "zumba.whatsappBot.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: trigger
+            image: busybox:1.35
+            command:
+            - sh
+            - -c
+            - |
+              set -e
+              URL="http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}/wirt-reminder?send=true"
+              echo "POST $URL"
+              wget -q -O- --post-data="" --header="Content-Type: application/json" "$URL"
+              echo
+              echo "✅ Tisch-Erinnerung ausgelöst"
+{{- end }}

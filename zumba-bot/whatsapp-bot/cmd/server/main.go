@@ -111,6 +111,7 @@ func main() {
 	}
 	// Wirt des Lokals: wird in der Tisch-Erinnerung markiert (WIRT_JID).
 	srv.WirtJID = cfg.WirtJID
+	srv.Sperrtage = st
 	srv.PreviewGroupJID = cfg.PreviewGroupJID
 	if cfg.PreviewGroupJID != "" {
 		log.Printf("📱 Testgruppe als zweites Vorschau-Ziel gesetzt")

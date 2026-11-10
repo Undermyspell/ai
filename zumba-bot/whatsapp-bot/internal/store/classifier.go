@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	sharedstore "github.com/michael/zumba-shared/store"
 )
@@ -32,4 +34,15 @@ func (s *Postgres) ClassifierModels(ctx context.Context) (primary, fallback stri
 func (s *Postgres) ClassifierEntscheider(ctx context.Context) (string, error) {
 	e, err := sharedstore.GetEntscheider(ctx, s.db)
 	return e.Wer, err
+}
+
+// IsExcludedDay sagt, ob day ein Sperrtag ist (excluded_days) – erfüllt
+// web.SperrtagSource für die Tisch-Erinnerung an den Wirt.
+func (s *Postgres) IsExcludedDay(ctx context.Context, day time.Time) (bool, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT 1 FROM excluded_days WHERE date = $1::date`, day.Format("2006-01-02"))
+	if err != nil {
+		return false, fmt.Errorf("excluded_days: %w", err)
+	}
+	defer rows.Close()
+	return rows.Next(), rows.Err()
 }
