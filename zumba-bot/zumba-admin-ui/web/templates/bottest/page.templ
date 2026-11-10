@@ -33,9 +33,9 @@ var styleOptions = []styleOption{
 	{"minimal", "Minimal"},
 }
 
-// szenarien sind die vier Testläufe. Die ersten drei schicken eine
-// Beispiel-Nachricht an /test, "wochenreport" ruft /weekly-report auf –
-// deshalb hat nur es kein Beispiel-JSON.
+// szenarien sind die fünf Testläufe. Die ersten drei schicken eine
+// Beispiel-Nachricht an /test, "wochenreport" ruft /weekly-report und "wirt"
+// /wirt-reminder auf – deshalb haben die beiden kein Beispiel-JSON.
 type szenario struct {
 	ID, Icon, Label, Hint string
 	HasPayload            bool
@@ -46,6 +46,7 @@ var szenarien = []szenario{
 	{"absage", "🚫", "Absage", "Klassifikation prüfen", true},
 	{"zusage", "✅", "Zusage", "Klassifikation prüfen", true},
 	{"wochenreport", "📅", "Wochenreport", "Donnerstag 21:00", false},
+	{"wirt", "🍽️", "Tisch-Erinnerung", "Donnerstag 16:00 · Wirt markiert", false},
 }
 
 templ Page(vm PageVM) {
@@ -98,7 +99,8 @@ templ Page(vm PageVM) {
 				</div>
 				<p class="hint only-dry">Nur hier im UI — nichts gesendet, nichts in die DB geschrieben.</p>
 				<p class="hint only-preview">Zusätzlich als echte WhatsApp an deine Nummer — nie an die Gruppe.</p>
-				<label class="field">
+				<p class="hint only-preview only-wirt">In der Vorschau wirst du markiert, nicht der Wirt.</p>
+				<label class="field not-wirt">
 					<span class="field-label">Stichtag <span style="opacity:.7">optional</span></span>
 					<input class="input" type="date" name="date"/>
 					<span class="hint">Simuliert den Versandtag für Rangliste und Strafen. Beim Wochenreport erzwingt ein Stichtag den Dry-Run.</span>
@@ -129,6 +131,7 @@ templ Page(vm PageVM) {
 					</div>
 				</div>
 				<div class="cron-chip only-cron">⏰ CronJob · Donnerstag 21:00 · Wochenreport</div>
+				<div class="cron-chip only-wirt">⏰ CronJob · Donnerstag 16:00 · Tisch-Erinnerung an den Wirt</div>
 				<div id="bot-response" aria-live="polite"></div>
 				<div class="bot-idle">Noch kein Durchlauf – links Szenario wählen und „Test starten".</div>
 			</div>

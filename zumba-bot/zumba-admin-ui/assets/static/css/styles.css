@@ -982,7 +982,11 @@ body.has-sheet { overflow: hidden; }
 
 /* Sichtbarkeit je Szenario/Format/Modus – reines CSS */
 .bot-grid:has(#sz-wochenreport:checked) .only-payload,
+.bot-grid:has(#sz-wirt:checked) .only-payload,
 .bot-grid:not(:has(#sz-wochenreport:checked)) .only-cron,
+.bot-grid:not(:has(#sz-wirt:checked)) .only-wirt,
+.bot-grid:has(#sz-wirt:checked) .only-output,
+.bot-grid:has(#sz-wirt:checked) .not-wirt,
 .bot-grid:has(#sz-absage:checked) .only-output,
 .bot-grid:has(#sz-zusage:checked) .only-output,
 .bot-grid:has(#fmt-image:checked) .only-text,
@@ -993,7 +997,8 @@ body.has-sheet { overflow: hidden; }
 .bot-grid:has(#sz-statistik:checked) .steps-wait[data-for="statistik"],
 .bot-grid:has(#sz-absage:checked) .steps-wait[data-for="absage"],
 .bot-grid:has(#sz-zusage:checked) .steps-wait[data-for="zusage"],
-.bot-grid:has(#sz-wochenreport:checked) .steps-wait[data-for="wochenreport"] { display: flex; }
+.bot-grid:has(#sz-wochenreport:checked) .steps-wait[data-for="wochenreport"],
+.bot-grid:has(#sz-wirt:checked) .steps-wait[data-for="wirt"] { display: flex; }
 .bot-grid:has(#bot-path-result:not(:empty)) .steps-wait { display: none !important; }
 .bot-grid:has(#bot-path-result:not(:empty)) .path-note-wait,
 .bot-grid:has(#bot-path-result:empty) .path-note-done { display: none; }
@@ -1761,10 +1766,3 @@ input:focus-visible ~ .design-check { outline: 2px solid var(--blue); outline-of
 @media (max-width: 560px) {
   .year-row { grid-template-columns: 1fr; gap: 6px; }
 }
-
-/* Wirt: Test der Tisch-Erinnerung */
-.wirt-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
-.wirt-controls > * { flex: 1 1 180px; }
-.wirt-controls .btn { flex: 0 0 auto; padding: 10px 16px; }
-.wirt-result { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
-.wirt-result .bubble-out { max-width: min(460px, 100%); }

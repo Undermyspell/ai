@@ -25,7 +25,6 @@ var toolNav = []navItem{
 	{Key: "trace", Href: "/trace", Icon: "≡", Label: "Verlauf", Heading: "Bot-Verlauf"},
 	{Key: "kimodell", Href: "/ki-modell", Icon: "◈", Label: "KI-Modell", Heading: "Welches Modell klassifiziert"},
 	{Key: "bilddesigns", Href: "/bild-designs", Icon: "▣", Label: "Bild-Designs", Heading: "Welche Karte kommt am Donnerstag"},
-	{Key: "wirt", Href: "/wirt", Icon: "♨", Label: "Wirt", Heading: "Tisch freihalten lassen"},
 	{Key: "public", Href: "/public", Icon: "⊕", Label: "Öffentlich", Heading: "Zugang von außen"},
 	// Die drei Quellen der ML-Daten (/ml-daten) – je ein Menüpunkt, Schlüssel
 	// "ml-<quelle>" (siehe handleMLDaten).
@@ -43,7 +42,7 @@ var bottomKeys = []string{"dashboard", "days", "members", "strafen"}
 // sealedWhilePublic: diese Seiten sind gesperrt, solange ein Tunnel offen ist
 // (Bot-Test kann echte Nachrichten verschicken). Sie aus dem Menü zu nehmen
 // erspart den Klick ins Leere.
-var sealedWhilePublic = map[string]bool{"bottest": true, "mltest": true, "wirt": true}
+var sealedWhilePublic = map[string]bool{"bottest": true, "mltest": true}
 
 func findNav(key string) (navItem, bool) {
 	for _, list := range [][]navItem{mainNav, toolNav} {

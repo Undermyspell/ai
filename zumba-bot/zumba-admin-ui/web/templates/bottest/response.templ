@@ -22,6 +22,8 @@ func WaitingSteps(szenario, model string) []Step {
 		classifier += " (" + model + ")"
 	}
 	switch szenario {
+	case "wirt":
+		return wait("CronJob ausgelöst", "Nachricht bauen", "Wirt markieren", "An Gruppe senden")
 	case "wochenreport":
 		return wait("CronJob ausgelöst", "Rangliste + Strafen berechnen", "Rendern", "An Gruppe senden")
 	case "absage", "zusage":
@@ -41,6 +43,7 @@ type ResponseVM struct {
 	UserID         string
 	DryRun         bool
 	PreviewTo      string
+	Mentioned      string // Tisch-Erinnerung: in der Nachricht markierte Nummer
 	ImageBase64    string // PNG-Karte (format=image), base64 ohne data:-Präfix
 	Time           string // "20:12"
 	Steps          []Step
@@ -48,7 +51,7 @@ type ResponseVM struct {
 }
 
 templ Response(vm ResponseVM) {
-	if vm.Path == "statistik" {
+	if vm.Path == "statistik" || vm.Path == "wirt" {
 		if vm.ImageBase64 != "" {
 			<div class="bubble-out is-image">
 				<img alt="Statistik-Karte" src={ templ.SafeURL("data:image/png;base64," + vm.ImageBase64) }/>
@@ -70,6 +73,15 @@ templ Response(vm ResponseVM) {
 				Gesendet an { vm.Recipient }.
 			}
 		</div>
+		if vm.Path == "wirt" {
+			<div class="bot-meta">
+				if vm.Mentioned != "" {
+					Markiert { "@" + vm.Mentioned } – WhatsApp zeigt daraus den Kontaktnamen.
+				} else {
+					WIRT_JID ist am Bot nicht gesetzt – niemand markiert.
+				}
+			</div>
+		}
 	} else if vm.Path == "classify" {
 		<div class={ "sys-chip", clsClass(vm.Classification) }>
 			{ "Klassifikation: " + classificationLabel(vm.Classification) + " → " + actionLabel(vm.Action) + " · keine Antwort in die Gruppe" }

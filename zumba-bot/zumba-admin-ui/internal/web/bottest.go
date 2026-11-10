@@ -70,6 +70,7 @@ type botOutcome struct {
 	Reason         string `json:"reason"`
 	DryRun         bool   `json:"dryRun"`
 	PreviewTo      string `json:"previewTo"`
+	Mentioned      string `json:"mentioned"` // nur /wirt-reminder
 	ImageBase64    string `json:"imageBase64"`
 }
 
@@ -86,14 +87,15 @@ func modeQuery(mode string) string {
 // botRun beschreibt einen Testlauf für den Verarbeitungspfad.
 type botRun struct {
 	weekly bool
+	wirt   bool // Tisch-Erinnerung an den Wirt (/wirt-reminder)
 	image  bool
 	design string
 	model  string
 }
 
 // handleBotTestRun führt den gewählten Testlauf aus. Das Szenario bestimmt den
-// Bot-Endpoint: "wochenreport" ruft /weekly-report ohne Body auf, alles andere
-// schickt das Beispiel-Event an /test. Modus, Stichtag und Ausgabeformat gelten
+// Bot-Endpoint: "wochenreport" ruft /weekly-report und "wirt" /wirt-reminder
+// ohne Body auf, alles andere schickt das Beispiel-Event an /test. Modus, Stichtag und Ausgabeformat gelten
 // für beide Wege – deshalb liegt alles in einem Formular.
 func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -102,6 +104,13 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 		weekly: r.FormValue("szenario") == "wochenreport",
 		image:  r.FormValue("format") == "image",
 		design: r.FormValue("style"),
+	}
+	if r.FormValue("szenario") == "wirt" {
+		// Die Tisch-Erinnerung kennt weder Stichtag noch Formate: sie geht
+		// immer donnerstags als Text raus.
+		url := strings.TrimRight(s.cfg.BotURL, "/") + "/wirt-reminder" + modeQuery(r.FormValue("mode"))
+		s.proxyBot(w, r, url, nil, botRun{wirt: true})
+		return
 	}
 	endpoint := "/test"
 	if run.weekly {
@@ -163,6 +172,9 @@ func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, bo
 		_ = bottest.ErrorPanel("Antwort nicht lesbar: "+err.Error()).Render(r.Context(), w)
 		return
 	}
+	if run.wirt {
+		out.Path = "wirt" // der Bot liefert für die Erinnerung keinen Pfad
+	}
 	format := "Text"
 	if run.image {
 		format = "PNG via renderer-service"
@@ -175,9 +187,10 @@ func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, bo
 		Path: out.Path, Classification: out.Classification, Action: out.Action,
 		Message: out.Message, Recipient: out.Recipient, Date: out.Date, UserID: out.UserID,
 		DryRun: out.DryRun, PreviewTo: out.PreviewTo, ImageBase64: out.ImageBase64,
-		Time:  time.Now().Format("15:04"),
-		Steps: botSteps(out, run),
-		Meta:  meta,
+		Mentioned: out.Mentioned,
+		Time:      time.Now().Format("15:04"),
+		Steps:     botSteps(out, run),
+		Meta:      meta,
 	}).Render(r.Context(), w)
 }
 
@@ -201,6 +214,21 @@ func botSteps(out botOutcome, run botRun) []bottest.Step {
 		send = skipped("An Gruppe senden", "Dry-Run: nicht gesendet")
 	}
 
+	if run.wirt {
+		mark := skipped("Wirt markieren", "WIRT_JID nicht gesetzt")
+		switch {
+		case out.Mentioned != "" && out.PreviewTo != "":
+			mark = done("Wirt markieren", "@"+out.Mentioned+" (du statt des Wirts)")
+		case out.Mentioned != "":
+			mark = done("Wirt markieren", "@"+out.Mentioned)
+		}
+		return []bottest.Step{
+			done("CronJob ausgelöst", "Do 16:00 (simuliert)"),
+			done("Nachricht bauen", "Text"),
+			mark,
+			send,
+		}
+	}
 	if run.weekly {
 		return []bottest.Step{
 			done("CronJob ausgelöst", "Do 21:00 (simuliert)"),

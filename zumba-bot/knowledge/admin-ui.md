@@ -80,9 +80,14 @@ Kandidaten an.
 ### Bot-Test (`/bot-test`)
 Spielwiese gegen den echten Bot ohne WhatsApp, als Chat-Simulation:
 
-- **Szenario** — Statistik, Absage, Zusage oder Wochenreport. Die ersten
-  drei schicken eine Beispielnachricht durch die komplette Verarbeitung,
-  der Wochenreport löst den Donnerstagsreport aus.
+- **Szenario** — Statistik, Absage, Zusage, Wochenreport oder
+  Tisch-Erinnerung. Die ersten drei schicken eine Beispielnachricht durch die
+  komplette Verarbeitung, der Wochenreport löst den Donnerstagsreport aus,
+  die Tisch-Erinnerung die Bitte an den Wirt, unseren Tisch freizuhalten
+  (`POST /wirt-reminder` am Bot). Bei ihr entfallen Ausgabe und Stichtag; in
+  der Vorschau wird die eigene Nummer markiert, nicht der Wirt. Der Wirt
+  selbst wird im Admin-UI nicht gepflegt – seine Nummer liegt als `WIRT_JID`
+  im SealedSecret des Bots.
 - **Nachricht** — steht als Sprechblase im Chat und lässt sich direkt
   bearbeiten; darunter liegt das vollständige Webhook-JSON, ebenfalls frei
   editierbar (entfällt beim Wochenreport).
@@ -132,18 +137,6 @@ zeigt den zuletzt gesendeten Report und die nächsten acht Donnerstage.
 Gespeichert wird in `card_settings`; der Bot liest die Tabelle vor jeder
 Karte. Wie beim KI-Modell gesperrt ist die Seite bei offenem Tunnel nicht –
 Speichern verschickt nichts.
-
-### Wirt (`/wirt`)
-
-Test der **Tisch-Erinnerung**: die Bitte an den Wirt, unseren Tisch
-freizuhalten, wie sie der Bot baut (`POST /wirt-reminder`). Dry-Run zeigt sie
-nur an (beim Öffnen der Seite automatisch), „📱 An mich" schickt sie als echte
-WhatsApp an die Testnummer und markiert dort die Testnummer statt des Wirts.
-In die Gruppe geht von hier aus nie etwas; die Seite ist wie der Bot-Test
-gesperrt, solange ein Tunnel offen ist.
-
-Der Wirt selbst wird hier nicht gepflegt: er ist kein Mitglied der Runde,
-seine Nummer liegt wie die der Gruppe als `WIRT_JID` im SealedSecret des Bots.
 
 ### ML-Daten (`/ml-daten`)
 
