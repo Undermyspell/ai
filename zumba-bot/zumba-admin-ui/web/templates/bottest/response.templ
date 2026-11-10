@@ -1,5 +1,7 @@
 package bottest
 
+import "strings"
+
 // Step ist ein Punkt im Verarbeitungspfad. State: wait | done | skipped | error.
 type Step struct {
 	Label  string
@@ -65,7 +67,9 @@ templ Response(vm ResponseVM) {
 			</div>
 		}
 		<div class="bot-meta">
-			if vm.PreviewTo != "" {
+			if strings.HasSuffix(vm.PreviewTo, "@g.us") {
+				Als Vorschau in die Testgruppe gesendet – nicht in die Stammtisch-Gruppe.
+			} else if vm.PreviewTo != "" {
 				Als Vorschau an { vm.PreviewTo } gesendet – nicht an die Gruppe.
 			} else if vm.DryRun {
 				Würde an { orDash(vm.Recipient) } gehen – nicht gesendet.

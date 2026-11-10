@@ -85,7 +85,8 @@ Spielwiese gegen den echten Bot ohne WhatsApp, als Chat-Simulation:
   komplette Verarbeitung, der Wochenreport löst den Donnerstagsreport aus,
   die Tisch-Erinnerung die Bitte an den Wirt, unseren Tisch freizuhalten
   (`POST /wirt-reminder` am Bot). Bei ihr entfallen Ausgabe und Stichtag; in
-  der Vorschau wird die eigene Nummer markiert, nicht der Wirt. Der Wirt
+  der Vorschau wird die eigene Nummer markiert, nicht der Wirt – als Namen
+  zeigt WhatsApp die Markierung nur in der Testgruppe. Der Wirt
   selbst wird im Admin-UI nicht gepflegt – seine Nummer liegt als `WIRT_JID`
   im SealedSecret des Bots.
 - **Nachricht** — steht als Sprechblase im Chat und lässt sich direkt
@@ -94,14 +95,15 @@ Spielwiese gegen den echten Bot ohne WhatsApp, als Chat-Simulation:
 - **Ausgabe** — „💬 Nachricht" (Text, inkl. alternativer Statistik-Designs)
   oder „🖼️ Bild" (PNG-Karte mit Design-Auswahl). Entfällt bei
   Absage/Zusage, weil dort nur klassifiziert wird.
-- **Versand** — Dry-Run oder Vorschau an die eigene Nummer, dazu ein
-  optionaler Stichtag.
+- **Versand** — Dry-Run, „An mich" (Vorschau an die eigene Nummer) oder
+  „Testgruppe" (Vorschau in eine eigens angelegte WhatsApp-Gruppe, am Bot als
+  `PREVIEW_GROUP_JID` hinterlegt), dazu ein optionaler Stichtag.
 
 Danach antwortet der Bot im Chat (Antworttext bzw. Bild, bei Absage/Zusage
 die Klassifikation samt DB-Wirkung), daneben zeigt ein Verarbeitungspfad,
-welche Schritte gelaufen sind. Der Modus „Vorschau an meine Nummer“
-verschickt entsprechend Text oder Bild an die Testnummer — nie an die
-Gruppe.
+welche Schritte gelaufen sind. Die Modi „An mich“ und „Testgruppe“
+verschicken entsprechend Text oder Bild an die Testnummer bzw. in die
+Testgruppe — nie an die Stammtisch-Gruppe.
 
 ### KI-Modell (`/ki-modell`)
 

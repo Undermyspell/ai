@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -109,9 +110,10 @@ type Server struct {
 	// niemand wird markiert).
 	WirtJID string
 
-	// PreviewGroupJID ist eine Testgruppe für die Vorschau der
-	// Tisch-Erinnerung (von main gesetzt, aus PREVIEW_GROUP_JID; leer = die
-	// Vorschau geht an PreviewJID). Markiert wird in beiden Fällen PreviewJID.
+	// PreviewGroupJID ist eine Testgruppe als zweites Vorschau-Ziel (von main
+	// gesetzt, aus PREVIEW_GROUP_JID). Sie ist das Ziel bei
+	// ?previewTarget=group, sonst geht die Vorschau an PreviewJID. Die
+	// Tisch-Erinnerung markiert in beiden Fällen PreviewJID.
 	PreviewGroupJID string
 }
 
@@ -437,7 +439,8 @@ func (s *Server) runStats(ctx context.Context, receiver string, dryRun bool, asO
 func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	dryRun := q.Get("dryRun") == "true"
-	preview := q.Get("preview") == "true" && s.PreviewJID != ""
+	previewTo := s.previewTarget(q)
+	preview := previewTo != ""
 	asImage := q.Get("format") == "image"
 
 	asOf := s.today()
@@ -530,12 +533,12 @@ func (s *Server) handleWeekly(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if preview && text != "" {
-		if err := deliver(s.PreviewJID); err != nil {
-			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
+		if err := deliver(previewTo); err != nil {
+			log.Printf("⚠️  Vorschau-Versand(%s): %v", previewTo, err)
 		} else {
-			out.PreviewTo = s.PreviewJID
+			out.PreviewTo = previewTo
 			out.DryRun = false
-			log.Printf("📱 Wochenreport-Vorschau gesendet an %s", s.PreviewJID)
+			log.Printf("📱 Wochenreport-Vorschau gesendet an %s", previewTo)
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -663,7 +666,8 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	preview := q.Get("preview") == "true" && s.PreviewJID != ""
+	previewTo := s.previewTarget(q)
+	preview := previewTo != ""
 	style := q.Get("style")
 	asImage := q.Get("format") == "image"
 
@@ -710,20 +714,35 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 	if preview && out.Path == "statistik" && out.Message != "" {
 		var err error
 		if asImage && png != nil {
-			err = s.sender.SendImage(r.Context(), s.PreviewJID, "🍻 Zumba Stats · Stand "+asOf.Format("02.01.2006"), png)
+			err = s.sender.SendImage(r.Context(), previewTo, "🍻 Zumba Stats · Stand "+asOf.Format("02.01.2006"), png)
 		} else {
-			err = s.sender.SendText(r.Context(), s.PreviewJID, out.Message)
+			err = s.sender.SendText(r.Context(), previewTo, out.Message)
 		}
 		if err != nil {
-			log.Printf("⚠️  Vorschau-Versand(%s): %v", s.PreviewJID, err)
+			log.Printf("⚠️  Vorschau-Versand(%s): %v", previewTo, err)
 		} else {
-			out.PreviewTo = s.PreviewJID
+			out.PreviewTo = previewTo
 			out.DryRun = false
-			log.Printf("📱 Vorschau gesendet an %s", s.PreviewJID)
+			log.Printf("📱 Vorschau gesendet an %s", previewTo)
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)
+}
+
+// previewTarget liefert das Ziel einer Vorschau (Bot-Test): bei ?preview=true
+// die Vorschau-Nummer, mit &previewTarget=group die Testgruppe. Leer heißt
+// "keine Vorschau" – auch dann, wenn das gewählte Ziel nicht konfiguriert
+// ist. Der Parameter wählt nur zwischen den beiden fest konfigurierten
+// Zielen; eine Adresse kommt nie aus dem Request.
+func (s *Server) previewTarget(q url.Values) string {
+	if q.Get("preview") != "true" {
+		return ""
+	}
+	if q.Get("previewTarget") == "group" {
+		return s.PreviewGroupJID
+	}
+	return s.PreviewJID
 }
 
 func (s *Server) isThursday() bool {

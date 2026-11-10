@@ -36,7 +36,7 @@ func runBotTest(h http.Handler, form url.Values) string {
 func TestBotTestSeiteHatDasWirtSzenario(t *testing.T) {
 	rec := httptest.NewRecorder()
 	New(newSpyStore(), testCfg(), false).Routes().ServeHTTP(rec, httptest.NewRequest("GET", "/bot-test", nil))
-	for _, want := range []string{`id="sz-wirt"`, "Tisch-Erinnerung", `data-for="wirt"`} {
+	for _, want := range []string{`id="sz-wirt"`, "Tisch-Erinnerung", `data-for="wirt"`, `id="mode-group"`} {
 		if !strings.Contains(rec.Body.String(), want) {
 			t.Errorf("Seite enthält %q nicht", want)
 		}
@@ -64,7 +64,18 @@ func TestBotTestWirtDryRunUndVorschau(t *testing.T) {
 		}
 	}
 
-	if len(calls) != 2 || calls[0] != "/wirt-reminder?dryRun=true" || calls[1] != "/wirt-reminder?preview=true" {
+	// Testgruppe als Ziel: nur die Wahl geht an den Bot …
+	runBotTest(h, url.Values{"szenario": {"wirt"}, "mode": {"group"}})
+	// … und gilt für alle Szenarien, hier der Wochenreport.
+	runBotTest(h, url.Values{"szenario": {"wochenreport"}, "mode": {"group"}})
+
+	want := []string{
+		"/wirt-reminder?dryRun=true",
+		"/wirt-reminder?preview=true",
+		"/wirt-reminder?preview=true&previewTarget=group",
+		"/weekly-report?preview=true&previewTarget=group",
+	}
+	if strings.Join(calls, " ") != strings.Join(want, " ") {
 		t.Errorf("Bot-Aufrufe = %q", calls)
 	}
 }

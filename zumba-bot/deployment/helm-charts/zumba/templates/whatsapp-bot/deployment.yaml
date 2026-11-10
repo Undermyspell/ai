@@ -78,7 +78,7 @@ spec:
               name: whatsapp-bot-secrets
               key: WIRT_JID
               optional: true
-        # Testgruppe für die Vorschau der Tisch-Erinnerung (Markierungen
+        # Testgruppe als zweites Vorschau-Ziel des Bot-Tests (Markierungen
         # zeigt WhatsApp nur in Gruppen als Namen)
         - name: PREVIEW_GROUP_JID
           valueFrom:

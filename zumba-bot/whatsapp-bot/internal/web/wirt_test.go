@@ -116,17 +116,54 @@ func TestWirtOhneWirtJIDBleibtNeutral(t *testing.T) {
 	}
 }
 
-// Mit Testgruppe geht die Vorschau dorthin – markiert bleibt die eigene
-// Nummer, die Stammtisch-Gruppe bekommt nichts.
+// Mit previewTarget=group geht die Vorschau in die Testgruppe – markiert
+// bleibt die eigene Nummer, die Stammtisch-Gruppe bekommt nichts.
 func TestWirtVorschauGehtInDieTestgruppe(t *testing.T) {
 	const testgruppe = "120363000000000000@g.us"
 	s, snd := wirtServer(testPreview)
 	s.PreviewGroupJID = testgruppe
-	_, out := postWirt(t, s, "?preview=true")
+	_, out := postWirt(t, s, "?preview=true&previewTarget=group")
 	if snd.number != testgruppe || out.PreviewTo != testgruppe {
 		t.Fatalf("Empfänger = %q, PreviewTo = %q", snd.number, out.PreviewTo)
 	}
 	if len(snd.mentioned) != 1 || snd.mentioned[0] != "4917012345678" {
 		t.Errorf("mentioned = %v", snd.mentioned)
+	}
+}
+
+// Ohne previewTarget bleibt es beim 1:1-Chat, auch wenn eine Testgruppe
+// konfiguriert ist; ohne konfigurierte Testgruppe lehnt group ab.
+func TestWirtVorschauZielIstWaehlbar(t *testing.T) {
+	s, snd := wirtServer(testPreview)
+	s.PreviewGroupJID = "120363000000000000@g.us"
+	if _, out := postWirt(t, s, "?preview=true"); snd.number != testPreview || out.PreviewTo != testPreview {
+		t.Errorf("ohne previewTarget: Empfänger = %q", snd.number)
+	}
+
+	s, snd = wirtServer(testPreview)
+	rec, _ := postWirt(t, s, "?preview=true&previewTarget=group")
+	if rec.Code != http.StatusServiceUnavailable || snd.called {
+		t.Errorf("ohne Testgruppe: Status = %d, called = %v", rec.Code, snd.called)
+	}
+}
+
+// Die Testgruppe ist ein Vorschau-Ziel für alle Testwege, nicht nur für die
+// Tisch-Erinnerung – hier der Wochenreport.
+func TestWochenreportVorschauGehtInDieTestgruppe(t *testing.T) {
+	const testgruppe = "120363000000000000@g.us"
+	s, _, snd := newTestServer(classifier.Invalid, thursday)
+	s.PreviewJID = testPreview
+	s.PreviewGroupJID = testgruppe
+
+	rec := httptest.NewRecorder()
+	s.Routes().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/weekly-report?preview=true&previewTarget=group", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Status = %d: %s", rec.Code, rec.Body.String())
+	}
+	if !snd.called || snd.number != testgruppe {
+		t.Fatalf("Empfänger = %q, erwartet die Testgruppe", snd.number)
+	}
+	if !strings.Contains(rec.Body.String(), `"previewTo":"`+testgruppe+`"`) {
+		t.Errorf("Antwort = %s", rec.Body.String())
 	}
 }

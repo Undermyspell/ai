@@ -992,6 +992,9 @@ body.has-sheet { overflow: hidden; }
 .bot-grid:has(#fmt-image:checked) .only-text,
 .bot-grid:has(#fmt-text:checked) .only-image,
 .bot-grid:has(#mode-preview:checked) .only-dry,
+.bot-grid:has(#mode-group:checked) .only-dry,
+.bot-grid:not(:has(#mode-preview:checked)) .only-me,
+.bot-grid:not(:has(#mode-group:checked)) .only-group,
 .bot-grid:has(#mode-dryrun:checked) .only-preview { display: none !important; }
 .bot-grid .steps-wait { display: none; }
 .bot-grid:has(#sz-statistik:checked) .steps-wait[data-for="statistik"],

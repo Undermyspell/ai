@@ -39,15 +39,20 @@ func jidNumber(jid string) string {
 // nur markiert – einen Direktchat mit ihm gibt es nicht. Bisher gibt es nur
 // zwei Wege: ?dryRun=true berechnet den Text, ?preview=true schickt ihn
 // zusätzlich an PREVIEW_JID und markiert dort die Vorschau-Nummer anstelle
-// des Wirts. Ist PREVIEW_GROUP_JID gesetzt, geht die Vorschau in diese
-// Testgruppe – nur in Gruppen zeigt WhatsApp eine Markierung als Namen. Einen echten Versand in die Gruppe gibt es noch NICHT – ein
+// des Wirts. Mit &previewTarget=group geht die Vorschau stattdessen in die
+// Testgruppe (PREVIEW_GROUP_JID) – nur in Gruppen zeigt WhatsApp eine
+// Markierung als Namen. Der Parameter wählt nur zwischen den beiden fest
+// konfigurierten Zielen; eine Adresse kommt nie aus dem Request. Einen echten Versand in die Gruppe gibt es noch NICHT – ein
 // Aufruf ohne Parameter ist deshalb ebenfalls ein Dry-Run. Geplant ist der
 // Versand donnerstags um 16 Uhr.
 func (s *Server) handleWirtReminder(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	preview := q.Get("preview") == "true"
-	if preview && s.PreviewJID == "" {
-		http.Error(w, "kein PREVIEW_JID konfiguriert", http.StatusServiceUnavailable)
+	previewTo := s.previewTarget(q)
+	// Markiert wird in der Vorschau immer PREVIEW_JID – ohne sie gibt es
+	// keine Vorschau, auch nicht in die Testgruppe.
+	if preview && (s.PreviewJID == "" || previewTo == "") {
+		http.Error(w, "Vorschau-Ziel nicht konfiguriert (PREVIEW_JID bzw. PREVIEW_GROUP_JID)", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -68,10 +73,7 @@ func (s *Server) handleWirtReminder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if preview {
-		target := s.PreviewJID
-		if s.PreviewGroupJID != "" {
-			target = s.PreviewGroupJID
-		}
+		target := previewTo
 		var err error
 		if ms, ok := s.sender.(MentionSender); ok {
 			err = ms.SendTextMention(ctx, target, out.Message, []string{mention})

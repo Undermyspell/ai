@@ -96,10 +96,12 @@ templ Page(vm PageVM) {
 				<div class="seg" role="radiogroup" aria-label="Versand">
 					<label><input type="radio" name="mode" value="dryrun" id="mode-dryrun" checked/><span class="seg-face">Dry-Run</span></label>
 					<label><input type="radio" name="mode" value="preview" id="mode-preview"/><span class="seg-face">📱 An mich</span></label>
+					<label><input type="radio" name="mode" value="group" id="mode-group"/><span class="seg-face">👥 Testgruppe</span></label>
 				</div>
 				<p class="hint only-dry">Nur hier im UI — nichts gesendet, nichts in die DB geschrieben.</p>
-				<p class="hint only-preview">Zusätzlich als echte WhatsApp an deine Nummer — nie an die Gruppe.</p>
-				<p class="hint only-preview only-wirt">In der Vorschau wirst du markiert, nicht der Wirt.</p>
+				<p class="hint only-me">Zusätzlich als echte WhatsApp an deine Nummer — nie an die Stammtisch-Gruppe.</p>
+				<p class="hint only-group">Zusätzlich als echte WhatsApp in deine Testgruppe — nie an die Stammtisch-Gruppe.</p>
+				<p class="hint only-preview only-wirt">Markiert wirst du, nicht der Wirt. Als Namen zeigt WhatsApp die Markierung nur in der Testgruppe.</p>
 				<label class="field not-wirt">
 					<span class="field-label">Stichtag <span style="opacity:.7">optional</span></span>
 					<input class="input" type="date" name="date"/>
@@ -107,7 +109,7 @@ templ Page(vm PageVM) {
 				</label>
 			</div>
 			<button type="submit" id="bt-start" class="btn btn-primary" style="padding:12px;font-size:14px;font-weight:800">▶ Test starten</button>
-			<p class="hint">Es geht nie etwas an die Gruppe. Echte Gruppen-Nachrichten entstehen nur durch reale „statistik"-Anfragen und den Wochenreport-CronJob.</p>
+			<p class="hint">Es geht nie etwas an die Stammtisch-Gruppe. Echte Gruppen-Nachrichten entstehen nur durch reale „statistik"-Anfragen und den Wochenreport-CronJob.</p>
 		</div>
 		<div class="card chat">
 			<div class="chat-head">
@@ -118,7 +120,8 @@ templ Page(vm PageVM) {
 				</div>
 				<span class="chat-mode">
 					<span class="pill pill-mono is-blue only-dry">DRY-RUN</span>
-					<span class="pill pill-mono is-amber only-preview">VORSCHAU → eigene Nummer</span>
+					<span class="pill pill-mono is-amber only-me">VORSCHAU → eigene Nummer</span>
+					<span class="pill pill-mono is-amber only-group">VORSCHAU → Testgruppe</span>
 				</span>
 			</div>
 			<div class="chat-body">

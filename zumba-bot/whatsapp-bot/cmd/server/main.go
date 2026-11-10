@@ -113,7 +113,7 @@ func main() {
 	srv.WirtJID = cfg.WirtJID
 	srv.PreviewGroupJID = cfg.PreviewGroupJID
 	if cfg.PreviewGroupJID != "" {
-		log.Printf("📱 Vorschau der Tisch-Erinnerung geht in die Testgruppe")
+		log.Printf("📱 Testgruppe als zweites Vorschau-Ziel gesetzt")
 	}
 	if cfg.WirtJID == "" {
 		log.Printf("ℹ️  WIRT_JID nicht gesetzt – Tisch-Erinnerung ohne Markierung")

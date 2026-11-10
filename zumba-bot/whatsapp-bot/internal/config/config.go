@@ -28,9 +28,9 @@ type Config struct {
 	// kein Mitglied der Runde, wird aber in der wöchentlichen Bitte, den
 	// Tisch freizuhalten, in der Gruppe markiert (leer = keine Markierung).
 	WirtJID string
-	// PreviewGroupJID ist eine Testgruppe: ist sie gesetzt, geht die Vorschau
-	// der Tisch-Erinnerung dorthin statt in den 1:1-Chat – WhatsApp zeigt
-	// Markierungen nur in Gruppen als Namen an.
+	// PreviewGroupJID ist eine Testgruppe als zweites Vorschau-Ziel der
+	// Bot-Test-Seite (statt des 1:1-Chats) – u. a. weil WhatsApp Markierungen
+	// nur in Gruppen als Namen anzeigt. Leer = keine Testgruppe.
 	PreviewGroupJID string
 
 	// ClassifierURL ist die Basis-URL des classifier-service für den

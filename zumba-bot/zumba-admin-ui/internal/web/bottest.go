@@ -75,11 +75,16 @@ type botOutcome struct {
 }
 
 // modeQuery übersetzt den Modus der Bot-Test-Seite in den Query-Parameter des Bots.
-// Die Testseite kennt nur dryrun und preview – sie löst NIE einen echten
-// Gruppen-Versand aus (der passiert nur über echte Statistik-Webhooks + CronJob).
+// Die Testseite kennt dryrun, preview (eigene Nummer) und group (Testgruppe)
+// – sie löst NIE einen Versand in die Stammtisch-Gruppe aus (der passiert nur
+// über echte Statistik-Webhooks + CronJob). Die Adressen der beiden
+// Vorschau-Ziele kennt nur der Bot, hier geht bloß die Wahl mit.
 func modeQuery(mode string) string {
-	if mode == "preview" {
+	switch mode {
+	case "preview":
 		return "?preview=true"
+	case "group":
+		return "?preview=true&previewTarget=group"
 	}
 	return "?dryRun=true"
 }
