@@ -103,6 +103,11 @@ type Server struct {
 	// Versand eines Wochenreports rückt der Bot die Schlange darüber weiter.
 	// nil = nur Cards.
 	CardSettings CardSettingsSource
+
+	// WirtJID ist die WhatsApp-Nummer des Wirts, der in der Bitte, den Tisch
+	// freizuhalten, markiert wird (von main gesetzt, aus WIRT_JID; leer =
+	// niemand wird markiert).
+	WirtJID string
 }
 
 // CardSettingsSource liefert die Bild-Design-Einstellungen und hält den
@@ -181,6 +186,8 @@ func (s *Server) Routes() http.Handler {
 	// Nachricht an die eigene Vorschau-Nummer (Admin-UI schickt sich die
 	// öffentlichen Tunnel-Adressen aufs Handy). Empfänger ist fest PREVIEW_JID.
 	mux.HandleFunc("POST /notify", s.handleNotify)
+	// Bitte an den Wirt, den Tisch freizuhalten – bisher nur Dry-Run/Vorschau.
+	mux.HandleFunc("POST /wirt-reminder", s.handleWirtReminder)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))

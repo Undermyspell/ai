@@ -188,7 +188,7 @@ whatsappBot:
     GEMINI_FALLBACK_MODEL: gemini-3.8-flash
     # Evolution API
     EVOLUTION_INSTANCE: whatsapp
-    # Hinweis: ZUMBA_GROUP_JID + PREVIEW_JID (statische WhatsApp-Nummern) liegen
+    # Hinweis: ZUMBA_GROUP_JID, PREVIEW_JID + WIRT_JID (statische WhatsApp-Nummern) liegen
     # im SealedSecret whatsapp-bot-secrets, nicht hier im Klartext.
     TZ: Europe/Berlin
     # "statistik"-Antwort in der Gruppe: text | image (braucht renderer.enabled,

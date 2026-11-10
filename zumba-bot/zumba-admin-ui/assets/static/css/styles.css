@@ -1761,3 +1761,10 @@ input:focus-visible ~ .design-check { outline: 2px solid var(--blue); outline-of
 @media (max-width: 560px) {
   .year-row { grid-template-columns: 1fr; gap: 6px; }
 }
+
+/* Wirt: Test der Tisch-Erinnerung */
+.wirt-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.wirt-controls > * { flex: 1 1 180px; }
+.wirt-controls .btn { flex: 0 0 auto; padding: 10px 16px; }
+.wirt-result { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+.wirt-result .bubble-out { max-width: min(460px, 100%); }

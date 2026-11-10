@@ -24,6 +24,10 @@ type Config struct {
 	// PreviewJID ist die Nummer, an die der "Vorschau"-Modus der Bot-Test-Seite
 	// die erzeugte Nachricht schickt (statt an die Gruppe). Leer = Vorschau aus.
 	PreviewJID string
+	// WirtJID ist die WhatsApp-Nummer des Wirts des Stammtisch-Lokals. Er ist
+	// kein Mitglied der Runde, wird aber in der wöchentlichen Bitte, den
+	// Tisch freizuhalten, in der Gruppe markiert (leer = keine Markierung).
+	WirtJID string
 
 	// ClassifierURL ist die Basis-URL des classifier-service für den
 	// ML-Shadow-Modus (z.B. http://zumba-classifier:8080). Leer = Shadow aus.
@@ -125,6 +129,7 @@ func Load() (Config, error) {
 		},
 		GroupJID:      getenv("ZUMBA_GROUP_JID", "000000000000-0000000000@g.us"),
 		PreviewJID:    os.Getenv("PREVIEW_JID"),
+		WirtJID:       os.Getenv("WIRT_JID"),
 		ClassifierURL: os.Getenv("CLASSIFIER_URL"),
 		RendererURL:   os.Getenv("RENDERER_URL"),
 		CardStyles:    os.Getenv("CARD_STYLES"),

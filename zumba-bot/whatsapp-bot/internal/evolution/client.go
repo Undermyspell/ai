@@ -32,12 +32,22 @@ func NewClient(baseURL, apiKey, instance string) *Client {
 type sendTextRequest struct {
 	Number string `json:"number"`
 	Text   string `json:"text"`
+	// Mentioned: Nummern, die im Text als "@<nummer>" stehen und von WhatsApp
+	// als Markierung angezeigt werden sollen.
+	Mentioned []string `json:"mentioned,omitempty"`
 }
 
 // SendText: POST {baseURL}/message/sendText/{instance} mit Header apikey,
 // Body {number, text}.
 func (c *Client) SendText(ctx context.Context, number, text string) error {
-	buf, err := json.Marshal(sendTextRequest{Number: number, Text: text})
+	return c.SendTextMention(ctx, number, text, nil)
+}
+
+// SendTextMention ist SendText mit Markierungen: jede Nummer aus mentioned
+// muss im Text als "@<nummer>" vorkommen, damit WhatsApp sie als Kontakt
+// anzeigt.
+func (c *Client) SendTextMention(ctx context.Context, number, text string, mentioned []string) error {
+	buf, err := json.Marshal(sendTextRequest{Number: number, Text: text, Mentioned: mentioned})
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}

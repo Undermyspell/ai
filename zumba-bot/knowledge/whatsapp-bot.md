@@ -61,6 +61,24 @@ Fehltage-Strafen als Marker. Der Report ist über das Admin-UI als Dry-Run
 testbar („Wochenreport testen"), inklusive simuliertem Stichtag — simulierte
 Läufe schreiben nie.
 
+## Tisch-Erinnerung an den Wirt (im Aufbau)
+
+Jeden Donnerstag um 16 Uhr soll der Wirt gebeten werden, den Stammtisch-Tisch
+für den Abend freizuhalten. Die Nachricht geht in die Stammtisch-Gruppe, der
+Wirt wird darin nur markiert – einen Direktchat mit ihm gibt es nicht. Der Wirt ist kein Mitglied; seine Nummer liegt wie die der Gruppe im
+SealedSecret `whatsapp-bot-secrets` (`WIRT_JID`, optional). Die Nachricht (`report.BuildWirtReminder`)
+spricht deshalb von „heute Abend" – eine Ankündigung, dass wir kommen, braucht
+es nicht – und markiert den Wirt: im Text steht `@<nummer>`, dieselbe Nummer geht als
+`mentioned` an die Evolution API, WhatsApp zeigt daraus den Kontaktnamen.
+Ohne `WIRT_JID` bleibt die Anrede neutral.
+
+Stand 11/2026 gibt es nur den Testweg: `POST /wirt-reminder?dryRun=true`
+berechnet den Text, `?preview=true` schickt ihn an die Vorschau-Nummer und
+markiert diese statt des Wirts. **Einen echten Versand in die Gruppe und einen
+CronJob gibt es noch nicht** – ein Aufruf ohne Parameter ist ein Dry-Run.
+An Sperrtagen soll keine Erinnerung rausgehen (beim Bau des
+Versands noch einmal bestätigen lassen).
+
 ## Statistik als Bild-Karte
 
 Die Statistik gibt es außer als Text auch als **PNG-Karte** im Wrapped-Look

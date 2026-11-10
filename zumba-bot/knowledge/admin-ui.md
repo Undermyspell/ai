@@ -133,6 +133,18 @@ Gespeichert wird in `card_settings`; der Bot liest die Tabelle vor jeder
 Karte. Wie beim KI-Modell gesperrt ist die Seite bei offenem Tunnel nicht –
 Speichern verschickt nichts.
 
+### Wirt (`/wirt`)
+
+Test der **Tisch-Erinnerung**: die Bitte an den Wirt, unseren Tisch
+freizuhalten, wie sie der Bot baut (`POST /wirt-reminder`). Dry-Run zeigt sie
+nur an (beim Öffnen der Seite automatisch), „📱 An mich" schickt sie als echte
+WhatsApp an die Testnummer und markiert dort die Testnummer statt des Wirts.
+In die Gruppe geht von hier aus nie etwas; die Seite ist wie der Bot-Test
+gesperrt, solange ein Tunnel offen ist.
+
+Der Wirt selbst wird hier nicht gepflegt: er ist kein Mitglied der Runde,
+seine Nummer liegt wie die der Gruppe als `WIRT_JID` im SealedSecret des Bots.
+
 ### ML-Daten (`/ml-daten`)
 
 Die Nachrichten fürs eigene Modell, je Quelle ein eigener Menüpunkt (oben

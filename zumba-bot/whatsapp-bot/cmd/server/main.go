@@ -109,6 +109,11 @@ func main() {
 	} else if len(cardStyles) > 0 {
 		log.Printf("🎨 Bild-Designs in Rotation (CARD_STYLES): %s", strings.Join(cardStyles, ", "))
 	}
+	// Wirt des Lokals: wird in der Tisch-Erinnerung markiert (WIRT_JID).
+	srv.WirtJID = cfg.WirtJID
+	if cfg.WirtJID == "" {
+		log.Printf("ℹ️  WIRT_JID nicht gesetzt – Tisch-Erinnerung ohne Markierung")
+	}
 	if cfg.StatsFormat == "image" {
 		log.Printf("🖼  \"statistik\"-Antwort als Bild (STATS_FORMAT=image)")
 	}

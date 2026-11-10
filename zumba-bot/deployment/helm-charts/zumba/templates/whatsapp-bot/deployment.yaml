@@ -71,6 +71,13 @@ spec:
               name: whatsapp-bot-secrets
               key: PREVIEW_JID
               optional: true
+        # Nummer des Wirts: wird in der Tisch-Erinnerung in der Gruppe markiert
+        - name: WIRT_JID
+          valueFrom:
+            secretKeyRef:
+              name: whatsapp-bot-secrets
+              key: WIRT_JID
+              optional: true
         livenessProbe:
           httpGet:
             path: /healthz

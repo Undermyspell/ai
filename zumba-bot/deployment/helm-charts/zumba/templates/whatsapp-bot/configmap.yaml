@@ -30,6 +30,6 @@ data:
   STATS_FORMAT: {{ .Values.whatsappBot.env.STATS_FORMAT | quote }}
   # Bild-Designs in Rotation (Komma-Liste, leer = immer "wrapped")
   CARD_STYLES: {{ .Values.whatsappBot.env.CARD_STYLES | quote }}
-  # ZUMBA_GROUP_JID + PREVIEW_JID kommen aus dem SealedSecret whatsapp-bot-secrets
+  # ZUMBA_GROUP_JID, PREVIEW_JID + WIRT_JID kommen aus dem SealedSecret whatsapp-bot-secrets
   # (statische WhatsApp-Nummern werden als Secret behandelt, nicht im ConfigMap).
 {{- end }}

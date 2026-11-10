@@ -120,6 +120,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /bild-designs", s.handleBildDesigns)
 	mux.HandleFunc("POST /bild-designs/rotation", s.handleBildDesignsRotation)
 	mux.HandleFunc("POST /bild-designs/naechster", s.handleBildDesignsNaechster)
+	// Tisch-Erinnerung an den Wirt: der Test kann im Vorschau-Modus eine
+	// echte WhatsApp auslösen und bleibt deshalb bei offenem Tunnel zu.
+	mux.HandleFunc("GET /wirt", sealed(s.handleWirt))
+	mux.HandleFunc("POST /wirt/test", sealed(s.handleWirtTest))
 
 	// Öffentlich-Seite. Schalten geht nur, wenn es einen tunnel-service gibt —
 	// ohne ihn zeigt die Seite bloß den Hinweis.
