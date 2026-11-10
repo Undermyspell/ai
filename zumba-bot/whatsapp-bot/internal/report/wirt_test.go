@@ -7,7 +7,7 @@ import (
 
 func TestBuildWirtReminderMarkiertDieNummer(t *testing.T) {
 	text := BuildWirtReminder("491701234567")
-	for _, want := range []string{"Servus @491701234567 👋", "heute Abend unseren Tisch frei", "Automatische Erinnerung"} {
+	for _, want := range []string{"Servus @491701234567 👋", "heute Abend unseren Tisch frei", "🤖🍺 *Automatische Erinnerung vom Zumba-Bot*"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("Text enthält %q nicht:\n%s", want, text)
 		}

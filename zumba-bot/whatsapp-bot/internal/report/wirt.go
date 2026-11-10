@@ -19,7 +19,8 @@ func BuildWirtReminder(mention string) string {
 	b.WriteString("🍻 *Stammtisch heute Abend*\n\n")
 	b.WriteString(anrede + " 👋\n\n")
 	b.WriteString("bitte halt uns heute Abend unseren Tisch frei 🙏\n\n")
-	b.WriteString("Danke dir – bis später! 😉\n")
-	b.WriteString("_Automatische Erinnerung vom Zumba-Stammtisch_")
+	b.WriteString("Danke dir – bis später! 😉\n\n")
+	// Fußzeile wie in der Statistik-Nachricht (report.go).
+	b.WriteString("🤖🍺 *Automatische Erinnerung vom Zumba-Bot*")
 	return b.String()
 }
