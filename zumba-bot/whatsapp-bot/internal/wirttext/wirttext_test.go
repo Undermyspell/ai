@@ -126,7 +126,10 @@ func TestClean(t *testing.T) {
 }
 
 func TestBestanden(t *testing.T) {
-	for urteil, want := range map[string]bool{"ok": true, " OK.\n": true, "`ok`": true, "nein": false, "ok, aber": false, "": false} {
+	for urteil, want := range map[string]bool{
+		"ok": true, " OK.\n": true, "`ok`": true, "**Ok**": true, "„ok“": true,
+		"nein": false, "ok, aber": false, "ok nein": false, "nicht ok": false, "": false,
+	} {
 		if bestanden(urteil) != want {
 			t.Errorf("bestanden(%q) != %v", urteil, want)
 		}

@@ -15,10 +15,12 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/michael/zumba-shared/wirt"
 )
@@ -84,6 +86,9 @@ func (g *Generator) Text(ctx context.Context, model string, day time.Time, vorhe
 		}
 		text := Clean(raw)
 		if err := wirt.Validate(text); err != nil {
+			// Verworfene Texte stehen im Log – nur so lässt sich sehen, ob
+			// der Prompt oder die Prüfung nachgeschärft werden muss.
+			log.Printf("ℹ️  Wirt-Text (%s) verworfen – %v: %q", model, err, text)
 			gruende = append(gruende, err.Error())
 			continue
 		}
@@ -92,6 +97,7 @@ func (g *Generator) Text(ctx context.Context, model string, day time.Time, vorhe
 			return "", fmt.Errorf("Tonprüfung mit %s: %w", model, err)
 		}
 		if !bestanden(urteil) {
+			log.Printf("ℹ️  Wirt-Text (%s) verworfen – Tonprüfung antwortet %q auf: %q", model, gekuerzt(urteil, 200), text)
 			gruende = append(gruende, "Tonprüfung nicht bestanden")
 			continue
 		}
@@ -148,8 +154,24 @@ func Clean(raw string) string {
 }
 
 // bestanden: nur ein eindeutiges "ok" zählt – alles andere ist ein Nein.
+// Satzzeichen und Markdown um das Wort herum ("**OK**", "Ok.") stören nicht,
+// jedes weitere Wort ("ok, aber …") schon.
 func bestanden(urteil string) bool {
-	u := strings.ToLower(strings.TrimSpace(urteil))
-	u = strings.Trim(u, ".!`\"' \n")
-	return u == "ok"
+	var b strings.Builder
+	for _, r := range strings.ToLower(urteil) {
+		if unicode.IsLetter(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String() == "ok"
+}
+
+// gekuerzt bringt eine Modell-Antwort fürs Log auf eine Zeile mit höchstens
+// max Zeichen.
+func gekuerzt(s string, max int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if r := []rune(s); len(r) > max {
+		return string(r[:max]) + "…"
+	}
+	return s
 }
