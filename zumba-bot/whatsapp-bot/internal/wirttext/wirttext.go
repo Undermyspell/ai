@@ -6,7 +6,9 @@
 // nicht fehlen. Jeder Text muss zwei Prüfungen bestehen, bevor er als Entwurf
 // gilt: die feste Prüfung (wirt.Validate: genau eine Markierung, es geht um
 // den Tisch, kurz, keine Links) und eine Tonprüfung durch einen zweiten
-// Modell-Aufruf. Fällt er durch, gibt es einen zweiten Versuch; danach einen
+// Modell-Aufruf. Der Prüf-Prompt zählt konkrete Mängel auf und zeigt
+// Beispiele – die erste Fassung ("im Zweifel nein") ließ auf Staging keinen
+// einzigen Text von gemini-3.5-flash-lite durch, auch tadellose nicht. Fällt er durch, gibt es einen zweiten Versuch; danach einen
 // Fehler – dann geht am Nachmittag die Standardnachricht raus.
 package wirttext
 
@@ -92,7 +94,8 @@ func (g *Generator) Text(ctx context.Context, model string, day time.Time, vorhe
 			gruende = append(gruende, err.Error())
 			continue
 		}
-		urteil, err := g.llm.Generate(ctx, model, pruefPrompt, text, 0)
+		// Dieselbe Form wie die Beispiele im Prüf-Prompt.
+		urteil, err := g.llm.Generate(ctx, model, pruefPrompt, "Nachricht: "+text+"\nAntwort:", 0)
 		if err != nil {
 			return "", fmt.Errorf("Tonprüfung mit %s: %w", model, err)
 		}

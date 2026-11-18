@@ -1,12 +1,30 @@
-Du prüfst eine WhatsApp-Nachricht, die ein Stammtisch an den Wirt seines Stammlokals schickt. {wirt} ist der Platzhalter für den Namen des Wirts. Die Nachricht geht ungelesen raus – sei streng.
+Du prüfst eine WhatsApp-Nachricht, die ein Stammtisch an den Wirt seines Stammlokals schickt. Sie soll ihn freundlich bitten, heute Abend den Tisch freizuhalten. {wirt} ist der Platzhalter für den Namen des Wirts.
 
 Antworte mit genau einem Wort: ok oder nein.
 
-Antworte nur dann ok, wenn ALLES zutrifft:
-- Die Nachricht ist höflich, freundlich und wertschätzend.
-- Sie enthält nichts Freches, Spöttisches, Forderndes, Herablassendes, Anzügliches oder Beleidigendes – auch nicht ironisch oder als Scherz.
-- Sie macht sich nicht über den Wirt, sein Lokal, sein Essen, seine Preise, sein Personal oder andere Gäste lustig.
-- Sie bittet darum, heute Abend den Tisch freizuhalten, und ist als Bitte formuliert, nicht als Anweisung.
-- Sie enthält keine erfundenen Angaben (Uhrzeit, Personenzahl, Namen, Bestellungen, Versprechen), keine Links und keine heiklen Themen (Politik, Religion, Krankheit, übermäßiges Trinken).
+Antworte nein, wenn die Nachricht mindestens einen dieser Mängel hat:
+- Sie ist frech, spöttisch, herablassend, anzüglich oder beleidigend – auch als Scherz oder ironisch.
+- Sie macht sich über den Wirt, sein Lokal, sein Essen, seine Preise, sein Personal oder andere Gäste lustig oder kritisiert sie.
+- Sie fordert oder befiehlt, statt zu bitten.
+- Sie bittet gar nicht darum, den Tisch freizuhalten.
+- Sie nennt eine Uhrzeit, eine Personenzahl, Namen von Personen oder eine Bestellung, oder sie verspricht etwas (Umsatz, Trinkgeld).
+- Sie enthält einen Link oder berührt Politik, Religion, Krankheit oder Betrinken.
 
-Bist du bei einem Punkt unsicher, antworte nein.
+Hat sie keinen dieser Mängel, antworte ok. Kein Mangel sind harmlose, freundliche Bemerkungen über das Wetter, die Jahreszeit, den Donnerstag, den Feierabend, Hunger, Vorfreude, Gemütlichkeit oder die Tradition der Runde – ebenso Dialektwörter (Servus, Griaß di, gscheit) und Emojis.
+
+Beispiele:
+
+Nachricht: Servus {wirt} 👋 Draußen wird's ungemütlich, da zieht es uns in deine gute Stube. Magst du uns heute Abend bitte wieder unseren Tisch freihalten? 🙏 Vielen Dank, bis nachher!
+Antwort: ok
+
+Nachricht: Griaß di {wirt}! Der Donnerstag ruft und wir folgen brav 🍻 Wärst du so lieb und hältst uns heute Abend unseren Tisch frei? Danke dir!
+Antwort: ok
+
+Nachricht: Servus {wirt}, schmeiß die anderen raus, wir brauchen heute Abend unseren Tisch! Und diesmal bitte schneller mit dem Essen 😜
+Antwort: nein
+
+Nachricht: {wirt}, Tisch freihalten heute, aber zackig. Wir kommen um 19 Uhr mit 12 Mann und lassen ordentlich Geld da.
+Antwort: nein
+
+Nachricht: Servus {wirt}, hoffentlich ist dein Schnitzel heute mal nicht so zäh 😂 Halt uns bitte den Tisch frei, danke!
+Antwort: nein

@@ -15,12 +15,13 @@ const guterText = "Servus {wirt} 👋\nmagst du uns heute Abend bitte unseren Ti
 // fakeLLM antwortet der Reihe nach: Schreib-Aufrufe aus texte, Prüf-Aufrufe
 // aus urteile. calls hält "schreiben"/"pruefen" in Reihenfolge fest.
 type fakeLLM struct {
-	texte   []string
-	urteile []string
-	err     error
-	calls   []string
-	auftrag string // letzte Nachricht eines Schreib-Aufrufs
-	temps   []float64
+	texte    []string
+	urteile  []string
+	err      error
+	calls    []string
+	auftrag  string // letzte Nachricht eines Schreib-Aufrufs
+	geprueft string // letzte Nachricht eines Prüf-Aufrufs
+	temps    []float64
 }
 
 func (f *fakeLLM) Generate(_ context.Context, _, system, message string, temperature float64) (string, error) {
@@ -30,6 +31,7 @@ func (f *fakeLLM) Generate(_ context.Context, _, system, message string, tempera
 	}
 	if system == pruefPrompt {
 		f.calls = append(f.calls, "pruefen")
+		f.geprueft = message
 		u := f.urteile[0]
 		f.urteile = f.urteile[1:]
 		return u, nil
@@ -60,6 +62,10 @@ func TestTextBestehtBeidePruefungen(t *testing.T) {
 	}
 	if got := strings.Join(llm.calls, ","); got != "schreiben,pruefen" {
 		t.Errorf("Aufrufe = %s", got)
+	}
+	// Geprüft wird der aufgeräumte Text, in der Form der Beispiele im Prompt.
+	if llm.geprueft != "Nachricht: "+guterText+"\nAntwort:" {
+		t.Errorf("Prüf-Nachricht = %q", llm.geprueft)
 	}
 	// Schreiben mit Temperatur (Abwechslung), prüfen ohne.
 	if llm.temps[0] == 0 || llm.temps[1] != 0 {
@@ -151,5 +157,32 @@ func TestPromptBeispieleSindGueltig(t *testing.T) {
 	}
 	if n < 2 {
 		t.Errorf("nur %d Beispiele gefunden", n)
+	}
+}
+
+// Die Beispiele im Prüf-Prompt: was als ok gezeigt wird, muss auch die feste
+// Prüfung bestehen – sonst widersprächen sich die beiden Stufen.
+func TestPruefPromptBeispiele(t *testing.T) {
+	ok, nein := 0, 0
+	zeilen := strings.Split(pruefPrompt, "\n")
+	for i, z := range zeilen {
+		nachricht, found := strings.CutPrefix(z, "Nachricht: ")
+		if !found || i+1 >= len(zeilen) {
+			continue
+		}
+		switch strings.TrimSpace(zeilen[i+1]) {
+		case "Antwort: ok":
+			ok++
+			if err := wirt.Validate(nachricht); err != nil {
+				t.Errorf("ok-Beispiel fällt durch die feste Prüfung (%v): %s", err, nachricht)
+			}
+		case "Antwort: nein":
+			nein++
+		default:
+			t.Errorf("Beispiel ohne Antwort: %s", nachricht)
+		}
+	}
+	if ok < 2 || nein < 2 {
+		t.Errorf("zu wenige Beispiele: %d ok, %d nein", ok, nein)
 	}
 }
