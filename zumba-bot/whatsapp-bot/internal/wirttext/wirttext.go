@@ -43,20 +43,24 @@ type LLM interface {
 const versuche = 2
 
 // aufhaenger geben dem Modell jede Woche einen anderen Einstieg – ohne sie
-// landen Sprachmodelle bei gleichem Prompt immer wieder beim selben Satz.
+// landen Sprachmodelle bei gleichem Prompt immer wieder beim selben Satz. Sie
+// passen zu einem Bier-Stammtisch: es wird getrunken und geratscht, nicht
+// gegessen. Kein Reim-Aufhänger – der ergab auf Staging Holpriges.
 var aufhaenger = []string{
-	"die Vorfreude auf den Feierabend",
-	"die Jahreszeit",
+	"die Vorfreude auf das Feierabendbier",
+	"der Durst, der sich pünktlich zum Donnerstag meldet",
+	"die erste Halbe des Abends",
+	"das Anstoßen in der Runde",
+	"ein frisch gezapftes Bier",
 	"der Donnerstag als bester Tag der Woche",
 	"unser Stammplatz, an dem wir uns wie daheim fühlen",
 	"die lange Tradition unserer Runde",
-	"der Hunger nach einer guten Brotzeit",
 	"die Woche, die sich schon nach Wochenende anfühlt",
-	"ein kleiner Reim",
+	"die Jahreszeit",
 	"die Pünktlichkeit, mit der diese Nachricht jeden Donnerstag kommt",
 	"ganz schlicht und herzlich, ohne Schnörkel",
 	"die gute Stube, in der es am gemütlichsten ist",
-	"die Geschichten, die es heute Abend wieder zu erzählen gibt",
+	"die Geschichten, die es heute Abend beim Bier wieder zu erzählen gibt",
 }
 
 var wochentage = [...]string{"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}

@@ -118,7 +118,9 @@ Stufen, alle vor dem Speichern:
 - **Prompt** (`internal/wirttext/prompt.txt`): herzlich, per Du, ein
   Augenzwinkern; nie frech, spöttisch, fordernd oder auf Kosten des Wirts;
   nur die Bitte um den Tisch, nichts dazuerfunden (keine Uhrzeit,
-  Personenzahl, Versprechen). Jede Woche bekommt das Modell einen anderen
+  Personenzahl, Versprechen). Zugeschnitten auf einen Bier-Stammtisch: Bier,
+  Durst, die erste Halbe und Anstoßen dürfen vorkommen, vom Essen ist nicht
+  die Rede – und Bier ja, Saufen nein (keine Witze über Rausch oder Mengen). Jede Woche bekommt das Modell einen anderen
   Aufhänger und die letzten fünf Texte mit der Ansage, sich nicht zu
   wiederholen.
 - **Feste Prüfung** (`shared/wirt.Validate`): genau eine Markierung, keine
