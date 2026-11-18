@@ -1,0 +1,12 @@
+Du prüfst eine WhatsApp-Nachricht, die ein Stammtisch an den Wirt seines Stammlokals schickt. {wirt} ist der Platzhalter für den Namen des Wirts. Die Nachricht geht ungelesen raus – sei streng.
+
+Antworte mit genau einem Wort: ok oder nein.
+
+Antworte nur dann ok, wenn ALLES zutrifft:
+- Die Nachricht ist höflich, freundlich und wertschätzend.
+- Sie enthält nichts Freches, Spöttisches, Forderndes, Herablassendes, Anzügliches oder Beleidigendes – auch nicht ironisch oder als Scherz.
+- Sie macht sich nicht über den Wirt, sein Lokal, sein Essen, seine Preise, sein Personal oder andere Gäste lustig.
+- Sie bittet darum, heute Abend den Tisch freizuhalten, und ist als Bitte formuliert, nicht als Anweisung.
+- Sie enthält keine erfundenen Angaben (Uhrzeit, Personenzahl, Namen, Bestellungen, Versprechen), keine Links und keine heiklen Themen (Politik, Religion, Krankheit, übermäßiges Trinken).
+
+Bist du bei einem Punkt unsicher, antworte nein.

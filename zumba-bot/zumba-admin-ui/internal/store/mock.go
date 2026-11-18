@@ -28,6 +28,8 @@ type Mock struct {
 	classifier   ClassifierModels
 	entscheider  Entscheider
 	cards        CardSettings
+	wirt         *WirtSettings
+	wirtTage     map[string]*WirtNachricht // je Tag (YYYY-MM-DD)
 	seasons      []Season
 
 	mlMu sync.Mutex
@@ -838,4 +840,92 @@ func (m *Mock) SetClassifierEntscheider(_ context.Context, wer string) error {
 	}
 	m.entscheider = Entscheider{Wer: wer, UpdatedAt: time.Now()}
 	return nil
+}
+
+// --- Tisch-Erinnerung: Mock (in-memory, mit einem Beispiel-Entwurf für den
+// nächsten Donnerstag, damit die Seite ohne Bot etwas zeigt) ---
+
+func (m *Mock) wirtInit() {
+	if m.wirt != nil {
+		return
+	}
+	m.wirt = &WirtSettings{Versand: true, Model: "gemma-4-31b-it"}
+	now := time.Now()
+	next := timeutil.StartOfDay(now).AddDate(0, 0, (int(time.Thursday)-int(now.Weekday())+7)%7)
+	gesendet := next.AddDate(0, 0, -7).Add(16 * time.Hour)
+	m.wirtTage = map[string]*WirtNachricht{
+		timeutil.FormatISO(next): {
+			Tag: next, Model: "gemma-4-31b-it", Quelle: sharedstore.WirtQuelleAuto, ErzeugtAm: now,
+			Text: "Servus {wirt} 👋\nder Donnerstag ruft und wir folgen brav. Magst du uns heute Abend bitte wieder unseren Tisch freihalten? 🙏\nVielen Dank – wir freuen uns schon!",
+		},
+		timeutil.FormatISO(next.AddDate(0, 0, -7)): {
+			Tag: next.AddDate(0, 0, -7), Model: "gemma-4-31b-it", Quelle: sharedstore.WirtQuelleAuto,
+			ErzeugtAm: gesendet.Add(-6 * time.Hour), GesendetAm: &gesendet, GesendetAls: sharedstore.WirtAlsKI,
+			Text: "Griaß di {wirt}! Es ist wieder so weit: Stammtisch 🍻\nWärst du so lieb und hältst uns heute Abend unseren Tisch frei?\nDanke dir, bis später!",
+		},
+	}
+}
+
+func (m *Mock) WirtSettings(context.Context) (WirtSettings, error) {
+	m.wirtInit()
+	return *m.wirt, nil
+}
+
+func (m *Mock) SetWirtVersand(_ context.Context, versand bool) error {
+	m.wirtInit()
+	m.wirt.Versand, m.wirt.UpdatedAt = versand, time.Now()
+	return nil
+}
+
+func (m *Mock) SetWirtModel(_ context.Context, model string) error {
+	m.wirtInit()
+	m.wirt.Model, m.wirt.UpdatedAt = model, time.Now()
+	return nil
+}
+
+func (m *Mock) WirtNachricht(_ context.Context, tag time.Time) (*WirtNachricht, error) {
+	m.wirtInit()
+	n, ok := m.wirtTage[timeutil.FormatISO(tag)]
+	if !ok {
+		return nil, nil
+	}
+	kopie := *n
+	return &kopie, nil
+}
+
+func (m *Mock) ListWirtNachrichten(_ context.Context, limit int) ([]WirtNachricht, error) {
+	m.wirtInit()
+	out := make([]WirtNachricht, 0, len(m.wirtTage))
+	for _, n := range m.wirtTage {
+		out = append(out, *n)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Tag.After(out[j].Tag) })
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (m *Mock) AdoptWirtText(_ context.Context, tag time.Time, text, model string) (bool, error) {
+	m.wirtInit()
+	key := timeutil.FormatISO(tag)
+	if n, ok := m.wirtTage[key]; ok && n.GesendetAm != nil {
+		return false, nil
+	}
+	m.wirtTage[key] = &WirtNachricht{Tag: tag, Text: text, Model: model, Quelle: sharedstore.WirtQuelleTest, ErzeugtAm: time.Now()}
+	return true, nil
+}
+
+func (m *Mock) SetWirtAbgelehnt(_ context.Context, tag time.Time, abgelehnt bool) (bool, error) {
+	m.wirtInit()
+	n, ok := m.wirtTage[timeutil.FormatISO(tag)]
+	if !ok || n.Text == "" || n.GesendetAm != nil {
+		return false, nil
+	}
+	n.AbgelehntAm = nil
+	if abgelehnt {
+		now := time.Now()
+		n.AbgelehntAm = &now
+	}
+	return true, nil
 }

@@ -995,6 +995,9 @@ body.has-sheet { overflow: hidden; }
 .bot-grid:has(#mode-group:checked) .only-dry,
 .bot-grid:not(:has(#mode-preview:checked)) .only-me,
 .bot-grid:not(:has(#mode-group:checked)) .only-group,
+.bot-grid:not(:has(#wn-live:checked)) .only-wn-live,
+.bot-grid:not(:has(#wn-standard:checked)) .only-wn-standard,
+.bot-grid:not(:has(#wn-neu:checked)) .only-wn-neu,
 .bot-grid:has(#mode-dryrun:checked) .only-preview { display: none !important; }
 .bot-grid .steps-wait { display: none; }
 .bot-grid:has(#sz-statistik:checked) .steps-wait[data-for="statistik"],
@@ -1082,6 +1085,26 @@ body.has-sheet { overflow: hidden; }
 .bubble-out.is-image img { width: 100%; border-radius: 12px; }
 .bubble-out.is-image .bubble-out-foot { margin: 4px 6px 0; }
 .bot-meta { align-self: flex-end; font-family: var(--mono); font-size: 10px; color: var(--faint); }
+/* Markierung in einer Nachricht – wie WhatsApp sie absetzt */
+.bubble-out .mention { font-weight: 700; padding: 0 3px; border-radius: 4px; background: rgba(255, 255, 255, .22); }
+.bubble-out .mention:empty { display: none; }
+/* KI-Text der Tisch-Erinnerung für den nächsten Versand übernehmen */
+.adopt {
+  align-self: flex-end;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  max-width: 82%;
+  text-align: right;
+}
+.adopt.is-done {
+  flex-direction: row; align-items: baseline; gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 12px; font-weight: 700;
+  animation: g-up .3s ease both;
+}
+.adopt.is-done .card-link { white-space: nowrap; }
 .bot-error {
   padding: 12px 14px;
   border-radius: 14px;
@@ -1768,4 +1791,71 @@ input:focus-visible ~ .design-check { outline: 2px solid var(--blue); outline-of
 .year-facts { margin: 8px 0 10px; padding-left: 18px; font-size: 13px; line-height: 1.55; }
 @media (max-width: 560px) {
   .year-row { grid-template-columns: 1fr; gap: 6px; }
+}
+
+/* ============================================================
+   Tisch-Erinnerung an den Wirt
+   ============================================================ */
+/* Vorschau links, Einstellungen rechts, Verlauf unter der Vorschau – mobil
+   rückt der Verlauf ans Ende, damit der Schalter nicht darunter verschwindet */
+.wirt-grid { grid-template-rows: auto 1fr; }
+.wirt-grid > .side-col { grid-column: 2; grid-row: 1 / span 2; }
+.wirt-grid > .wirt-verlauf { grid-column: 1; }
+@media (max-width: 1200px) {
+  .wirt-grid { grid-template-rows: none; }
+  .wirt-grid > .side-col, .wirt-grid > .wirt-verlauf { grid-column: auto; grid-row: auto; }
+}
+.wirt-chat { min-height: 0; }
+.wirt-chat .chat-body { padding: 24px 18px; }
+.wirt-chat .bubble-out { max-width: min(460px, 88%); }
+.wirt-chat .bubble-out pre { font-family: var(--font); font-size: 14px; line-height: 1.5; }
+/* abgelehnter Text: bleibt lesbar, tritt aber zurück */
+.wirt-chat .bubble-out.is-off {
+  background: var(--soft-2);
+  color: var(--muted);
+  box-shadow: none;
+  border: 1px dashed var(--line-strong);
+}
+.wirt-chat .bubble-out.is-off pre { text-decoration: line-through; text-decoration-color: var(--faint); }
+.wirt-chat .bubble-out.is-off .mention { background: var(--soft-2); }
+/* Standardnachricht als Fallback, solange der KI-Text noch nicht da ist */
+.wirt-chat .bubble-out.is-ghost {
+  background: transparent;
+  color: var(--text);
+  box-shadow: none;
+  border: 1px dashed var(--line-strong);
+}
+.wirt-chat .bubble-out.is-ghost .mention { background: var(--blue-soft); color: var(--blue); }
+.wirt-chat .sys-chip.is-red { max-width: 480px; border-radius: 14px; padding: 10px 14px; line-height: 1.45; }
+.wirt-foot {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+.wirt-next { flex: 1 1 260px; font-size: 13px; color: var(--muted); max-width: 60ch; }
+.wirt-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.wirt-log { display: flex; flex-direction: column; margin-top: 12px; }
+.wirt-log-row {
+  display: grid; grid-template-columns: 48px auto minmax(0, 1fr); gap: 12px; align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.wirt-log-row .pill { justify-self: start; }
+.wirt-log-text { color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; }
+.wirt-log-text.is-empty { color: var(--faint); }
+.wirt-model { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 4px; }
+.wirt-model .field-label { flex-basis: 100%; }
+.wirt-model-name { font-weight: 700; font-size: 13px; }
+/* Modellwahl für den Text (Seite KI-Modell): drei Namen, auf dem Handy untereinander */
+.wirt-model-seg { margin-top: 16px; }
+@media (max-width: 560px) {
+  .wirt-model-seg { flex-direction: column; }
+}
+.wirt-rules { margin: 10px 0 0; padding-left: 16px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.wirt-rules li + li { margin-top: 4px; }
+.card .timeline + .field { margin-top: 4px; }
+@media (max-width: 560px) {
+  .wirt-log-row { grid-template-columns: 48px minmax(0, 1fr); }
+  .wirt-log-text { grid-column: 1 / -1; }
 }

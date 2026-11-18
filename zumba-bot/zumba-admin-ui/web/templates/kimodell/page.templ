@@ -17,6 +17,17 @@ type VM struct {
 	Entscheider      string
 	EntscheiderSince string
 	ML               MLInfo
+	// Wirt: das Modell, das den Text der Tisch-Erinnerung an den Wirt schreibt.
+	Wirt WirtModel
+}
+
+// WirtModel ist die Wahl für den Text der Tisch-Erinnerung. Model == "" oder
+// ein Modell außerhalb der Auswahl: Hinweis sagt, was dann gilt.
+type WirtModel struct {
+	Model   string // gewählte ID
+	Label   string
+	Limits  string // "30/min · 14.400/Tag"
+	Hinweis string
 }
 
 // MLInfo beschreibt das eigene Modell (GET /info am classifier-service).
@@ -152,6 +163,29 @@ templ Region(vm VM) {
 				<p class="hint" style="margin:10px 4px 0">
 					Grenzen pro Minute und Tag: kostenloses Kontingent von Google AI Studio.
 					Haupt- und Fallback-Modell müssen sich unterscheiden.
+				</p>
+			</div>
+			<div class="card" id="tisch-erinnerung">
+				<div class="card-head">
+					<div>
+						<div class="card-title">Tisch-Erinnerung an den Wirt</div>
+						<div class="card-sub">Dieses Modell schreibt donnerstags um 10:00 den Text der Erinnerung – unabhängig von Haupt- und Fallback-Modell.</div>
+					</div>
+					if vm.Wirt.Limits != "" {
+						<span class="card-meta">{ vm.Wirt.Limits }</span>
+					}
+				</div>
+				<div class="seg wirt-model-seg" role="group" aria-label="Modell für die Tisch-Erinnerung">
+					for _, m := range vm.Models {
+						@wirtModelButton(vm.Wirt.Model, m)
+					}
+				</div>
+				if vm.Wirt.Hinweis != "" {
+					<p class="hint" style="margin-top:12px">{ vm.Wirt.Hinweis }</p>
+				}
+				<p class="hint" style="margin-top:12px">
+					Ein Text kostet zwei bis vier Aufrufe: schreiben und den Ton prüfen, bei Bedarf ein zweiter Versuch. Einen Fallback gibt es hier nicht – liefert das Modell nichts Brauchbares, geht die Standardnachricht raus.
+					<a class="card-link" href="/tisch-erinnerung">Zur Tisch-Erinnerung →</a>
 				</p>
 			</div>
 		</div>
@@ -306,6 +340,19 @@ func quotaText(class string) string {
 	default:
 		return "t-green"
 	}
+}
+
+templ wirtModelButton(aktiv string, m Model) {
+	<button
+		type="button"
+		class={ templ.KV("is-active", aktiv == m.ID) }
+		aria-pressed={ boolAttr(aktiv == m.ID) }
+		data-wirt-model={ m.ID }
+		hx-post="/ki-modell/tisch-erinnerung"
+		hx-vals={ `{"model":"` + m.ID + `"}` }
+		hx-target="#model-region"
+		hx-swap="outerHTML"
+	>{ m.Label }</button>
 }
 
 templ entscheiderButton(vm VM, wer, label string) {

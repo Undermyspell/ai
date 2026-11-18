@@ -41,6 +41,16 @@ type szenario struct {
 	HasPayload            bool
 }
 
+// KnownSzenario: id ist eines der Szenarien (für die Vorauswahl per Link).
+func KnownSzenario(id string) bool {
+	for _, s := range szenarien {
+		if s.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
 var szenarien = []szenario{
 	{"statistik", "📊", "Statistik", "Rangliste auf Zuruf", true},
 	{"absage", "🚫", "Absage", "Klassifikation prüfen", true},
@@ -91,6 +101,17 @@ templ Page(vm PageVM) {
 					<span class="hint">PNG-Karte über den Renderer. Welche Designs live laufen, steht unter <a href="/bild-designs">Bild-Designs</a>.</span>
 				</label>
 			</div>
+			<div class="only-wirt">
+				<div class="cap">Nachricht</div>
+				<div class="seg" role="radiogroup" aria-label="Nachricht">
+					<label><input type="radio" name="wirtNachricht" value="live" id="wn-live" checked/><span class="seg-face">Wie live</span></label>
+					<label><input type="radio" name="wirtNachricht" value="standard" id="wn-standard"/><span class="seg-face">Standard</span></label>
+					<label><input type="radio" name="wirtNachricht" value="neu" id="wn-neu"/><span class="seg-face">✨ Neu (KI)</span></label>
+				</div>
+				<p class="hint only-wn-live">Was am Donnerstag rausginge: der vorgenerierte KI-Text, sonst die Standardnachricht.</p>
+				<p class="hint only-wn-standard">Die feste Nachricht – der Fallback, wenn es keinen KI-Text gibt oder du ihn ablehnst.</p>
+				<p class="hint only-wn-neu">Das Modell schreibt jetzt einen neuen Text (dauert einige Sekunden). Gespeichert wird er erst, wenn du ihn übernimmst. Welches Modell: <a href="/ki-modell#tisch-erinnerung">KI-Modell</a>.</p>
+			</div>
 			<div>
 				<div class="cap">Versand</div>
 				<div class="seg" role="radiogroup" aria-label="Versand">
@@ -109,7 +130,7 @@ templ Page(vm PageVM) {
 				</label>
 			</div>
 			<button type="submit" id="bt-start" class="btn btn-primary" style="padding:12px;font-size:14px;font-weight:800">▶ Test starten</button>
-			<p class="hint">Es geht nie etwas an die Stammtisch-Gruppe. Echte Gruppen-Nachrichten entstehen nur durch reale „statistik"-Anfragen und die CronJobs für Wochenreport und Tisch-Erinnerung.</p>
+			<p class="hint">Ein Testlauf schickt nie etwas an die Stammtisch-Gruppe. Echte Gruppen-Nachrichten entstehen nur durch reale „statistik"-Anfragen und die CronJobs für Wochenreport und Tisch-Erinnerung – ein hier übernommener KI-Text geht mit der nächsten Tisch-Erinnerung raus.</p>
 		</div>
 		<div class="card chat">
 			<div class="chat-head">
@@ -174,7 +195,7 @@ templ szenarioOption(s szenario, active string) {
 				hx-trigger="change"
 			/>
 		} else {
-			<input type="radio" name="szenario" value={ s.ID } id={ "sz-" + s.ID }/>
+			<input type="radio" name="szenario" value={ s.ID } id={ "sz-" + s.ID } checked?={ s.ID == active }/>
 		}
 		<span class="scen-ico" aria-hidden="true">{ s.Icon }</span>
 		<span>

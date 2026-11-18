@@ -1,0 +1,50 @@
+{{- if and .Values.whatsappBot.enabled .Values.whatsappBot.wirtReminder.enabled .Values.whatsappBot.wirtReminder.generate.enabled -}}
+# KI-Text der Tisch-Erinnerung: ruft donnerstags 10:00 (Europe/Berlin) den
+# /wirt-reminder/generate-Endpoint des Bots auf. Der lässt ein Sprachmodell
+# den Text für heute schreiben und legt ihn als Entwurf ab – bis zum Versand
+# um 16:00 im Admin-UI (Seite "Tisch-Erinnerung") einsehbar und ablehnbar.
+# Gibt es keinen Entwurf oder wurde er abgelehnt, geht die Standardnachricht
+# raus. An Sperrtagen und bei ausgeschaltetem Versand entsteht nichts.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "zumba.fullname" . }}-whatsapp-bot-wirt-text
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "zumba.whatsappBot.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.whatsappBot.wirtReminder.generate.schedule | quote }}
+  timeZone: {{ .Values.whatsappBot.wirtReminder.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  # 4h Nachhol-Fenster: ein späterer Entwurf ist besser als keiner, solange
+  # er deutlich vor dem Versand um 16:00 da ist.
+  startingDeadlineSeconds: 14400
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # Wiederholen ist hier harmlos: der Bot schreibt nur, solange es für
+      # heute noch keinen Text gibt, und gesendet wird dabei nichts.
+      backoffLimit: 2
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            {{- include "zumba.whatsappBot.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: trigger
+            image: busybox:1.35
+            command:
+            - sh
+            - -c
+            - |
+              set -e
+              URL="http://{{ include "zumba.fullname" . }}-whatsapp-bot:{{ .Values.whatsappBot.service.port }}/wirt-reminder/generate"
+              echo "POST $URL"
+              # Schreiben + Ton prüfen, bei Bedarf zweimal: bis zu vier Modell-Aufrufe.
+              wget -q -T 200 -O- --post-data="" --header="Content-Type: application/json" "$URL"
+              echo
+              echo "✅ KI-Text der Tisch-Erinnerung angefragt"
+{{- end }}

@@ -114,6 +114,19 @@ type Server struct {
 	// Tisch-Erinnerung (von main gesetzt; nil = keine Prüfung).
 	Sperrtage SperrtagSource
 
+	// Wirt hält Einstellungen und Tagesstand der Tisch-Erinnerung (Versand
+	// an/aus, Modell, vorgenerierter KI-Text; von main gesetzt). nil = es
+	// gibt nur die Standardnachricht und keinen Schalter.
+	Wirt WirtStore
+
+	// WirtText schreibt den KI-Text der Tisch-Erinnerung (von main gesetzt;
+	// nil = kein KI-Text).
+	WirtText WirtTexter
+
+	// WirtModel ist das Modell für den KI-Text, solange im Admin-UI keines
+	// gewählt ist (von main gesetzt, aus GEMINI_MODEL).
+	WirtModel string
+
 	// PreviewGroupJID ist eine Testgruppe als zweites Vorschau-Ziel (von main
 	// gesetzt, aus PREVIEW_GROUP_JID). Sie ist das Ziel bei
 	// ?previewTarget=group, sonst geht die Vorschau an PreviewJID. Die
@@ -200,6 +213,9 @@ func (s *Server) Routes() http.Handler {
 	// Bitte an den Wirt, den Tisch freizuhalten (CronJob donnerstags 16 Uhr
 	// mit ?send=true; sonst Dry-Run/Vorschau).
 	mux.HandleFunc("POST /wirt-reminder", s.handleWirtReminder)
+	// KI-Text der Erinnerung für heute vorgenerieren (CronJob donnerstags
+	// 10 Uhr) – bis 16 Uhr im Admin-UI einsehbar und ablehnbar.
+	mux.HandleFunc("POST /wirt-reminder/generate", s.handleWirtGenerate)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))

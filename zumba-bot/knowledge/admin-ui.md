@@ -88,7 +88,13 @@ Spielwiese gegen den echten Bot ohne WhatsApp, als Chat-Simulation:
   der Vorschau wird die eigene Nummer markiert, nicht der Wirt – als Namen
   zeigt WhatsApp die Markierung nur in der Testgruppe. Der Wirt
   selbst wird im Admin-UI nicht gepflegt – seine Nummer liegt als `WIRT_JID`
-  im SealedSecret des Bots.
+  im SealedSecret des Bots. Die Auswahl **Nachricht** bestimmt den Text:
+  „Wie live" (was am Donnerstag rausginge), „Standard" (die feste Nachricht)
+  oder „✨ Neu (KI)" – dann schreibt das Modell jetzt einen neuen Text. Unter
+  einem neu geschriebenen Text steht **„Für heute übernehmen"** (bzw. „Für
+  Do., 26.11."): er wird zum Entwurf des nächsten Versands, ersetzt den
+  vorgenerierten und hebt eine Ablehnung auf. Dry-Run, „An mich" und
+  „Testgruppe" gelten für alle drei.
 - **Nachricht** — steht als Sprechblase im Chat und lässt sich direkt
   bearbeiten; darunter liegt das vollständige Webhook-JSON, ebenfalls frei
   editierbar (entfällt beim Wochenreport).
@@ -123,6 +129,38 @@ Modell der jeweils anderen Rolle ist gesperrt – gleich gesetzt gäbe es keinen
 Fallback. Jede Karte zeigt die Grenzen des kostenlosen Kontingents, die
 Seitenspalte rechnet vor, ob es reicht: ein Donnerstag braucht etwa zehn
 Aufrufe.
+
+Eine eigene Karte **„Tisch-Erinnerung an den Wirt"** wählt das Modell, das
+donnerstags um 10:00 den Text der Erinnerung schreibt – dieselben drei
+Modelle, aber unabhängig von Haupt- und Fallback-Modell (es darf auch
+dasselbe sein). Gespeichert in `wirt_settings`, gilt ab dem nächsten Text.
+Einen Fallback gibt es hier nicht: liefert das Modell nichts Brauchbares,
+geht die Standardnachricht raus. Die Kontingent-Rechnung bekommt dafür eine
+Zeile „Tisch-Text" (bis zu vier Aufrufe je Lauf).
+
+### Tisch-Erinnerung (`/tisch-erinnerung`)
+
+Die wöchentliche Bitte an den Wirt, den Tisch freizuhalten (Ablauf und Regeln
+siehe [whatsapp-bot.md](whatsapp-bot.md)). Den Text schreibt donnerstags um
+10:00 ein Sprachmodell, um 16:00 geht er raus.
+
+- **Nächste Erinnerung** — die Nachricht, wie der Wirt sie lesen wird, mit
+  Kopf, Markierung („@Wirt") und Fußzeile. Vor 10:00 steht dort die
+  Standardnachricht als Fallback, danach der KI-Text mit Modell und Uhrzeit.
+- **Ablehnen** — für diesen Donnerstag geht stattdessen die Standardnachricht
+  raus. Der abgelehnte Text bleibt durchgestrichen sichtbar, „Doch den
+  KI-Text senden" nimmt die Ablehnung zurück. Wer nichts tut, lässt den Text
+  durch. Ist kein Text entstanden, nennt die Seite den Grund.
+- **Automatischer Versand** — An/Aus. Aus: donnerstags geht nichts an den
+  Wirt, bis man wieder einschaltet.
+- **Modell für den Text** — nur Anzeige; gewählt wird es unter *KI-Modell*.
+- **Ablauf am Donnerstag** und **Verlauf** — was heute schon passiert ist und
+  was an den letzten Donnerstagen rausging (KI-Text, Standard, abgelehnt).
+
+Gespeichert wird in `wirt_settings` und `wirt_nachrichten`; der Bot liest
+beides vor jedem Lauf. Gesperrt ist die Seite bei offenem Tunnel nicht –
+nichts hier verschickt etwas. Einen neuen Text schreiben lassen und
+übernehmen geht nur über den (dann gesperrten) Bot-Test.
 
 ### Bild-Designs (`/bild-designs`)
 

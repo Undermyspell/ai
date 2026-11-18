@@ -28,6 +28,10 @@ type modelOption struct {
 // fehlgeschlagene Aufrufe zählen mit.
 const callsPerThursday = 10
 
+// wirtCallsPerThursday: so viele Aufrufe kostet der Text der Tisch-Erinnerung
+// höchstens je Lauf – schreiben und Ton prüfen, bei Bedarf ein zweites Mal.
+const wirtCallsPerThursday = 4
+
 // modelOptions sind die Modelle, die die Seite anbietet – und die einzigen,
 // die sie speichert.
 var modelOptions = []modelOption{
@@ -300,7 +304,71 @@ func (s *Server) buildKIModellVM(ctx context.Context, m store.ClassifierModels) 
 		vm.EntscheiderSince = e.UpdatedAt.Local().Format("02.01.2006, 15:04")
 	}
 	vm.ML = mlInfoVM(s.fetchClassifierInfo(ctx))
+
+	set, err := s.store.WirtSettings(ctx)
+	if err != nil {
+		log.Printf("wirt settings: %v", err)
+	}
+	vm.Wirt, vm.Quota = wirtModelVM(set, vm.Quota)
 	return vm
+}
+
+// wirtModelVM beschreibt das Modell, das den Text der Tisch-Erinnerung
+// schreibt, und hängt dessen Zeile an die Kontingent-Rechnung.
+func wirtModelVM(set store.WirtSettings, quota []kimodell.Quota) (kimodell.WirtModel, []kimodell.Quota) {
+	wm := kimodell.WirtModel{Model: set.Model}
+	o, ok := findModel(set.Model)
+	switch {
+	case set.Model == "":
+		wm.Hinweis = "Noch keines gewählt – der Bot nimmt den Wert aus dem Deployment."
+		return wm, quota
+	case !ok:
+		wm.Hinweis = "Aktiv ist " + set.Model + " (nicht in der Auswahl)."
+		return wm, quota
+	}
+	wm.Label, wm.Limits = o.Label, o.limits()
+	p := float64(wirtCallsPerThursday) / float64(o.PerDay) * 100
+	q := kimodell.Quota{
+		Role: "Tisch-Text", Label: o.Label,
+		Text:  fmt.Sprintf("bis zu %d von %s Aufrufen am Donnerstag", wirtCallsPerThursday, thousands(o.PerDay)),
+		Pct:   fmt.Sprintf("%.0f %%", p),
+		Class: "is-green",
+	}
+	switch {
+	case p < 1:
+		q.Pct = "<1 %"
+	case p > 40:
+		q.Class = "is-red"
+	case p > 5:
+		q.Class = "is-amber"
+	}
+	return wm, append(quota, q)
+}
+
+// handleKIModellWirt wählt das Modell, das den Text der Tisch-Erinnerung an
+// den Wirt schreibt – dieselbe Auswahl wie beim Klassifizieren, aber
+// unabhängig von Haupt- und Fallback-Modell. Der Bot liest die Wahl vor jedem
+// Text (wirt_settings).
+func (s *Server) handleKIModellWirt(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	opt, ok := findModel(r.FormValue("model"))
+	if !ok {
+		s.triggerToast(w, "error", "Unbekanntes Modell.")
+		http.Error(w, "unbekanntes Modell", http.StatusUnprocessableEntity)
+		return
+	}
+	if err := s.store.SetWirtModel(ctx, opt.ID); err != nil {
+		s.fail(w, "set wirt model", err)
+		return
+	}
+	log.Printf("🍽️  Tisch-Erinnerung: Modell → %s", opt.ID)
+	m, err := s.store.ClassifierModels(ctx)
+	if err != nil {
+		s.fail(w, "classifier models", err)
+		return
+	}
+	s.triggerToast(w, "success", opt.Label+" schreibt ab dem nächsten Text der Tisch-Erinnerung.")
+	s.renderKIModellRegion(w, r, m)
 }
 
 func (s *Server) handleKIModell(w http.ResponseWriter, r *http.Request) {

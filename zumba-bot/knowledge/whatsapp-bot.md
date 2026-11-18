@@ -70,31 +70,111 @@ gibt es nicht. Der Wirt ist kein Mitglied der Runde (steht nicht in `users`),
 aber in der WhatsApp-Gruppe; seine Nummer liegt wie die der Gruppe im
 SealedSecret `whatsapp-bot-secrets` (`WIRT_JID`, optional).
 
-Die Nachricht (`report.BuildWirtReminder`) spricht von „heute Abend" – eine
-Ankündigung, dass wir kommen, braucht es nicht – und markiert den Wirt: im
-Text steht `@<nummer>`, dieselbe Nummer geht als `mentioned` an die Evolution
-API, WhatsApp zeigt daraus in Gruppen den Kontaktnamen (im 1:1-Chat bleibt es
-bei `@<nummer>`).
+### Aufbau: Rahmen fest, Text jede Woche neu
 
-Ausgelöst wird sie von einem Helm-`CronJob`
-(`templates/whatsapp-bot/wirt-reminder-cronjob.yaml`, `0 16 * * 4`, Schalter
-`whatsappBot.wirtReminder.enabled`), der `POST /wirt-reminder?send=true`
-aufruft. Der Bot sendet nur, wenn
+Die Nachricht besteht aus drei Teilen (`shared/wirt`):
 
+| Teil | Inhalt | Woher |
+|---|---|---|
+| Kopf | „🍻 *Stammtisch heute Abend*" | fest, vom Bot |
+| Text | Anrede mit Markierung, Bitte um den Tisch, Dank | **Sprachmodell** – sonst der feste Standardtext |
+| Fußzeile | „🤖🍺 *Automatische Erinnerung vom Zumba-Bot*" | fest, vom Bot |
+
+Das Modell schreibt nur den Mittelteil und setzt für den Wirt den Platzhalter
+`{wirt}`. Der Bot ersetzt ihn beim Versand durch `@<nummer>`; dieselbe Nummer
+geht als `mentioned` an die Evolution API, WhatsApp zeigt daraus in Gruppen
+den Kontaktnamen (im 1:1-Chat bleibt es bei `@<nummer>`). Markierung und
+Fußzeile können so nie fehlen, und die Nummer des Wirts steht weder in der DB
+noch im Admin-UI. Die Nachricht spricht von „heute Abend" – eine Ankündigung,
+dass wir kommen, braucht es nicht.
+
+### Ablauf am Donnerstag
+
+1. **10:00 – vorgenerieren.** Ein CronJob
+   (`templates/whatsapp-bot/wirt-reminder-generate-cronjob.yaml`, `0 10 * * 4`,
+   Schalter `whatsappBot.wirtReminder.generate.enabled`) ruft
+   `POST /wirt-reminder/generate` auf. Der Bot lässt das Modell den Text
+   schreiben (`internal/wirttext`) und legt ihn als Entwurf des Tages ab
+   (`wirt_nachrichten`).
+2. **Bis 16:00 – ansehen, ablehnen.** Das Admin-UI zeigt den Entwurf auf der
+   Seite *Tisch-Erinnerung*. Wer nichts tut, lässt ihn durch; „Ablehnen"
+   schaltet für diesen Tag auf die Standardnachricht (und lässt sich
+   zurücknehmen).
+3. **16:00 – senden.** Der zweite CronJob
+   (`wirt-reminder-cronjob.yaml`, `0 16 * * 4`, Schalter
+   `whatsappBot.wirtReminder.enabled`) ruft `POST /wirt-reminder?send=true`
+   auf. Raus geht der Entwurf – oder die **Standardnachricht**, wenn es
+   keinen gibt, er abgelehnt wurde oder die feste Prüfung nicht (mehr)
+   besteht. Die Standardnachricht ist der bisherige feste Text; sie muss
+   immer möglich sein.
+
+Was rausging (KI-Text oder Standard), hält der Bot in `wirt_nachrichten` fest.
+
+### Was ein KI-Text erfüllen muss
+
+Leicht lustig darf er sein, höflich und nett muss er sein. Dafür sorgen drei
+Stufen, alle vor dem Speichern:
+
+- **Prompt** (`internal/wirttext/prompt.txt`): herzlich, per Du, ein
+  Augenzwinkern; nie frech, spöttisch, fordernd oder auf Kosten des Wirts;
+  nur die Bitte um den Tisch, nichts dazuerfunden (keine Uhrzeit,
+  Personenzahl, Versprechen). Jede Woche bekommt das Modell einen anderen
+  Aufhänger und die letzten fünf Texte mit der Ansage, sich nicht zu
+  wiederholen.
+- **Feste Prüfung** (`shared/wirt.Validate`): genau eine Markierung, keine
+  weiteren `@` oder Platzhalter, das Wort „Tisch" kommt vor, 30–400 Zeichen,
+  höchstens 8 Zeilen, kein Link.
+- **Tonprüfung**: ein zweiter Modell-Aufruf (`pruef-prompt.txt`) beurteilt den
+  Text streng mit `ok` oder `nein`; nur ein eindeutiges `ok` zählt.
+
+Fällt ein Text durch, schreibt das Modell einmal neu. Bleibt es dabei oder
+antwortet das Modell nicht, gibt es keinen Entwurf: der Endpoint meldet 502
+(der CronJob versucht es bis zu zweimal erneut), der Grund steht im Admin-UI,
+und nachmittags geht die Standardnachricht raus. Ein Text kostet zwei bis
+vier Modell-Aufrufe.
+
+### Einstellungen aus dem Admin-UI (`wirt_settings`)
+
+Der Bot liest sie vor jedem Lauf – eine Änderung greift ohne Neustart.
+
+- **Automatischer Versand an/aus.** Aus heißt: donnerstags geht nichts an den
+  Wirt (weder KI-Text noch Standard) und es wird nichts vorgeneriert.
+  Standard ist an. Testläufe bleiben möglich.
+- **Modell für den Text** (Seite *KI-Modell*, Karte „Tisch-Erinnerung an den
+  Wirt"). Dieselbe Auswahl wie beim Klassifizieren; ein
+  Fallback-Modell gibt es hier nicht – der Fallback ist die Standardnachricht.
+  `GEMINI_MODEL` ist nur der Startwert, solange nichts gewählt ist.
+
+### Wann nichts rausgeht
+
+Der Bot sendet nur, wenn
+
+- der automatische Versand eingeschaltet ist,
 - heute Donnerstag ist,
-- der Tag **kein Sperrtag** ist (`excluded_days`) – antwortet die DB dabei
-  nicht, geht die Bitte trotzdem raus,
-- `WIRT_JID` gesetzt ist.
+- der Tag **kein Sperrtag** ist (`excluded_days`),
+- `WIRT_JID` gesetzt ist,
+- heute noch nicht gesendet wurde.
 
-Sonst entfällt der Versand, der Grund steht in der Antwort und im Log. Der
-CronJob wiederholt einen fehlgeschlagenen Aufruf nicht, damit die Bitte nie
-doppelt in der Gruppe steht.
+Sonst entfällt der Versand, der Grund steht in der Antwort und im Log.
+Antwortet die DB bei Schalter oder Sperrtag nicht, geht die Bitte trotzdem
+raus – ein unnötig freigehaltener Tisch ist das kleinere Übel. Der
+16-Uhr-CronJob wiederholt einen fehlgeschlagenen Aufruf nicht, damit die
+Bitte nie doppelt in der Gruppe steht. Unter denselben Bedingungen entsteht
+vormittags auch kein Entwurf; außerdem nicht, wenn es für den Tag schon einen
+gibt – ein Wiederholungslauf hebt eine Ablehnung nicht auf.
 
-Zum Testen (Admin-UI, Bot-Test → „Tisch-Erinnerung"): `?dryRun=true` berechnet
-nur den Text, `?preview=true` schickt ihn an die Vorschau-Nummer bzw. mit
+### Testen
+
+Admin-UI, Bot-Test → „Tisch-Erinnerung": `?dryRun=true` berechnet nur den
+Text, `?preview=true` schickt ihn an die Vorschau-Nummer bzw. mit
 `&previewTarget=group` in die Testgruppe (`PREVIEW_GROUP_JID`) und markiert
 dort die Vorschau-Nummer statt des Wirts. Ein Aufruf ohne Parameter ist ein
-Dry-Run.
+Dry-Run. `?nachricht=` wählt den Text des Testlaufs: ohne Angabe das, was
+beim nächsten Versand rausginge („wie live" – am Mittwoch also schon der
+Text für Donnerstag), `standard` die feste Nachricht, `neu` einen jetzt
+geschriebenen KI-Text. Der wird nicht gespeichert – übernommen wird er
+im Admin-UI (dort landet er als Entwurf des nächsten Versands). Weder
+Empfänger noch Text einer Nachricht kommen je aus dem Request.
 
 ## Statistik als Bild-Karte
 

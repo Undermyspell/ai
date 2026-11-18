@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/michael/zumba-shared/wirt"
+
+	"github.com/michael/zumba-admin-ui/internal/timeutil"
 	"github.com/michael/zumba-admin-ui/web/templates/bottest"
 )
 
@@ -31,9 +35,17 @@ func (s *Server) loadExample(kind string) (string, bool) {
 
 func (s *Server) handleBotTest(w http.ResponseWriter, r *http.Request) {
 	def, _ := s.loadExample("statistik")
+	// ?szenario= wählt das Szenario vor (Link von der Seite Tisch-Erinnerung).
+	kind := r.URL.Query().Get("szenario")
+	if !bottest.KnownSzenario(kind) {
+		kind = "statistik"
+	}
+	if ex, ok := s.loadExample(kind); ok {
+		def = ex
+	}
 	s.render(w, r, s.meta("Bot-Test", "bottest"),
 		bottest.Page(bottest.PageVM{
-			DefaultKind: "statistik", DefaultJSON: def,
+			DefaultKind: kind, DefaultJSON: def,
 			Model: s.primaryModel(r), Time: time.Now().Format("15:04"),
 		}))
 }
@@ -72,6 +84,13 @@ type botOutcome struct {
 	PreviewTo      string `json:"previewTo"`
 	Mentioned      string `json:"mentioned"` // nur /wirt-reminder
 	ImageBase64    string `json:"imageBase64"`
+
+	// Nur /wirt-reminder: "ki" oder "standard", der KI-Text mit Platzhalter
+	// (zum Übernehmen), das Modell und warum es die Standardnachricht ist.
+	Variante string `json:"variante"`
+	Text     string `json:"text"`
+	Model    string `json:"model"`
+	Hinweis  string `json:"hinweis"`
 }
 
 // modeQuery übersetzt den Modus der Bot-Test-Seite in den Query-Parameter des Bots.
@@ -93,9 +112,12 @@ func modeQuery(mode string) string {
 type botRun struct {
 	weekly bool
 	wirt   bool // Tisch-Erinnerung an den Wirt (/wirt-reminder)
-	image  bool
-	design string
-	model  string
+	// wirtNeu: der Bot lässt den Text jetzt schreiben – das dauert länger,
+	// und nur diesen Text bietet die Antwort zum Übernehmen an.
+	wirtNeu bool
+	image   bool
+	design  string
+	model   string
 }
 
 // handleBotTestRun führt den gewählten Testlauf aus. Das Szenario bestimmt den
@@ -114,7 +136,14 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 		// Die Tisch-Erinnerung kennt weder Stichtag noch Formate: sie geht
 		// immer donnerstags als Text raus.
 		url := strings.TrimRight(s.cfg.BotURL, "/") + "/wirt-reminder" + modeQuery(r.FormValue("mode"))
-		s.proxyBot(w, r, url, nil, botRun{wirt: true})
+		// Welche Nachricht: ohne Angabe das, was am Donnerstag rausginge,
+		// sonst die Standardnachricht oder ein jetzt geschriebener KI-Text.
+		// Den Text selbst kennt nur der Bot, hier geht bloß die Wahl mit.
+		nachricht := r.FormValue("wirtNachricht")
+		if nachricht == "standard" || nachricht == "neu" {
+			url += "&nachricht=" + nachricht
+		}
+		s.proxyBot(w, r, url, nil, botRun{wirt: true, wirtNeu: nachricht == "neu"})
 		return
 	}
 	endpoint := "/test"
@@ -153,6 +182,10 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 // (bzw. ein Fehler-Panel) als HTMX-Fragment.
 func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, body io.Reader, run botRun) {
 	client := &http.Client{Timeout: 35 * time.Second}
+	if run.wirtNeu {
+		// Schreiben + Ton prüfen, bei Bedarf zweimal: bis zu vier Modell-Aufrufe.
+		client.Timeout = 170 * time.Second
+	}
 	req, err := http.NewRequestWithContext(r.Context(), "POST", url, body)
 	if err != nil {
 		_ = bottest.ErrorPanel(err.Error()).Render(r.Context(), w)
@@ -188,15 +221,89 @@ func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, bo
 	if out.Path == "classify" && run.model != "" {
 		meta = fmt.Sprintf("%s · %d ms", run.model, took.Milliseconds())
 	}
-	_ = bottest.Response(bottest.ResponseVM{
-		Path: out.Path, Classification: out.Classification, Action: out.Action,
+	if run.wirt {
+		meta = fmt.Sprintf("%s · %d ms", wirtVariante(out), took.Milliseconds())
+	}
+	vm := bottest.ResponseVM{
+		Hinweis: out.Hinweis,
+		Path:    out.Path, Classification: out.Classification, Action: out.Action,
 		Message: out.Message, Recipient: out.Recipient, Date: out.Date, UserID: out.UserID,
 		DryRun: out.DryRun, PreviewTo: out.PreviewTo, ImageBase64: out.ImageBase64,
 		Mentioned: out.Mentioned,
 		Time:      time.Now().Format("15:04"),
 		Steps:     botSteps(out, run),
 		Meta:      meta,
-	}).Render(r.Context(), w)
+	}
+	if run.wirtNeu && out.Text != "" {
+		// Nur ein frisch geschriebener Text lässt sich übernehmen – der von
+		// "wie live" ist schon der Entwurf des Tages.
+		vm.WirtText, vm.WirtModel = out.Text, out.Model
+		vm.AdoptTermin = adoptTermin(wirtNow())
+	}
+	_ = bottest.Response(vm).Render(r.Context(), w)
+}
+
+// wirtVariante: "KI-Text · Gemma 4 31B" bzw. "Standardnachricht".
+func wirtVariante(out botOutcome) string {
+	if out.Variante != "ki" {
+		return "Standardnachricht"
+	}
+	if out.Model == "" {
+		return "KI-Text"
+	}
+	return "KI-Text · " + modelLabel(out.Model)
+}
+
+// adoptTermin benennt den Versand, für den ein übernommener Text gilt:
+// "heute" bzw. "Do., 26.11.".
+func adoptTermin(now time.Time) string {
+	termin := wirt.NextVersand(now)
+	if timeutil.StartOfDay(now).Equal(termin) {
+		return "heute"
+	}
+	return "Do., " + termin.Format("02.01.")
+}
+
+// handleBotTestWirtAdopt übernimmt einen im Bot-Test geschriebenen KI-Text
+// für den nächsten Versand (heute, wenn Donnerstag vor 16 Uhr ist). Er
+// ersetzt den vorgenerierten Text und hebt eine Ablehnung auf. Der Tag kommt
+// nie aus dem Formular; der Text muss die feste Prüfung bestehen – Kopf,
+// Markierung und Fußzeile setzt ohnehin der Bot.
+func (s *Server) handleBotTestWirtAdopt(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	text := strings.TrimSpace(r.FormValue("text"))
+	if err := wirt.Validate(text); err != nil {
+		s.triggerToast(w, "error", "Nicht übernommen: "+err.Error()+".")
+		http.Error(w, "ungültiger Text", http.StatusUnprocessableEntity)
+		return
+	}
+	// Das Modell ist nur eine Angabe für die Anzeige.
+	model := r.FormValue("model")
+	if len(model) > 80 {
+		model = ""
+	}
+	now := wirtNow()
+	termin := wirt.NextVersand(now)
+	ok, err := s.store.AdoptWirtText(ctx, termin, text, model)
+	if err != nil {
+		s.fail(w, "wirt übernehmen", err)
+		return
+	}
+	if !ok {
+		s.triggerToast(w, "error", "Nicht übernommen – die Erinnerung "+bottest.AdoptWann(adoptTermin(now))+" ist schon gesendet.")
+		http.Error(w, "schon gesendet", http.StatusConflict)
+		return
+	}
+	log.Printf("🍽️  Tisch-Erinnerung %s: KI-Text aus dem Bot-Test übernommen (%s)", termin.Format("02.01."), model)
+	wann := adoptTermin(now)
+	msg := "Übernommen – der Text geht " + bottest.AdoptWann(wann) + " um 16:00 raus."
+	level := "success"
+	if set, err := s.store.WirtSettings(ctx); err == nil && !set.Versand {
+		msg, level = "Übernommen – aber der automatische Versand ist ausgeschaltet.", "error"
+	}
+	s.triggerToast(w, level, msg)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = bottest.Adopted(wann).Render(ctx, w)
 }
 
 // botSteps übersetzt das Outcome des Bots in den Verarbeitungspfad.
@@ -227,9 +334,16 @@ func botSteps(out botOutcome, run botRun) []bottest.Step {
 		case out.Mentioned != "":
 			mark = done("Wirt markieren", "@"+out.Mentioned)
 		}
+		build := done("Nachricht wählen", wirtVariante(out))
+		switch {
+		case run.wirtNeu:
+			build = done("KI schreibt den Text", modelLabel(out.Model)+" · Ton geprüft")
+		case out.Hinweis != "":
+			build = done("Nachricht wählen", "Standardnachricht – "+out.Hinweis)
+		}
 		return []bottest.Step{
 			done("CronJob ausgelöst", "Do 16:00 (simuliert)"),
-			done("Nachricht bauen", "Text"),
+			build,
 			mark,
 			send,
 		}

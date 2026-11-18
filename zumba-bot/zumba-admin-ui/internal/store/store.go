@@ -129,6 +129,23 @@ type Store interface {
 	SetCardRotation(ctx context.Context, rotation []string) error
 	SetNextCard(ctx context.Context, tag time.Time, style string) error
 
+	// Tisch-Erinnerung an den Wirt (wirt_settings, wirt_nachrichten): Schalter
+	// für den automatischen Versand, Modell für den KI-Text und der Stand je
+	// Donnerstag. Der Bot liest die Einstellungen vor jedem Lauf.
+	WirtSettings(ctx context.Context) (WirtSettings, error)
+	SetWirtVersand(ctx context.Context, versand bool) error
+	SetWirtModel(ctx context.Context, model string) error
+	// WirtNachricht liefert den Stand des Tages (nil = noch nichts).
+	WirtNachricht(ctx context.Context, tag time.Time) (*WirtNachricht, error)
+	ListWirtNachrichten(ctx context.Context, limit int) ([]WirtNachricht, error)
+	// AdoptWirtText übernimmt einen im Bot-Test erzeugten KI-Text für den Tag
+	// – er ersetzt den vorhandenen und hebt eine Ablehnung auf. false: die
+	// Erinnerung des Tages ist schon gesendet.
+	AdoptWirtText(ctx context.Context, tag time.Time, text, model string) (bool, error)
+	// SetWirtAbgelehnt lehnt den KI-Text des Tages ab (dann geht die
+	// Standardnachricht raus) oder nimmt das zurück. false: nichts geändert.
+	SetWirtAbgelehnt(ctx context.Context, tag time.Time, abgelehnt bool) (bool, error)
+
 	// Strafen-Feature. ListSeasonStrafen liefert alle Zeilen EINES Jahres
 	// (inkl. beglichen und geloescht – Lösch-/Begleich-Zeitpunkte resetten
 	// den Fehltage-Zähler).

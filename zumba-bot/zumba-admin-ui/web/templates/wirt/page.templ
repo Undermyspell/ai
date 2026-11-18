@@ -1,0 +1,240 @@
+package wirt
+
+// Zustand der nächsten Erinnerung.
+const (
+	ZustandWartet    = "wartet"    // KI-Text entsteht erst noch (Do 10:00)
+	ZustandKI        = "ki"        // KI-Text liegt vor und geht raus
+	ZustandAbgelehnt = "abgelehnt" // KI-Text abgelehnt – Standardnachricht
+	ZustandStandard  = "standard"  // kein KI-Text entstanden – Standardnachricht
+	ZustandAus       = "aus"       // Versand ausgeschaltet
+	ZustandSperrtag  = "sperrtag"  // kein Stammtisch an dem Tag
+)
+
+// VM ist die fertige Anzeige der Seite „Tisch-Erinnerung".
+type VM struct {
+	Termin     string // "Do., 19. November 2026 · 16:00" – der nächste Versand
+	TerminKurz string // "19.11."
+	Versand    bool   // automatischer Versand eingeschaltet
+	Zustand    string
+	Hinweis    string // ein Satz: was passiert als Nächstes
+	// KI ist der vorgenerierte Text (auch wenn abgelehnt), nil = keiner.
+	KI     *Bubble
+	KIMeta string // "Gemma 4 31B · 10:02"
+	// Standard ist die feste Nachricht – der Fallback.
+	Standard     Bubble
+	// ModelLabel: das Modell, das den Text schreibt – gewählt wird es auf
+	// der Seite KI-Modell.
+	ModelLabel   string
+	Schritte     []Schritt
+	Verlauf      []Eintrag
+	Since        string // letzte Änderung der Einstellungen
+}
+
+// Bubble ist eine Nachricht, an der Markierung des Wirts geteilt.
+type Bubble struct {
+	Vor, Marke, Nach string
+}
+
+// Schritt ist ein Punkt im Ablauf des Donnerstags. State: wait | done | skipped | error.
+type Schritt struct {
+	Label, Detail, State string
+}
+
+// Eintrag ist ein vergangener Donnerstag im Verlauf.
+type Eintrag struct {
+	Datum string
+	Label string // was rausging
+	Class string // Pill-Farbe
+	Text  string // KI-Text ("" = Standardnachricht)
+}
+
+templ Page(vm VM) {
+	@Region(vm)
+}
+
+// Region ist das HTMX-Swap-Ziel: nach jeder Änderung kommt die ganze Seite
+// neu, damit Vorschau, Ablauf und Schalter denselben Stand zeigen.
+templ Region(vm VM) {
+	<section id="wirt-region" class="grid-side wirt-grid">
+		<div class={ "card", "chat", "wirt-chat", "is-" + vm.Zustand }>
+			<div class="chat-head">
+				<span class="chat-avatar" aria-hidden="true">🍻</span>
+				<div>
+					<div class="chat-title">Nächste Erinnerung <small>· so liest sie der Wirt</small></div>
+					<div class="chat-sub">{ vm.Termin }</div>
+				</div>
+				<span class="chat-mode">
+					@zustandPill(vm.Zustand)
+				</span>
+			</div>
+			<div class="chat-body">
+				switch vm.Zustand {
+					case ZustandAus, ZustandSperrtag:
+						<div class="sys-chip is-red">{ vm.Hinweis }</div>
+					case ZustandKI:
+						@bubble(*vm.KI, "🤖 Zumba-Bot · KI-Text", "")
+						<div class="bot-meta">geschrieben von { vm.KIMeta }</div>
+					case ZustandAbgelehnt:
+						@bubble(*vm.KI, "🤖 Zumba-Bot · KI-Text", "is-off")
+						<div class="bot-meta">geschrieben von { vm.KIMeta }</div>
+						<div class="sys-chip">abgelehnt – stattdessen geht raus:</div>
+						@bubble(vm.Standard, "🤖 Zumba-Bot · Standardnachricht", "")
+					case ZustandStandard:
+						@bubble(vm.Standard, "🤖 Zumba-Bot · Standardnachricht", "")
+					default:
+						<div class="cron-chip">⏰ KI-Text entsteht am { vm.TerminKurz } um 10:00</div>
+						@bubble(vm.Standard, "🤖 Zumba-Bot · Standardnachricht (Fallback)", "is-ghost")
+				}
+			</div>
+			if vm.Zustand != ZustandAus && vm.Zustand != ZustandSperrtag {
+				<div class="wirt-foot">
+					<p class="wirt-next">{ vm.Hinweis }</p>
+					<div class="wirt-actions">
+						if vm.Zustand == ZustandKI {
+							<button
+								type="button"
+								class="btn btn-danger"
+								hx-post="/tisch-erinnerung/ablehnen"
+								hx-target="#wirt-region"
+								hx-swap="outerHTML"
+							>Ablehnen</button>
+						}
+						if vm.Zustand == ZustandAbgelehnt {
+							<button
+								type="button"
+								class="btn btn-ghost"
+								hx-post="/tisch-erinnerung/ablehnen"
+								hx-vals='{"zurueck":"1"}'
+								hx-target="#wirt-region"
+								hx-swap="outerHTML"
+							>Doch den KI-Text senden</button>
+						}
+						<a class="card-link" href="/bot-test?szenario=wirt">Im Bot-Test neu schreiben lassen →</a>
+					</div>
+				</div>
+			}
+		</div>
+		<div class="stack side-col">
+			<div class="card" style="padding:20px">
+				<div class="card-head">
+					<div class="card-title-sm">Automatischer Versand</div>
+					if vm.Versand {
+						<span class="pill pill-caps is-green">an</span>
+					} else {
+						<span class="pill pill-caps is-red">aus</span>
+					}
+				</div>
+				<div class="seg" role="group" aria-label="Automatischer Versand" style="margin-top:10px">
+					@versandButton(vm.Versand, "an", "An")
+					@versandButton(!vm.Versand, "aus", "Aus")
+				</div>
+				<p class="hint" style="margin-top:10px">
+					Aus heißt: donnerstags geht nichts an den Wirt, weder KI-Text noch Standardnachricht – bis du wieder einschaltest.
+				</p>
+				if vm.Since != "" {
+					<p class="hint">zuletzt geändert { vm.Since }</p>
+				}
+			</div>
+			<div class="card" style="padding:20px">
+				<div class="card-title-sm">Ablauf am Donnerstag</div>
+				<div class="timeline" style="margin-top:14px">
+					for _, st := range vm.Schritte {
+						@schritt(st)
+					}
+				</div>
+				<div class="wirt-model">
+					<span class="field-label">Modell für den Text</span>
+					<span class="wirt-model-name">{ vm.ModelLabel }</span>
+					<a class="card-link" href="/ki-modell#tisch-erinnerung">ändern →</a>
+				</div>
+			</div>
+			<div class="card" style="padding:20px">
+				<div class="card-title-sm">Was immer gleich bleibt</div>
+				<ul class="wirt-rules">
+					<li>Kopf und Fußzeile setzt der Bot, nicht das Modell.</li>
+					<li>Der Wirt wird genau einmal markiert.</li>
+					<li>Leicht lustig, immer höflich – ein Text, der die Tonprüfung nicht besteht, wird verworfen.</li>
+					<li>Ohne brauchbaren Text geht die Standardnachricht raus.</li>
+				</ul>
+			</div>
+		</div>
+		if len(vm.Verlauf) > 0 {
+			<div class="card wirt-verlauf">
+				<div class="card-head">
+					<div class="card-title">Verlauf</div>
+					<span class="card-sub">was donnerstags rausging</span>
+				</div>
+				<div class="wirt-log">
+					for _, e := range vm.Verlauf {
+						<div class="wirt-log-row">
+							<span class="week-date">{ e.Datum }</span>
+							<span class={ "pill", "pill-caps", e.Class }>{ e.Label }</span>
+							if e.Text != "" {
+								<span class="wirt-log-text">{ e.Text }</span>
+							} else {
+								<span class="wirt-log-text is-empty">Standardnachricht</span>
+							}
+						</div>
+					}
+				</div>
+			</div>
+		}
+	</section>
+}
+
+templ zustandPill(zustand string) {
+	switch zustand {
+		case ZustandKI:
+			<span class="pill pill-caps is-blue">KI-Text</span>
+		case ZustandAbgelehnt:
+			<span class="pill pill-caps is-amber">abgelehnt</span>
+		case ZustandStandard:
+			<span class="pill pill-caps is-amber">Standardnachricht</span>
+		case ZustandAus:
+			<span class="pill pill-caps is-red">Versand aus</span>
+		case ZustandSperrtag:
+			<span class="pill pill-caps is-red">Sperrtag</span>
+		default:
+			<span class="pill pill-caps">wartet auf Do 10:00</span>
+	}
+}
+
+// bubble zeigt eine Nachricht wie im Chat; die Markierung ist hervorgehoben.
+templ bubble(b Bubble, head, class string) {
+	<div class={ "bubble-out", class }>
+		<div class="bubble-out-head">{ head }</div>
+		<pre>{ b.Vor }<span class="mention">{ b.Marke }</span>{ b.Nach }</pre>
+		<div class="bubble-out-foot">Do 16:00</div>
+	</div>
+}
+
+templ versandButton(aktiv bool, wert, label string) {
+	<button
+		type="button"
+		class={ templ.KV("is-active", aktiv) }
+		aria-pressed={ boolAttr(aktiv) }
+		hx-post="/tisch-erinnerung/versand"
+		hx-vals={ `{"versand":"` + wert + `"}` }
+		hx-target="#wirt-region"
+		hx-swap="outerHTML"
+	>{ label }</button>
+}
+
+templ schritt(st Schritt) {
+	<div class={ "tl-step", "is-" + st.State }>
+		<span class="tl-rail"><span class="tl-dot"></span><span class="tl-line"></span></span>
+		<div class="tl-body">
+			<div class="tl-label">{ st.Label }</div>
+			if st.Detail != "" {
+				<div class="tl-detail">{ st.Detail }</div>
+			}
+		</div>
+	</div>
+}
+
+func boolAttr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}

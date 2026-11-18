@@ -97,6 +97,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /bot-test", sealed(s.handleBotTest))
 	mux.HandleFunc("GET /bot-test/example/{kind}", sealed(s.handleBotTestExample))
 	mux.HandleFunc("POST /bot-test/run", sealed(s.handleBotTestRun))
+	mux.HandleFunc("POST /bot-test/wirt/uebernehmen", sealed(s.handleBotTestWirtAdopt))
 	mux.HandleFunc("GET /trace", s.handleTraceList)
 	mux.HandleFunc("GET /trace/{id}", s.handleTraceDetail)
 	// ML-Daten: Synthetics, Whatsapp und Manuell sichten und labeln.
@@ -115,11 +116,22 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /ki-modell", s.handleKIModell)
 	mux.HandleFunc("POST /ki-modell", s.handleKIModellSet)
 	mux.HandleFunc("POST /ki-modell/entscheider", s.handleKIModellEntscheider)
+	// Modell, das den Text der Tisch-Erinnerung an den Wirt schreibt.
+	mux.HandleFunc("POST /ki-modell/tisch-erinnerung", s.handleKIModellWirt)
 	// Bild-Designs des Bots: Rotation und Karte des nächsten Wochenreports.
 	// Wie das KI-Modell nicht gesperrt – Speichern verschickt nichts.
 	mux.HandleFunc("GET /bild-designs", s.handleBildDesigns)
 	mux.HandleFunc("POST /bild-designs/rotation", s.handleBildDesignsRotation)
 	mux.HandleFunc("POST /bild-designs/naechster", s.handleBildDesignsNaechster)
+
+	// Tisch-Erinnerung an den Wirt: KI-Text ansehen und ablehnen, Versand
+	// ein-/ausschalten (das Modell wählt die Seite KI-Modell). Nicht gesperrt bei offenem Tunnel –
+	// nichts davon verschickt etwas, der Bot liest die Einstellungen beim
+	// nächsten Lauf. Einen neuen Text schreiben lassen und übernehmen geht
+	// nur über den (gesperrten) Bot-Test.
+	mux.HandleFunc("GET /tisch-erinnerung", s.handleWirt)
+	mux.HandleFunc("POST /tisch-erinnerung/versand", s.handleWirtVersand)
+	mux.HandleFunc("POST /tisch-erinnerung/ablehnen", s.handleWirtAblehnen)
 
 	// Öffentlich-Seite. Schalten geht nur, wenn es einen tunnel-service gibt —
 	// ohne ihn zeigt die Seite bloß den Hinweis.

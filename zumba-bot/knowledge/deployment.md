@@ -26,7 +26,7 @@ SealedSecrets. Chart und Umgebungen müssen deshalb zusammen im
 | n8n | Workflow-Engine (Ursprung des Bots, weitere Automatisierungen) |
 | Postgres | zentrale Datenbank (DBs `n8n` und `zumba`) |
 | Evolution API | WhatsApp-Anbindung (Webhooks + Senden) |
-| whatsapp-bot | der Bot (siehe whatsapp-bot.md) + Wochenreport-CronJob (Do 21:00) |
+| whatsapp-bot | der Bot (siehe whatsapp-bot.md) + CronJobs: KI-Text der Tisch-Erinnerung (Do 10:00), Tisch-Erinnerung (Do 16:00), Wochenreport (Do 21:00) |
 | zumba-admin-ui | Pflege-Oberfläche |
 | zumba-classifier | ML-Schattenmodell für den Klassifikator-Vergleich |
 | wrapped | Jahresrückblick (seit 08/2026) |

@@ -35,6 +35,16 @@ type spyStore struct {
 
 	cards store.CardSettings
 
+	sperrtage []time.Time // Antwort von ListExcludedDays (im angefragten Zeitraum)
+
+	wirt         store.WirtSettings
+	wirtTag      *store.WirtNachricht // Antwort von WirtNachricht
+	wirtVerlauf  []store.WirtNachricht
+	wirtGefragt  string // Tag (YYYY-MM-DD) des letzten WirtNachricht/Set…/Adopt…
+	wirtAdopt    string // "tag|model|text" des letzten AdoptWirtText
+	wirtAdoptNo  bool   // AdoptWirtText meldet "schon gesendet"
+	wirtAblehnen string // "tag=true|false" des letzten SetWirtAbgelehnt
+
 	entscheider    store.Entscheider
 	setEntscheider string // Wert des letzten SetClassifierEntscheider
 
@@ -44,7 +54,10 @@ type spyStore struct {
 }
 
 func newSpyStore() *spyStore {
-	return &spyStore{users: []store.User{{ID: "u01", Name: "Max"}}, seasons: []store.Season{testSeason}}
+	return &spyStore{
+		users: []store.User{{ID: "u01", Name: "Max"}}, seasons: []store.Season{testSeason},
+		wirt: store.WirtSettings{Versand: true, Model: "gemma-4-31b-it"},
+	}
 }
 
 // testSeason ist bewusst weit aufgespannt: die Tests sollen weder am
@@ -112,8 +125,15 @@ func (s *spyStore) GetUser(_ context.Context, userID string) (*store.User, error
 func (s *spyStore) ListThursdays(_ context.Context, _ timeutil.Period) ([]time.Time, error) {
 	return []time.Time{mustDate("2026-01-01")}, nil
 }
-func (s *spyStore) ListExcludedDays(_ context.Context, _ timeutil.Period) ([]time.Time, error) {
-	return nil, nil
+func (s *spyStore) ListExcludedDays(_ context.Context, p timeutil.Period) ([]time.Time, error) {
+	var out []time.Time
+	// Verglichen wird das Kalenderdatum, wie es die DB mit DATE tut.
+	for _, d := range s.sperrtage {
+		if iso := timeutil.FormatISO(d); iso >= timeutil.FormatISO(p.Start) && iso <= timeutil.FormatISO(p.End) {
+			out = append(out, d)
+		}
+	}
+	return out, nil
 }
 func (s *spyStore) ListAbsences(_ context.Context, _ timeutil.Period) ([]store.Absence, error) {
 	return s.absences, nil
@@ -303,4 +323,47 @@ func (s *spyStore) SetClassifierEntscheider(_ context.Context, wer string) error
 	s.setEntscheider = wer
 	s.entscheider = store.Entscheider{Wer: wer, UpdatedAt: time.Now()}
 	return nil
+}
+
+func (s *spyStore) WirtSettings(context.Context) (store.WirtSettings, error) { return s.wirt, nil }
+
+func (s *spyStore) SetWirtVersand(_ context.Context, versand bool) error {
+	s.wirt.Versand = versand
+	return nil
+}
+
+func (s *spyStore) SetWirtModel(_ context.Context, model string) error {
+	s.wirt.Model = model
+	return nil
+}
+
+func (s *spyStore) WirtNachricht(_ context.Context, tag time.Time) (*store.WirtNachricht, error) {
+	s.wirtGefragt = timeutil.FormatISO(tag)
+	return s.wirtTag, nil
+}
+
+func (s *spyStore) ListWirtNachrichten(context.Context, int) ([]store.WirtNachricht, error) {
+	return s.wirtVerlauf, nil
+}
+
+func (s *spyStore) AdoptWirtText(_ context.Context, tag time.Time, text, model string) (bool, error) {
+	if s.wirtAdoptNo {
+		return false, nil
+	}
+	s.wirtAdopt = timeutil.FormatISO(tag) + "|" + model + "|" + text
+	s.wirtTag = &store.WirtNachricht{Tag: tag, Text: text, Model: model, Quelle: sharedstore.WirtQuelleTest}
+	return true, nil
+}
+
+func (s *spyStore) SetWirtAbgelehnt(_ context.Context, tag time.Time, abgelehnt bool) (bool, error) {
+	s.wirtAblehnen = fmt.Sprintf("%s=%v", timeutil.FormatISO(tag), abgelehnt)
+	if s.wirtTag == nil || s.wirtTag.Text == "" || s.wirtTag.GesendetAm != nil {
+		return false, nil
+	}
+	s.wirtTag.AbgelehntAm = nil
+	if abgelehnt {
+		now := time.Now()
+		s.wirtTag.AbgelehntAm = &now
+	}
+	return true, nil
 }

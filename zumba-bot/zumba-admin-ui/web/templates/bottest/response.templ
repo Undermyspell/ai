@@ -25,7 +25,7 @@ func WaitingSteps(szenario, model string) []Step {
 	}
 	switch szenario {
 	case "wirt":
-		return wait("CronJob ausgelöst", "Nachricht bauen", "Wirt markieren", "An Gruppe senden")
+		return wait("CronJob ausgelöst", "Nachricht wählen", "Wirt markieren", "An Gruppe senden")
 	case "wochenreport":
 		return wait("CronJob ausgelöst", "Rangliste + Strafen berechnen", "Rendern", "An Gruppe senden")
 	case "absage", "zusage":
@@ -50,6 +50,15 @@ type ResponseVM struct {
 	Time           string // "20:12"
 	Steps          []Step
 	Meta           string // Fußzeile des Verarbeitungspfads
+
+	// Tisch-Erinnerung: Hinweis sagt, warum es die Standardnachricht ist.
+	// WirtText ist ein frisch geschriebener KI-Text (mit Platzhalter statt
+	// Markierung), der sich für AdoptTermin ("heute" / "Do., 26.11.")
+	// übernehmen lässt; leer = nichts zu übernehmen.
+	Hinweis     string
+	WirtText    string
+	WirtModel   string
+	AdoptTermin string
 }
 
 templ Response(vm ResponseVM) {
@@ -85,6 +94,23 @@ templ Response(vm ResponseVM) {
 					WIRT_JID ist am Bot nicht gesetzt – niemand markiert.
 				}
 			</div>
+			if vm.Hinweis != "" {
+				<div class="bot-meta">Standardnachricht – { vm.Hinweis }.</div>
+			}
+			if vm.WirtText != "" {
+				<div id="wirt-adopt" class="adopt">
+					<button
+						type="button"
+						class="btn btn-primary btn-sm"
+						hx-post="/bot-test/wirt/uebernehmen"
+						hx-vals={ templ.JSONString(map[string]string{"text": vm.WirtText, "model": vm.WirtModel}) }
+						hx-params="text,model"
+						hx-target="#wirt-adopt"
+						hx-swap="outerHTML"
+					>Für { vm.AdoptTermin } übernehmen</button>
+					<span class="hint">Ersetzt den KI-Text für den Versand { AdoptWann(vm.AdoptTermin) } um 16:00 – ablehnen kannst du ihn danach weiterhin.</span>
+				</div>
+			}
 		}
 	} else if vm.Path == "classify" {
 		<div class={ "sys-chip", clsClass(vm.Classification) }>
@@ -111,6 +137,22 @@ templ Response(vm ResponseVM) {
 			<div class="tl-meta">{ vm.Meta }</div>
 		}
 	</div>
+}
+
+// Adopted ersetzt den Übernehmen-Knopf, sobald der Text gespeichert ist.
+templ Adopted(termin string) {
+	<div id="wirt-adopt" class="adopt is-done">
+		<span>✓ Übernommen – geht { AdoptWann(termin) } um 16:00 raus.</span>
+		<a class="card-link" href="/tisch-erinnerung">Ansehen →</a>
+	</div>
+}
+
+// AdoptWann: "heute" bleibt, ein Datum bekommt "am" davor.
+func AdoptWann(termin string) string {
+	if termin == "heute" {
+		return termin
+	}
+	return "am " + termin
 }
 
 templ ErrorPanel(msg string) {

@@ -149,10 +149,17 @@ type geminiResponse struct {
 }
 
 func (g *Gemini) generate(ctx context.Context, model, message string) (string, error) {
+	return g.Generate(ctx, model, systemPrompt, message, 0)
+}
+
+// Generate ruft ein Modell mit eigenem Systemprompt auf – für alles, was kein
+// Klassifizieren ist (der Text der Tisch-Erinnerung an den Wirt). Kein
+// Fallback: welches Modell antwortet, entscheidet der Aufrufer.
+func (g *Gemini) Generate(ctx context.Context, model, system, message string, temperature float64) (string, error) {
 	reqBody := geminiRequest{
-		SystemInstruction: content{Parts: []part{{Text: systemPrompt}}},
+		SystemInstruction: content{Parts: []part{{Text: system}}},
 		Contents:          []content{{Role: "user", Parts: []part{{Text: message}}}},
-		GenerationConfig:  genConfig{Temperature: 0},
+		GenerationConfig:  genConfig{Temperature: temperature},
 	}
 	buf, err := json.Marshal(reqBody)
 	if err != nil {

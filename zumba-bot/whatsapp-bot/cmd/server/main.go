@@ -20,6 +20,7 @@ import (
 	"github.com/michael/zumba-whatsapp-bot/internal/store"
 	"github.com/michael/zumba-whatsapp-bot/internal/tracestore"
 	"github.com/michael/zumba-whatsapp-bot/internal/web"
+	"github.com/michael/zumba-whatsapp-bot/internal/wirttext"
 )
 
 func main() {
@@ -112,6 +113,22 @@ func main() {
 	// Wirt des Lokals: wird in der Tisch-Erinnerung markiert (WIRT_JID).
 	srv.WirtJID = cfg.WirtJID
 	srv.Sperrtage = st
+	// Tisch-Erinnerung (Admin-UI-Seite "Tisch-Erinnerung"): Versand an/aus,
+	// Modell für den KI-Text und der vorgenerierte Text des Tages liegen in
+	// der DB. GEMINI_MODEL ist nur der Startwert der Modellwahl.
+	if err := st.EnsureWirtSchema(context.Background(), cfg.Gemini.Model); err != nil {
+		log.Printf("⚠️  wirt_settings Schema: %v", err)
+	}
+	srv.Wirt = st
+	srv.WirtText = wirttext.New(cl)
+	srv.WirtModel = cfg.Gemini.Model
+	if ws, err := st.WirtSettings(context.Background()); err == nil {
+		versand := "an"
+		if !ws.Versand {
+			versand = "AUS"
+		}
+		log.Printf("🍽️  Tisch-Erinnerung: Versand %s, KI-Text von %s", versand, ws.Model)
+	}
 	srv.PreviewGroupJID = cfg.PreviewGroupJID
 	if cfg.PreviewGroupJID != "" {
 		log.Printf("📱 Testgruppe als zweites Vorschau-Ziel gesetzt")

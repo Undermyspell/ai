@@ -63,6 +63,11 @@ func main() {
 		if err := pgStore.EnsureCardSchema(context.Background()); err != nil {
 			log.Printf("⚠️  card_settings Schema: %v", err)
 		}
+		// Tisch-Erinnerung an den Wirt (Seite /tisch-erinnerung). Das
+		// Startmodell trägt der Bot ein – er kennt GEMINI_MODEL.
+		if err := pgStore.EnsureWirtSchema(context.Background()); err != nil {
+			log.Printf("⚠️  wirt_settings Schema: %v", err)
+		}
 		st = pgStore
 		defer pg.Close()
 	}
