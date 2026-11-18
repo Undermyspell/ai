@@ -56,7 +56,7 @@ type spyStore struct {
 func newSpyStore() *spyStore {
 	return &spyStore{
 		users: []store.User{{ID: "u01", Name: "Max"}}, seasons: []store.Season{testSeason},
-		wirt: store.WirtSettings{Versand: true, Model: "gemma-4-31b-it"},
+		wirt: store.WirtSettings{Versand: true, Model: "gemini-3.5-flash-lite"},
 	}
 }
 

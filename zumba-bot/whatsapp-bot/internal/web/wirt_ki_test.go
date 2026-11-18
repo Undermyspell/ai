@@ -64,10 +64,13 @@ func (f *fakeWirtStore) MarkWirtGesendet(_ context.Context, _ time.Time, als str
 }
 
 // fakeTexter liefert einen festen Text und merkt sich, womit er gefragt wurde.
+// Modelle in errFor scheitern mit dem hinterlegten Fehler.
 type fakeTexter struct {
 	text      string
 	err       error
+	errFor    map[string]error
 	model     string
+	modelle   []string // alle gefragten Modelle in Reihenfolge
 	vorherige []string
 	calls     int
 }
@@ -75,7 +78,18 @@ type fakeTexter struct {
 func (f *fakeTexter) Text(_ context.Context, model string, _ time.Time, vorherige []string) (string, error) {
 	f.calls++
 	f.model, f.vorherige = model, vorherige
+	f.modelle = append(f.modelle, model)
+	if err := f.errFor[model]; err != nil {
+		return "", err
+	}
 	return f.text, f.err
+}
+
+// fakeAusweich steht für die Modellwahl des Klassifikators.
+type fakeAusweich struct{ primary, fallback string }
+
+func (f fakeAusweich) ClassifierModels(context.Context) (string, string, error) {
+	return f.primary, f.fallback, nil
 }
 
 // kiServer ist ein wirtServer am Donnerstag mit Tagesstand und Textgenerator.
@@ -245,6 +259,47 @@ func TestWirtNeuNimmtDasModellAusDerKonfiguration(t *testing.T) {
 	postWirt(t, s, "?dryRun=true&nachricht=neu")
 	if tx.model != "cfg-model" {
 		t.Errorf("model = %q", tx.model)
+	}
+}
+
+// Antwortet das gewählte Modell nicht, schreiben Haupt- und Fallback-Modell
+// des Klassifikators – in dieser Reihenfolge, jedes nur einmal.
+func TestWirtNeuWeichtAufDieKlassifikatorModelleAus(t *testing.T) {
+	s, _, st, tx := kiServer()
+	st.settings.Model = "gemma"
+	s.WirtAusweich = fakeAusweich{primary: "flash-lite", fallback: "flash"}
+	tx.errFor = map[string]error{
+		"gemma":      errors.New("status 503: {\n  \"error\": \"high demand\"\n}"),
+		"flash-lite": errors.New("Tonprüfung nicht bestanden"),
+	}
+	_, out := postWirt(t, s, "?dryRun=true&nachricht=neu")
+	if out.Variante != sharedstore.WirtAlsKI || out.Model != "flash" || out.Text != kiText {
+		t.Fatalf("Outcome = %+v", out)
+	}
+	if got := strings.Join(tx.modelle, ","); got != "gemma,flash-lite,flash" {
+		t.Errorf("gefragte Modelle = %s", got)
+	}
+
+	// Gewähltes Modell = Hauptmodell: kein doppelter Versuch.
+	s, _, st, tx = kiServer()
+	st.settings.Model = "flash-lite"
+	s.WirtAusweich = fakeAusweich{primary: "flash-lite", fallback: "flash"}
+	tx.err = errors.New("alle weg")
+	rec, _ := postWirt(t, s, "?dryRun=true&nachricht=neu")
+	if got := strings.Join(tx.modelle, ","); got != "flash-lite,flash" || rec.Code != http.StatusBadGateway {
+		t.Errorf("gefragte Modelle = %s, Status = %d", got, rec.Code)
+	}
+}
+
+// Scheitern alle Modelle, hält der Bot je Modell eine kurze Zeile fest – kein
+// mehrzeiliges JSON der API.
+func TestWirtGenerateFehlerIstKurz(t *testing.T) {
+	s, _, st, tx := kiServer()
+	s.WirtAusweich = fakeAusweich{primary: "flash-lite"}
+	tx.err = errors.New("status 503: {\n  \"error\": {\n    \"message\": \"" + strings.Repeat("high demand ", 40) + "\"\n  }\n}")
+	postGenerate(t, s)
+	if strings.Contains(st.fehler, "\n") || len([]rune(st.fehler)) > 340 || !strings.Contains(st.fehler, " | ") {
+		t.Errorf("fehler = %q", st.fehler)
 	}
 }
 

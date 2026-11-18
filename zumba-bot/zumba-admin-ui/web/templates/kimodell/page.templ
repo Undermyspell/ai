@@ -28,7 +28,11 @@ type WirtModel struct {
 	Label   string
 	Limits  string // "30/min · 14.400/Tag"
 	Hinweis string
+	// Options: die wählbaren Modelle – wie beim Klassifizieren, ohne Gemma.
+	Options []WirtOption
 }
+
+type WirtOption struct{ ID, Label string }
 
 // MLInfo beschreibt das eigene Modell (GET /info am classifier-service).
 type MLInfo struct {
@@ -169,22 +173,22 @@ templ Region(vm VM) {
 				<div class="card-head">
 					<div>
 						<div class="card-title">Tisch-Erinnerung an den Wirt</div>
-						<div class="card-sub">Dieses Modell schreibt donnerstags um 10:00 den Text der Erinnerung – unabhängig von Haupt- und Fallback-Modell.</div>
+						<div class="card-sub">Dieses Modell schreibt donnerstags um 10:00 den Text der Erinnerung. Antwortet es nicht, springen Haupt- und Fallback-Modell ein.</div>
 					</div>
 					if vm.Wirt.Limits != "" {
 						<span class="card-meta">{ vm.Wirt.Limits }</span>
 					}
 				</div>
 				<div class="seg wirt-model-seg" role="group" aria-label="Modell für die Tisch-Erinnerung">
-					for _, m := range vm.Models {
-						@wirtModelButton(vm.Wirt.Model, m)
+					for _, o := range vm.Wirt.Options {
+						@wirtModelButton(vm.Wirt.Model, o)
 					}
 				</div>
 				if vm.Wirt.Hinweis != "" {
 					<p class="hint" style="margin-top:12px">{ vm.Wirt.Hinweis }</p>
 				}
 				<p class="hint" style="margin-top:12px">
-					Ein Text kostet zwei bis vier Aufrufe: schreiben und den Ton prüfen, bei Bedarf ein zweiter Versuch. Einen Fallback gibt es hier nicht – liefert das Modell nichts Brauchbares, geht die Standardnachricht raus.
+					Ein Text kostet zwei bis vier Aufrufe: schreiben und den Ton prüfen, bei Bedarf ein zweiter Versuch. Liefert keines der Modelle etwas Brauchbares, geht die Standardnachricht raus.
 					<a class="card-link" href="/tisch-erinnerung">Zur Tisch-Erinnerung →</a>
 				</p>
 			</div>
@@ -342,7 +346,7 @@ func quotaText(class string) string {
 	}
 }
 
-templ wirtModelButton(aktiv string, m Model) {
+templ wirtModelButton(aktiv string, m WirtOption) {
 	<button
 		type="button"
 		class={ templ.KV("is-active", aktiv == m.ID) }

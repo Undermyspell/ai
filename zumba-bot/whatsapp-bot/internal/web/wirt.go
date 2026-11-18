@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -50,8 +51,10 @@ type WirtTexter interface {
 // es sich nicht wiederholt.
 const wirtGedaechtnis = 5
 
-// wirtGenerateTimeout deckt zwei Versuche mit je zwei Modell-Aufrufen.
-const wirtGenerateTimeout = 150 * time.Second
+// wirtGenerateTimeout deckt den schlechtesten Fall: zwei Modelle antworten
+// nicht (je ein Aufruf bis zum Timeout), das dritte braucht zwei Versuche mit
+// je zwei Aufrufen.
+const wirtGenerateTimeout = 240 * time.Second
 
 // Welche Nachricht ein Testlauf zeigt (?nachricht=). Der echte Versand kennt
 // nur "wie live".
@@ -156,14 +159,50 @@ func (s *Server) wirtModel(ctx context.Context) string {
 	return s.WirtModel
 }
 
-// wirtNeu lässt jetzt einen KI-Text schreiben. Gespeichert wird hier nichts.
+// wirtModelle ist die Reihenfolge, in der Modelle den Text schreiben dürfen:
+// zuerst das für die Tisch-Erinnerung gewählte, dann – falls es nicht
+// antwortet oder nichts Brauchbares liefert – Haupt- und Fallback-Modell des
+// Klassifikators. Doppelte fallen weg.
+func (s *Server) wirtModelle(ctx context.Context) []string {
+	kandidaten := []string{s.wirtModel(ctx)}
+	if s.WirtAusweich != nil {
+		p, f, err := s.WirtAusweich.ClassifierModels(ctx)
+		if err != nil {
+			log.Printf("⚠️  classifier_models: %v – Wirt-Text ohne Ausweichmodelle", err)
+		}
+		kandidaten = append(kandidaten, p, f)
+	}
+	var out []string
+	for _, m := range kandidaten {
+		if m != "" && !slices.Contains(out, m) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// kurz macht aus einer Fehlermeldung eine Zeile – die Gemini-API antwortet
+// mit mehrzeiligem JSON, das weder ins Log noch ins Admin-UI gehört.
+func kurz(err error) string {
+	msg := strings.Join(strings.Fields(err.Error()), " ")
+	if r := []rune(msg); len(r) > 160 {
+		msg = string(r[:160]) + "…"
+	}
+	return msg
+}
+
+// wirtNeu lässt jetzt einen KI-Text schreiben – vom gewählten Modell, sonst
+// von den Ausweichmodellen (wirtModelle). Gespeichert wird hier nichts.
 func (s *Server) wirtNeu(ctx context.Context) (wirtAuswahl, error) {
 	if s.WirtText == nil {
 		return wirtAuswahl{}, errors.New("kein Textgenerator konfiguriert")
 	}
 	ctx, cancel := context.WithTimeout(ctx, wirtGenerateTimeout)
 	defer cancel()
-	model := s.wirtModel(ctx)
+	modelle := s.wirtModelle(ctx)
+	if len(modelle) == 0 {
+		return wirtAuswahl{}, errors.New("kein Modell gewählt")
+	}
 	var vorherige []string
 	if s.Wirt != nil {
 		var err error
@@ -173,11 +212,21 @@ func (s *Server) wirtNeu(ctx context.Context) (wirtAuswahl, error) {
 	}
 	// Geschrieben wird für den Tag des Versands – ein am Mittwoch im Bot-Test
 	// erzeugter Text soll vom Donnerstag reden.
-	text, err := s.WirtText.Text(ctx, model, s.wirtTermin(), vorherige)
-	if err != nil {
-		return wirtAuswahl{}, err
+	termin := s.wirtTermin()
+	var fehler []string
+	for i, model := range modelle {
+		text, err := s.WirtText.Text(ctx, model, termin, vorherige)
+		if err != nil {
+			log.Printf("⚠️  Wirt-Text (%s): %s", model, kurz(err))
+			fehler = append(fehler, kurz(err))
+			continue
+		}
+		if i > 0 {
+			log.Printf("ℹ️  Wirt-Text: %s ist für %s eingesprungen", model, modelle[0])
+		}
+		return wirtAuswahl{text: text, variante: sharedstore.WirtAlsKI, model: model}, nil
 	}
-	return wirtAuswahl{text: text, variante: sharedstore.WirtAlsKI, model: model}, nil
+	return wirtAuswahl{}, errors.New(strings.Join(fehler, " | "))
 }
 
 // sendWirt schickt die Erinnerung an target und markiert mention.
@@ -245,7 +294,6 @@ func (s *Server) handleWirtReminder(w http.ResponseWriter, r *http.Request) {
 	case nachricht == wirtWahlNeu:
 		var err error
 		if wahl, err = s.wirtNeu(ctx); err != nil {
-			log.Printf("⚠️  Wirt-Text: %v", err)
 			http.Error(w, "KI-Text nicht erzeugt: "+err.Error(), http.StatusBadGateway)
 			return
 		}
@@ -362,7 +410,7 @@ func (s *Server) handleWirtGenerate(w http.ResponseWriter, r *http.Request) {
 
 	wahl, err := s.wirtNeu(ctx)
 	if err != nil {
-		log.Printf("⚠️  Wirt-Text: %v – ohne neuen Versuch geht die Standardnachricht raus", err)
+		log.Printf("⚠️  Wirt-Text: kein Modell hat geliefert – ohne neuen Versuch geht die Standardnachricht raus")
 		if ferr := s.Wirt.SaveWirtFehler(ctx, tag, err.Error()); ferr != nil {
 			log.Printf("⚠️  wirt_nachrichten (fehler): %v", ferr)
 		}

@@ -124,8 +124,13 @@ type Server struct {
 	WirtText WirtTexter
 
 	// WirtModel ist das Modell für den KI-Text, solange im Admin-UI keines
-	// gewählt ist (von main gesetzt, aus GEMINI_MODEL).
+	// gewählt ist (von main gesetzt).
 	WirtModel string
+
+	// WirtAusweich liefert Haupt- und Fallback-Modell des Klassifikators:
+	// sie schreiben den KI-Text, wenn das dafür gewählte Modell nicht
+	// antwortet (von main gesetzt; nil = kein Ausweichen).
+	WirtAusweich classifier.ModelSource
 
 	// PreviewGroupJID ist eine Testgruppe als zweites Vorschau-Ziel (von main
 	// gesetzt, aus PREVIEW_GROUP_JID). Sie ist das Ziel bei

@@ -849,17 +849,17 @@ func (m *Mock) wirtInit() {
 	if m.wirt != nil {
 		return
 	}
-	m.wirt = &WirtSettings{Versand: true, Model: "gemma-4-31b-it"}
+	m.wirt = &WirtSettings{Versand: true, Model: "gemini-3.5-flash-lite"}
 	now := time.Now()
 	next := timeutil.StartOfDay(now).AddDate(0, 0, (int(time.Thursday)-int(now.Weekday())+7)%7)
 	gesendet := next.AddDate(0, 0, -7).Add(16 * time.Hour)
 	m.wirtTage = map[string]*WirtNachricht{
 		timeutil.FormatISO(next): {
-			Tag: next, Model: "gemma-4-31b-it", Quelle: sharedstore.WirtQuelleAuto, ErzeugtAm: now,
+			Tag: next, Model: "gemini-3.5-flash-lite", Quelle: sharedstore.WirtQuelleAuto, ErzeugtAm: now,
 			Text: "Servus {wirt} 👋\nder Donnerstag ruft und wir folgen brav. Magst du uns heute Abend bitte wieder unseren Tisch freihalten? 🙏\nVielen Dank – wir freuen uns schon!",
 		},
 		timeutil.FormatISO(next.AddDate(0, 0, -7)): {
-			Tag: next.AddDate(0, 0, -7), Model: "gemma-4-31b-it", Quelle: sharedstore.WirtQuelleAuto,
+			Tag: next.AddDate(0, 0, -7), Model: "gemini-3.5-flash-lite", Quelle: sharedstore.WirtQuelleAuto,
 			ErzeugtAm: gesendet.Add(-6 * time.Hour), GesendetAm: &gesendet, GesendetAls: sharedstore.WirtAlsKI,
 			Text: "Griaß di {wirt}! Es ist wieder so weit: Stammtisch 🍻\nWärst du so lieb und hältst uns heute Abend unseren Tisch frei?\nDanke dir, bis später!",
 		},

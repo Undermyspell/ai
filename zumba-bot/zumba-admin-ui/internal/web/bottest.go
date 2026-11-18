@@ -183,8 +183,9 @@ func (s *Server) handleBotTestRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) proxyBot(w http.ResponseWriter, r *http.Request, url string, body io.Reader, run botRun) {
 	client := &http.Client{Timeout: 35 * time.Second}
 	if run.wirtNeu {
-		// Schreiben + Ton prüfen, bei Bedarf zweimal: bis zu vier Modell-Aufrufe.
-		client.Timeout = 170 * time.Second
+		// Schreiben + Ton prüfen, bei Bedarf zweimal – und wenn das gewählte
+		// Modell nicht antwortet, versuchen es Haupt- und Fallback-Modell.
+		client.Timeout = 260 * time.Second
 	}
 	req, err := http.NewRequestWithContext(r.Context(), "POST", url, body)
 	if err != nil {

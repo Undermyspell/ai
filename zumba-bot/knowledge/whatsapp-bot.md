@@ -128,10 +128,11 @@ Stufen, alle vor dem Speichern:
   Text streng mit `ok` oder `nein`; nur ein eindeutiges `ok` zählt.
 
 Fällt ein Text durch, schreibt das Modell einmal neu. Bleibt es dabei oder
-antwortet das Modell nicht, gibt es keinen Entwurf: der Endpoint meldet 502
-(der CronJob versucht es bis zu zweimal erneut), der Grund steht im Admin-UI,
-und nachmittags geht die Standardnachricht raus. Ein Text kostet zwei bis
-vier Modell-Aufrufe.
+antwortet das Modell nicht, ist das nächste Modell dran (siehe
+Einstellungen). Liefert keines, gibt es keinen Entwurf: der Endpoint meldet
+502 (der CronJob versucht es bis zu zweimal erneut), der Grund steht im
+Admin-UI, und nachmittags geht die Standardnachricht raus. Ein Text kostet im
+Normalfall zwei, je Modell höchstens vier Aufrufe.
 
 ### Einstellungen aus dem Admin-UI (`wirt_settings`)
 
@@ -141,9 +142,12 @@ Der Bot liest sie vor jedem Lauf – eine Änderung greift ohne Neustart.
   Wirt (weder KI-Text noch Standard) und es wird nichts vorgeneriert.
   Standard ist an. Testläufe bleiben möglich.
 - **Modell für den Text** (Seite *KI-Modell*, Karte „Tisch-Erinnerung an den
-  Wirt"). Dieselbe Auswahl wie beim Klassifizieren; ein
-  Fallback-Modell gibt es hier nicht – der Fallback ist die Standardnachricht.
-  `GEMINI_MODEL` ist nur der Startwert, solange nichts gewählt ist.
+  Wirt"). Dieselbe Auswahl wie beim Klassifizieren, aber ohne Gemma.
+  Startwert ist das Hauptmodell des Klassifikators, solange nichts gewählt
+  ist. Antwortet das gewählte Modell nicht oder liefert es nichts
+  Brauchbares, versuchen es **Haupt- und Fallback-Modell des Klassifikators**
+  (in dieser Reihenfolge, jedes nur einmal); erst danach bleibt die
+  Standardnachricht.
 
 ### Wann nichts rausgeht
 

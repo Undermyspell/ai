@@ -29,7 +29,7 @@ func wirtUhr(t *testing.T, stunde int) {
 
 func wirtEntwurf() *store.WirtNachricht {
 	return &store.WirtNachricht{
-		Tag: mustDate("2026-11-19"), Text: wirtKIText, Model: "gemma-4-31b-it", Quelle: sharedstore.WirtQuelleAuto,
+		Tag: mustDate("2026-11-19"), Text: wirtKIText, Model: "gemini-3.5-flash-lite", Quelle: sharedstore.WirtQuelleAuto,
 		ErzeugtAm: time.Date(2026, 11, 19, 10, 2, 0, 0, time.Local),
 	}
 }
@@ -56,7 +56,7 @@ func TestWirtSeiteWartetAufDenText(t *testing.T) {
 	spy := newSpyStore()
 	body := getWirt(spy)
 	mustContain(t, body, "Do., 19. November 2026 · 16:00", "wartet auf Do 10:00", "is-ghost",
-		"bitte halt uns heute Abend unseren Tisch frei", "Gemma 4 31B", `<span class="mention">@Wirt</span>`)
+		"bitte halt uns heute Abend unseren Tisch frei", "Gemini 3.5 Flash Lite", `<span class="mention">@Wirt</span>`)
 	if strings.Contains(body, "/tisch-erinnerung/ablehnen") {
 		t.Error("ohne KI-Text gibt es nichts abzulehnen")
 	}
@@ -74,7 +74,7 @@ func TestWirtSeiteZeigtDenTextUndLehntAb(t *testing.T) {
 	body := getWirt(spy)
 	mustContain(t, body, "Griaß di <span class=\"mention\">@Wirt</span>! Halt uns heute Abend",
 		"🍻 *Stammtisch heute Abend*", "Automatische Erinnerung vom Zumba-Bot",
-		"Gemma 4 31B · 10:02", "geht der Text heute um 16:00", `hx-post="/tisch-erinnerung/ablehnen"`)
+		"Gemini 3.5 Flash Lite · 10:02", "geht der Text heute um 16:00", `hx-post="/tisch-erinnerung/ablehnen"`)
 	if strings.Contains(body, "{wirt}") {
 		t.Error("Platzhalter steht roh auf der Seite")
 	}
@@ -144,8 +144,8 @@ func TestWirtVersandSchalter(t *testing.T) {
 }
 
 // Welches Modell den Text schreibt, wählt die Seite KI-Modell: dieselbe
-// Auswahl wie beim Klassifizieren, etwas anderes speichert sie nicht. Die
-// Seite Tisch-Erinnerung zeigt die Wahl nur an.
+// Auswahl wie beim Klassifizieren, aber ohne Gemma. Etwas anderes speichert
+// sie nicht. Die Seite Tisch-Erinnerung zeigt die Wahl nur an.
 func TestWirtModellAufDerSeiteKIModell(t *testing.T) {
 	wirtUhr(t, 8)
 	spy := newSpyStore()
@@ -154,10 +154,13 @@ func TestWirtModellAufDerSeiteKIModell(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/ki-modell", nil))
 	body := rec.Body.String()
-	mustContain(t, body, `id="tisch-erinnerung"`, "Tisch-Erinnerung an den Wirt", "Tisch-Text")
-	for _, o := range modelOptions {
-		mustContain(t, body, `data-wirt-model="`+o.ID+`"`)
+	mustContain(t, body, `id="tisch-erinnerung"`, "Tisch-Erinnerung an den Wirt", "Tisch-Text",
+		`data-wirt-model="gemini-3.8-flash"`, `data-wirt-model="gemini-3.5-flash-lite"`)
+	if strings.Contains(body, `data-wirt-model="gemma`) {
+		t.Error("Gemma steht für die Tisch-Erinnerung zur Wahl")
 	}
+	// Fürs Klassifizieren bleibt Gemma wählbar.
+	mustContain(t, body, `data-model="gemma-4-31b-it"`)
 
 	rec = postForm(t, h, "/ki-modell/tisch-erinnerung", url.Values{"model": {"gemini-3.8-flash"}})
 	if spy.wirt.Model != "gemini-3.8-flash" {
@@ -171,8 +174,10 @@ func TestWirtModellAufDerSeiteKIModell(t *testing.T) {
 		t.Error("gewähltes Modell ist nicht als aktiv markiert")
 	}
 
-	if rec := postForm(t, h, "/ki-modell/tisch-erinnerung", url.Values{"model": {"gpt-unbekannt"}}); rec.Code != http.StatusUnprocessableEntity || spy.wirt.Model != "gemini-3.8-flash" {
-		t.Errorf("unbekanntes Modell: Status %d, Modell %q", rec.Code, spy.wirt.Model)
+	for _, model := range []string{"gpt-unbekannt", "gemma-4-31b-it"} {
+		if rec := postForm(t, h, "/ki-modell/tisch-erinnerung", url.Values{"model": {model}}); rec.Code != http.StatusUnprocessableEntity || spy.wirt.Model != "gemini-3.8-flash" {
+			t.Errorf("%s: Status %d, Modell %q", model, rec.Code, spy.wirt.Model)
+		}
 	}
 
 	seite := getWirt(spy)
@@ -180,6 +185,12 @@ func TestWirtModellAufDerSeiteKIModell(t *testing.T) {
 	if strings.Contains(seite, "<select") {
 		t.Error("die Seite Tisch-Erinnerung soll das Modell nur anzeigen")
 	}
+
+	// Steht noch ein Modell von früher drin, sagt die Karte das.
+	spy.wirt.Model = "gemma-4-31b-it"
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/ki-modell", nil))
+	mustContain(t, rec.Body.String(), "Aktiv ist Gemma 4 31B – nicht in der Auswahl")
 }
 
 // Ein Sperrtag am nächsten Donnerstag: keine Erinnerung.

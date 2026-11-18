@@ -115,13 +115,22 @@ func main() {
 	srv.Sperrtage = st
 	// Tisch-Erinnerung (Admin-UI-Seite "Tisch-Erinnerung"): Versand an/aus,
 	// Modell für den KI-Text und der vorgenerierte Text des Tages liegen in
-	// der DB. GEMINI_MODEL ist nur der Startwert der Modellwahl.
-	if err := st.EnsureWirtSchema(context.Background(), cfg.Gemini.Model); err != nil {
+	// der DB. Startwert der Modellwahl ist das Hauptmodell, das im Admin-UI
+	// fürs Klassifizieren gewählt ist – nicht GEMINI_MODEL: das ist nur der
+	// Wert aus dem Deployment und kann längst überholt sein.
+	wirtModel := cfg.Gemini.Model
+	if p, _, err := st.ClassifierModels(context.Background()); err == nil && p != "" {
+		wirtModel = p
+	}
+	if err := st.EnsureWirtSchema(context.Background(), wirtModel); err != nil {
 		log.Printf("⚠️  wirt_settings Schema: %v", err)
 	}
 	srv.Wirt = st
 	srv.WirtText = wirttext.New(cl)
-	srv.WirtModel = cfg.Gemini.Model
+	srv.WirtModel = wirtModel
+	// Antwortet das gewählte Modell nicht, schreiben Haupt- und
+	// Fallback-Modell des Klassifikators – erst danach die Standardnachricht.
+	srv.WirtAusweich = st
 	if ws, err := st.WirtSettings(context.Background()); err == nil {
 		versand := "an"
 		if !ws.Versand {

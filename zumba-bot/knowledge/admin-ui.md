@@ -131,12 +131,14 @@ Seitenspalte rechnet vor, ob es reicht: ein Donnerstag braucht etwa zehn
 Aufrufe.
 
 Eine eigene Karte **„Tisch-Erinnerung an den Wirt"** wählt das Modell, das
-donnerstags um 10:00 den Text der Erinnerung schreibt – dieselben drei
-Modelle, aber unabhängig von Haupt- und Fallback-Modell (es darf auch
-dasselbe sein). Gespeichert in `wirt_settings`, gilt ab dem nächsten Text.
-Einen Fallback gibt es hier nicht: liefert das Modell nichts Brauchbares,
-geht die Standardnachricht raus. Die Kontingent-Rechnung bekommt dafür eine
-Zeile „Tisch-Text" (bis zu vier Aufrufe je Lauf).
+donnerstags um 10:00 den Text der Erinnerung schreibt – dieselbe Auswahl wie
+beim Klassifizieren, aber ohne Gemma (also Gemini 3.8 Flash und Gemini 3.5
+Flash Lite). Die Wahl ist unabhängig davon, welches Modell beim
+Klassifizieren welche Rolle hat. Gespeichert in `wirt_settings`, gilt ab dem
+nächsten Text. Antwortet das gewählte Modell nicht, springen Haupt- und
+Fallback-Modell ein; liefert keines etwas Brauchbares, geht die
+Standardnachricht raus. Die Kontingent-Rechnung bekommt dafür eine Zeile
+„Tisch-Text" (bis zu vier Aufrufe je Lauf).
 
 ### Tisch-Erinnerung (`/tisch-erinnerung`)
 

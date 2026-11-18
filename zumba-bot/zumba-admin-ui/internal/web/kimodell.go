@@ -22,6 +22,9 @@ type modelOption struct {
 	// entscheiden, wie viele Nachrichten ein Donnerstag verträgt.
 	PerMin int
 	PerDay int
+	// NurKlassifizieren: steht nicht zur Wahl für den Text der
+	// Tisch-Erinnerung (wirtModelOptions).
+	NurKlassifizieren bool
 }
 
 // callsPerThursday: so viele Klassifizierungen braucht ein Donnerstag etwa,
@@ -35,7 +38,7 @@ const wirtCallsPerThursday = 4
 // modelOptions sind die Modelle, die die Seite anbietet – und die einzigen,
 // die sie speichert.
 var modelOptions = []modelOption{
-	{ID: "gemma-4-31b-it", Label: "Gemma 4 31B", PerMin: 30, PerDay: 14400},
+	{ID: "gemma-4-31b-it", Label: "Gemma 4 31B", PerMin: 30, PerDay: 14400, NurKlassifizieren: true},
 	{ID: "gemini-3.8-flash", Label: "Gemini 3.8 Flash", PerMin: 5, PerDay: 20},
 	{ID: "gemini-3.5-flash-lite", Label: "Gemini 3.5 Flash Lite", PerMin: 15, PerDay: 500},
 }
@@ -52,6 +55,25 @@ func thousands(n int) string {
 		s = s[:i] + "." + s[i:]
 	}
 	return s
+}
+
+// wirtModelOptions sind die Modelle, die den Text der Tisch-Erinnerung
+// schreiben dürfen: dieselben wie beim Klassifizieren, aber ohne Gemma – das
+// soll dem Wirt nicht schreiben (Wunsch 11/2026; es war beim ersten Lauf auch
+// durchgehend überlastet).
+func wirtModelOptions() []modelOption {
+	var out []modelOption
+	for _, o := range modelOptions {
+		if !o.NurKlassifizieren {
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
+func findWirtModel(id string) (modelOption, bool) {
+	o, ok := findModel(id)
+	return o, ok && !o.NurKlassifizieren
 }
 
 func findModel(id string) (modelOption, bool) {
@@ -317,13 +339,16 @@ func (s *Server) buildKIModellVM(ctx context.Context, m store.ClassifierModels) 
 // schreibt, und hängt dessen Zeile an die Kontingent-Rechnung.
 func wirtModelVM(set store.WirtSettings, quota []kimodell.Quota) (kimodell.WirtModel, []kimodell.Quota) {
 	wm := kimodell.WirtModel{Model: set.Model}
-	o, ok := findModel(set.Model)
+	for _, o := range wirtModelOptions() {
+		wm.Options = append(wm.Options, kimodell.WirtOption{ID: o.ID, Label: o.Label})
+	}
+	o, ok := findWirtModel(set.Model)
 	switch {
 	case set.Model == "":
-		wm.Hinweis = "Noch keines gewählt – der Bot nimmt den Wert aus dem Deployment."
+		wm.Hinweis = "Noch keines gewählt – der Bot nimmt das Hauptmodell."
 		return wm, quota
 	case !ok:
-		wm.Hinweis = "Aktiv ist " + set.Model + " (nicht in der Auswahl)."
+		wm.Hinweis = "Aktiv ist " + modelLabel(set.Model) + " – nicht in der Auswahl. Bitte eines der Modelle oben wählen."
 		return wm, quota
 	}
 	wm.Label, wm.Limits = o.Label, o.limits()
@@ -346,12 +371,12 @@ func wirtModelVM(set store.WirtSettings, quota []kimodell.Quota) (kimodell.WirtM
 }
 
 // handleKIModellWirt wählt das Modell, das den Text der Tisch-Erinnerung an
-// den Wirt schreibt – dieselbe Auswahl wie beim Klassifizieren, aber
-// unabhängig von Haupt- und Fallback-Modell. Der Bot liest die Wahl vor jedem
-// Text (wirt_settings).
+// den Wirt schreibt – dieselbe Auswahl wie beim Klassifizieren ohne Gemma
+// (wirtModelOptions), unabhängig davon, welches Modell dort welche Rolle hat.
+// Der Bot liest die Wahl vor jedem Text (wirt_settings).
 func (s *Server) handleKIModellWirt(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	opt, ok := findModel(r.FormValue("model"))
+	opt, ok := findWirtModel(r.FormValue("model"))
 	if !ok {
 		s.triggerToast(w, "error", "Unbekanntes Modell.")
 		http.Error(w, "unbekanntes Modell", http.StatusUnprocessableEntity)
