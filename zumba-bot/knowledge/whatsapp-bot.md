@@ -36,6 +36,10 @@ Fachliche Regeln:
   andere klassifiziert mit, ohne Wirkung; beide Label landen mit
   „entschieden von" und Modellversion in `ml_messages`. Entscheidet das eigene
   Modell und antwortet es nicht, springt für die Nachricht Gemini ein.
+- Das Mitschreiben in `ml_messages` läuft im Hintergrund und darf die
+  Verarbeitung nie aufhalten. Hängt dabei Gemini (Ausfall, Timeout), wird die
+  Zeile trotzdem geschrieben – nur ohne Geminis Label. Das Nachholen der Label
+  und das Schreiben haben getrennte Zeitlimits.
 
 ## Statistik auf Zuruf
 
@@ -297,6 +301,27 @@ Ein `/test`-Endpoint führt die komplette Verarbeitung einer Beispielnachricht
 aus (Klassifikation, DB-Wirkung, Antworttext), aber ohne Tages-/Gruppen-
 Sperren. Das Admin-UI nutzt ihn für die Bot-Test-Seite (dort wählbar:
 Nachricht oder Bild-Karte).
+
+## Nachverarbeitung
+
+`POST /replay?trace=<id>` schickt ein aufgezeichnetes Gruppen-Event nochmal
+durch die Verarbeitung – etwa wenn die Klassifizierung live an einem Ausfall
+hing. Ausgelöst wird es im Admin-UI aus dem Verlauf („Erneut verarbeiten").
+
+- Die Nachricht kommt aus dem Verlauf (`bot_trace`), nie aus dem Request; der
+  Request nennt nur die ID. Nachverarbeitbar ist also nur, was der Verlauf
+  noch hat (21 Tage).
+- Es gelten dieselben Prüfungen wie live, aber für den **Tag der
+  Originalnachricht**: eine erkannte Ab-/Zusage wird für diesen Donnerstag
+  eingetragen, nicht für heute.
+- Es entscheidet, wer **jetzt** im Admin-UI eingestellt ist (Gemini oder
+  eigenes Modell).
+- Gesendet wird nichts. „statistik" wird deshalb abgelehnt – das würde die
+  Rangliste nochmal in die Gruppe schicken.
+- Der Durchlauf landet als eigener Eintrag im Verlauf, mit Verweis aufs
+  Original. In `ml_messages` kommt die Nachricht nur, wenn sie dort für
+  denselben Nutzer am selben Tag noch fehlt – keine Doppelten im
+  Trainings-Pool, eine verlorene Zeile wird aber nachgetragen.
 
 ## Notiz an die eigene Nummer
 

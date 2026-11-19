@@ -333,7 +333,7 @@ func (s *Postgres) DeleteExcludedDay(ctx context.Context, date time.Time) error 
 func (s *Postgres) ListTraces(ctx context.Context, limit int) ([]Trace, error) {
 	const q = `
 		SELECT id, created_at, user_name, message, message_type, path,
-		       classification, action, has_error
+		       classification, action, has_error, COALESCE(replay_of, 0)
 		FROM bot_trace
 		WHERE created_at > now() - interval '21 days'
 		ORDER BY created_at DESC
@@ -348,7 +348,7 @@ func (s *Postgres) ListTraces(ctx context.Context, limit int) ([]Trace, error) {
 	for rows.Next() {
 		var t Trace
 		if err := rows.Scan(&t.ID, &t.CreatedAt, &t.UserName, &t.Message,
-			&t.MessageType, &t.Path, &t.Classification, &t.Action, &t.HasError); err != nil {
+			&t.MessageType, &t.Path, &t.Classification, &t.Action, &t.HasError, &t.ReplayOf); err != nil {
 			return nil, fmt.Errorf("ListTraces scan: %w", err)
 		}
 		out = append(out, t)
@@ -360,14 +360,14 @@ func (s *Postgres) GetTrace(ctx context.Context, id int64) (*Trace, error) {
 	const q = `
 		SELECT id, created_at, remote_jid, user_id, user_name, message, message_type,
 		       path, classification, action, has_error,
-		       COALESCE(raw_payload::text, ''), trace::text
+		       COALESCE(raw_payload::text, ''), trace::text, COALESCE(replay_of, 0)
 		FROM bot_trace WHERE id = $1`
 	var t Trace
 	var rawPayload, stepsJSON string
 	err := s.db.QueryRowContext(ctx, q, id).Scan(
 		&t.ID, &t.CreatedAt, &t.RemoteJid, &t.UserID, &t.UserName, &t.Message,
 		&t.MessageType, &t.Path, &t.Classification, &t.Action, &t.HasError,
-		&rawPayload, &stepsJSON)
+		&rawPayload, &stepsJSON, &t.ReplayOf)
 	if err != nil {
 		return nil, fmt.Errorf("GetTrace: %w", err)
 	}
@@ -424,7 +424,9 @@ func (s *Postgres) MLShadowStats(ctx context.Context) (MLShadowStats, error) {
 // ist jeweils das Admin-UI bzw. das Import-Skript, daher liegt das Schema
 // hier und nicht im Bot). ml_messages gehört dem Bot; hier kommt nur die
 // Spalte labeled_at dazu – die legt auch der Bot an, falls er die Tabelle
-// erst nach dem Admin-UI erzeugt.
+// erst nach dem Admin-UI erzeugt. Ebenso bot_trace.replay_of (gehört dem
+// Bot): der Verlauf liest die Spalte, auch wenn der Bot noch nicht neu
+// gestartet ist.
 func (s *Postgres) EnsureMLSchema(ctx context.Context) error {
 	const q = `
 		CREATE TABLE IF NOT EXISTS ml_test_messages (
@@ -442,6 +444,7 @@ func (s *Postgres) EnsureMLSchema(ctx context.Context) error {
 		ALTER TABLE IF EXISTS ml_messages ADD COLUMN IF NOT EXISTS labeled_at TIMESTAMPTZ;
 		ALTER TABLE IF EXISTS ml_messages ADD COLUMN IF NOT EXISTS entschieden_von TEXT;
 		ALTER TABLE IF EXISTS ml_messages ADD COLUMN IF NOT EXISTS modell_version TEXT;
+		ALTER TABLE IF EXISTS bot_trace ADD COLUMN IF NOT EXISTS replay_of BIGINT;
 
 		-- text_hash: Hash des normalisierten Texts (Import-Skript), blockt
 		-- exakte Duplikate schon beim Insert.

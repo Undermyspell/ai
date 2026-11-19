@@ -305,4 +305,5 @@ type Trace struct {
 	HasError       bool
 	RawPayload     string // hübsch eingerücktes JSON (nur in GetTrace befüllt)
 	Steps          []TraceStep
+	ReplayOf       int64 // nachverarbeitetes Event (Verlauf → „Erneut verarbeiten“); 0 = live
 }

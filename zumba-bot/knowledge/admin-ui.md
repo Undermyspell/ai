@@ -111,6 +111,17 @@ welche Schritte gelaufen sind. Die Modi „An mich“ und „Testgruppe“
 verschicken entsprechend Text oder Bild an die Testnummer bzw. in die
 Testgruppe — nie an die Stammtisch-Gruppe.
 
+### Verlauf (`/trace`)
+
+Die Gruppen-Events der letzten drei Wochen (nur donnerstags), je Event der
+Verarbeitungspfad als Graph und die Roh-Payload. **„Erneut verarbeiten"**
+schickt ein Event nochmal durch den Bot (nach Rückfrage): gleiche Prüfungen,
+es entscheidet die aktuelle Einstellung unter KI-Modell, eine erkannte
+Ab-/Zusage gilt für den Tag der Nachricht. Gesendet wird nichts; für
+„statistik" gibt es den Knopf nicht. Das Ergebnis steht direkt darunter, der
+neue Durchlauf erscheint als eigener Eintrag (🔁) mit Verweis aufs Original.
+Details: [whatsapp-bot → Nachverarbeitung](whatsapp-bot.md#nachverarbeitung).
+
 ### KI-Modell (`/ki-modell`)
 
 Welches Modell die Gruppen-Nachrichten klassifiziert. Oben der Schalter

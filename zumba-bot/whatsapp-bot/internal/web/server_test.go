@@ -18,6 +18,7 @@ type fakeStore struct {
 	statsCalled   bool
 	absentUserID  string
 	absentMessage string
+	absentDate    time.Time
 	presentUserID string
 
 	penaltyInput      penalty.Input // von PenaltyInputs geliefert
@@ -44,9 +45,10 @@ func (f *fakeStore) UserStats(context.Context, store.Season, time.Time) ([]store
 	f.statsCalled = true
 	return []store.Stat{{Name: "A", Attendance: 1, Away: 0, Percent: 100}}, nil
 }
-func (f *fakeStore) MarkAbsent(_ context.Context, userID string, _ time.Time, msg string) error {
+func (f *fakeStore) MarkAbsent(_ context.Context, userID string, date time.Time, msg string) error {
 	f.absentUserID = userID
 	f.absentMessage = msg
+	f.absentDate = date
 	return nil
 }
 func (f *fakeStore) MarkPresent(_ context.Context, userID string, _ time.Time) error {

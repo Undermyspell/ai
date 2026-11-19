@@ -1,0 +1,120 @@
+package trace
+
+import (
+	"strings"
+	"time"
+
+	"github.com/michael/zumba-admin-ui/internal/store"
+)
+
+// ReplayVM ist die Antwort des Bots auf POST /replay (Felder wie sein Outcome).
+type ReplayVM struct {
+	Path           string `json:"path"`
+	Classification string `json:"classification"`
+	Action         string `json:"action"`
+	Date           string `json:"date"`
+	DecidedBy      string `json:"decidedBy"`
+	Reason         string `json:"reason"`
+	TraceID        int64  `json:"traceId"`
+}
+
+// CanReplay: nur Events mit gespeicherter Payload, und nie "statistik" –
+// das würde die Rangliste nochmal in die Gruppe schicken (der Bot verweigert
+// es ohnehin).
+func CanReplay(t store.Trace) bool {
+	return t.RawPayload != "" && t.Path != "statistik"
+}
+
+// ReplaySummary ist der Kurztext fürs Toast: "Absage eingetragen" bzw.
+// "invalid – keine Aktion".
+func ReplaySummary(v ReplayVM) string {
+	switch {
+	case v.Path == "ignored":
+		return "ignoriert"
+	case v.Action != "" && v.Action != "none":
+		return ActionLabel(v.Action)
+	case v.Classification != "":
+		return ClassLabel(v.Classification) + " – keine Aktion"
+	default:
+		return "keine Aktion"
+	}
+}
+
+func decidedByLabel(d string) string {
+	switch d {
+	case "gemini":
+		return "Gemini"
+	case "modell":
+		return "eigenes Modell"
+	default:
+		return d
+	}
+}
+
+// fmtDay: "2026-11-19" → "Do, 19.11.2026".
+func fmtDay(iso string) string {
+	d, err := time.Parse("2006-01-02", iso)
+	if err != nil {
+		return iso
+	}
+	return weekdayDE[d.Weekday()] + ", " + d.Format("02.01.2006")
+}
+
+// replayDay: Tag, für den eine erkannte Ab-/Zusage gilt (Tag der Nachricht).
+func replayDay(t time.Time) string {
+	return weekdayDE[t.Weekday()] + ", " + t.Format("02.01.")
+}
+
+func replayReason(r string) string {
+	return strings.TrimPrefix(r, "guard: ")
+}
+
+templ ReplayCard(t store.Trace) {
+	<section class="card">
+		<div class="card-head" style="align-items:center">
+			<div>
+				<div class="card-title">Erneut verarbeiten</div>
+				<div class="card-sub">
+					Nochmal durch Guards und Klassifizierung. Es entscheidet, was unter KI-Modell jetzt eingestellt ist.
+					Eine erkannte Ab- oder Zusage gilt für { replayDay(t.CreatedAt) } – gesendet wird nichts.
+				</div>
+			</div>
+			<button
+				type="button"
+				class="btn btn-primary btn-sm"
+				hx-post={ "/trace/" + itoa(t.ID) + "/replay" }
+				hx-target="#replay-result"
+				hx-swap="innerHTML"
+				hx-disabled-elt="this"
+				hx-confirm={ "Event #" + itoa(t.ID) + " nochmal verarbeiten? Eine erkannte Ab- oder Zusage wird für " + replayDay(t.CreatedAt) + " eingetragen." }
+			>🔁 Erneut verarbeiten</button>
+		</div>
+		<div id="replay-result" aria-live="polite" style="margin-top:14px"></div>
+	</section>
+}
+
+templ ReplayResult(v ReplayVM) {
+	<dl class="facts">
+		<div><dt>Pfad</dt><dd>{ PathIcon(v.Path) } { PathLabel(v.Path) }</dd></div>
+		if v.Classification != "" {
+			<div><dt>Klassifizierung</dt><dd>{ ClassLabel(v.Classification) } <span class="muted">({ v.Classification })</span></dd></div>
+		}
+		<div><dt>Aktion</dt><dd>{ ActionLabel(v.Action) }</dd></div>
+		if v.DecidedBy != "" {
+			<div><dt>Entschieden von</dt><dd>{ decidedByLabel(v.DecidedBy) }</dd></div>
+		}
+		if v.Date != "" {
+			<div><dt>Tag</dt><dd>{ fmtDay(v.Date) }</dd></div>
+		}
+	</dl>
+	if v.Reason != "" {
+		<p class="muted" style="margin-top:10px">{ replayReason(v.Reason) }</p>
+	}
+	if v.TraceID > 0 {
+		<p style="margin-top:10px"><a class="card-link" href={ templ.URL(rowHref(v.TraceID)) }>Neuer Verlauf #{ itoa(v.TraceID) } →</a></p>
+	}
+}
+
+templ ReplayError(msg string) {
+	<div class="bot-error"><strong>Nicht verarbeitet:</strong> { msg }</div>
+}

@@ -21,6 +21,9 @@ templ Detail(t store.Trace) {
 			}
 			<div><dt>Aktion</dt><dd>{ ActionLabel(t.Action) }</dd></div>
 			<div><dt>Typ</dt><dd class="is-mono">{ orDash(t.MessageType) }</dd></div>
+			if t.ReplayOf > 0 {
+				<div><dt>Nachverarbeitung von</dt><dd><a class="card-link" href={ templ.URL(rowHref(t.ReplayOf)) }>Event #{ itoa(t.ReplayOf) }</a></dd></div>
+			}
 		</dl>
 		if t.Message != "" {
 			<div class="quote" style="margin-top:16px">
@@ -29,6 +32,9 @@ templ Detail(t store.Trace) {
 			</div>
 		}
 	</section>
+	if CanReplay(t) {
+		@ReplayCard(t)
+	}
 	<section class="card card-flush">
 		<div class="flow-card-head">
 			<div class="card-title">Verarbeitungspfad</div>

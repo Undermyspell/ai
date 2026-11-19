@@ -34,6 +34,9 @@ templ List(traces []store.Trace) {
 						if t.Classification != "" {
 							<span class={ "lbl", "lbl-" + t.Classification }>{ ClassLabel(t.Classification) }</span>
 						}
+						if t.ReplayOf > 0 {
+							<span title={ "Nachverarbeitung von Event #" + itoa(t.ReplayOf) }>🔁</span>
+						}
 					</span>
 					if t.HasError {
 						<span class="tr-flag" title="Fehler im Verlauf">⚠</span>

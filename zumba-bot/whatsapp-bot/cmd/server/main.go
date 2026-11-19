@@ -155,6 +155,7 @@ func main() {
 		log.Printf("⚠️  bot_trace Schema: %v (Aufzeichnung deaktiviert)", err)
 	} else {
 		srv.Tracer = tracer
+		srv.Traces = tracer
 		log.Printf("🧭 Trace-Aufzeichnung aktiv (bot_trace, 21 Tage Retention)")
 	}
 

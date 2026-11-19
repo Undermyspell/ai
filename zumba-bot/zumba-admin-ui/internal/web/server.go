@@ -100,6 +100,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /bot-test/wirt/uebernehmen", sealed(s.handleBotTestWirtAdopt))
 	mux.HandleFunc("GET /trace", s.handleTraceList)
 	mux.HandleFunc("GET /trace/{id}", s.handleTraceDetail)
+	// Event nochmal durch den Bot schicken. Nicht gesperrt bei offenem
+	// Tunnel: der Bot sendet dabei nichts (statistik verweigert er), er
+	// trägt höchstens die Ab-/Zusage ein – wie /toggle-absence.
+	mux.HandleFunc("POST /trace/{id}/replay", s.handleTraceReplay)
 	// ML-Daten: Synthetics, Whatsapp und Manuell sichten und labeln.
 	// /ml-shadow ist im Whatsapp-Tab aufgegangen.
 	mux.HandleFunc("GET /ml-daten", s.handleMLDaten)

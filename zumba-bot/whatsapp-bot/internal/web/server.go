@@ -42,9 +42,16 @@ type Renderer interface {
 	PNG(ctx context.Context, html string, width int) ([]byte, error)
 }
 
-// Tracer persistiert einen aufgezeichneten Event-Trace (optional, nil = aus).
+// Tracer persistiert einen aufgezeichneten Event-Trace (optional, nil = aus)
+// und liefert dessen ID.
 type Tracer interface {
-	Save(ctx context.Context, t tracestore.Trace) error
+	Save(ctx context.Context, t tracestore.Trace) (int64, error)
+}
+
+// TraceSource liest einen aufgezeichneten Trace samt Roh-Payload (für die
+// Nachverarbeitung; nil = POST /replay aus).
+type TraceSource interface {
+	Get(ctx context.Context, id int64) (tracestore.Trace, error)
 }
 
 // MLClassifier ist das eigene Modell (classifier-service): entscheidet, wenn
@@ -74,6 +81,10 @@ type Server struct {
 
 	// Tracer zeichnet Gruppen-/Donnerstag-Events auf (von main gesetzt; nil = aus).
 	Tracer Tracer
+
+	// Traces liest aufgezeichnete Events für POST /replay (von main gesetzt;
+	// nil = Nachverarbeitung aus).
+	Traces TraceSource
 
 	// PreviewJID ist das Ziel des "Vorschau"-Modus der Bot-Test-Seite (von main
 	// gesetzt; leer = Vorschau aus).
@@ -211,6 +222,9 @@ func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /webhook/whatsapp", s.handleWebhook)
 	mux.HandleFunc("POST /test", s.handleTest)
+	// Aufgezeichnetes Event nochmal verarbeiten (Admin-UI, Verlauf). Die
+	// Payload kommt aus bot_trace, gesendet wird nichts.
+	mux.HandleFunc("POST /replay", s.handleReplay)
 	mux.HandleFunc("POST /weekly-report", s.handleWeekly)
 	// Nachricht an die eigene Vorschau-Nummer (Admin-UI schickt sich die
 	// öffentlichen Tunnel-Adressen aufs Handy). Empfänger ist fest PREVIEW_JID.
@@ -241,6 +255,7 @@ type Outcome struct {
 	DecidedBy      string `json:"decidedBy,omitempty"` // gemini | modell – wer klassifiziert hat
 	DryRun         bool   `json:"dryRun"`              // true: nichts gesendet/geschrieben, nur berechnet
 	PreviewTo      string `json:"previewTo,omitempty"` // gesetzt: Nachricht wurde als Vorschau an diese Nummer geschickt
+	TraceID        int64  `json:"traceId,omitempty"`   // gesetzt: Durchlauf wurde als dieser Trace aufgezeichnet (nur /replay)
 
 	// ImageBase64 ist die als PNG gerenderte Statistik-Karte (nur bei
 	// ?format=image; base64 ohne data:-Präfix).
@@ -258,9 +273,28 @@ type Outcome struct {
 // dryRun berechnet das Ergebnis, ohne zu senden oder in die DB zu schreiben.
 // asOf ist der (ggf. simulierte) Verarbeitungstag – im echten Betrieb heute.
 func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuards, dryRun bool, asOf time.Time, recs ...*tracestore.Recorder) Outcome {
-	rec := tracestore.NewRecorder()
-	if len(recs) > 0 && recs[0] != nil {
-		rec = recs[0]
+	o := runOpts{bypassGuards: bypassGuards, dryRun: dryRun, asOf: asOf}
+	if len(recs) > 0 {
+		o.rec = recs[0]
+	}
+	return s.process(ctx, ev, o)
+}
+
+// runOpts steuert einen Durchlauf (siehe run).
+type runOpts struct {
+	bypassGuards, dryRun bool
+	asOf                 time.Time
+	rec                  *tracestore.Recorder
+	// replay: Nachverarbeitung eines aufgezeichneten Events – ins
+	// ML-Protokoll nur, wenn die Nachricht dort am Tag noch fehlt.
+	replay bool
+}
+
+func (s *Server) process(ctx context.Context, ev evolution.WebhookEvent, o runOpts) Outcome {
+	bypassGuards, dryRun, asOf := o.bypassGuards, o.dryRun, o.asOf
+	rec := o.rec
+	if rec == nil {
+		rec = tracestore.NewRecorder()
 	}
 	msg := ev.Message()
 	rec.Step(tracestore.NodeReceived, tracestore.OutcomeInfo, "Webhook empfangen",
@@ -290,12 +324,14 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 		}
 		rec.Step(tracestore.NodeGuardGroup, tracestore.OutcomePass, "Zumba-Gruppe?", "ja")
 
-		if !s.isThursday() {
+		// Verarbeitungstag, nicht zwingend heute: die Nachverarbeitung prüft
+		// den Tag der Originalnachricht.
+		if asOf.Weekday() != time.Thursday {
 			rec.Step(tracestore.NodeGuardThursday, tracestore.OutcomeFail, "Donnerstag?", "nein")
 			rec.Step(tracestore.NodeIgnored, tracestore.OutcomeInfo, "Ignoriert", "nicht Donnerstag")
 			return Outcome{Path: "ignored", Reason: "guard: nicht Donnerstag"}
 		}
-		rec.Step(tracestore.NodeGuardThursday, tracestore.OutcomePass, "Donnerstag?", s.today().Format("Mon, 2006-01-02"))
+		rec.Step(tracestore.NodeGuardThursday, tracestore.OutcomePass, "Donnerstag?", asOf.Format("Mon, 2006-01-02"))
 	} else {
 		rec.Step(tracestore.NodeGuardType, tracestore.OutcomeInfo, "Guards", "übersprungen (Test-Pfad)")
 	}
@@ -311,6 +347,9 @@ func (s *Server) run(ctx context.Context, ev evolution.WebhookEvent, bypassGuard
 			DecidedBy: decidedBy, Model: ml}
 		if decidedBy == sharedstore.EntscheiderGemini {
 			r.GeminiLabel = string(c.Result)
+		}
+		if o.replay {
+			r.DedupeDay = asOf
 		}
 		s.ML.RecordAsync(r)
 	}
@@ -656,16 +695,19 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rec := tracestore.NewRecorder()
-	out := s.run(r.Context(), ev, false, false, s.today(), rec)
+	today := s.today()
+	out := s.run(r.Context(), ev, false, false, today, rec)
 	w.WriteHeader(http.StatusOK)
-	s.recordTrace(r.Context(), ev, body, out, rec)
+	s.recordTrace(r.Context(), ev, body, out, rec, today, 0)
 }
 
 // recordTrace persistiert den Trace, aber nur für Events aus der Zumba-Gruppe an
-// einem Donnerstag (best-effort: Fehler werden nur geloggt).
-func (s *Server) recordTrace(ctx context.Context, ev evolution.WebhookEvent, body []byte, out Outcome, rec *tracestore.Recorder) {
-	if s.Tracer == nil || ev.RemoteJid() != s.groupJID || !s.isThursday() {
-		return
+// einem Donnerstag (asOf = Verarbeitungstag; best-effort: Fehler werden nur
+// geloggt). replayOf ist das nachverarbeitete Event (0 = live). Liefert die
+// ID des Traces (0 = nicht aufgezeichnet).
+func (s *Server) recordTrace(ctx context.Context, ev evolution.WebhookEvent, body []byte, out Outcome, rec *tracestore.Recorder, asOf time.Time, replayOf int64) int64 {
+	if s.Tracer == nil || ev.RemoteJid() != s.groupJID || asOf.Weekday() != time.Thursday {
+		return 0
 	}
 	t := tracestore.Trace{
 		RemoteJid:      ev.RemoteJid(),
@@ -679,10 +721,14 @@ func (s *Server) recordTrace(ctx context.Context, ev evolution.WebhookEvent, bod
 		HasError:       rec.HasError(),
 		RawPayload:     body,
 		Steps:          rec.Steps(),
+		ReplayOf:       replayOf,
 	}
-	if err := s.Tracer.Save(ctx, t); err != nil {
+	id, err := s.Tracer.Save(ctx, t)
+	if err != nil {
 		log.Printf("⚠️  trace save: %v", err)
+		return 0
 	}
+	return id
 }
 
 func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
