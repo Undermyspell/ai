@@ -356,11 +356,14 @@ func (s *Postgres) ListTraces(ctx context.Context, limit int) ([]Trace, error) {
 	return out, rows.Err()
 }
 
+// GetTrace liefert eine Aufzeichnung samt Roh-Payload – ohne den API-Key der
+// Evolution-Instanz (Feld "apikey"), den ältere Bot-Versionen mitgespeichert
+// haben.
 func (s *Postgres) GetTrace(ctx context.Context, id int64) (*Trace, error) {
 	const q = `
 		SELECT id, created_at, remote_jid, user_id, user_name, message, message_type,
 		       path, classification, action, has_error,
-		       COALESCE(raw_payload::text, ''), trace::text, COALESCE(replay_of, 0)
+		       COALESCE((raw_payload - 'apikey')::text, ''), trace::text, COALESCE(replay_of, 0)
 		FROM bot_trace WHERE id = $1`
 	var t Trace
 	var rawPayload, stepsJSON string

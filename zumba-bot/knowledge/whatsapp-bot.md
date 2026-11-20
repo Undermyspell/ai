@@ -338,4 +338,5 @@ antwortet er mit einem Fehler und sendet nichts.
   Gruppe (Staging-Standard).
 - Alle Antworttexte deutsch, WhatsApp-Formatierung (Fettdruck etc.).
 - Nachrichtenverarbeitung wird als Trace aufgezeichnet (21 Tage Retention)
-  zur Fehlersuche.
+  zur Fehlersuche – ohne den API-Key der Evolution-Instanz, den Evolution in
+  jedem Event mitschickt.

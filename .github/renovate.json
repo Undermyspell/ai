@@ -115,6 +115,16 @@
       ]
     },
     {
+      "description": "Keine Postgres-Major-Updates: ein neues Major startet nicht auf dem alten Datenverzeichnis (Pod in CrashLoop, Bot/Evolution down). Major-Wechsel nur geplant per Dump/Restore. Minor/Patch kommen weiter.",
+      "matchPackageNames": [
+        "postgres"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Group all Evolution API updates together",
       "matchPackageNames": [
         "evoapicloud/evolution-api"

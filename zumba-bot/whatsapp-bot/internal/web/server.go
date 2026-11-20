@@ -701,6 +701,26 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	s.recordTrace(r.Context(), ev, body, out, rec, today, 0)
 }
 
+// withoutAPIKey entfernt den API-Key der Evolution-Instanz, den Evolution in
+// jedem Webhook-Event mitschickt (Feld "apikey"). Er gehört nicht in den
+// Verlauf: die Roh-Payload steht im Admin-UI. Ist der Body kein
+// JSON-Objekt, bleibt er wie er ist.
+func withoutAPIKey(body []byte) []byte {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(body, &m); err != nil {
+		return body
+	}
+	if _, ok := m["apikey"]; !ok {
+		return body
+	}
+	delete(m, "apikey")
+	out, err := json.Marshal(m)
+	if err != nil {
+		return body
+	}
+	return out
+}
+
 // recordTrace persistiert den Trace, aber nur für Events aus der Zumba-Gruppe an
 // einem Donnerstag (asOf = Verarbeitungstag; best-effort: Fehler werden nur
 // geloggt). replayOf ist das nachverarbeitete Event (0 = live). Liefert die
@@ -719,7 +739,7 @@ func (s *Server) recordTrace(ctx context.Context, ev evolution.WebhookEvent, bod
 		Classification: out.Classification,
 		Action:         out.Action,
 		HasError:       rec.HasError(),
-		RawPayload:     body,
+		RawPayload:     withoutAPIKey(body),
 		Steps:          rec.Steps(),
 		ReplayOf:       replayOf,
 	}

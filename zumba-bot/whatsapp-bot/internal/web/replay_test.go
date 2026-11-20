@@ -1,10 +1,12 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -148,5 +150,35 @@ func TestReplayFremderTagBleibtIgnoriert(t *testing.T) {
 	_ = json.Unmarshal(w.Body.Bytes(), &out)
 	if out.Path != "ignored" || st.absentUserID != "" || len(traces.saved) != 0 {
 		t.Errorf("Outcome %+v, Absage %q, Traces %d", out, st.absentUserID, len(traces.saved))
+	}
+}
+
+// Evolution schickt den API-Key der Instanz in jedem Event mit – im Verlauf
+// (und damit im Admin-UI) darf er nicht landen.
+func TestTraceOhneAPIKey(t *testing.T) {
+	s, _, _ := newTestServer(classifier.Invalid, thursday)
+	tr := &fakeTraces{}
+	s.Tracer = tr
+	ev, _ := json.Marshal(groupMsg("servus"))
+	var m map[string]any
+	_ = json.Unmarshal(ev, &m)
+	m["apikey"] = "GEHEIM-123"
+	body, _ := json.Marshal(m)
+
+	w := httptest.NewRecorder()
+	s.Routes().ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/webhook/whatsapp", bytes.NewReader(body)))
+
+	if len(tr.saved) != 1 {
+		t.Fatalf("%d Traces gespeichert", len(tr.saved))
+	}
+	raw := string(tr.saved[0].RawPayload)
+	if strings.Contains(raw, "GEHEIM-123") || strings.Contains(raw, "apikey") {
+		t.Errorf("API-Key im Verlauf: %s", raw)
+	}
+	if !strings.Contains(raw, "servus") {
+		t.Errorf("Payload kaputt: %s", raw)
+	}
+	if string(withoutAPIKey([]byte("kein json"))) != "kein json" {
+		t.Error("Nicht-JSON verändert")
 	}
 }
