@@ -96,7 +96,7 @@ services:
       - "8091:8080"
 
   evolution-api:
-    image: evoapicloud/evolution-api:v2.3.7
+    image: evoapicloud/evolution-api:v2.3.8
     depends_on:
       - postgres
     restart: always

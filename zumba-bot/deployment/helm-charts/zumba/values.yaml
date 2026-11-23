@@ -111,7 +111,7 @@ ingress:
 evolutionApi:
   image:
     repository: evoapicloud/evolution-api
-    tag: "v2.3.7"
+    tag: "v2.3.8"
     pullPolicy: IfNotPresent
   
   # Default resources - override per environment
